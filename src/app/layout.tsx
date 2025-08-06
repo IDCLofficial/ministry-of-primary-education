@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import GlobalLoader from '@/components/GlobalLoader'
 
 
 
@@ -17,6 +18,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+      <GlobalLoader />
+
         <Navbar/>
         {children}
       </body>

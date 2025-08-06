@@ -1,4 +1,9 @@
 @import "tailwindcss";
+@layer utilities {
+  .animate-spin-slow {
+    animation: spin 2s linear infinite;
+  }
+}
 
 /* Regular + Bold + Thin (Variable Normal) */
 @font-face {
