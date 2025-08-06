@@ -1,26 +1,99 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Regular + Bold + Thin (Variable Normal) */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/font-satoshi/Satoshi-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Italic Range (Variable Italic) */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/font-satoshi/Satoshi-VariableItalic.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Apply Globally */
+body {
+  font-family: 'Satoshi', sans-serif;
+}
+
+/* typing text effect */
+.typing-wrapper {
+  /* display: inline-block; */
+  font-weight: bold;
+  /* font-size: 1.5rem; */
+  color: white;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.fade-in {
+  opacity: 1;
+}
+
+.fade-out {
+  opacity: 0;
+}
+
+.blinking-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  color: white;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* office hours */
+.office-hours-scroll-container {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  overflow: hidden;
+  background-color: #232c39;
+  display: flex;
+  align-items: center;
+  z-index: 50;
+  
+}
+
+
+.office-hours-scroll-text {
+  display: inline-block;
+  white-space: nowrap;
+  animation: scrollTextLoop 20s linear infinite;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+
+
+@keyframes scrollTextLoop {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+/* for text */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 1s ease forwards;
 }
