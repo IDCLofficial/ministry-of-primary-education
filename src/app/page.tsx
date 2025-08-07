@@ -18,8 +18,7 @@ export default function Home() {
       <HeroSection
         backgroundImages={["/images/home1.jpg", "/images/home2.jpg", "/images/home2.jpeg"]}
         overlayText="Imo State Ministry of Primary and Secondary Education"
-        heading="Transforming Education in Imo State"
-        subheading="Delivering Quality Education"
+      heading="Delivering Quality Education"
         description="Our mission is to deliver quality, accessible, and inclusive education to all primary and secondary school students in Imo State, fostering innovation, growth, and opportunity."
       
       />

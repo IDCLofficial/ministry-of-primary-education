@@ -49,7 +49,7 @@ export default function NewsDetailPage() {
             <div className="w-full flex justify-center my-8">
               <div className="w-full max-w-md rounded-xl overflow-hidden">
                 <Image
-                  src="/images/school2.jpg"
+                  src="/images/imoschool2.png"
                   alt="Ministry Education Enforcement"
                   width={600}
                   height={300}

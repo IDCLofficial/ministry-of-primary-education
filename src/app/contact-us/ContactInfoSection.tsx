@@ -22,11 +22,11 @@ const ContactInfoSection = () => (
       {/* <li className="flex items-center gap-2 text-gray-800"><FaEnvelope /> <span>{contactInfo.email}</span></li> */}
       <li className="flex items-center gap-2 text-gray-800"><FaPhone /> <span>{contactInfo.phone}</span></li>
     </ul>
-    <div className="flex gap-4 mt-2">
+    {/* <div className="flex gap-4 mt-2">
       {contactInfo.socials.map((s, i) => (
         <a key={i} href={s.href} className="text-gray-700 hover:text-green-700 text-xl" target="_blank" rel="noopener noreferrer">{s.icon}</a>
       ))}
-    </div>
+    </div> */}
   </div>
 );
 

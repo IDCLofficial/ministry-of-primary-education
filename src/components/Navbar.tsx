@@ -26,10 +26,10 @@ export default function Navbar() {
   return (
     <nav className={`fixed top-0 left-0 w-full z-50 py-3 ${sidebarOpen ? 'bg-white' : 'bg-gradient-to-b from-[#3a2c1a]/80 to-[#232c39]/80'} lg:bg-gradient-to-b lg:from-[#3a2c1a]/80 lg:to-[#232c39]/80  xl:py-4`}>
      
-      <div className="w-[90%] lg:w-full px-0 lg:px-10 mx-auto flex items-center justify-between h-full lg:border-b lg:border-gray-300">
-        <div className="flex items-center py-2">
+      <div className="w-[90%] lg:w-full pb-0 md:pb-2 px-0 lg:px-10 mx-auto flex items-center justify-between h-full lg:border-b lg:border-gray-300">
+        <div className="flex items-center pb-2">
           <Link href="/">
-            <Image src="/images/IMSG-Logo.svg" alt="logo" width={50} height={20} className='object-contain' />
+            <Image src="/images/IMSG-Logo.svg" alt="logo" width={40} height={20} className='object-contain' />
           </Link>
         </div>
         <div className="font-satoshi space-x-6 gap-2 xl:gap-10 text-[16px] md:text-[12px] xl:text-[16px] font-bold hidden lg:flex">
