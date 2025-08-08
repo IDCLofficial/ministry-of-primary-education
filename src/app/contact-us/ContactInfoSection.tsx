@@ -3,8 +3,8 @@ import { FaMapMarkerAlt, FaEnvelope, FaPhone, FaFacebookF, FaTwitter, FaInstagra
 
 const contactInfo = {
   address: "Block 7, New Owerri Secretariat 460281",
-  email: "imostatemgvg@gmail.com",
-  phone: " +2348111113454",
+  email: "",
+  phone: "+2348037766373",
   socials: [
     { icon: <FaFacebookF />, href: "#" },
     { icon: <FaTwitter />, href: "#" },

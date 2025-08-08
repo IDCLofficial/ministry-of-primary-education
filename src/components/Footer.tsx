@@ -55,13 +55,10 @@ const info = {
             href: "/"
         },
         {
-            label: "",
-            href: "#"
+            label: "+2348037766373",
+            href: "tel:+2348037766373"
         },  
-        {
-            label: "imostatemgvg@gmail.com",
-            href: "mailto:imostatemgvg@gmail.com"
-        },
+        
     ]
 }
 
