@@ -18,7 +18,7 @@ const links = [
     title: "News",
     description: "Read our latest news and updates.",
     image: "/images/class2.png",
-    href: "/News",
+    href: "/news",
   },
   {
     title: "Departments",
