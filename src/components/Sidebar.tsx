@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface SidebarProps {
   open: boolean;
@@ -6,6 +7,20 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
+  const pathname = usePathname();
+
+  const links = [
+    { href: '/', label: 'Home' },
+    { href: '/about', label: 'About' },
+    { href: '/services', label: 'Services' },
+    { href: '/projects', label: 'Projects' },
+    { href: '/news', label: 'News' },
+    { href: '/departments', label: 'Departments' },
+    { href: '/events', label: 'Events' },
+    { href: '/media', label: 'Media' },
+    { href: '/contact-us', label: 'Contact' },
+  ];
+
   return (
     <>
       {/* Overlay */}
@@ -26,16 +41,22 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         >
           <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
+
         <nav className="mt-16 flex flex-col space-y-6 px-6">
-          <Link href="/" className="text-lg font-semibold text-gray-900" onClick={onClose}>Home</Link>
-          <Link href="/about" className="text-lg font-semibold text-gray-900" onClick={onClose}>About</Link>
-          <Link href="/projects" className="text-lg font-semibold text-gray-900" onClick={onClose}>Projects</Link>
-          <Link href="/events" className="text-lg font-semibold text-gray-900" onClick={onClose}>Events</Link>
-          <Link href="/media" className="text-lg font-semibold text-gray-900" onClick={onClose}>Media</Link>
-          <Link href="/news" className="text-lg font-semibold text-gray-900" onClick={onClose}>News</Link>
-          <Link href="/contact-us" className="text-lg font-semibold text-gray-900" onClick={onClose}>Contact</Link>
+          {links.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={onClose}
+              className={`text-lg font-semibold transition-colors duration-200 ${
+                pathname === href ? 'text-green-600' : 'text-gray-900'
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
       </aside>
     </>
   );
-} 
+}

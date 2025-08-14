@@ -1,7 +1,12 @@
+'use client'
+
+import { useEffect, useState } from 'react';
 import Image from "next/image";
 import Link from "next/link";
+import { getEventsList } from './events';
 
-type EventType = {
+// Interface for Event data
+interface Event {
   date: string;
   location: string;
   title: string;
@@ -9,7 +14,8 @@ type EventType = {
   img: string;
   details: string;
   dateString: string;
-};
+  id: string;
+}
 
 function slugify(text: string) {
   return text
@@ -18,10 +24,47 @@ function slugify(text: string) {
     .replace(/(^-|-$)+/g, '');
 }
 
-export default function EventsListSection({ events }: { events: EventType[] }) {
+export default function EventsListSection() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const eventsList = await getEventsList();
+        setEvents(eventsList);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchEvents();
+  }, []);
+  
   const now = new Date();
   const upcomingEvents = events.filter(e => new Date(e.dateString) >= now);
   const pastEvents = events.filter(e => new Date(e.dateString) < now);
+  
+  if (loading) {
+    return (
+      <section className="w-full max-w-6xl mx-auto py-16 px-4">
+        <div className="text-center text-gray-500">Loading events...</div>
+      </section>
+    );
+  }
+
+  // ✅ Show single message if no events at all
+  if (events.length === 0) {
+    return (
+      <section className="w-full max-w-6xl mx-auto py-16 px-4">
+        <div className="text-center text-gray-500 italic">
+          No events available.
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="w-full max-w-6xl mx-auto py-16 px-4">
@@ -30,7 +73,7 @@ export default function EventsListSection({ events }: { events: EventType[] }) {
       {upcomingEvents.length > 0 ? (
         <div className="flex flex-col gap-8 mb-16">
           {upcomingEvents.map((event) => (
-            <div key={event.title + event.dateString} className="flex flex-col md:flex-row gap-6 items-center border-b pb-8 last:border-b-0">
+            <div key={event.id || event.title + event.dateString} className="flex flex-col md:flex-row gap-6 items-center border-b pb-8 last:border-b-0">
               <div className="w-full md:w-64 h-40 relative rounded overflow-hidden flex-shrink-0">
                 <Image src={event.img} alt={event.title} fill className="object-cover" />
               </div>
@@ -45,12 +88,7 @@ export default function EventsListSection({ events }: { events: EventType[] }) {
                   <p className="text-gray-700 text-sm mb-2">{event.description}</p>
                 </div>
                 <div className="flex justify-end md:justify-center">
-                  <Link
-                    href={`/events/${slugify(event.title)}`}
-                    className="border border-green-600 text-green-700 px-4 py-2 rounded font-semibold hover:bg-green-50 transition"
-                  >
-                    More Information
-                  </Link>
+                  <Link href={`/events/${slugify(event.title)}`} className="border border-green-600 text-green-700 px-4 py-2 rounded font-semibold hover:bg-green-50 transition">More Information</Link>
                 </div>
               </div>
             </div>
@@ -65,7 +103,7 @@ export default function EventsListSection({ events }: { events: EventType[] }) {
       {pastEvents.length > 0 ? (
         <div className="flex flex-col gap-8">
           {pastEvents.map((event) => (
-            <div key={event.title + event.dateString} className="flex flex-col md:flex-row gap-6 items-center border-b pb-8 last:border-b-0 opacity-70">
+            <div key={event.id || event.title + event.dateString} className="flex flex-col md:flex-row gap-6 items-center border-b pb-8 last:border-b-0 opacity-70">
               <div className="w-full md:w-64 h-40 relative rounded overflow-hidden flex-shrink-0">
                 <Image src={event.img} alt={event.title} fill className="object-cover" />
               </div>

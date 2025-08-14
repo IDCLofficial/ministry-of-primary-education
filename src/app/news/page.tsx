@@ -5,28 +5,85 @@ import NewsSearchBar from "./NewsSearchBar";
 import NewsGrid from "./NewsGrid";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
-import { useState } from "react";
-import { newsList } from "./newsData";
+import { useState, useEffect } from "react";
+import { getNewsList, NewsItem } from "./newsData";
 import { TopHero } from "@/components/TopHero";
 
 export default function NewsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [newsList, setNewsList] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        setLoading(true);
+        const news = await getNewsList(process.env.NEXT_PUBLIC_MINISTRY_ID);
+        setNewsList(news);
+      } catch (error) {
+        console.error('Error loading news in component:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNews();
+  }, []);
 
   const filteredNews = selectedCategory
     ? newsList.filter((item) => item.category === selectedCategory)
     : newsList;
 
+  if (loading) {
+    return (
+      <div className="bg-white">
+        <TopHero
+          ministryName="Quality Education is Our Priority"
+          titleLabel="News"
+        />
+        <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading news...</p>
+        </div>
+       
+      </div>
+    );
+  }
+
+  if (filteredNews.length === 0) {
+    return (
+      <div className="bg-white">
+        <TopHero
+          ministryName="Quality Education is Our Priority"
+          titleLabel="News"
+        />
+        <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+          <div className="text-gray-500 text-5xl mb-4">📰</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">No News Available</h2>
+          <p className="text-gray-600">There are currently no news articles to display. Please check back later.</p>
+        </div>
+        <CTASection
+          heading="Join Us in Quality Education"
+          subtext="Be part of our mission to improve the quality of education in Imo State."
+          buttonLabel="Contact Us"
+          buttonHref="/contact-us"
+         />
+                    
+      <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white">
-      <TopHero
-ministryName="Raising Champions in Imo State"
-titleLabel="News"
-      />
-      <NewsSearchBar />
+           <TopHero ministryName="Quality Education is Our Priority" titleLabel="News" />
+
+      <NewsSearchBar newsList={newsList} />
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8 px-4 pb-16">
         <NewsSidebar
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
+          newsList={newsList}
         />
         <div className="flex-1">
           {selectedCategory && (
@@ -48,12 +105,12 @@ titleLabel="News"
           <NewsGrid news={filteredNews} />
         </div>
       </div>
-      <CTASection
-  heading="Support Quality Education for Every Child in Imo"
-  subtext="Join us in shaping a brighter future through inclusive, safe, and accessible education for all learners across the state."
-  buttonLabel="Contact Us"
-  buttonHref="/contact-us"
-/>
+         <CTASection
+          heading="Join Us in Quality Education"
+          subtext="Be part of our mission to improve the quality of education in Imo State."
+          buttonLabel="Contact Us"
+          buttonHref="/contact-us"
+         />
                     
       <Footer />
     </div>

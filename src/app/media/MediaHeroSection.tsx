@@ -10,7 +10,7 @@ interface MediaHeroSectionProps {
 const MediaHeroSection: React.FC<MediaHeroSectionProps> = ({ title, subtitle, backgroundImage, searchBar }) => {
   return (
     <section
-      className="relative w-full h-[75vh] flex flex-col justify-center items-center text-center bg-cover bg-center"
+      className="relative w-full h-[80vh] flex flex-col justify-center items-center text-center bg-cover bg-center"
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
       <div className="absolute inset-0 bg-black/60 z-0" />

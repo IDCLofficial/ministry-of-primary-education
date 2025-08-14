@@ -1,19 +1,25 @@
 import Image from "next/image";
-import { newsList } from "./newsData";
+import Link from "next/link";
+import { NewsItem } from './newsData';
 
 interface NewsSidebarProps {
   selectedCategory: string | null;
   setSelectedCategory: (cat: string | null) => void;
+  newsList: NewsItem[];
 }
 
-const categories = [
-  { name: "Latest Updates" },
-  { name: "Policies" },
-];
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+}
 
-const popularNews = newsList;
-
-export default function NewsSidebar({ selectedCategory, setSelectedCategory }: NewsSidebarProps) {
+export default function NewsSidebar({ selectedCategory, setSelectedCategory, newsList }: NewsSidebarProps) {
+  // Extract unique categories from the news data
+  const categories = Array.from(
+    new Set(newsList.map((news: NewsItem) => news.category).filter(Boolean) as string[])
+  ).map(categoryName => ({ name: categoryName }));
   return (
     <aside className="w-full md:w-64 flex-shrink-0">
       <div className="mb-8">
@@ -38,12 +44,20 @@ export default function NewsSidebar({ selectedCategory, setSelectedCategory }: N
         </ul>
       </div>
       <div>
-        <h3 className="font-bold text-lg mb-4">POPULAR NEWS</h3>
+        <h3 className="font-bold text-lg mb-4">LATEST NEWS</h3>
         <ul className="space-y-4">
-          {popularNews.map((news, idx) => (
+          {newsList
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 3)
+            .map((news: NewsItem, idx: number) => (
             <li key={idx}>
+               <Link
+          key={idx}
+          href={`/news/${slugify(news.title)}`}
+          className="bg-white overflow-hidden flex flex-col hover:shadow-md transition cursor-pointer"
+        >
               <div className="flex gap-3 items-center group hover:text-green-700 transition-colors w-full">
-                <div className="w-14 h-14 relative rounded overflow-hidden">
+                <div className="w-20 h-14 relative rounded overflow-hidden">
                   <Image src={news.image} alt={news.title} fill className="object-cover" />
                 </div>
                 <div>
@@ -51,6 +65,7 @@ export default function NewsSidebar({ selectedCategory, setSelectedCategory }: N
                   <div className="text-[10px] text-gray-500 mt-1">{news.date}</div>
                 </div>
               </div>
+              </Link>
             </li>
           ))}
         </ul>

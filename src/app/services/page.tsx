@@ -30,7 +30,7 @@ const services = [
       "Engaging and training approximately 10,000 new teachers, enhancing instructional standards across primary and secondary schools to elevate learning outcomes.",
   },
   {
-    title: "Health & Welfare Partnerships",
+    title: "Health  & Welfare Partnerships",
     description:
       "Collaborating with the Imo State Health Insurance Agency to enroll pupils in the ImoCare health insurance scheme—supporting access to healthcare as part of holistic student welfare.",
   },
