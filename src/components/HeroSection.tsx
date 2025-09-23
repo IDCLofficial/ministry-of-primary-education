@@ -9,7 +9,7 @@ interface HeroSectionProps {
   overlayText: string;
   heading: string;
   description: string;
-  backgroundImages: string[]; // Changed from backgroundImage
+  backgroundImages: string[]; 
 }
 
 export default function HeroSection({

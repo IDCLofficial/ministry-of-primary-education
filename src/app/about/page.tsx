@@ -16,7 +16,7 @@ const teamMembers = [
     bio: "Leads the Imo State Ministry of Primary & Secondary Education and drives policy reforms and standards across public and private schools.",
   },
   {
-    name: "Permanent Secretary",
+    name: "Mrs. Okorie Benedicta Chinonye",
     role: "Permanent Secretary",
     image: "/images/permsec.jpg",
     bio: "Coordinates administrative implementation of education policies across primary and secondary levels.",
