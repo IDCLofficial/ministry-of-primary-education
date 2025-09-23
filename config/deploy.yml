@@ -1,0 +1,47 @@
+# Name of your application. Used to uniquely configure containers.
+service: ministry_of_primary_education
+
+# Name of the container image.
+image: idclofficial/ministry_of_primary_education
+
+# Deploy to these servers.
+servers:
+  web:
+    - 3.250.93.215
+
+proxy:
+  ssl: true
+  host: education.im.gov.ng
+  app_port: 3000
+  healthcheck:
+    path: /
+
+# Credentials for your image host.
+registry:
+  server: ghcr.io
+  username:
+    - KAMAL_REGISTRY_USERNAME
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+ssh:
+  user: kamal
+
+# Configure builder setup.
+builder:
+  arch: amd64
+  cache:
+    type: gha
+  secrets:
+    - KAMAL_REGISTRY_USERNAME
+    - KAMAL_REGISTRY_PASSWORD
+    - NEXT_PUBLIC_MINISTRY_ID
+    - NEXT_PUBLIC_CONTENTFUL_SPACE_ID
+    - NEXT_PUBLIC_CONTENTFUL_ACCESS_TOKEN
+    - NEXT_PUBLIC_CONTENTFUL_PREVIEW_ACCESS_TOKEN
+  args:
+    NEXT_PUBLIC_MINISTRY_ID: <% ENV["NEXT_PUBLIC_MINISTRY_ID"] %>
+    NEXT_PUBLIC_CONTENTFUL_SPACE_ID: <% ENV["NEXT_PUBLIC_CONTENTFUL_SPACE_ID"] %>
+    NEXT_PUBLIC_CONTENTFUL_ACCESS_TOKEN: <% ENV["NEXT_PUBLIC_CONTENTFUL_ACCESS_TOKEN"] %>
+    NEXT_PUBLIC_CONTENTFUL_PREVIEW_ACCESS_TOKEN: <% ENV["NEXT_PUBLIC_CONTENTFUL_PREVIEW_ACCESS_TOKEN"] %>
+
