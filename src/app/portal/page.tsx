@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import LoginForm from '@/components/LoginForm'
 import CreatePasswordForm from '@/components/CreatePasswordForm'
+import Link from 'next/link'
 
 export default function PortalPage() {
     const searchParams = useSearchParams()
@@ -32,22 +33,22 @@ export default function PortalPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#F3F3F3]">
-            <main className="py-8 gap-4 flex flex-col">
+        <div className="min-h-screen grid place-items-center pt-16 bg-[#F3F3F3]">
+            <div className="flex justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
+                <Image
+                    src="/images/ministry-logo.png"
+                    alt="logo"
+                    width={40}
+                    height={40}
+                    className='object-contain'
+                />
+                <span className='sm:text-2xl text-xl font-bold'>IMMoE</span>
+            </div>
+            <main className="py-8 gap-4 flex flex-col w-full">
                 {/* Header */}
-                <div className="flex justify-center gap-2 items-center">
-                    <Image
-                        src="/images/ministry-logo.png"
-                        alt="logo"
-                        width={40}
-                        height={40}
-                        className='object-contain'
-                    />
-                    <span className='sm:text-2xl text-xl font-bold'>IMMoE</span>
-                </div>
                 
                 {/* Form Container */}
-                <div className="max-w-7xl w-full mx-auto mt-10 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
                     {showPasswordCreation ? (
                         <CreatePasswordForm 
                             uniqueCode={uniqueCode}
@@ -59,6 +60,9 @@ export default function PortalPage() {
                         />
                     )}
                 </div>
+                {(!showPasswordCreation) && <div className="w-full text-center px-4 text-sm text-black/80">
+                    Haven&apos;t registered your school? <Link href="/portal/application" className="text-blue-600 hover:text-blue-800 transition-colors duration-200 underline underline-offset-2">Apply here</Link>
+                </div>}
             </main>
         </div>
     )
