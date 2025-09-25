@@ -27,9 +27,7 @@ export default function GlobalLoader() {
     return () => clearTimeout(timeout);
   }, [pathname]);
 
-  console.log(pathname);
-
-  if (pathname === '/portal') {
+  if (pathname.startsWith('/portal')) {
     return null;
   }
 

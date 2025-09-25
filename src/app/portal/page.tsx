@@ -1,7 +1,9 @@
 import React from 'react'
 
-export default function page() {
+export default function PortalPage() {
     return (
-        <div>page</div>
+        <div className="min-h-screen bg-[#F3F3F3]">
+            
+        </div>
     )
 }
