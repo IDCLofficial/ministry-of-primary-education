@@ -65,8 +65,8 @@ export default function SchoolRegistrationForm() {
         
       case 'uniqueCode':
         if (!sanitizedValue) return 'Unique code is required'
-        if (!/^[A-Z0-9]{6,12}$/.test(sanitizedValue.toUpperCase())) {
-          return 'Unique code must be 6-12 alphanumeric characters'
+        if (!/^[A-Z0-9]{8}$/.test(sanitizedValue.toUpperCase())) {
+          return 'Unique code must be an alphanumeric 8 digits string'
         }
         break
         
@@ -225,6 +225,7 @@ export default function SchoolRegistrationForm() {
           label="Unique Code"
           placeholder="Enter unique code"
           name="uniqueCode"
+          isUpperCase
           value={formData.uniqueCode}
           onChange={handleInputChange('uniqueCode')}
           error={errors.uniqueCode}
@@ -276,7 +277,7 @@ export default function SchoolRegistrationForm() {
         
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium"
+          className="w-full bg-blue-600 cursor-pointer text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium"
         >
           Submit Registration
         </button>

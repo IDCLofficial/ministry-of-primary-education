@@ -8,8 +8,10 @@ interface FormInputProps {
   onChange: (value: string) => void
   required?: boolean
   datalist?: string[]
-  error?: string
-  name: string
+  error?: string,
+  className?: string,
+  name: string,
+  isUpperCase?: boolean
 }
 
 export default function FormInput({
@@ -21,7 +23,9 @@ export default function FormInput({
   required = false,
   datalist,
   error,
-  name
+  name,
+  className: inputClassName,
+  isUpperCase = false
 }: FormInputProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [filteredOptions, setFilteredOptions] = useState<string[]>(datalist || [])
@@ -50,7 +54,7 @@ export default function FormInput({
   }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value)
+    onChange(isUpperCase ? e.target.value.toUpperCase() : e.target.value)
     if (datalist && datalist.length > 0 && e.target.value.length >= 2) {
       setIsOpen(true)
     } else {
@@ -123,7 +127,7 @@ export default function FormInput({
             error 
               ? 'border-red-500 focus:ring-red-500' 
               : 'border-gray-300 focus:ring-blue-500'
-          }`}
+          } ${inputClassName}`}
           required={required}
           autoComplete="off"
         />
