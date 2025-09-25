@@ -7,7 +7,7 @@ image: idclofficial/ministry_of_primary_education
 # Deploy to these servers.
 servers:
   web:
-    - 3.250.93.215
+    - 15.237.252.202
 
 proxy:
   ssl: true
@@ -25,7 +25,7 @@ registry:
     - KAMAL_REGISTRY_PASSWORD
 
 ssh:
-  user: kamal
+  user: ubuntu
 
 # Configure builder setup.
 builder:
@@ -35,10 +35,6 @@ builder:
   secrets:
     - KAMAL_REGISTRY_USERNAME
     - KAMAL_REGISTRY_PASSWORD
-    - NEXT_PUBLIC_MINISTRY_ID
-    - NEXT_PUBLIC_CONTENTFUL_SPACE_ID
-    - NEXT_PUBLIC_CONTENTFUL_ACCESS_TOKEN
-    - NEXT_PUBLIC_CONTENTFUL_PREVIEW_ACCESS_TOKEN
   args:
     NEXT_PUBLIC_MINISTRY_ID: <% ENV["NEXT_PUBLIC_MINISTRY_ID"] %>
     NEXT_PUBLIC_CONTENTFUL_SPACE_ID: <% ENV["NEXT_PUBLIC_CONTENTFUL_SPACE_ID"] %>
