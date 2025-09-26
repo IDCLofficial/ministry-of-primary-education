@@ -18,13 +18,6 @@ export default function PortalPage() {
     // Determine if we should show password creation form
     const showPasswordCreation = isPasswordCreation && uniqueCode && token
 
-    const handleLogin = async (data: { uniqueCode: string; password: string }) => {
-        console.log('Login attempt:', data)
-        // Handle login logic here
-        // You can make API calls, validate credentials, etc.
-        alert(`Login attempt for: ${data.uniqueCode}`)
-    }
-
     const handlePasswordCreation = async (data: { uniqueCode: string; password: string; confirmPassword: string }) => {
         console.log('Password creation:', data)
         // Handle password creation logic here
@@ -55,9 +48,7 @@ export default function PortalPage() {
                             onSubmit={handlePasswordCreation}
                         />
                     ) : (
-                        <LoginForm 
-                            onSubmit={handleLogin}
-                        />
+                        <LoginForm />
                     )}
                 </div>
                 {(!showPasswordCreation) && <div className="w-full text-center px-4 text-sm text-black/80">

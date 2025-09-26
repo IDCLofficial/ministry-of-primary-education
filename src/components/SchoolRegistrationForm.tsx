@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import FormInput from './FormInput'
+import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
 import { useGetSchoolNamesQuery, useSubmitSchoolApplicationMutation } from '@/app/portal/store/api/authApi'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 
 interface SchoolRegistrationData {
-  schoolName: string
+  schoolId: string
   schoolAddress: string
-  uniqueCode: string
   principalName: string
   contactEmail: string
   contactPhone: string
@@ -18,9 +18,8 @@ interface SchoolRegistrationData {
 }
 
 interface FormErrors {
-  schoolName?: string
+  schoolId?: string
   schoolAddress?: string
-  uniqueCode?: string
   principalName?: string
   contactEmail?: string
   contactPhone?: string
@@ -29,7 +28,7 @@ interface FormErrors {
 
 export default function SchoolRegistrationForm() {
   // Fetch school names from API
-  const { data: schoolNames } = useGetSchoolNamesQuery()
+  const { data: schoolNames, isLoading: isLoadingSchoolNames } = useGetSchoolNamesQuery()
   
   // Submit school application mutation
   const [submitApplication, { isLoading: isSubmitting }] = useSubmitSchoolApplicationMutation()
@@ -38,9 +37,8 @@ export default function SchoolRegistrationForm() {
   const router = useRouter()
   
   const [formData, setFormData] = useState<SchoolRegistrationData>({
-    schoolName: '',
+    schoolId: '',
     schoolAddress: '',
-    uniqueCode: '',
     principalName: '',
     contactEmail: '',
     contactPhone: '',
@@ -59,18 +57,15 @@ export default function SchoolRegistrationForm() {
     const hasEmptyFields = Object.values(formData).some(value => value.trim() === '')
     
     // Check if selected school is eligible (only "not applied" schools can proceed)
-    const selectedSchool = schoolNames?.find(school => 
-      school.schoolName.toLowerCase() === formData.schoolName.toLowerCase()
-    )
+    const selectedSchool = schoolNames?.find(school => school._id === formData.schoolId)
     const isSchoolEligible = selectedSchool?.status === 'not applied'
     
     return !hasErrors && !hasEmptyFields && isSchoolEligible && !isSubmitting
   }, [errors, formData, schoolNames, isSubmitting])
 
   // Debounced values for validation
-  const debouncedSchoolName = useDebounce(formData.schoolName, 500)
+  const debouncedSchoolId = useDebounce(formData.schoolId, 500)
   const debouncedSchoolAddress = useDebounce(formData.schoolAddress, 500)
-  const debouncedUniqueCode = useDebounce(formData.uniqueCode, 500)
   const debouncedPrincipalName = useDebounce(formData.principalName, 500)
   const debouncedContactEmail = useDebounce(formData.contactEmail, 500)
   const debouncedContactPhone = useDebounce(formData.contactPhone, 500)
@@ -81,23 +76,14 @@ export default function SchoolRegistrationForm() {
     const sanitizedValue = value.trim()
     
     switch (field) {
-      case 'schoolName':
-        if (!sanitizedValue) return 'School name is required'
-        if (sanitizedValue.length < 2) return 'School name must be at least 2 characters'
-        if (sanitizedValue.length > 100) return 'School name must be less than 100 characters'
+      case 'schoolId':
+        if (!sanitizedValue) return 'School selection is required'
         break
         
       case 'schoolAddress':
         if (!sanitizedValue) return 'School address is required'
         if (sanitizedValue.length < 10) return 'Please provide a complete address'
         if (sanitizedValue.length > 200) return 'Address must be less than 200 characters'
-        break
-        
-      case 'uniqueCode':
-        if (!sanitizedValue) return 'Unique code is required'
-        if (!/^[A-Z0-9]{8}$/.test(sanitizedValue.toUpperCase())) {
-          return 'Unique code must be an alphanumeric 8 digits string'
-        }
         break
         
       case 'principalName':
@@ -133,28 +119,28 @@ export default function SchoolRegistrationForm() {
 
   // Validation effects for debounced values
   useEffect(() => {
-    if (debouncedSchoolName) {
-      const error = validateField('schoolName', debouncedSchoolName)
-      const findExistingSchool = schoolNames?.find(school => school.schoolName.toLowerCase() === debouncedSchoolName.toLowerCase())
+    if (debouncedSchoolId) {
+      const error = validateField('schoolId', debouncedSchoolId)
+      const findExistingSchool = schoolNames?.find(school => school._id === debouncedSchoolId)
       if (findExistingSchool && findExistingSchool.status === 'approved') {
-        return setErrors(prev => ({ ...prev, schoolName: 'This school has already been approved and cannot apply again' }))
+        return setErrors(prev => ({ ...prev, schoolId: 'This school has already been approved and cannot apply again' }))
       }
       
       if (findExistingSchool && findExistingSchool.status === 'applied') {
-        return setErrors(prev => ({ ...prev, schoolName: 'This school has already applied and cannot apply again' }))
+        return setErrors(prev => ({ ...prev, schoolId: 'This school has already applied and cannot apply again' }))
       }
       
       if (findExistingSchool && findExistingSchool.status === 'pending') {
-        return setErrors(prev => ({ ...prev, schoolName: 'This school already has a pending application. Please wait for the current application to be processed' }))
+        return setErrors(prev => ({ ...prev, schoolId: 'This school already has a pending application. Please wait for the current application to be processed' }))
       }
       
       if (findExistingSchool && findExistingSchool.status === 'rejected') {
-        return setErrors(prev => ({ ...prev, schoolName: 'This school\'s previous application was rejected. Please contact our support team for assistance' }))
+        return setErrors(prev => ({ ...prev, schoolId: 'This school\'s previous application was rejected. Please contact our support team for assistance' }))
       }
 
-      setErrors(prev => ({ ...prev, schoolName: error }))
+      setErrors(prev => ({ ...prev, schoolId: error }))
     }
-  }, [debouncedSchoolName, schoolNames])
+  }, [debouncedSchoolId, schoolNames])
 
   useEffect(() => {
     if (debouncedSchoolAddress) {
@@ -163,12 +149,6 @@ export default function SchoolRegistrationForm() {
     }
   }, [debouncedSchoolAddress])
 
-  useEffect(() => {
-    if (debouncedUniqueCode) {
-      const error = validateField('uniqueCode', debouncedUniqueCode)
-      setErrors(prev => ({ ...prev, uniqueCode: error }))
-    }
-  }, [debouncedUniqueCode])
 
   useEffect(() => {
     if (debouncedPrincipalName) {
@@ -256,9 +236,8 @@ export default function SchoolRegistrationForm() {
       try {
         // Transform data to match API schema
         const applicationData = {
-          schoolName: sanitizedData.schoolName,
+          schoolId: sanitizedData.schoolId,
           address: sanitizedData.schoolAddress,
-          schoolCode: sanitizedData.uniqueCode,
           principal: sanitizedData.principalName,
           email: sanitizedData.contactEmail,
           phone: parseInt(sanitizedData.contactPhone.replace(/\D/g, '')), // Remove non-digits
@@ -274,21 +253,7 @@ export default function SchoolRegistrationForm() {
         toast.success(successMessage)
         console.log('Application submitted successfully:', result)
         
-        // Reset form on success
-        setFormData({
-          schoolName: '',
-          schoolAddress: '',
-          uniqueCode: '',
-          principalName: '',
-          contactEmail: '',
-          contactPhone: '',
-          numberOfStudents: ''
-        })
-        
-        // Clear any existing errors
-        setErrors({})
-
-        // Redirect to success page
+        // Redirect to success page with URL parameter
         router.push('/portal/application?submitted=true')
         
       } catch (error: unknown) {
@@ -340,16 +305,33 @@ export default function SchoolRegistrationForm() {
       </h2>
       
       <form onSubmit={handleSubmit} className="gap-y-3">
-        <FormInput
-          label="School Name"
-          placeholder={"Enter school name"}
-          name="schoolName"
-          value={formData.schoolName}
-          datalist={schoolNamesList.map(school => school.schoolName)}
-          onChange={handleInputChange('schoolName')}
-          error={errors.schoolName}
-          required
-        />
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            School Name <span className="text-red-500">*</span>
+          </label>
+          {isLoadingSchoolNames ? (
+            <div className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-gray-500">Loading schools...</span>
+              </div>
+            </div>
+          ) : (
+            <CustomDropdown
+              options={schoolNamesList.map(school => ({
+                value: school._id,
+                label: school.schoolName
+              }))}
+              value={formData.schoolId}
+              onChange={handleInputChange('schoolId')}
+              placeholder="Select a school"
+              className="w-full"
+            />
+          )}
+          {errors.schoolId && (
+            <p className="mt-1 text-sm text-red-600">{errors.schoolId}</p>
+          )}
+        </div>
         
         <FormInput
           label="School Address"
@@ -358,18 +340,6 @@ export default function SchoolRegistrationForm() {
           value={formData.schoolAddress}
           onChange={handleInputChange('schoolAddress')}
           error={errors.schoolAddress}
-          required
-        />
-        
-        <FormInput
-          label="Unique Code"
-          placeholder="Enter unique code"
-          name="uniqueCode"
-          isUpperCase
-          value={formData.uniqueCode}
-          maxLength={8}
-          onChange={handleInputChange('uniqueCode')}
-          error={errors.uniqueCode}
           required
         />
         
