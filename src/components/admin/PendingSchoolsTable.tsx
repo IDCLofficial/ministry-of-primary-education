@@ -1,18 +1,75 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { School } from './SchoolsTable'
+import { updateSchoolStatus } from '@/lib/api'
 
 interface PendingSchoolsTableProps {
-  schools: School[]
   onSchoolClick?: (school: School) => void
 }
 
-export default function PendingSchoolsTable({ schools, onSchoolClick }: PendingSchoolsTableProps) {
+// Custom hook to fetch schools data (same as in SchoolsTable)
+const useSchoolsData = () => {
+  const [schools, setSchools] = useState<School[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/schools')
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        // Transform API data to match our School interface
+        const transformedSchools: School[] = data.map((apiSchool: any) => ({
+          id: apiSchool._id,
+          _id: apiSchool._id,  // Preserve the MongoDB ObjectId
+          name: apiSchool.schoolName,
+          uniqueCode: apiSchool.schoolCode,
+          studentsPaidFor: apiSchool.students?.filter((s: any) => s.paymentStatus === 'Paid')?.length || 0,
+          studentsOnboarded: apiSchool.students?.filter((s: any) => s.onboardingStatus === 'Onboarded')?.length || 0,
+          dateApproved: apiSchool.updatedAt ? new Date(apiSchool.updatedAt).toLocaleDateString() : new Date().toLocaleDateString(),
+          status: apiSchool.status || 'pending', // Default to pending for this component
+          principal: apiSchool.principal,
+          email: apiSchool.email,
+          phone: apiSchool.phone?.toString() || 'N/A',
+          address: apiSchool.address,
+          applicationDate: apiSchool.createdAt ? new Date(apiSchool.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
+          students: apiSchool.students || []
+        }))
+        console.log(transformedSchools)
+        console.log(data)
+        setSchools(transformedSchools)
+        setError(null)
+      } catch (err) {
+        console.error('Error fetching schools:', err)
+        setError('Failed to fetch schools data')
+        setSchools([]) // Empty array on error
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSchools()
+  }, [])
+
+  return { schools, loading, error }
+}
+
+export default function PendingSchoolsTable({ onSchoolClick }: PendingSchoolsTableProps) {
+  const { schools, loading, error } = useSchoolsData()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedSchools, setSelectedSchools] = useState<number[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(12)
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
 
   // Filter pending schools based on search term
   const filteredSchools = useMemo(() => {
@@ -49,18 +106,150 @@ export default function PendingSchoolsTable({ schools, onSchoolClick }: PendingS
     )
   }
 
-  const handleBulkApprove = () => {
-    // Handle bulk approval logic here
-    console.log('Approving schools:', selectedSchools)
+  const handleBulkApprove = async () => {
+    if (selectedSchools.length === 0) return
+    
+    setBulkLoading(true)
+    setNotification(null)
+    
+    try {
+      const promises = selectedSchools.map(schoolId => 
+        updateSchoolStatus(schoolId, { 
+          status: 'approved',
+          reviewNotes: 'Bulk approved by admin'
+        })
+      )
+      
+      const results = await Promise.all(promises)
+      const failedUpdates = results.filter(result => !result.success)
+      
+      if (failedUpdates.length === 0) {
+        setNotification({ 
+          type: 'success', 
+          message: `Successfully approved ${selectedSchools.length} school(s)` 
+        })
+        setSelectedSchools([])
+        // Refresh the data
+        window.location.reload()
+      } else {
+        setNotification({ 
+          type: 'error', 
+          message: `Failed to approve ${failedUpdates.length} school(s)` 
+        })
+      }
+    } catch (error) {
+      console.error('Error approving schools:', error)
+      setNotification({ 
+        type: 'error', 
+        message: 'Failed to approve schools. Please try again.' 
+      })
+    } finally {
+      setBulkLoading(false)
+    }
   }
 
-  const handleBulkReject = () => {
-    // Handle bulk rejection logic here
-    console.log('Rejecting schools:', selectedSchools)
+  const handleBulkReject = async () => {
+    if (selectedSchools.length === 0) return
+    
+    setBulkLoading(true)
+    setNotification(null)
+    
+    try {
+      const promises = selectedSchools.map(schoolId => 
+        updateSchoolStatus(schoolId, { 
+          status: 'declined',
+          reviewNotes: 'Bulk declined by admin'
+        })
+      )
+      
+      const results = await Promise.all(promises)
+      const failedUpdates = results.filter(result => !result.success)
+      
+      if (failedUpdates.length === 0) {
+        setNotification({ 
+          type: 'success', 
+          message: `Successfully declined ${selectedSchools.length} school(s)` 
+        })
+        setSelectedSchools([])
+        // Refresh the data
+        window.location.reload()
+      } else {
+        setNotification({ 
+          type: 'error', 
+          message: `Failed to decline ${failedUpdates.length} school(s)` 
+        })
+      }
+    } catch (error) {
+      console.error('Error declining schools:', error)
+      setNotification({ 
+        type: 'error', 
+        message: 'Failed to decline schools. Please try again.' 
+      })
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Loading pending schools...</span>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="flex flex-col items-center justify-center h-64">
+          <div className="text-red-600 mb-2">
+            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <p className="text-red-600 text-center">{error}</p>
+          <p className="text-gray-500 text-sm mt-2">Failed to load pending schools</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="p-6">
+      {/* Notification */}
+      {notification && (
+        <div className={`mb-4 p-4 rounded-lg ${
+          notification.type === 'success' 
+            ? 'bg-green-50 text-green-800 border border-green-200' 
+            : 'bg-red-50 text-red-800 border border-red-200'
+        }`}>
+          <div className="flex items-center">
+            {notification.type === 'success' ? (
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span>{notification.message}</span>
+            <button 
+              onClick={() => setNotification(null)}
+              className="ml-auto text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
       {/* Header with Search and Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
         <div>
@@ -97,15 +286,37 @@ export default function PendingSchoolsTable({ schools, onSchoolClick }: PendingS
               </span>
               <button
                 onClick={handleBulkReject}
-                className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
+                disabled={bulkLoading}
+                className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
-                Deny Selected
+                {bulkLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  'Deny Selected'
+                )}
               </button>
               <button
                 onClick={handleBulkApprove}
-                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                disabled={bulkLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
-                Approve Selected
+                {bulkLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  'Approve Selected'
+                )}
               </button>
             </div>
           )}

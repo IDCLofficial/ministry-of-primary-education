@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { updateSchoolStatus, fetchSchools, type SchoolStatus } from '@/lib/api'
 
 export interface Student {
   id: string
@@ -14,12 +15,13 @@ export interface Student {
 
 export interface School {
   id: number
+  _id: string  // MongoDB ObjectId
   name: string
   uniqueCode: string
   studentsPaidFor: number
   studentsOnboarded: number
   dateApproved: string
-  status: 'approved' | 'pending'
+  status: 'not applied' | SchoolStatus
   students: Student[]
   principal: string
   email: string
@@ -31,251 +33,108 @@ export interface School {
 interface SchoolsTableProps {
   activeTab: string
   onSchoolClick?: (school: School) => void
+  showCheckboxes?: boolean
+  selectedSchools?: string[]
+  onSchoolSelect?: (schoolId: string, isSelected: boolean) => void
+  onSelectAll?: (schoolIds: string[], isSelected: boolean) => void
 }
 
-// Helper function to generate principal data
-const generatePrincipalData = (schoolId: number) => {
-  const principals = [
-    'Dr. Chukwuma Okafor', 'Mrs. Ngozi Nwankwo', 'Mr. Emeka Eze', 'Dr. Adaeze Obi',
-    'Prof. Kelechi Anyanwu', 'Mrs. Chioma Okwu', 'Mr. Ikechukwu Nwosu', 'Dr. Amara Onyeka',
-    'Mrs. Nneka Nwachukwu', 'Mr. Obinna Okoro', 'Dr. Chinonso Agu', 'Mrs. Ifeoma Nnamdi',
-    'Mr. Uzoma Okafor', 'Dr. Chiamaka Nweke', 'Mrs. Amarachi Okorie'
-  ]
-  
-  const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com']
-  const areas = ['Owerri', 'Okigwe', 'Orlu', 'Mbaise', 'Oguta', 'Ideato', 'Nkwerre']
-  
-  const principal = principals[(schoolId - 1) % principals.length]
-  const email = `${principal.toLowerCase().replace(/[^a-z]/g, '')}@${domains[schoolId % domains.length]}`
-  const phone = `+234${String(800000000 + schoolId * 1234567).slice(0, 10)}`
-  const address = `${Math.floor(Math.random() * 99) + 1} School Road, ${areas[schoolId % areas.length]}, Imo State`
-  
-  return { principal, email, phone, address }
+// Custom hook to fetch schools data
+const useSchoolsData = () => {
+  const [schools, setSchools] = useState<School[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/schools')
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        // Transform API data to match our School interface
+        const transformedSchools: School[] = data.map((apiSchool: any) => ({
+          id: apiSchool._id || apiSchool.id,
+          _id: apiSchool._id,  // Preserve the MongoDB ObjectId
+          name: apiSchool.schoolName || apiSchool.name,
+          uniqueCode: apiSchool.schoolCode || apiSchool.uniqueCode,
+          studentsPaidFor: apiSchool.students?.filter((s: any) => s.paymentStatus === 'Paid')?.length || apiSchool.studentsPaidFor || 0,
+          studentsOnboarded: apiSchool.students?.filter((s: any) => s.onboardingStatus === 'Onboarded')?.length || apiSchool.studentsOnboarded || 0,
+          dateApproved: apiSchool.status === 'approved' 
+            ? (apiSchool.updatedAt ? new Date(apiSchool.updatedAt).toLocaleDateString() : 'Recently Approved')
+            : apiSchool.status === 'applied' ? 'Under Review'
+            : apiSchool.status === 'declined' ? 'Declined'
+            : apiSchool.status === 'onboarded' ? 'Onboarded'
+            : apiSchool.status === 'completed' ? 'Completed'
+            : 'Not Applied',
+          status: apiSchool.status as 'not applied' | 'applied' | 'approved' | 'declined' | 'onboarded' | 'completed',
+          principal: apiSchool.principal || 'N/A',
+          email: apiSchool.email || 'N/A',
+          phone: apiSchool.phone?.toString() || 'N/A',
+          address: apiSchool.address || 'N/A',
+          applicationDate: apiSchool.createdAt ? new Date(apiSchool.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
+          students: apiSchool.students || []
+        }))
+        
+        setSchools(transformedSchools)
+        setError(null)
+      } catch (err) {
+        console.error('Error fetching schools:', err)
+        setError('Failed to fetch schools data')
+        setSchools([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSchools()
+  }, [])
+
+  return { schools, loading, error }
 }
 
-// Helper function to generate student data
-const generateStudents = (count: number, paidCount: number, onboardedCount: number): Student[] => {
-  const names = [
-    'Chinedu Okorie', 'Adaeze Nwankwo', 'Emeka Okafor', 'Chioma Eze', 'Kelechi Obi',
-    'Ngozi Anyanwu', 'Ikechukwu Okonkwo', 'Amara Nwosu', 'Chukwuma Onyeka', 'Nneka Okafor',
-    'Obinna Nwachukwu', 'Chinonso Okwu', 'Adanna Okoye', 'Chidiebere Agu', 'Ifeoma Nnamdi',
-    'Uzoma Okoro', 'Chiamaka Okafor', 'Chinedum Nweke', 'Amarachi Obi', 'Kenechukwu Eze'
-  ]
-  
-  const classes = ['JSS1', 'JSS2', 'JSS3', 'SS1', 'SS2', 'SS3']
-  const genders = ['Male', 'Female']
-  
-  return Array.from({ length: count }, (_, i) => ({
-    id: `203918${String(2734 + i).padStart(4, '0')}`,
-    name: names[i % names.length],
-    gender: genders[i % 2],
-    class: classes[Math.floor(i / 50) % classes.length],
-    examYear: '2025',
-    paymentStatus: (i < paidCount) ? 'Paid' as const : 'Pending' as const,
-    onboardingStatus: (i < onboardedCount) ? 'Onboarded' as const : 'Not Onboarded' as const
-  }))
-}
 
-// Mock JSON data for demonstration
-export const mockSchools: School[] = [
-  {
-    id: 1,
-    name: 'Bright Future Academy',
-    uniqueCode: 'SCH-3421',
-    studentsPaidFor: 400,
-    studentsOnboarded: 200,
-    dateApproved: '24 Sept 2025',
-    status: 'approved',
-    students: generateStudents(450, 400, 200),
-    ...generatePrincipalData(1),
-    applicationDate: '15 Aug 2025'
-  },
-  {
-    id: 2,
-    name: 'Excellence Primary School',
-    uniqueCode: 'SCH-2156',
-    studentsPaidFor: 350,
-    studentsOnboarded: 180,
-    dateApproved: '22 Sept 2025',
-    status: 'pending',
-    students: generateStudents(400, 350, 180),
-    ...generatePrincipalData(2),
-    applicationDate: '10 Aug 2025'
-  },
-  {
-    id: 3,
-    name: 'St. Mary\'s Catholic School',
-    uniqueCode: 'SCH-4789',
-    studentsPaidFor: 520,
-    studentsOnboarded: 310,
-    dateApproved: '20 Sept 2025',
-    status: 'approved',
-    students: generateStudents(580, 520, 310),
-    ...generatePrincipalData(3),
-    applicationDate: '12 Aug 2025'
-  },
-  {
-    id: 4,
-    name: 'Government Primary School Owerri',
-    uniqueCode: 'SCH-1234',
-    studentsPaidFor: 600,
-    studentsOnboarded: 450,
-    dateApproved: '18 Sept 2025',
-    status: 'approved',
-    students: generateStudents(650, 600, 450),
-    ...generatePrincipalData(4),
-    applicationDate: '08 Aug 2025'
-  },
-  {
-    id: 5,
-    name: 'New Horizon Academy',
-    uniqueCode: 'SCH-5678',
-    studentsPaidFor: 280,
-    studentsOnboarded: 150,
-    dateApproved: 'Pending Review',
-    status: 'pending',
-    students: generateStudents(320, 280, 150),
-    ...generatePrincipalData(5),
-    applicationDate: '20 Aug 2025'
-  },
-  {
-    id: 6,
-    name: 'Royal Kids International',
-    uniqueCode: 'SCH-9012',
-    studentsPaidFor: 450,
-    studentsOnboarded: 220,
-    dateApproved: '12 Sept 2025',
-    status: 'approved',
-    students: generateStudents(500, 450, 220),
-    ...generatePrincipalData(6),
-    applicationDate: '05 Aug 2025'
-  },
-  {
-    id: 7,
-    name: 'Community Primary School Okigwe',
-    uniqueCode: 'SCH-3456',
-    studentsPaidFor: 380,
-    studentsOnboarded: 200,
-    dateApproved: 'Under Review',
-    status: 'pending',
-    students: generateStudents(420, 380, 200),
-    ...generatePrincipalData(7),
-    applicationDate: '18 Aug 2025'
-  },
-  {
-    id: 8,
-    name: 'Divine Mercy School',
-    uniqueCode: 'SCH-7890',
-    studentsPaidFor: 320,
-    studentsOnboarded: 180,
-    dateApproved: '08 Sept 2025',
-    status: 'approved',
-    students: generateStudents(360, 320, 180),
-    ...generatePrincipalData(8),
-    applicationDate: '25 Jul 2025'
-  },
-  {
-    id: 9,
-    name: 'Progressive Primary School',
-    uniqueCode: 'SCH-2468',
-    studentsPaidFor: 410,
-    studentsOnboarded: 250,
-    dateApproved: 'Awaiting Documents',
-    status: 'pending',
-    students: generateStudents(460, 410, 250),
-    ...generatePrincipalData(9),
-    applicationDate: '22 Aug 2025'
-  },
-  {
-    id: 10,
-    name: 'Holy Trinity Academy',
-    uniqueCode: 'SCH-1357',
-    studentsPaidFor: 360,
-    studentsOnboarded: 190,
-    dateApproved: '03 Sept 2025',
-    status: 'approved',
-    students: generateStudents(400, 360, 190),
-    ...generatePrincipalData(10),
-    applicationDate: '28 Jul 2025'
-  },
-  {
-    id: 11,
-    name: 'Wisdom Gate School',
-    uniqueCode: 'SCH-8024',
-    studentsPaidFor: 290,
-    studentsOnboarded: 160,
-    dateApproved: 'In Review',
-    status: 'pending',
-    students: generateStudents(330, 290, 160),
-    ...generatePrincipalData(11),
-    applicationDate: '30 Aug 2025'
-  },
-  {
-    id: 12,
-    name: 'Victory Primary School',
-    uniqueCode: 'SCH-4680',
-    studentsPaidFor: 470,
-    studentsOnboarded: 280,
-    dateApproved: '30 Aug 2025',
-    status: 'approved',
-    students: generateStudents(520, 470, 280),
-    ...generatePrincipalData(12),
-    applicationDate: '15 Jul 2025'
-  },
-  {
-    id: 13,
-    name: 'Grace Academy Orlu',
-    uniqueCode: 'SCH-1593',
-    studentsPaidFor: 340,
-    studentsOnboarded: 170,
-    dateApproved: 'Pending Verification',
-    status: 'pending',
-    students: generateStudents(380, 340, 170),
-    ...generatePrincipalData(13),
-    applicationDate: '02 Sept 2025'
-  },
-  {
-    id: 14,
-    name: 'Premier Primary School',
-    uniqueCode: 'SCH-7531',
-    studentsPaidFor: 390,
-    studentsOnboarded: 210,
-    dateApproved: '25 Aug 2025',
-    status: 'approved',
-    students: generateStudents(430, 390, 210),
-    ...generatePrincipalData(14),
-    applicationDate: '10 Jul 2025'
-  },
-  {
-    id: 15,
-    name: 'Unity Primary School Mbaise',
-    uniqueCode: 'SCH-9642',
-    studentsPaidFor: 420,
-    studentsOnboarded: 240,
-    dateApproved: '22 Aug 2025',
-    status: 'approved',
-    students: generateStudents(470, 420, 240),
-    ...generatePrincipalData(15),
-    applicationDate: '05 Jul 2025'
-  }
-]
-
-export default function SchoolsTable({ activeTab, onSchoolClick }: SchoolsTableProps) {
+export default function SchoolsTable({ 
+  activeTab, 
+  onSchoolClick, 
+  showCheckboxes = false, 
+  selectedSchools = [], 
+  onSchoolSelect, 
+  onSelectAll 
+}: SchoolsTableProps) {
+  const { schools, loading, error } = useSchoolsData()
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(12)
 
   // Filter schools based on search term and active tab
   const filteredSchools = useMemo(() => {
-    return mockSchools.filter(school => {
+    return schools.filter(school => {
       const matchesSearch = school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         school.uniqueCode.toLowerCase().includes(searchTerm.toLowerCase())
       
-      const matchesTab = activeTab === 'approved' ? school.status === 'approved' : school.status === 'pending'
+      const matchesTab = activeTab === 'not applied'
+        ? school.status === 'not applied'
+        : activeTab === 'applied'
+        ? school.status === 'applied'
+        : activeTab === 'approved' 
+        ? school.status === 'approved'
+        : activeTab === 'declined'
+        ? school.status === 'declined'
+        : activeTab === 'onboarded'
+        ? school.status === 'onboarded'
+        : activeTab === 'completed'
+        ? school.status === 'completed'
+        : true // Show all if no specific tab is selected
       
       return matchesSearch && matchesTab
     })
-  }, [searchTerm, activeTab])
+  }, [schools, searchTerm, activeTab])
 
   // Paginate schools
   const paginatedSchools = useMemo(() => {
@@ -285,6 +144,20 @@ export default function SchoolsTable({ activeTab, onSchoolClick }: SchoolsTableP
 
   const totalPages = Math.ceil(filteredSchools.length / itemsPerPage)
 
+  // Check if all visible schools are selected
+  const allVisibleSelected = showCheckboxes && paginatedSchools.length > 0 && 
+    paginatedSchools.every(school => selectedSchools.includes(school._id))
+
+  // Check if some visible schools are selected
+  const someVisibleSelected = showCheckboxes && 
+    paginatedSchools.some(school => selectedSchools.includes(school._id))
+
+  const handleSelectAllVisible = () => {
+    if (!onSelectAll) return
+    const visibleSchoolIds = paginatedSchools.map(school => school._id)
+    onSelectAll(visibleSchoolIds, !allVisibleSelected)
+  }
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
   }
@@ -292,6 +165,58 @@ export default function SchoolsTable({ activeTab, onSchoolClick }: SchoolsTableP
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setItemsPerPage(newItemsPerPage)
     setCurrentPage(1)
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Loading schools...</span>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="flex flex-col items-center justify-center h-64">
+          <div className="text-red-600 mb-2">
+            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <p className="text-red-600 text-center">{error}</p>
+          <p className="text-gray-500 text-sm mt-2">Please check your API endpoint or try refreshing the page</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Show empty state when no schools are found
+  if (!loading && schools.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="flex flex-col items-center justify-center h-64">
+          <div className="text-gray-400 mb-2">
+            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+          <p className="text-gray-600 text-center">No schools found</p>
+          <p className="text-gray-500 text-sm mt-2">Schools data will appear here once available from the API</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -331,6 +256,19 @@ export default function SchoolsTable({ activeTab, onSchoolClick }: SchoolsTableP
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
+              {showCheckboxes && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    ref={(input) => {
+                      if (input) input.indeterminate = someVisibleSelected && !allVisibleSelected
+                    }}
+                    onChange={handleSelectAllVisible}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                </th>
+              )}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 School Name
                 <svg className="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -370,9 +308,22 @@ export default function SchoolsTable({ activeTab, onSchoolClick }: SchoolsTableP
             {paginatedSchools.map((school) => (
               <tr 
                 key={school.id} 
-                className={`hover:bg-gray-50 ${school.status === 'approved' && onSchoolClick ? 'cursor-pointer' : ''}`}
-                onClick={() => school.status === 'approved' && onSchoolClick && onSchoolClick(school)}
+                className={`hover:bg-gray-50 ${school.status === 'approved' && onSchoolClick && !showCheckboxes ? 'cursor-pointer' : ''}`}
+                onClick={() => !showCheckboxes && school.status === 'approved' && onSchoolClick && onSchoolClick(school)}
               >
+                {showCheckboxes && (
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={selectedSchools.includes(school._id)}
+                      onChange={(e) => {
+                        e.stopPropagation()
+                        onSchoolSelect && onSchoolSelect(school._id, e.target.checked)
+                      }}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                  </td>
+                )}
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {school.name}
                 </td>
