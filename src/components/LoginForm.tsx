@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react'
 import FormInput from './FormInput'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
 import { useLoginMutation } from '@/app/portal/store/api/authApi'
+import { useAuth } from '@/app/portal/providers/AuthProvider'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 
@@ -24,7 +25,8 @@ export default function LoginForm() {
   })
 
   const [errors, setErrors] = useState<LoginErrors>({})
-  const [login, { isLoading }] = useLoginMutation()
+  const [loginMutation, { isLoading }] = useLoginMutation()
+  const { login } = useAuth()
   const router = useRouter()
 
   // Debounced values for validation
@@ -34,20 +36,20 @@ export default function LoginForm() {
   // Validation function
   const validateField = useCallback((field: keyof LoginData, value: string): string | undefined => {
     const sanitizedValue = value.trim()
-    
+
     switch (field) {
       case 'email':
         if (!sanitizedValue) return 'Email is required'
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!emailRegex.test(sanitizedValue)) return 'Please enter a valid email address'
         break
-        
+
       case 'password':
         if (!sanitizedValue) return 'Password is required'
         if (sanitizedValue.length < 6) return 'Password must be at least 6 characters'
         break
     }
-    
+
     return undefined
   }, [])
 
@@ -76,11 +78,11 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validate all fields
     const newErrors: LoginErrors = {}
     let hasErrors = false
-    
+
     Object.keys(formData).forEach((key) => {
       const field = key as keyof LoginData
       const error = validateField(field, formData[field])
@@ -89,45 +91,39 @@ export default function LoginForm() {
         hasErrors = true
       }
     })
-    
+
     setErrors(newErrors)
-    
+
     if (!hasErrors) {
       try {
         const sanitizedData = {
           email: formData.email.trim(),
           password: formData.password.trim()
         }
-        
-        const result = await login(sanitizedData).unwrap()
-        
-        // Success - store token and redirect based on isFirstLogin
-        localStorage.setItem('access_token', result.access_token)
-        localStorage.setItem('school', JSON.stringify(result.school))
-        
+
+        const result = await loginMutation(sanitizedData).unwrap()
+
+        // Use auth context to store authentication data
+        login(result.access_token, result.school)
+
         toast.success('Login successful!')
-        
-        if (result.school.isFirstLogin) {
-          // Redirect to password creation page
-          router.push('/portal/create-password')
-        } else {
-          // Redirect to dashboard
-          router.push('/portal/dashboard')
-        }
-        
+
+        router.push('/portal/dashboard')
+
       } catch (error: unknown) {
+        alert("error")
         console.error('Login error:', error)
-        
+
         // Handle different error types
-        const apiError = error as { 
-          status?: number; 
-          data?: { 
-            message?: string; 
-            error?: string; 
-            statusCode?: number 
-          } 
+        const apiError = error as {
+          status?: number;
+          data?: {
+            message?: string;
+            error?: string;
+            statusCode?: number
+          }
         }
-        
+
         if (apiError?.status === 400) {
           const message = apiError.data?.message || 'New password required for first-time login'
           toast.error(message)
@@ -149,7 +145,7 @@ export default function LoginForm() {
       <h2 className="sm:text-2xl text-lg font-semibold text-gray-800 text-center mb-6">
         School Login
       </h2>
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormInput
           label="Email"
@@ -161,7 +157,7 @@ export default function LoginForm() {
           error={errors.email}
           required
         />
-        
+
         <FormInput
           label="Password"
           placeholder="Enter your password"
@@ -172,7 +168,7 @@ export default function LoginForm() {
           error={errors.password}
           required
         />
-        
+
         <button
           type="submit"
           disabled={isLoading}
