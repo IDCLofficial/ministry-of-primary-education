@@ -51,9 +51,9 @@ export default function CustomDropdown({
         onClick={() => setIsOpen(!isOpen)}
         className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:bg-gray-50 transition-colors duration-200"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between capitalize">
           <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
-            {selectedOption ? selectedOption.label : placeholder}
+            {selectedOption ? (selectedOption.label).toLowerCase() : placeholder}
           </span>
           <svg
             className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
@@ -87,7 +87,7 @@ export default function CustomDropdown({
               }`}
             >
               <div className="flex items-center justify-between">
-                <span>{option.label}</span>
+                <span className='capitalize'>{(option.label).toLowerCase()}</span>
                 {option.value === value && (
                   <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

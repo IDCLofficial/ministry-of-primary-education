@@ -2,11 +2,14 @@
 
 import React, { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { useAuth } from '../providers/AuthProvider'
+import { useGetStudentsBySchoolQuery } from '../store/api/authApi'
 import Header from './components/Header'
 import ResponsiveFilterBar from './components/ResponsiveFilterBar'
 import StudentRegistration from './components/StudentRegistration'
 import CostSummary from './components/CostSummary'
 import PaymentStatusModal from './components/PaymentStatusModal'
+import PaymentModal from './components/PaymentModal'
 
 // Mock data - replace with actual data from your API
 const mockStudents = [
@@ -74,6 +77,7 @@ interface FilterState {
 export default function DashboardPage() {
     const searchParams = useSearchParams()
     const router = useRouter()
+    const { school } = useAuth()
     
     const [selectedStudents, setSelectedStudents] = useState<string[]>([])
     const [searchTerm, setSearchTerm] = useState('')
@@ -83,6 +87,28 @@ export default function DashboardPage() {
         gender: 'All'
     })
     const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | null>(null)
+    const [showPaymentModal, setShowPaymentModal] = useState(false)
+
+    // Fetch students for the authenticated school
+    const { data: studentsData, isLoading: isLoadingStudents, error: studentsError } = useGetStudentsBySchoolQuery(
+        school?.id || '', 
+        { skip: !school?.id }
+    )
+
+    // Transform API data to match component expectations
+    const students = React.useMemo(() => {
+        if (!studentsData) return mockStudents // Fallback to mock data if no API data
+        
+        return studentsData.map(student => ({
+            id: student._id,
+            studentId: student.registrationNumber || `REG${student._id.slice(-6)}`,
+            fullName: `${student.firstName} ${student.lastName}`,
+            gender: student.gender === 'male' ? 'Male' as const : 'Female' as const,
+            class: student.class,
+            examYear: new Date().getFullYear() + 1, // Default to next year
+            paymentStatus: 'Not Paid' as const // Default status
+        }))
+    }, [studentsData])
 
     // Check for payment status URL parameter
     useEffect(() => {
@@ -90,6 +116,8 @@ export default function DashboardPage() {
         if (status === 'success' || status === 'failed') {
             setPaymentStatus(status)
         }
+
+        
     }, [searchParams])
 
     const feePerStudent = 2000
@@ -105,7 +133,7 @@ export default function DashboardPage() {
 
     const handleSelectAll = (selected: boolean) => {
         if (selected) {
-            setSelectedStudents(mockStudents.map(student => student.id))
+            setSelectedStudents(students.map(student => student.id))
         } else {
             setSelectedStudents([])
         }
@@ -128,17 +156,97 @@ export default function DashboardPage() {
         router.replace(newUrl.pathname + newUrl.search)
     }
 
-    return (
-        <div className='sm:p-4 p-2 grided bg-[#F3F3F3] min-h-screen relative w-full'>
-            <Header />
-            
+    const handlePaymentSuccess = () => {
+        setPaymentStatus('success')
+    }
+
+    const renderDashboard = () => {
+        if (process.env.NEXT_PUBLIC_ENV === 'dev') {
+            return (
+                <div className="mt-4 sm:mt-6 flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6">
+                    <div className="xl:col-span-4 text-center py-12">
+                        <h2 className="text-xl font-semibold text-gray-600 mb-4">School Payment Portal</h2>
+                        <p className="text-gray-500 mb-8">Click the button below to proceed with school payment</p>
+                        <button
+                            onClick={() => setShowPaymentModal(true)}
+                            className="inline-flex cursor-pointer items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                        >
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Make School Payment
+                        </button>
+                    </div>
+                </div>
+            )
+        }
+
+        // Show loading state
+        if (isLoadingStudents) {
+            return (
+                <div className="mt-4 sm:mt-6 flex justify-center items-center py-12">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-gray-600">Loading students...</p>
+                    </div>
+                </div>
+            )
+        }
+
+        // Show error state
+        if (studentsError) {
+            return (
+                <div className="mt-4 sm:mt-6 flex justify-center items-center py-12">
+                    <div className="text-center">
+                        <div className="text-red-500 mb-4">
+                            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-xl font-semibold text-gray-600 mb-2">Error Loading Students</h2>
+                        <p className="text-gray-500">Unable to fetch student data. Please try again later.</p>
+                    </div>
+                </div>
+            )
+        }
+
+        // Check if we have students data (not mock data)
+        const hasRealStudents = studentsData && studentsData.length > 0
+
+        if (!hasRealStudents) {
+            // Show payment button when no students
+            return (
+                <div className="mt-4 sm:mt-6 flex justify-center items-center py-12">
+                    <div className="text-center">
+                        <div className="mb-6">
+                            <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <h2 className="text-xl font-semibold text-gray-600 mb-2">No Students Found</h2>
+                            <p className="text-gray-500 mb-6">Complete your school payment to access student management features</p>
+                        </div>
+                        <button
+                            onClick={() => setShowPaymentModal(true)}
+                            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                        >
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Make School Payment
+                        </button>
+                    </div>
+                </div>
+            )
+        }
+
+        return (
             <div className="mt-4 sm:mt-6 flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6">
                 {/* Main Content */}
                 <div className="xl:col-span-3 space-y-4 sm:space-y-6 order-2 xl:order-1">
                     <ResponsiveFilterBar onFilterChange={handleFilterChange} />
                     
                     <StudentRegistration
-                        students={mockStudents}
+                        students={students}
                         selectedStudents={selectedStudents}
                         onStudentSelect={handleStudentSelect}
                         onSelectAll={handleSelectAll}
@@ -160,6 +268,22 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </div>
+        )
+    }
+
+    return (
+        <div className='sm:p-4 p-2 grided bg-[#F3F3F3] min-h-screen relative w-full'>
+            <Header />
+            
+            {renderDashboard()}
+
+            {/* Payment Modal */}
+            <PaymentModal
+                isOpen={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                onPaymentSuccess={handlePaymentSuccess}
+                numberOfStudents={studentsData?.length || 10} // Default to 10 if no students data
+            />
 
             {/* Payment Status Modal */}
             <PaymentStatusModal 

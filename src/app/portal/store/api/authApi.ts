@@ -8,6 +8,23 @@ interface SchoolName {
   status: 'approved' | 'not applied' | 'pending' | 'applied' | 'rejected'
 }
 
+// Student response type
+interface Student {
+  _id: string
+  firstName: string
+  lastName: string
+  dateOfBirth: string
+  gender: 'male' | 'female'
+  class: string
+  schoolId: string
+  registrationNumber?: string
+  parentName?: string
+  parentPhone?: string
+  address?: string
+  createdAt: string
+  updatedAt: string
+}
+
 // School application types
 interface SchoolApplicationRequest {
   schoolId: string
@@ -39,6 +56,42 @@ interface LoginResponse {
     email: string
     isFirstLogin: boolean
   }
+}
+
+// Student Payment interfaces
+interface StudentPaymentRequest {
+  numberOfStudents: number
+  amountPerStudent: number
+}
+
+interface StudentPaymentResponse {
+  success: boolean
+  data: {
+    _id: string
+    school: object
+    numberOfStudents: number
+    amountPerStudent: number
+    totalAmount: number
+    pointsAwarded: number
+    paymentStatus: string
+    reference: string
+    authorizationUrl: string
+  }
+  message: string
+}
+
+// Payment Verification interfaces
+interface PaymentVerificationResponse {
+  success: boolean
+  data: {
+    _id: string
+    paymentStatus: 'successful' | 'failed' | 'pending'
+    totalAmount: number
+    numberOfStudents: number
+    pointsAwarded: number
+    paidAt: string
+  }
+  message: string
 }
 
 // Auth API endpoints
@@ -90,6 +143,58 @@ export const authApi = apiSlice.injectEndpoints({
         },
       }),
     }),
+
+    // Get profile
+    getProfile: builder.query<LoginResponse['school'], void>({
+      query: () => ({
+        url: `${API_BASE_URL}${endpoints.PROFILE}`,
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+    }),
+
+    // Get students by school ID
+    getStudentsBySchool: builder.query<Student[], string>({
+      query: (schoolId) => ({
+        url: `${API_BASE_URL}${endpoints.GET_STUDENTS_BY_SCHOOL}/${schoolId}`,
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      providesTags: ['Students'],
+    }),
+
+    // Create student payment
+    createStudentPayment: builder.mutation<StudentPaymentResponse, { schoolId: string; paymentData: StudentPaymentRequest }>({
+      query: ({ schoolId, paymentData }) => ({
+        url: `${API_BASE_URL}${endpoints.CREATE_STUDENT_PAYMENT}/${schoolId}`,
+        method: 'POST',
+        body: paymentData,
+        headers: {
+          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['Students'],
+    }),
+
+    // Verify payment
+    verifyPayment: builder.query<PaymentVerificationResponse, string>({
+      query: (reference) => ({
+        url: `${API_BASE_URL}${endpoints.VERIFY_PAYMENT}/${reference}`,
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      providesTags: ['Students'],
+    }),
   }),
   overrideExisting: true,
 })
@@ -98,4 +203,11 @@ export const {
   useGetSchoolNamesQuery,
   useSubmitSchoolApplicationMutation,
   useLoginMutation,
+  useGetProfileQuery,
+  useGetStudentsBySchoolQuery,
+  useCreateStudentPaymentMutation,
+  useVerifyPaymentQuery,
 } = authApi
+
+// Export types for use in components
+export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse }

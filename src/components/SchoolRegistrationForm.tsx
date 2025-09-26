@@ -81,9 +81,7 @@ export default function SchoolRegistrationForm() {
         break
         
       case 'schoolAddress':
-        if (!sanitizedValue) return 'School address is required'
-        if (sanitizedValue.length < 10) return 'Please provide a complete address'
-        if (sanitizedValue.length > 200) return 'Address must be less than 200 characters'
+        if (!sanitizedValue) return 'School location is required'
         break
         
       case 'principalName':
@@ -333,15 +331,51 @@ export default function SchoolRegistrationForm() {
           )}
         </div>
         
-        <FormInput
-          label="School Address"
-          placeholder="Enter school address"
-          name="schoolAddress"
-          value={formData.schoolAddress}
-          onChange={handleInputChange('schoolAddress')}
-          error={errors.schoolAddress}
-          required
-        />
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            School Address <span className="text-red-500">*</span>
+          </label>
+          <CustomDropdown
+            options={[
+              "Aboh-Mbaise",
+              "Ahiazu-Mbaise",
+              "Ehime-Mbano",
+              "Ezinihitte",
+              "Ideato North",
+              "Ideato South",
+              "Ihitte/Uboma",
+              "Ikeduru",
+              "Isiala Mbano",
+              "Isu",
+              "Mbaitoli",
+              "Ngor-Okpala",
+              "Njaba",
+              "Nwangele",
+              "Nkwerre",
+              "Obowo",
+              "Oguta",
+              "Ohaji/Egbema",
+              "Okigwe",
+              "Orlu",
+              "Orsu",
+              "Oru East",
+              "Oru West",
+              "Owerri-Municipal",
+              "Owerri North",
+              "Owerri West"
+            ].map(location => ({
+              value: location,
+              label: location
+            }))}
+            value={formData.schoolAddress}
+            onChange={handleInputChange('schoolAddress')}
+            placeholder="Select school location"
+            className="w-full"
+          />
+          {errors.schoolAddress && (
+            <p className="mt-1 text-sm text-red-600">{errors.schoolAddress}</p>
+          )}
+        </div>
         
         <FormInput
           label="Principal's Name"
