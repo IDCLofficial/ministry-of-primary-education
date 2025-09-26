@@ -1,10 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Header from './components/Header'
 import ResponsiveFilterBar from './components/ResponsiveFilterBar'
 import StudentRegistration from './components/StudentRegistration'
 import CostSummary from './components/CostSummary'
+import PaymentStatusModal from './components/PaymentStatusModal'
 
 // Mock data - replace with actual data from your API
 const mockStudents = [
@@ -70,6 +72,9 @@ interface FilterState {
 }
 
 export default function DashboardPage() {
+    const searchParams = useSearchParams()
+    const router = useRouter()
+    
     const [selectedStudents, setSelectedStudents] = useState<string[]>([])
     const [searchTerm, setSearchTerm] = useState('')
     const [filters, setFilters] = useState<FilterState>({
@@ -77,6 +82,15 @@ export default function DashboardPage() {
         year: 'All',
         gender: 'All'
     })
+    const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | null>(null)
+
+    // Check for payment status URL parameter
+    useEffect(() => {
+        const status = searchParams.get('payment')
+        if (status === 'success' || status === 'failed') {
+            setPaymentStatus(status)
+        }
+    }, [searchParams])
 
     const feePerStudent = 2000
     const totalFee = selectedStudents.length * feePerStudent
@@ -104,6 +118,14 @@ export default function DashboardPage() {
     const handleProceedToPayment = () => {
         console.log('Proceeding to payment for students:', selectedStudents)
         alert(`Proceeding to payment for ${selectedStudents.length} students`)
+    }
+
+    const handleClosePaymentModal = () => {
+        setPaymentStatus(null)
+        // Remove payment parameter from URL
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('payment')
+        router.replace(newUrl.pathname + newUrl.search)
     }
 
     return (
@@ -138,6 +160,12 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Payment Status Modal */}
+            <PaymentStatusModal 
+                status={paymentStatus}
+                onClose={handleClosePaymentModal}
+            />
         </div>
     )
 }

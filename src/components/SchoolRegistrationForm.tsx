@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import FormInput from './FormInput'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
+import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
 
 interface SchoolRegistrationData {
   schoolName: string
@@ -25,6 +26,9 @@ interface FormErrors {
 }
 
 export default function SchoolRegistrationForm() {
+  // Fetch school names from API
+  const { data: schoolNames } = useGetSchoolNamesQuery()
+  
   const [formData, setFormData] = useState<SchoolRegistrationData>({
     schoolName: '',
     schoolAddress: '',
@@ -36,6 +40,9 @@ export default function SchoolRegistrationForm() {
   })
 
   const [errors, setErrors] = useState<FormErrors>({})
+
+  // Transform school names for datalist
+  const schoolNamesList = schoolNames?.map(school => school.schoolName) || []
 
   // Debounced values for validation
   const debouncedSchoolName = useDebounce(formData.schoolName, 500)
@@ -197,15 +204,16 @@ export default function SchoolRegistrationForm() {
     <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg shadow-black/5 border border-black/5 p-6">
       <h2 className="sm:text-2xl text-lg font-semibold text-gray-800 text-center mb-6">
         School Registration Request
+        
       </h2>
       
       <form onSubmit={handleSubmit} className="gap-y-3">
         <FormInput
           label="School Name"
-          placeholder="Enter school name"
+          placeholder={"Enter school name"}
           name="schoolName"
           value={formData.schoolName}
-          datalist={['School A', 'School B', 'School C']}
+          datalist={schoolNamesList}
           onChange={handleInputChange('schoolName')}
           error={errors.schoolName}
           required
