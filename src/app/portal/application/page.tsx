@@ -2,7 +2,49 @@ import SchoolRegistrationForm from '@/components/SchoolRegistrationForm'
 import Image from 'next/image'
 import Link from 'next/link'
 
-export default function page() {
+interface PageProps {
+    searchParams: { [key: string]: string | string[] | undefined }
+}
+
+export default async function Page({ searchParams }: PageProps) {
+    const { submitted } = await searchParams;
+    const isSubmitted = submitted === 'true'
+
+    if (isSubmitted) {
+        return (
+            <div className="min-h-screen grid place-items-center pt-16 bg-[#F3F3F3]">
+                <div className="flex justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
+                    <Image
+                        src="/images/ministry-logo.png"
+                        alt="logo"
+                        width={40}
+                        height={40}
+                        className='object-contain'
+                    />
+                    <span className='sm:text-2xl text-xl font-bold'>IMMoE</span>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-lg p-8 max-w-xl mx-4 text-center">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Registration Pending</h2>
+
+                    <div className="mb-6">
+                        <Image
+                            src="/images/waec.png"
+                            alt="logo"
+                            width={40}
+                            height={40}
+                            className='object-contain mx-auto'
+                        />
+                    </div>
+
+                    <p className="text-gray-600 mb-6">
+                        Your registration is under review. You will be notified by email once approved.
+                    </p>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <main className="py-8 gap-4 flex flex-col bg-[#F3F3F3]">
             <div className="flex justify-center gap-2 items-center">
@@ -15,7 +57,7 @@ export default function page() {
                 />
                 <span className='sm:text-2xl text-xl font-bold'>IMMoE</span>
             </div>
-            <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl w-full mx-auto px-2 sm:px-6 lg:px-8">
                 <SchoolRegistrationForm />
             </div>
             <div className="w-full text-center px-4 text-sm text-black/80">

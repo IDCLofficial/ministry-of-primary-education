@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { IoEye, IoEyeOff } from 'react-icons/io5'
 
 interface FormInputProps {
   label: string
@@ -8,6 +9,7 @@ interface FormInputProps {
   onChange: (value: string) => void
   required?: boolean
   datalist?: string[]
+  maxLength?: number
   error?: string,
   className?: string,
   name: string,
@@ -22,6 +24,7 @@ export default function FormInput({
   onChange,
   required = false,
   datalist,
+  maxLength,
   error,
   name,
   className: inputClassName,
@@ -30,6 +33,7 @@ export default function FormInput({
   const [isOpen, setIsOpen] = useState(false)
   const [filteredOptions, setFilteredOptions] = useState<string[]>(datalist || [])
   const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [showPassword, setShowPassword] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -108,6 +112,13 @@ export default function FormInput({
     }
   }
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword)
+  }
+
+  // Determine the actual input type
+  const inputType = type === 'password' && showPassword ? 'text' : type
+
   return (
     <div className="mb-4" ref={containerRef}>
       <label className="block text-gray-700 text-sm font-medium">
@@ -116,9 +127,10 @@ export default function FormInput({
       </label>
       <div className="relative">
         <input
-          type={type}
+          type={inputType}
           placeholder={placeholder}
           value={value}
+          maxLength={maxLength}
           onChange={handleInputChange}
           name={name}
           onFocus={handleInputFocus}
@@ -127,10 +139,25 @@ export default function FormInput({
             error 
               ? 'border-red-500 focus:ring-red-500' 
               : 'border-gray-300 focus:ring-blue-500'
-          } ${inputClassName}`}
+          } ${type === 'password' ? 'pr-10' : ''} ${inputClassName}`}
           required={required}
           autoComplete="off"
         />
+        
+        {/* Password visibility toggle */}
+        {type === 'password' && (
+          <button
+            type="button"
+            onClick={togglePasswordVisibility}
+            className="absolute inset-y-0 cursor-pointer active:scale-95 active:-rotate-6 transition-transform duration-200 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+          >
+            {showPassword ? (
+              <IoEyeOff className="h-5 w-5" />
+            ) : (
+              <IoEye className="h-5 w-5" />
+            )}
+          </button>
+        )}
         {datalist && isOpen && filteredOptions.length > 0 && (
           <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
             {filteredOptions.map((option, index) => (

@@ -1,9 +1,11 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import FormInput from './FormInput'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
-import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
+import { useGetSchoolNamesQuery, useSubmitSchoolApplicationMutation } from '@/app/portal/store/api/authApi'
+import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 
 interface SchoolRegistrationData {
   schoolName: string
@@ -29,6 +31,12 @@ export default function SchoolRegistrationForm() {
   // Fetch school names from API
   const { data: schoolNames } = useGetSchoolNamesQuery()
   
+  // Submit school application mutation
+  const [submitApplication, { isLoading: isSubmitting }] = useSubmitSchoolApplicationMutation()
+  
+  // Router for navigation
+  const router = useRouter()
+  
   const [formData, setFormData] = useState<SchoolRegistrationData>({
     schoolName: '',
     schoolAddress: '',
@@ -40,9 +48,24 @@ export default function SchoolRegistrationForm() {
   })
 
   const [errors, setErrors] = useState<FormErrors>({})
+  const [serverError, setServerError] = useState<string>('')
 
   // Transform school names for datalist
-  const schoolNamesList = schoolNames?.map(school => school.schoolName) || []
+  const schoolNamesList = schoolNames || []
+
+  // Check if form can proceed (no errors and all required fields filled)
+  const canProceed = useMemo(() => {
+    const hasErrors = Object.values(errors).some(error => error !== undefined && error !== '')
+    const hasEmptyFields = Object.values(formData).some(value => value.trim() === '')
+    
+    // Check if selected school is eligible (only "not applied" schools can proceed)
+    const selectedSchool = schoolNames?.find(school => 
+      school.schoolName.toLowerCase() === formData.schoolName.toLowerCase()
+    )
+    const isSchoolEligible = selectedSchool?.status === 'not applied'
+    
+    return !hasErrors && !hasEmptyFields && isSchoolEligible && !isSubmitting
+  }, [errors, formData, schoolNames, isSubmitting])
 
   // Debounced values for validation
   const debouncedSchoolName = useDebounce(formData.schoolName, 500)
@@ -112,9 +135,26 @@ export default function SchoolRegistrationForm() {
   useEffect(() => {
     if (debouncedSchoolName) {
       const error = validateField('schoolName', debouncedSchoolName)
+      const findExistingSchool = schoolNames?.find(school => school.schoolName.toLowerCase() === debouncedSchoolName.toLowerCase())
+      if (findExistingSchool && findExistingSchool.status === 'approved') {
+        return setErrors(prev => ({ ...prev, schoolName: 'This school has already been approved and cannot apply again' }))
+      }
+      
+      if (findExistingSchool && findExistingSchool.status === 'applied') {
+        return setErrors(prev => ({ ...prev, schoolName: 'This school has already applied and cannot apply again' }))
+      }
+      
+      if (findExistingSchool && findExistingSchool.status === 'pending') {
+        return setErrors(prev => ({ ...prev, schoolName: 'This school already has a pending application. Please wait for the current application to be processed' }))
+      }
+      
+      if (findExistingSchool && findExistingSchool.status === 'rejected') {
+        return setErrors(prev => ({ ...prev, schoolName: 'This school\'s previous application was rejected. Please contact our support team for assistance' }))
+      }
+
       setErrors(prev => ({ ...prev, schoolName: error }))
     }
-  }, [debouncedSchoolName])
+  }, [debouncedSchoolName, schoolNames])
 
   useEffect(() => {
     if (debouncedSchoolAddress) {
@@ -164,10 +204,31 @@ export default function SchoolRegistrationForm() {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
     }
+    // Clear server error when form is updated
+    if (serverError) {
+      setServerError('')
+    }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Clear server error after 5 seconds
+  useEffect(() => {
+    if (serverError) {
+      const timer = setTimeout(() => {
+        setServerError('')
+      }, 10000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [serverError])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Check if form can proceed
+    if (!canProceed) {
+      toast.error('Please fix all errors before submitting')
+      return
+    }
     
     // Validate all fields before submission
     const newErrors: FormErrors = {}
@@ -192,19 +253,90 @@ export default function SchoolRegistrationForm() {
         return acc
       }, {} as SchoolRegistrationData)
       
-      console.log('Form submitted:', sanitizedData)
-      // Handle form submission logic here
-      alert('Form submitted successfully!')
+      try {
+        // Transform data to match API schema
+        const applicationData = {
+          schoolName: sanitizedData.schoolName,
+          address: sanitizedData.schoolAddress,
+          schoolCode: sanitizedData.uniqueCode,
+          principal: sanitizedData.principalName,
+          email: sanitizedData.contactEmail,
+          phone: parseInt(sanitizedData.contactPhone.replace(/\D/g, '')), // Remove non-digits
+          numberOfStudents: parseInt(sanitizedData.numberOfStudents)
+        }
+        
+        console.log('Submitting application:', applicationData)
+        
+        const result = await submitApplication(applicationData).unwrap()
+        
+        // Success notification with server message
+        const successMessage = result?.message || 'Application submitted successfully!'
+        toast.success(successMessage)
+        console.log('Application submitted successfully:', result)
+        
+        // Reset form on success
+        setFormData({
+          schoolName: '',
+          schoolAddress: '',
+          uniqueCode: '',
+          principalName: '',
+          contactEmail: '',
+          contactPhone: '',
+          numberOfStudents: ''
+        })
+        
+        // Clear any existing errors
+        setErrors({})
+
+        // Redirect to success page
+        router.push('/portal/application?submitted=true')
+        
+      } catch (error: unknown) {
+        console.error('Application submission failed:', error)
+        
+        // Handle different error types with server messages
+        const apiError = error as { 
+          status?: number; 
+          data?: { 
+            message?: string; 
+            error?: string; 
+            statusCode?: number 
+          } 
+        }
+        
+        if (apiError?.status === 404) {
+          const message = apiError.data?.message || 'School code not found in our system'
+          setServerError(message)
+          toast.error(message)
+        } else if (apiError?.status === 409) {
+          const message = apiError.data?.message || 'School already has a pending application'
+          setServerError(message)
+          toast.error(message)
+        } else if (apiError?.status === 400) {
+          const message = apiError.data?.message || 'Invalid application data. Please check your inputs.'
+          setServerError(message)
+          toast.error(message)
+        } else if (apiError?.status === 201) {
+          // This shouldn't happen in catch block, but just in case
+          const message = apiError.data?.message || 'Application submitted successfully!'
+          toast.success(message)
+        } else {
+          // Handle network errors and other issues
+          const message = apiError.data?.message || 'Failed to submit application. Please try again.'
+          setServerError(message)
+          toast.error(message)
+        }
+      }
     } else {
       console.log('Form has validation errors:', newErrors)
+      toast.error('Please fix all validation errors before submitting')
     }
   }
 
   return (
-    <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg shadow-black/5 border border-black/5 p-6">
+    <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg shadow-black/5 border border-black/5 sm:p-6 p-4">
       <h2 className="sm:text-2xl text-lg font-semibold text-gray-800 text-center mb-6">
         School Registration Request
-        
       </h2>
       
       <form onSubmit={handleSubmit} className="gap-y-3">
@@ -213,7 +345,7 @@ export default function SchoolRegistrationForm() {
           placeholder={"Enter school name"}
           name="schoolName"
           value={formData.schoolName}
-          datalist={schoolNamesList}
+          datalist={schoolNamesList.map(school => school.schoolName)}
           onChange={handleInputChange('schoolName')}
           error={errors.schoolName}
           required
@@ -235,6 +367,7 @@ export default function SchoolRegistrationForm() {
           name="uniqueCode"
           isUpperCase
           value={formData.uniqueCode}
+          maxLength={8}
           onChange={handleInputChange('uniqueCode')}
           error={errors.uniqueCode}
           required
@@ -282,12 +415,24 @@ export default function SchoolRegistrationForm() {
           error={errors.numberOfStudents}
           required
         />
+
+        {serverError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <p className='text-red-600 text-center text-sm font-medium'>
+              {serverError}
+            </p>
+          </div>
+        )}
         
         <button
           type="submit"
-          className="w-full bg-blue-600 cursor-pointer text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium"
+          className={(
+            `w-full text-white py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium` +
+            (!canProceed ? ' bg-gray-400 opacity-50 cursor-not-allowed' : ' bg-blue-600 hover:bg-blue-700 cursor-pointer')
+          )}
+          disabled={!canProceed}
         >
-          Submit Registration
+          {isSubmitting ? 'Submitting...' : 'Submit Registration'}
         </button>
       </form>
     </div>
