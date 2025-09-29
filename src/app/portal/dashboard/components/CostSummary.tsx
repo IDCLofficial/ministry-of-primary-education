@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useAuth } from '../../providers/AuthProvider'
+import CostSummarySkeleton from './CostSummarySkeleton'
 
 interface CostSummaryProps {
   onPurchaseMorePoints: () => void
@@ -10,10 +11,15 @@ interface CostSummaryProps {
 export default function CostSummary({ 
   onPurchaseMorePoints
 }: CostSummaryProps) {
-  const { school } = useAuth()
+  const { school, isLoading } = useAuth()
+  
+  // Show skeleton while loading
+  if (isLoading || !school) {
+    return <CostSummarySkeleton />
+  }
   
   // Only allow purchase if available points is less than number of students
-  const canPurchaseMorePoints = school ? school.availablePoints < school.numberOfStudents : false
+  const canPurchaseMorePoints = school.availablePoints < school.numberOfStudents
 
   return (
     <div className="bg-white rounded-xl shadow-lg shadow-black/2 border border-black/10 p-6">

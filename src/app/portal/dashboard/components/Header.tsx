@@ -3,9 +3,15 @@
 import React from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import Image from 'next/image'
+import HeaderSkeleton from './HeaderSkeleton'
 
 export default function Header() {
-    const { school, logout } = useAuth()
+    const { school, logout, isLoading } = useAuth()
+
+    // Show skeleton while loading
+    if (isLoading) {
+        return <HeaderSkeleton />
+    }
 
     return (
         <header className='sm:p-4 sticky sm:top-4 top-2 z-50 p-2 bg-white/50 backdrop-blur-lg flex justify-between items-center rounded-xl shadow-lg shadow-black/5 border border-black/10'>

@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
 import Pagination from './Pagination'
 import CustomCheckbox from './CustomCheckbox'
 import CustomDropdown from './CustomDropdown'
 import StudentOnboardingModal from './StudentOnboardingModal'
+import StudentRegistrationSkeleton from './StudentRegistrationSkeleton'
 import { useAuth } from '../../providers/AuthProvider'
 
 interface Student {
@@ -38,6 +39,7 @@ interface StudentRegistrationProps {
   totalItems: number
   onPageChange: (page: number) => void
   onItemsPerPageChange: (itemsPerPage: number) => void
+  isLoading?: boolean
 }
 
 type SortableField = 'studentId' | 'fullName' | 'gender' | 'class' | 'examYear' | 'paymentStatus'
@@ -63,19 +65,25 @@ export default function StudentRegistration({
   itemsPerPage: itemsPerPageProp,
   totalItems: totalItemsProp,
   onPageChange,
-  onItemsPerPageChange
+  onItemsPerPageChange,
+  isLoading = false
 }: StudentRegistrationProps) {
   const { school } = useAuth()
   const [showOnboardingModal, setShowOnboardingModal] = useState(false)
   const [updateStudent, setUpdateStudent] = useState<Student | null>(null)
-  
-  // Check if selection should be disabled
-  const isSelectionDisabled = process.env.NEXT_PUBLIC_ENV === 'temp'
   const [sortState, setSortState] = useState<SortState>({
     field: null,
     direction: null,
     clickCount: 0
   })
+  
+  // Check if selection should be disabled
+  const isSelectionDisabled = process.env.NEXT_PUBLIC_ENV === 'temp'
+  
+  // Show skeleton while loading
+  if (isLoading) {
+    return <StudentRegistrationSkeleton />
+  }
 
   // Handle column sorting
   const handleSort = (field: SortableField) => {
@@ -210,7 +218,7 @@ export default function StudentRegistration({
         
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           {/* Onboard Student Button */}
-          {school && school.availablePoints > 0 && (
+          {school && school.status !== "completed" && school.availablePoints > 0 && (
             <button
               onClick={() => setShowOnboardingModal(true)}
               className="inline-flex cursor-pointer active:scale-95 active:rotate-2 items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
@@ -302,7 +310,7 @@ export default function StudentRegistration({
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
                 Onboarding Status
               </th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Actions</th>
+              {school?.status !== "completed" && <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -332,14 +340,14 @@ export default function StudentRegistration({
                     {student.onboardingStatus.replace('_', ' ')}
                   </span>
                 </td>
-                <td className="py-3 px-4">
+                {school?.status !== "completed" && <td className="py-3 px-4">
                   <button 
                     onClick={() => handleUpdateStudent(student)}
                     className="text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium transition-colors duration-200"
                   >
                     Update
                   </button>
-                </td>
+                </td>}
               </tr>
             ))}
           </tbody>
@@ -452,14 +460,14 @@ export default function StudentRegistration({
                 </div>
                 
                 {/* Update Action */}
-                <div className="mt-3 pt-3 border-t border-gray-100">
+                {school?.status !== "completed" && <div className="mt-3 pt-3 border-t border-gray-100">
                   <button 
                     onClick={() => handleUpdateStudent(student)}
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200"
                   >
                     Update Student
                   </button>
-                </div>
+                </div>}
               </div>
             </div>
           </div>

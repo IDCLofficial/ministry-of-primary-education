@@ -130,6 +130,17 @@ interface StudentOnboardingResponse {
   __v: number
 }
 
+// Application Status Update interfaces
+interface ApplicationStatusUpdateRequest {
+  status: 'completed'
+  reviewNotes?: string
+}
+
+interface ApplicationStatusUpdateResponse {
+  message: string
+  success: boolean
+}
+
 // Auth API endpoints
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -245,6 +256,20 @@ export const authApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Students'],
     }),
+
+    // Update application status
+    updateApplicationStatus: builder.mutation<ApplicationStatusUpdateResponse, { applicationId: string; data: ApplicationStatusUpdateRequest }>({
+      query: ({ applicationId, data }) => ({
+        url: `${API_BASE_URL}${endpoints.UPDATE_APPLICATION_STATUS}/${applicationId}/status`,
+        method: 'PATCH',
+        body: data,
+        headers: {
+          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['School'],
+    }),
   }),
   overrideExisting: true,
 })
@@ -258,7 +283,8 @@ export const {
   useCreateStudentPaymentMutation,
   useVerifyPaymentQuery,
   useOnboardStudentMutation,
+  useUpdateApplicationStatusMutation,
 } = authApi
 
 // Export types for use in components
-export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentsResponse }
+export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentsResponse, ApplicationStatusUpdateRequest, ApplicationStatusUpdateResponse }

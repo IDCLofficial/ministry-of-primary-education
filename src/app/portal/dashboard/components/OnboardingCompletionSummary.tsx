@@ -2,34 +2,63 @@
 
 import React, { useState } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
+import { useUpdateApplicationStatusMutation } from '../../store/api/authApi'
+import OnboardingConfirmationModal from './OnboardingConfirmationModal'
 import toast from 'react-hot-toast'
 
 interface OnboardingCompletionSummaryProps {
   totalStudents: number
+  handleRefresh: () => void
 }
 
-export default function OnboardingCompletionSummary({ totalStudents }: OnboardingCompletionSummaryProps) {
+export default function OnboardingCompletionSummary({ totalStudents, handleRefresh }: OnboardingCompletionSummaryProps) {
   const { school } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false)
+  const [updateApplicationStatus] = useUpdateApplicationStatusMutation()
 
   // Only show if school has students and total students equals total points (all students onboarded)
   const shouldShow = school && totalStudents > 0 && totalStudents === school.totalPoints
 
+  const handleShowConfirmationModal = () => {
+    setShowConfirmationModal(true)
+  }
+
   const handleCompleteOnboarding = async () => {
+    if (!school?.id) {
+      toast.error('School information not available. Please try again.')
+      return
+    }
+
     setIsSubmitting(true)
     
     try {
-      // TODO: Implement API call to submit to Ministry of Primary & Secondary Education
       console.log('Submitting onboarding completion to ministry...')
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      await updateApplicationStatus({
+        applicationId: school.id,
+        data: {
+          status: 'completed',
+          reviewNotes: `Onboarding completed for ${totalStudents} students`
+        }
+      }).unwrap()
       
       toast.success('Onboarding submission sent to Ministry of Primary & Secondary Education successfully!')
       
-    } catch (error) {
+      handleRefresh()
+    } catch (error: unknown) {
       console.error('Failed to submit onboarding completion:', error)
-      toast.error('Failed to submit onboarding completion. Please try again.')
+      let errorMessage = 'Failed to submit onboarding completion. Please try again.'
+      
+      if (error && typeof error === 'object') {
+        if ('data' in error && error.data && typeof error.data === 'object' && 'message' in error.data) {
+          errorMessage = error.data.message as string
+        } else if ('message' in error && typeof error.message === 'string') {
+          errorMessage = error.message
+        }
+      }
+      
+      toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -74,9 +103,9 @@ export default function OnboardingCompletionSummary({ totalStudents }: Onboardin
 
         {/* Submit Button */}
         <button
-          onClick={handleCompleteOnboarding}
+          onClick={handleShowConfirmationModal}
           disabled={isSubmitting}
-          className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 active:scale-95 active:rotate-2"
+          className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 active:scale-95 active:rotate-2 cursor-pointer"
         >
           {isSubmitting ? (
             <>
@@ -98,6 +127,14 @@ export default function OnboardingCompletionSummary({ totalStudents }: Onboardin
           This will submit your student list to the Ministry of Primary & Secondary Education for final approval.
         </p>
       </div>
+
+      {/* Confirmation Modal */}
+      <OnboardingConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={() => setShowConfirmationModal(false)}
+        onConfirm={handleCompleteOnboarding}
+        totalStudents={totalStudents}
+      />
     </div>
   )
 }

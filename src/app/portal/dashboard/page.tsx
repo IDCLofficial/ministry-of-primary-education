@@ -164,7 +164,7 @@ export default function DashboardPage() {
         return (
             <div className="flex-1 overflow-y-hidden mt-4 sm:mt-6 flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6">
                 {/* Main Content */}
-                <div className="xl:col-span-3 space-y-4 sm:space-y-6 order-2 xl:order-1">
+                <div className={school?.status !== "completed" ? "xl:col-span-3 space-y-4 sm:space-y-6 order-2 xl:order-1" : "col-span-full"}>
                     <ResponsiveFilterBar onFilterChange={handleFilterChange} />
                     
                     <StudentRegistration
@@ -186,16 +186,19 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Sidebar */}
-                <div className="xl:col-span-1 order-1 xl:order-2 overflow-y-auto">
-                    <div className="space-y-6">
-                        <OnboardingCompletionSummary
-                            totalStudents={studentsData?.totalItems || 0}
-                        />
-                        <CostSummary
-                            onPurchaseMorePoints={() => setShowPaymentModal(true)}
-                        />
+                {school && school.status !== "completed" && (
+                    <div className="xl:col-span-1 order-1 xl:order-2 overflow-y-auto">
+                        <div className="space-y-6">
+                            <OnboardingCompletionSummary
+                                totalStudents={studentsData?.totalItems || 0}
+                                handleRefresh={handleRefresh}
+                            />
+                            <CostSummary
+                                onPurchaseMorePoints={() => setShowPaymentModal(true)}
+                            />
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         )
     }
