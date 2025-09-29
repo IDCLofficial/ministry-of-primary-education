@@ -11,18 +11,36 @@ interface SchoolName {
 // Student response type
 interface Student {
   _id: string
-  firstName: string
-  lastName: string
-  dateOfBirth: string
+  studentId: number
+  studentName: string
   gender: 'male' | 'female'
   class: string
-  schoolId: string
-  registrationNumber?: string
-  parentName?: string
-  parentPhone?: string
-  address?: string
+  examYear: number
+  paymentStatus: 'paid' | 'unpaid' | 'pending'
+  onboardingStatus: 'onboarded' | 'pending' | 'not_onboarded'
+  school: {
+    _id: string
+    schoolName: string
+    address: string
+    principal: string
+    email: string
+    students: string[]
+    status: 'approved' | 'pending' | 'rejected'
+    isFirstLogin: boolean
+    totalPoints: number
+    availablePoints: number
+    usedPoints: number
+    __v: number
+    createdAt: string
+    updatedAt: string
+    tempPassword?: string
+    tempPasswordExpiry?: string
+    lastPointsEarned?: string
+    numberOfStudents: number
+  }
   createdAt: string
   updatedAt: string
+  __v: number
 }
 
 // School application types
@@ -52,9 +70,14 @@ interface LoginResponse {
   school: {
     id: string
     schoolName: string
-    schoolCode: string
     email: string
     isFirstLogin: boolean
+    status: string
+    address: string
+    totalPoints: number
+    availablePoints: number
+    usedPoints: number
+    numberOfStudents: number
   }
 }
 
@@ -92,6 +115,30 @@ interface PaymentVerificationResponse {
     paidAt: string
   }
   message: string
+}
+
+// Student Onboarding interfaces
+interface StudentOnboardingRequest {
+  studentName: string
+  gender: 'male' | 'female'
+  class: string
+  examYear: number
+  school: string
+}
+
+interface StudentOnboardingResponse {
+  studentId: number
+  studentName: string
+  gender: string
+  class: string
+  examYear: number
+  paymentStatus: string
+  onboardingStatus: string
+  school: string
+  _id: string
+  createdAt: string
+  updatedAt: string
+  __v: number
 }
 
 // Auth API endpoints
@@ -195,6 +242,20 @@ export const authApi = apiSlice.injectEndpoints({
       }),
       providesTags: ['Students'],
     }),
+
+    // Onboard student
+    onboardStudent: builder.mutation<StudentOnboardingResponse, StudentOnboardingRequest>({
+      query: (studentData) => ({
+        url: `${API_BASE_URL}${endpoints.ONBOARD_STUDENT}`,
+        method: 'POST',
+        body: studentData,
+        headers: {
+          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['Students'],
+    }),
   }),
   overrideExisting: true,
 })
@@ -207,7 +268,8 @@ export const {
   useGetStudentsBySchoolQuery,
   useCreateStudentPaymentMutation,
   useVerifyPaymentQuery,
+  useOnboardStudentMutation,
 } = authApi
 
 // Export types for use in components
-export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse }
+export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse }

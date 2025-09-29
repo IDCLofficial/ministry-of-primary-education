@@ -26,7 +26,7 @@ export default function Header() {
                     <div className='sm:flex hidden gap-2 items-center text-right'>
                         <div>
                             <p className='sm:text-sm text-xs font-semibold capitalize'>{(school.schoolName).toLowerCase()}</p>
-                            {school.schoolCode && <p className='text-xs text-gray-500'>Code: {school.schoolCode}</p>}
+                            {school.status && <p className={`text-xs ${school.status === "approved" ? "text-green-700": "text-gray-500"}`}>Status: {school.status}</p>}
                         </div>
                         <svg
                             height="25px"

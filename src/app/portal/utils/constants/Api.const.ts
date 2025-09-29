@@ -7,6 +7,7 @@ export const { API_BASE_URL, endpoints } = {
         PROFILE: '/auth/profile',
         GET_STUDENTS_BY_SCHOOL: '/students/school',
         CREATE_STUDENT_PAYMENT: '/student-payments/school',
-        VERIFY_PAYMENT: '/student-payments/verify'
+        VERIFY_PAYMENT: '/student-payments/verify',
+        ONBOARD_STUDENT: '/onboarding'
     }
 }

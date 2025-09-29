@@ -7,9 +7,14 @@ import { useGetProfileQuery } from '../store/api/authApi'
 interface School {
   id: string
   schoolName: string
-  schoolCode: string
   email: string
   isFirstLogin: boolean
+  status: string
+  address: string
+  totalPoints: number
+  availablePoints: number
+  usedPoints: number
+  numberOfStudents: number
 }
 
 interface AuthContextType {
