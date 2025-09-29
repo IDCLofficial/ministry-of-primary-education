@@ -335,14 +335,14 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2 cursor-pointer border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50"
+              className="flex-1 px-4 py-2 active:scale-95 active:rotate-2 cursor-pointer border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               className={(
-                `flex-1 text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium text-sm flex items-center justify-center` +
+                `flex-1 text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-medium text-sm flex items-center justify-center active:scale-95 active:rotate-2` +
                 (!canProceed ? ' bg-gray-400 opacity-50 cursor-not-allowed' : ' bg-blue-600 hover:bg-blue-700 cursor-pointer')
               )}
               disabled={!canProceed}
