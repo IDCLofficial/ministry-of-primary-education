@@ -31,6 +31,13 @@ interface StudentRegistrationProps {
     gender: string
   }
   onRefreshStudents?: () => void
+  // Server-side pagination props
+  currentPage: number
+  totalPages: number
+  itemsPerPage: number
+  totalItems: number
+  onPageChange: (page: number) => void
+  onItemsPerPageChange: (itemsPerPage: number) => void
 }
 
 type SortableField = 'studentId' | 'fullName' | 'gender' | 'class' | 'examYear' | 'paymentStatus'
@@ -46,16 +53,21 @@ export default function StudentRegistration({
   students,
   selectedStudents,
   onStudentSelect,
-  // onSelectAll,
+  onSelectAll,
   searchTerm,
   onSearchChange,
   filters,
-  onRefreshStudents
+  onRefreshStudents,
+  currentPage: currentPageProp,
+  totalPages: totalPagesProp,
+  itemsPerPage: itemsPerPageProp,
+  totalItems: totalItemsProp,
+  onPageChange,
+  onItemsPerPageChange
 }: StudentRegistrationProps) {
   const { school } = useAuth()
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(12)
   const [showOnboardingModal, setShowOnboardingModal] = useState(false)
+  const [updateStudent, setUpdateStudent] = useState<Student | null>(null)
   
   // Check if selection should be disabled
   const isSelectionDisabled = process.env.NEXT_PUBLIC_ENV === 'temp'
@@ -86,71 +98,11 @@ export default function StudentRegistration({
     })
   }
 
-  // Filter and sort students
-  const filteredStudents = useMemo(() => {
-    const result = students.filter(student => {
-      const matchesSearch = student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          student.studentId.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchesClass = filters.class === 'All' || student.class === filters.class
-      const matchesYear = filters.year === 'All' || student.examYear.toString() === filters.year
-      const matchesGender = filters.gender === 'All' || student.gender === filters.gender
-      
-      return matchesSearch && matchesClass && matchesYear && matchesGender
-    })
+  // Note: With server-side pagination, filtering and sorting should be handled by the API
+  // For now, we'll keep the client-side logic but it should be moved to the server
 
-    // Apply sorting if active
-    if (sortState.field && sortState.direction) {
-      result.sort((a, b) => {
-        let aValue: string | number = ''
-        let bValue: string | number = ''
-
-        switch (sortState.field) {
-          case 'studentId':
-            aValue = a.studentId
-            bValue = b.studentId
-            break
-          case 'fullName':
-            aValue = a.fullName.toLowerCase()
-            bValue = b.fullName.toLowerCase()
-            break
-          case 'gender':
-            aValue = a.gender
-            bValue = b.gender
-            break
-          case 'class':
-            aValue = a.class
-            bValue = b.class
-            break
-          case 'examYear':
-            aValue = a.examYear
-            bValue = b.examYear
-            break
-          case 'paymentStatus':
-            // Custom order: Not Paid, Pending, Completed
-            const statusOrder = { 'Not Paid': 0, 'Pending': 1, 'Completed': 2 }
-            aValue = statusOrder[a.paymentStatus]
-            bValue = statusOrder[b.paymentStatus]
-            break
-        }
-
-        if (aValue < bValue) {
-          return sortState.direction === 'asc' ? -1 : 1
-        }
-        if (aValue > bValue) {
-          return sortState.direction === 'asc' ? 1 : -1
-        }
-        return 0
-      })
-    }
-
-    return result
-  }, [students, searchTerm, filters, sortState])
-
-  // Paginate filtered students
-  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedStudents = filteredStudents.slice(startIndex, startIndex + itemsPerPage)
+  // For server-side pagination, use students directly (already paginated by server)
+  const paginatedStudents = students
 
   const allCurrentPageSelected = paginatedStudents.length > 0 && 
     paginatedStudents.every(student => selectedStudents.includes(student.id))
@@ -201,9 +153,15 @@ export default function StudentRegistration({
   const handleStudentAdded = () => {
     // Trigger a refetch of students data
     setShowOnboardingModal(false)
+    setUpdateStudent(null)
     if (onRefreshStudents) {
       onRefreshStudents()
     }
+  }
+
+  const handleUpdateStudent = (student: Student) => {
+    setUpdateStudent(student)
+    setShowOnboardingModal(true)
   }
 
   const getSortIcon = (field: SortableField) => {
@@ -244,7 +202,7 @@ export default function StudentRegistration({
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-gray-800">Onboarded Students <span className="text-gray-400 text-xl font-medium">({filteredStudents.length})</span></h2>
+          <h2 className="text-lg font-semibold text-gray-800">Onboarded Students <span className="text-gray-400 text-xl font-medium">({totalItemsProp})</span></h2>
           <p className="text-sm text-gray-600 mt-1">
             Manage your school&apos;s student records and onboarding status
           </p>
@@ -287,6 +245,9 @@ export default function StudentRegistration({
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200">
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
+                S/N
+              </th>
               {!isSelectionDisabled && <th className="text-left py-3 px-4">
                 <CustomCheckbox
                   checked={allCurrentPageSelected}
@@ -341,12 +302,13 @@ export default function StudentRegistration({
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
                 Onboarding Status
               </th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-600"></th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedStudents.map((student) => (
+            {paginatedStudents.map((student, index) => (
               <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-3 px-4 text-sm text-gray-600">{(currentPageProp - 1) * itemsPerPageProp + index + 1}</td>
                 {!isSelectionDisabled && <td className="py-3 px-4">
                   <CustomCheckbox
                     checked={selectedStudents.includes(student.id)}
@@ -369,6 +331,14 @@ export default function StudentRegistration({
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getOnboardingStatusColor(student.onboardingStatus)}`}>
                     {student.onboardingStatus.replace('_', ' ')}
                   </span>
+                </td>
+                <td className="py-3 px-4">
+                  <button 
+                    onClick={() => handleUpdateStudent(student)}
+                    className="text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium transition-colors duration-200"
+                  >
+                    Update
+                  </button>
                 </td>
               </tr>
             ))}
@@ -415,18 +385,23 @@ export default function StudentRegistration({
         </div>
 
         {/* Student Cards */}
-        {paginatedStudents.map((student) => (
+        {paginatedStudents.map((student, index) => (
           <div key={student.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
             <div className="flex items-start gap-3">
+              {/* S/N */}
+              <div className="pt-1 text-sm text-gray-500 font-medium min-w-[30px]">
+                {(currentPageProp - 1) * itemsPerPageProp + index + 1}.
+              </div>
+              
               {/* Checkbox */}
-              <div className="pt-1">
+              {!isSelectionDisabled && <div className="pt-1">
                 <CustomCheckbox
                   checked={selectedStudents.includes(student.id)}
                   onChange={(checked) => onStudentSelect(student.id, checked)}
                   size="md"
                   disabled={isSelectionDisabled}
                 />
-              </div>
+              </div>}
               
               {/* Student Info */}
               <div className="flex-1 min-w-0">
@@ -475,6 +450,16 @@ export default function StudentRegistration({
                     </span>
                   </div>
                 </div>
+                
+                {/* Update Action */}
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <button 
+                    onClick={() => handleUpdateStudent(student)}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200"
+                  >
+                    Update Student
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -483,22 +468,23 @@ export default function StudentRegistration({
 
       {/* Pagination */}
       <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        itemsPerPage={itemsPerPage}
-        totalItems={filteredStudents.length}
-        onPageChange={setCurrentPage}
-        onItemsPerPageChange={(newItemsPerPage) => {
-          setItemsPerPage(newItemsPerPage)
-          setCurrentPage(1)
-        }}
+        currentPage={currentPageProp}
+        totalPages={totalPagesProp}
+        itemsPerPage={itemsPerPageProp}
+        totalItems={totalItemsProp}
+        onPageChange={onPageChange}
+        onItemsPerPageChange={onItemsPerPageChange}
       />
 
       {/* Student Onboarding Modal */}
       <StudentOnboardingModal
         isOpen={showOnboardingModal}
-        onClose={() => setShowOnboardingModal(false)}
+        onClose={() => {
+          setShowOnboardingModal(false)
+          setUpdateStudent(null)
+        }}
         onStudentAdded={handleStudentAdded}
+        studentToUpdate={updateStudent}
       />
     </div>
   )

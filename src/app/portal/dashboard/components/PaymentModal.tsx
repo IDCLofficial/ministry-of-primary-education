@@ -24,7 +24,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
   const totalAmount = studentFees + processingFee
 
   // Maximum points allowed is the school's numberOfStudents minus already available points
-  const maxPointsAllowed = school ? Math.max(0, school.numberOfStudents - school.availablePoints) : 0
+  const maxPointsAllowed = school ? Math.max(0, school.numberOfStudents - school.totalPoints) : 0
   
   // Preset suggestions (filtered to not exceed max allowed)
   const suggestions = [10, 25, 50, 100, 200, 500].filter(count => count <= maxPointsAllowed)
@@ -137,7 +137,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
                     <span className="font-medium">Maximum allowed:</span> {maxPointsAllowed.toLocaleString()} points
                   </p>
                   <p className="text-xs text-yellow-700 mt-1">
-                    ({school?.numberOfStudents || 0} students - {school?.availablePoints || 0} available points = {maxPointsAllowed} points needed)
+                    ({school?.numberOfStudents || 0} students - {school?.totalPoints || 0} available points = {maxPointsAllowed} points needed)
                   </p>
                 </div>
                 

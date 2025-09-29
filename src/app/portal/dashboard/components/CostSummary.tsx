@@ -29,7 +29,7 @@ export default function CostSummary({
                 <span className="text-sm font-medium text-blue-800">Available Points</span>
                 <span className="text-2xl font-bold text-blue-900">{school.availablePoints}</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center opacity-75">
                 <span className="text-sm font-medium text-gray-600">Used Points</span>
                 <span className="text-sm text-gray-700">{school.usedPoints}</span>
               </div>
@@ -64,7 +64,7 @@ export default function CostSummary({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                   <span className="text-sm text-orange-700">
-                    You need {school.numberOfStudents - school.availablePoints} more points
+                    You need {school.numberOfStudents - school.totalPoints} more points
                   </span>
                 </div>
               </div>

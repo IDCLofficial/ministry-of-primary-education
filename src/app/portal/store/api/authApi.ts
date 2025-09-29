@@ -11,36 +11,25 @@ interface SchoolName {
 // Student response type
 interface Student {
   _id: string
-  studentId: number
+  studentId: number | string
   studentName: string
   gender: 'male' | 'female'
   class: string
   examYear: number
   paymentStatus: 'paid' | 'unpaid' | 'pending'
   onboardingStatus: 'onboarded' | 'pending' | 'not_onboarded'
-  school: {
-    _id: string
-    schoolName: string
-    address: string
-    principal: string
-    email: string
-    students: string[]
-    status: 'approved' | 'pending' | 'rejected'
-    isFirstLogin: boolean
-    totalPoints: number
-    availablePoints: number
-    usedPoints: number
-    __v: number
-    createdAt: string
-    updatedAt: string
-    tempPassword?: string
-    tempPasswordExpiry?: string
-    lastPointsEarned?: string
-    numberOfStudents: number
-  }
+  school: string
   createdAt: string
   updatedAt: string
   __v: number
+}
+
+// Students response with pagination
+interface StudentsResponse {
+  data: Student[]
+  currentPage: number
+  totalPages: number
+  totalItems: number
 }
 
 // School application types
@@ -204,9 +193,9 @@ export const authApi = apiSlice.injectEndpoints({
     }),
 
     // Get students by school ID
-    getStudentsBySchool: builder.query<Student[], string>({
-      query: (schoolId) => ({
-        url: `${API_BASE_URL}${endpoints.GET_STUDENTS_BY_SCHOOL}/${schoolId}`,
+    getStudentsBySchool: builder.query<StudentsResponse, { schoolId: string; page?: number; limit?: number }>({
+      query: ({ schoolId, page = 1, limit = 12 }) => ({
+        url: `${API_BASE_URL}${endpoints.GET_STUDENTS_BY_SCHOOL}/${schoolId}?page=${page}&limit=${limit}`,
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
@@ -272,4 +261,4 @@ export const {
 } = authApi
 
 // Export types for use in components
-export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse }
+export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentsResponse }

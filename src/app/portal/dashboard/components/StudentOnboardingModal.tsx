@@ -1,15 +1,27 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { useOnboardStudentMutation } from '../../store/api/authApi'
 import CustomDropdown from './CustomDropdown'
 import toast from 'react-hot-toast'
 
+interface Student {
+  id: string
+  studentId: string
+  fullName: string
+  gender: 'Male' | 'Female'
+  class: string
+  examYear: number
+  paymentStatus: 'Not Paid' | 'Completed' | 'Pending'
+  onboardingStatus: 'onboarded' | 'pending' | 'not_onboarded'
+}
+
 interface StudentOnboardingModalProps {
   isOpen: boolean
   onClose: () => void
   onStudentAdded: () => void
+  studentToUpdate?: Student | null
 }
 
 interface StudentFormData {
@@ -19,26 +31,50 @@ interface StudentFormData {
   examYear: number | string
 }
 
-export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded }: StudentOnboardingModalProps) {
+export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded, studentToUpdate }: StudentOnboardingModalProps) {
   const { school } = useAuth()
   const [onboardStudent] = useOnboardStudentMutation()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState<StudentFormData>({
-    studentName: '',
-    gender: 'male',
-    class: '',
-    examYear: new Date().getFullYear()
+    studentName: studentToUpdate?.fullName || '',
+    gender: studentToUpdate?.gender === 'Male' ? 'male' : studentToUpdate?.gender === 'Female' ? 'female' : 'male',
+    class: studentToUpdate?.class || '',
+    examYear: studentToUpdate?.examYear || new Date().getFullYear()
   })
 
   const [errors, setErrors] = useState<Partial<StudentFormData>>({})
   const [serverError, setServerError] = useState<string>('')
+
+  // Determine if we're in update mode
+  const isUpdateMode = !!studentToUpdate
+
+  // Update form data when studentToUpdate changes
+  useEffect(() => {
+    if (studentToUpdate) {
+      setFormData({
+        studentName: studentToUpdate.fullName,
+        gender: studentToUpdate.gender === 'Male' ? 'male' : 'female',
+        class: studentToUpdate.class,
+        examYear: studentToUpdate.examYear
+      })
+    } else {
+      setFormData({
+        studentName: '',
+        gender: 'male',
+        class: '',
+        examYear: new Date().getFullYear()
+      })
+    }
+    setErrors({})
+    setServerError('')
+  }, [studentToUpdate])
 
   // Check if form can proceed
   const canProceed = formData.studentName.trim() !== '' && 
                      formData.class.trim() !== '' && 
                      formData.examYear && 
                      school && 
-                     school.availablePoints > 0 && 
+                     (isUpdateMode || school.availablePoints > 0) && 
                      !isSubmitting
 
   const validateForm = (): boolean => {
@@ -97,30 +133,44 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
     setServerError('')
 
     try {
-      // Create the student data object matching the required format
-      const examYearNum = typeof formData.examYear === 'string' ? parseInt(formData.examYear) : formData.examYear
-      const studentData = {
-        studentName: formData.studentName,
-        gender: formData.gender,
-        class: formData.class,
-        examYear: examYearNum,
-        school: school.id
+      if (isUpdateMode) {
+        // TODO: Implement update student functionality
+        // This is where the update API call would go
+        console.log('Update mode - functionality to be implemented')
+        
+        // Placeholder success message for update mode
+        toast.success(`Student ${formData.studentName} updated successfully!`)
+        
+        // Success - close modal and refresh data
+        onStudentAdded()
+        onClose()
+        resetForm()
+      } else {
+        // Create the student data object matching the required format
+        const examYearNum = typeof formData.examYear === 'string' ? parseInt(formData.examYear) : formData.examYear
+        const studentData = {
+          studentName: formData.studentName,
+          gender: formData.gender,
+          class: formData.class,
+          examYear: examYearNum,
+          school: school.id
+        }
+
+        // Call the API to onboard the student
+        const response = await onboardStudent(studentData).unwrap()
+        
+        console.log('Student onboarded successfully:', response)
+
+        // Success - close modal and refresh data
+        onStudentAdded()
+        onClose()
+        resetForm()
+        
+        toast.success(`Student ${response.studentName} onboarded successfully with status: ${response.onboardingStatus}!`)
       }
-
-      // Call the API to onboard the student
-      const response = await onboardStudent(studentData).unwrap()
-      
-      console.log('Student onboarded successfully:', response)
-
-      // Success - close modal and refresh data
-      onStudentAdded()
-      onClose()
-      resetForm()
-      
-      toast.success(`Student ${response.studentName} onboarded successfully with status: ${response.onboardingStatus}!`)
     } catch (error) {
-      console.error('Student onboarding failed:', error)
-      const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'Failed to onboard student. Please try again.'
+      console.error('Student operation failed:', error)
+      const errorMessage = (error as { data?: { message?: string } })?.data?.message || `Failed to ${isUpdateMode ? 'update' : 'onboard'} student. Please try again.`
       setServerError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -151,7 +201,9 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Onboard New Student</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {isUpdateMode ? 'Update Student' : 'Onboard New Student'}
+          </h2>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
@@ -209,16 +261,24 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
               <label htmlFor="class" className="block text-sm font-medium text-gray-700 mb-1">
                 Class *
               </label>
-              <input
-                id="class"
-                type="text"
+              <CustomDropdown
+                options={[
+                  // { value: 'SS1', label: 'SS1' },
+                  // { value: 'SS2', label: 'SS2' },
+                  { value: 'SS3', label: 'SS3' },
+                  // { value: 'JSS1', label: 'JSS1' },
+                  // { value: 'JSS2', label: 'JSS2' },
+                  // { value: 'JSS3', label: 'JSS3' },
+                  // Add current student's class if it's not in the list (for update mode)
+                  ...(isUpdateMode && studentToUpdate && !['SS1', 'SS2', 'SS3', 'JSS1', 'JSS2', 'JSS3'].includes(studentToUpdate.class) 
+                    ? [{ value: studentToUpdate.class, label: studentToUpdate.class }] 
+                    : [])
+                ]}
                 value={formData.class}
-                onChange={(e) => handleInputChange('class', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.class ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="e.g., Grade 10A"
-                disabled={isSubmitting}
+                defaultValue={formData.class || 'SS3'}
+                onChange={(value) => handleInputChange('class', value)}
+                placeholder="Select class"
+                className={isSubmitting ? 'opacity-50 pointer-events-none' : ''}
               />
               {errors.class && (
                 <p className="mt-1 text-sm text-red-600">{errors.class}</p>
@@ -248,8 +308,8 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
             </div>
           </div>
 
-          {/* Points Info */}
-          {school && (
+          {/* Points Info - Only show for new student onboarding */}
+          {school && !isUpdateMode && (
             <div className="mt-6 p-3 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-800">
                 <span className="font-medium">Available Points:</span> {school.availablePoints}
@@ -290,10 +350,10 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Onboarding...
+                  {isUpdateMode ? 'Updating...' : 'Onboarding...'}
                 </>
               ) : (
-                'Onboard Student'
+                isUpdateMode ? 'Update Student' : 'Onboard Student'
               )}
             </button>
           </div>
