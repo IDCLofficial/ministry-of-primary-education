@@ -27,7 +27,7 @@ export default function PortalPage() {
 
     return (
         <div className="min-h-screen grid place-items-center pt-16 bg-[#F3F3F3]">
-            <div className="flex justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
+            <div className="flex max-md:flex-row flex-col justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
                 <Image
                     src="/images/ministry-logo.png"
                     alt="logo"
@@ -35,7 +35,10 @@ export default function PortalPage() {
                     height={40}
                     className='object-contain'
                 />
-                <span className='sm:text-2xl text-xl font-bold'>IMMoE</span>
+                <span className='sm:text-2xl text-xl font-bold max-md:block hidden'>
+                    <abbr title="Imo State Ministry of Primary Education">IMMoE</abbr>
+                </span>
+                <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>Imo State Ministry of Primary Education</span>
             </div>
             <main className="py-8 gap-4 flex flex-col w-full">
                 {/* Header */}

@@ -23,7 +23,10 @@ export default function Header() {
                     height={30}
                     className='object-contain'
                 />
-                <span className='sm:text-base text-sm font-extrabold'>IMMoE</span>
+                <span className='sm:text-base text-sm font-extrabold max-md:block hidden'>
+                    <abbr title="Imo State Ministry of Primary Education">IMMoE</abbr>
+                </span>
+                <span className='sm:text-base text-sm font-extrabold max-md:hidden block'>Imo State Ministry of Primary Education</span>
             </div>
             
             {/* User Info and Actions */}

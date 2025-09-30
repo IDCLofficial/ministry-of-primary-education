@@ -40,7 +40,7 @@ export default function OnboardingConfirmationModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-[8px] flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-[8px] flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
         {/* Header */}
         <div className="p-6 border-b border-gray-200">

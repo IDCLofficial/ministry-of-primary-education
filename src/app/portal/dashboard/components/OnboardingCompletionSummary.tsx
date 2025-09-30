@@ -4,7 +4,9 @@ import React, { useState } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { useUpdateApplicationStatusMutation } from '../../store/api/authApi'
 import OnboardingConfirmationModal from './OnboardingConfirmationModal'
+import OnboardingSuccessModal from './OnboardingSuccessModal'
 import toast from 'react-hot-toast'
+import Image from 'next/image'
 
 interface OnboardingCompletionSummaryProps {
   totalStudents: number
@@ -15,6 +17,7 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
   const { school } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [updateApplicationStatus] = useUpdateApplicationStatusMutation()
 
   // Only show if school has students and total students equals total points (all students onboarded)
@@ -43,7 +46,9 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
         }
       }).unwrap()
       
-      toast.success('Onboarding submission sent to Ministry of Primary & Secondary Education successfully!')
+      // Close confirmation modal and show success modal
+      setShowConfirmationModal(false)
+      setShowSuccessModal(true)
       
       handleRefresh()
     } catch (error: unknown) {
@@ -70,10 +75,20 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
     <div className="bg-white rounded-xl shadow-lg shadow-black/2 border border-black/10 p-6 mb-6">
       <div className="text-center">
         {/* Success Icon */}
-        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-          <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+        <div className='h-fit w-full relative'>
+          <Image
+            src="/images/joint.png"
+            alt="Success"
+            width={1024}
+            height={308}
+            objectFit="contain"
+            className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-10 w-auto -ml-0.5 mt-1'
+          />
+          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 relative shadow-xl shadow-black/5 border border-green-200">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
         </div>
 
         {/* Title */}
@@ -133,6 +148,13 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
         isOpen={showConfirmationModal}
         onClose={() => setShowConfirmationModal(false)}
         onConfirm={handleCompleteOnboarding}
+        totalStudents={totalStudents}
+      />
+
+      {/* Success Modal */}
+      <OnboardingSuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
         totalStudents={totalStudents}
       />
     </div>

@@ -23,6 +23,11 @@ export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
+  console.log({
+    pathname,
+    isPortal: pathname.startsWith('/portal')
+  });
+
   if (pathname.startsWith('/portal')) {
     return null;
   }

@@ -13,7 +13,7 @@ export default async function Page({ searchParams }: PageProps) {
     if (isSubmitted) {
         return (
             <div className="min-h-screen grid place-items-center pt-16 bg-[#F3F3F3]">
-                <div className="flex justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
+                <div className="flex max-md:flex-row flex-col justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
                     <Image
                         src="/images/ministry-logo.png"
                         alt="logo"
@@ -21,7 +21,10 @@ export default async function Page({ searchParams }: PageProps) {
                         height={40}
                         className='object-contain'
                     />
-                    <span className='sm:text-2xl text-xl font-bold'>IMMoE</span>
+                    <span className='sm:text-2xl text-xl font-bold max-md:block hidden'>
+                        <abbr title="Imo State Ministry of Primary Education">IMMoE</abbr>
+                    </span>
+                    <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>Imo State Ministry of Primary Education</span>
                 </div>
 
                 <div className="bg-white rounded-lg shadow-lg p-8 max-w-xl mx-4 text-center">
@@ -47,7 +50,7 @@ export default async function Page({ searchParams }: PageProps) {
 
     return (
         <main className="py-8 gap-4 flex flex-col bg-[#F3F3F3]">
-            <div className="flex justify-center gap-2 items-center">
+            <div className="flex max-md:flex-row flex-col max-md:mb-0 mb-5 justify-center gap-2 items-center">
                 <Image
                     src="/images/ministry-logo.png"
                     alt="logo"
@@ -55,7 +58,10 @@ export default async function Page({ searchParams }: PageProps) {
                     height={40}
                     className='object-contain'
                 />
-                <span className='sm:text-2xl text-xl font-bold'>IMMoE</span>
+                <span className='sm:text-2xl text-xl font-bold max-md:block hidden'>
+                    <abbr title="Imo State Ministry of Primary Education">IMMoE</abbr>
+                </span>
+                <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>Imo State Ministry of Primary Education</span>
             </div>
             <div className="max-w-7xl w-full mx-auto px-2 sm:px-6 lg:px-8">
                 <SchoolRegistrationForm />
