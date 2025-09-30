@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
-import { useOnboardStudentMutation } from '../../store/api/authApi'
+import { useOnboardStudentMutation, useUpdateStudentMutation } from '../../store/api/authApi'
 import CustomDropdown from './CustomDropdown'
 import toast from 'react-hot-toast'
 
@@ -34,6 +34,7 @@ interface StudentFormData {
 export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded, studentToUpdate }: StudentOnboardingModalProps) {
   const { school } = useAuth()
   const [onboardStudent] = useOnboardStudentMutation()
+  const [updateStudent] = useUpdateStudentMutation()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState<StudentFormData>({
     studentName: studentToUpdate?.fullName || '',
@@ -134,17 +135,34 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
 
     try {
       if (isUpdateMode) {
-        // TODO: Implement update student functionality
-        // This is where the update API call would go
-        console.log('Update mode - functionality to be implemented')
+        if (!studentToUpdate?.id) {
+          toast.error('Student ID not found. Please try again.')
+          setIsSubmitting(false)
+          return
+        }
+
+        // Create the update data object matching the required format
+        const examYearNum = typeof formData.examYear === 'string' ? parseInt(formData.examYear) : formData.examYear
+        const updateData = {
+          studentName: formData.studentName,
+          gender: formData.gender,
+          examYear: examYearNum
+        }
+
+        // Call the API to update the student
+        const response = await updateStudent({ 
+          id: studentToUpdate.id, 
+          data: updateData 
+        }).unwrap()
         
-        // Placeholder success message for update mode
-        toast.success(`Student ${formData.studentName} updated successfully!`)
-        
+        console.log('Student updated successfully:', response)
+
         // Success - close modal and refresh data
         onStudentAdded()
         onClose()
         resetForm()
+        
+        toast.success(`Student ${response.studentName} updated successfully!`)
       } else {
         // Create the student data object matching the required format
         const examYearNum = typeof formData.examYear === 'string' ? parseInt(formData.examYear) : formData.examYear

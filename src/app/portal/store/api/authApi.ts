@@ -57,16 +57,16 @@ interface LoginRequest {
 interface LoginResponse {
   access_token: string
   school: {
-    id: string
-    schoolName: string
-    email: string
-    isFirstLogin: boolean
-    status: string
-    address: string
-    totalPoints: number
-    availablePoints: number
-    usedPoints: number
-    numberOfStudents: number
+    id: string;
+    schoolName: string;
+    email: string;
+    isFirstLogin: boolean;
+    status: string;
+    address: string;
+    totalPoints: number;
+    availablePoints: number;
+    usedPoints: number;
+    numberOfStudents: number;
   }
 }
 
@@ -125,6 +125,28 @@ interface StudentOnboardingResponse {
   onboardingStatus: string
   school: string
   _id: string
+  createdAt: string
+  updatedAt: string
+  __v: number
+}
+
+// Student Update interfaces
+interface StudentUpdateRequest {
+  studentName: string
+  gender: 'male' | 'female'
+  examYear: number
+}
+
+interface StudentUpdateResponse {
+  _id: string
+  studentId: number | string
+  studentName: string
+  gender: 'male' | 'female'
+  class: string
+  examYear: number
+  paymentStatus: 'paid' | 'unpaid' | 'pending'
+  onboardingStatus: 'onboarded' | 'pending' | 'not_onboarded'
+  school: string
   createdAt: string
   updatedAt: string
   __v: number
@@ -257,6 +279,20 @@ export const authApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Students'],
     }),
 
+    // Update student
+    updateStudent: builder.mutation<StudentUpdateResponse, { id: string; data: StudentUpdateRequest }>({
+      query: ({ id, data }) => ({
+        url: `${API_BASE_URL}/students/${id}`,
+        method: 'PATCH',
+        body: data,
+        headers: {
+          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['Students'],
+    }),
+
     // Update application status
     updateApplicationStatus: builder.mutation<ApplicationStatusUpdateResponse, { applicationId: string; data: ApplicationStatusUpdateRequest }>({
       query: ({ applicationId, data }) => ({
@@ -283,8 +319,9 @@ export const {
   useCreateStudentPaymentMutation,
   useVerifyPaymentQuery,
   useOnboardStudentMutation,
+  useUpdateStudentMutation,
   useUpdateApplicationStatusMutation,
 } = authApi
 
 // Export types for use in components
-export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentsResponse, ApplicationStatusUpdateRequest, ApplicationStatusUpdateResponse }
+export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentUpdateRequest, StudentUpdateResponse, StudentsResponse, ApplicationStatusUpdateRequest, ApplicationStatusUpdateResponse }
