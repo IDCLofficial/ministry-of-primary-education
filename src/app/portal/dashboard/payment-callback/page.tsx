@@ -16,6 +16,7 @@ export default function PaymentCallbackPage() {
     amount?: number
     numberOfStudents?: number
   } | null>(null)
+  const [countdown, setCountdown] = useState<number | null>(null)
 
   // Get reference from URL parameters
   const trxref = searchParams.get('trxref')
@@ -65,6 +66,41 @@ export default function PaymentCallbackPage() {
 
   const status = getStatus()
 
+  // Auto-redirect after 5 seconds when result is obtained
+  useEffect(() => {
+    if (status === 'success' || status === 'failed') {
+      setCountdown(5)
+      
+      const timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev === null || prev <= 1) {
+            clearInterval(timer)
+            return null
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      return () => clearInterval(timer)
+    }
+  }, [status])
+
+  // Separate effect for handling redirect when countdown reaches 0
+  useEffect(() => {
+    if (countdown === 0) {
+      // Use setTimeout to ensure redirect happens after render
+      const redirectTimer = setTimeout(() => {
+        if (status === 'success') {
+          router.push('/portal/dashboard?payment=success')
+        } else {
+          router.push('/portal/dashboard')
+        }
+      }, 0)
+
+      return () => clearTimeout(redirectTimer)
+    }
+  }, [countdown, status, router])
+
   const handleContinue = () => {
     // Redirect to dashboard with success status
     router.push('/portal/dashboard?payment=success')
@@ -102,7 +138,15 @@ export default function PaymentCallbackPage() {
           </div>
           
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
-          <p className="text-gray-600 mb-6">Your student payment has been processed successfully.</p>
+          <p className="text-gray-600 mb-4">Your student payment has been processed successfully.</p>
+          
+          {countdown !== null && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+              <p className="text-sm text-blue-800">
+                Redirecting to dashboard in <span className="font-semibold">{countdown}</span> seconds...
+              </p>
+            </div>
+          )}
           
           <div className="bg-green-50 rounded-lg p-4 mb-6 text-left">
             <h3 className="font-semibold text-green-800 mb-3">Payment Details</h3>
@@ -156,9 +200,17 @@ export default function PaymentCallbackPage() {
         </div>
         
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Failed</h2>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-4">
           We couldn&apos;t process your payment. This could be due to insufficient funds, network issues, or other payment gateway problems.
         </p>
+        
+        {countdown !== null && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-blue-800">
+              Redirecting to dashboard in <span className="font-semibold">{countdown}</span> seconds...
+            </p>
+          </div>
+        )}
         
         <div className="bg-red-50 rounded-lg p-4 mb-6">
           <p className="text-sm text-red-800">
