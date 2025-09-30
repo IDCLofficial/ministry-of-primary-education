@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children, requireAuth = true }: Protect
     if (!isLoading && requireAuth) {
       if (!isAuthenticated) {
         // Not authenticated, redirect to login
-        router.push('/portal')
+        router.replace('/portal')
       }
     }
   }, [isAuthenticated, isLoading, requireAuth, router])

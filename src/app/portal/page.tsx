@@ -34,6 +34,7 @@ export default function PortalPage() {
                     width={40}
                     height={40}
                     className='object-contain'
+                    title='Imo State Ministry of Primary Education logo'
                 />
                 <span className='sm:text-2xl text-xl font-bold max-md:block hidden'>
                     <abbr title="Imo State Ministry of Primary Education">IMMoE</abbr>

@@ -324,6 +324,8 @@ export default function SchoolRegistrationForm() {
               onChange={handleInputChange('schoolId')}
               placeholder="Select a school"
               className="w-full"
+              searchable
+              searchPlaceholder='Search school name...'
             />
           )}
           {errors.schoolId && (
@@ -333,7 +335,7 @@ export default function SchoolRegistrationForm() {
         
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            School Address <span className="text-red-500">*</span>
+            School <abbr title="Local Government Area">LGA</abbr>. <span className="text-red-500">*</span>
           </label>
           <CustomDropdown
             options={[
@@ -367,6 +369,8 @@ export default function SchoolRegistrationForm() {
               value: location,
               label: location
             }))}
+            searchable
+            searchPlaceholder='Search LGA...'
             value={formData.schoolAddress}
             onChange={handleInputChange('schoolAddress')}
             placeholder="Select school location"

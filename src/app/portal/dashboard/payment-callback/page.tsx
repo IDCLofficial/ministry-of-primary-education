@@ -91,11 +91,11 @@ export default function PaymentCallbackPage() {
       // Use setTimeout to ensure redirect happens after render
       const redirectTimer = setTimeout(() => {
         if (status === 'success') {
-          router.push('/portal/dashboard?payment=success')
+          router.replace('/portal/dashboard?payment=success')
         } else {
-          router.push('/portal/dashboard')
+          router.replace('/portal/dashboard?payment=failed')
         }
-      }, 0)
+      }, 0);
 
       return () => clearTimeout(redirectTimer)
     }
@@ -103,12 +103,12 @@ export default function PaymentCallbackPage() {
 
   const handleContinue = () => {
     // Redirect to dashboard with success status
-    router.push('/portal/dashboard?payment=success')
+    router.replace('/portal/dashboard?payment=success')
   }
 
   const handleRetry = () => {
     // Redirect back to dashboard
-    router.push('/portal/dashboard')
+    router.replace('/portal/dashboard')
   }
 
   if (status === 'processing') {

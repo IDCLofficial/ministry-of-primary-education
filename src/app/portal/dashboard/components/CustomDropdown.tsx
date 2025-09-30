@@ -14,6 +14,8 @@ interface CustomDropdownProps {
   placeholder?: string
   className?: string
   defaultValue?: string
+  searchable?: boolean
+  searchPlaceholder?: string
 }
 
 export default function CustomDropdown({
@@ -22,12 +24,25 @@ export default function CustomDropdown({
   onChange,
   placeholder = "Select option",
   className = "",
-  defaultValue
+  defaultValue,
+  searchable = false,
+  searchPlaceholder = "Search..."
 }: CustomDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const selectedOption = options.find(option => option.value === value)
+
+  // Filter options based on search term
+  const filteredOptions = searchable && searchTerm
+    ? options.filter(option => 
+        option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        option.value.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : options
 
   // Set default value on mount if provided and current value is empty
   useEffect(() => {
@@ -36,10 +51,36 @@ export default function CustomDropdown({
     }
   }, [defaultValue, value, onChange, options])
 
+  // Scroll to selected item when dropdown opens
+  useEffect(() => {
+    if (isOpen && selectedOption && menuRef.current) {
+      const selectedIndex = filteredOptions.findIndex(option => option.value === value)
+      if (selectedIndex >= 0) {
+        const selectedElement = menuRef.current.children[searchable ? selectedIndex + 1 : selectedIndex] as HTMLElement
+        if (selectedElement) {
+          selectedElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
+        }
+      }
+    }
+  }, [isOpen, selectedOption, value, filteredOptions, searchable])
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (isOpen && searchable && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 100)
+    }
+  }, [isOpen, searchable])
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false)
+        setSearchTerm('')
       }
     }
 
@@ -50,6 +91,14 @@ export default function CustomDropdown({
   const handleOptionClick = (optionValue: string) => {
     onChange(optionValue)
     setIsOpen(false)
+    setSearchTerm('')
+  }
+
+  const handleDropdownToggle = () => {
+    setIsOpen(!isOpen)
+    if (!isOpen) {
+      setSearchTerm('')
+    }
   }
 
   return (
@@ -57,7 +106,7 @@ export default function CustomDropdown({
       {/* Dropdown Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleDropdownToggle}
         className="w-full bg-gray-100 border cursor-pointer border-gray-300 rounded-lg px-3 py-2 text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:bg-gray-50 transition-colors duration-200"
       >
         <div className="flex items-center justify-between capitalize">
@@ -79,8 +128,29 @@ export default function CustomDropdown({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 cursor-pointer bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          {options.map((option) => (
+        <div ref={menuRef} className="absolute z-50 w-full mt-1 cursor-pointer bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {/* Search Input */}
+          {searchable && (
+            <div className="p-2 border-b border-gray-100 sticky top-0 bg-white/75 backdrop-blur-sm">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
+          
+          {/* Options List */}
+          {filteredOptions.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-gray-500 text-center">
+              No options found
+            </div>
+          ) : (
+            filteredOptions.map((option) => (
             <button
               key={option.value}
               type="button"
@@ -90,9 +160,7 @@ export default function CustomDropdown({
                   ? 'bg-blue-50 text-blue-700 font-medium'
                   : 'text-gray-900'
               } ${
-                option === options[0] ? 'rounded-t-lg' : ''
-              } ${
-                option === options[options.length - 1] ? 'rounded-b-lg' : 'border-b border-gray-100'
+                option === filteredOptions[filteredOptions.length - 1] ? '' : 'border-b border-gray-100'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -104,7 +172,8 @@ export default function CustomDropdown({
                 )}
               </div>
             </button>
-          ))}
+            ))
+          )}
         </div>
       )}
     </div>

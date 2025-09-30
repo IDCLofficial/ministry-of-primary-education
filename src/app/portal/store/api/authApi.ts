@@ -57,6 +57,7 @@ interface LoginRequest {
 interface LoginResponse {
   access_token: string
   school: {
+    applicationId: string;
     id: string;
     schoolName: string;
     email: string;

@@ -1,51 +1,18 @@
-import SchoolRegistrationForm from '@/components/SchoolRegistrationForm'
 import Image from 'next/image'
 import Link from 'next/link'
+import SchoolRegistrationForm from '../../../components/SchoolRegistrationForm'
+import RegistrationPendingView from './components/RegistrationPendingView'
 
 interface PageProps {
     searchParams: { [key: string]: string | string[] | undefined }
 }
 
 export default async function Page({ searchParams }: PageProps) {
-    const { submitted } = await searchParams;
+    const { submitted } = await searchParams
     const isSubmitted = submitted === 'true'
 
     if (isSubmitted) {
-        return (
-            <div className="min-h-screen grid place-items-center pt-16 bg-[#F3F3F3]">
-                <div className="flex max-md:flex-row flex-col justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
-                    <Image
-                        src="/images/ministry-logo.png"
-                        alt="logo"
-                        width={40}
-                        height={40}
-                        className='object-contain'
-                    />
-                    <span className='sm:text-2xl text-xl font-bold max-md:block hidden'>
-                        <abbr title="Imo State Ministry of Primary Education">IMMoE</abbr>
-                    </span>
-                    <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>Imo State Ministry of Primary Education</span>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-lg p-8 max-w-xl mx-4 text-center">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Registration Pending</h2>
-
-                    <div className="mb-6">
-                        <Image
-                            src="/images/waec.png"
-                            alt="logo"
-                            width={40}
-                            height={40}
-                            className='object-contain mx-auto'
-                        />
-                    </div>
-
-                    <p className="text-gray-600 mb-6">
-                        Your registration is under review. You will be notified by email once approved.
-                    </p>
-                </div>
-            </div>
-        )
+        return <RegistrationPendingView />
     }
 
     return (
@@ -55,8 +22,10 @@ export default async function Page({ searchParams }: PageProps) {
                     src="/images/ministry-logo.png"
                     alt="logo"
                     width={40}
+
                     height={40}
                     className='object-contain'
+                    title='Imo State Ministry of Primary Education logo'
                 />
                 <span className='sm:text-2xl text-xl font-bold max-md:block hidden'>
                     <abbr title="Imo State Ministry of Primary Education">IMMoE</abbr>
