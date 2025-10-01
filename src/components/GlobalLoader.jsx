@@ -8,6 +8,10 @@ export default function GlobalLoader() {
   const [isRouteChanging, setIsRouteChanging] = useState(false);
   const pathname = usePathname();
 
+  if(pathname.startsWith('/portal')){
+    return;
+  }
+
   // Initial load
   useEffect(() => {
     const timeout = setTimeout(() => {
