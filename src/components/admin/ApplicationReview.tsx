@@ -1,21 +1,60 @@
-'use client'
+import { useState } from 'react'
+import { School, Student } from '@/services/schoolService'
 
-import { School } from './SchoolsTable'
-
-interface ApplicationReviewProps {
-  school: School
-  onBack: () => void
+// Application interface to match the data structure
+interface Application {
+  _id: string;
+  school: {
+    _id: string;
+    schoolName: string;
+    address: string;
+    principal: string;
+    email: string;
+    students: Student[];
+    status: string;
+    isFirstLogin: boolean;
+    totalPoints: number;
+    availablePoints: number;
+    usedPoints: number;
+    __v: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  schoolName: string;
+  address: string;
+  schoolCode: string;
+  principal: string;
+  email: string;
+  phone: number;
+  numberOfStudents: number;
+  applicationStatus: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  reviewNotes?: string;
+  reviewedAt?: string;
 }
 
-export default function ApplicationReview({ school, onBack }: ApplicationReviewProps) {
+interface ApplicationReviewProps {
+  application: Application
+  onBack: () => void
+  onApprove?: (appId: string) => void
+  onDeny?: (appId: string) => void
+}
+
+export default function ApplicationReview({ application, onBack, onApprove, onDeny }: ApplicationReviewProps) {
   const handleDenyApplication = () => {
-    // Handle deny logic here
-    console.log('Denying application for:', school.name)
+    if (onDeny) {
+      onDeny(application._id)
+    }
+    console.log('Denying application for:', application.schoolName)
   }
 
   const handleApproveApplication = () => {
-    // Handle approve logic here
-    console.log('Approving application for:', school.name)
+    if (onApprove) {
+      onApprove(application._id)
+    }
+    console.log('Approving application for:', application.schoolName)
   }
 
   return (
@@ -62,37 +101,37 @@ export default function ApplicationReview({ school, onBack }: ApplicationReviewP
             
             <div className="space-y-6">
               <div>
-                <div className="text-lg font-medium text-gray-900">{school.name}</div>
+                <div className="text-lg font-medium text-gray-900">{application.schoolName}</div>
                 <div className="text-sm text-gray-500">School Name</div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-900">{school.address}</div>
+                <div className="text-sm text-gray-900">{application.address}</div>
                 <div className="text-sm text-gray-500">Address</div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-900">{school.uniqueCode}</div>
+                <div className="text-sm text-gray-900">{application.school?._id }</div>
                 <div className="text-sm text-gray-500">Unique Code</div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-900">{school.principal}</div>
+                <div className="text-sm text-gray-900">{application.principal}</div>
                 <div className="text-sm text-gray-500">Principal</div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-900">{school.email}</div>
+                <div className="text-sm text-gray-900">{application.email}</div>
                 <div className="text-sm text-gray-500">Contact Email</div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-900">{school.phone}</div>
+                <div className="text-sm text-gray-900">{application.phone}</div>
                 <div className="text-sm text-gray-500">Contact Phone</div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-900">{school.students.length}</div>
+                <div className="text-sm text-gray-900">{application.numberOfStudents}</div>
                 <div className="text-sm text-gray-500">Students Declared</div>
               </div>
             </div>
@@ -104,48 +143,24 @@ export default function ApplicationReview({ school, onBack }: ApplicationReviewP
             
             <div className="space-y-6">
               <div>
-                <div className="text-sm text-gray-900">{school.uniqueCode}</div>
+                <div className="text-sm text-gray-900">{application.school?._id || 'SCH-3421'}</div>
                 <div className="text-sm text-gray-500">Unique Code</div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-900">{school.name}</div>
+                <div className="text-sm text-gray-900">{application.school?.schoolName || application.schoolName}</div>
                 <div className="text-sm text-gray-500">Registered Name</div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-900">{school.email.replace('@schoolmail.com', '@edu.ng')}</div>
+                <div className="text-sm text-gray-900">{application.school?.email || application.email.replace('@schoolmail.com', '@edu.ng')}</div>
                 <div className="text-sm text-gray-500">Official Contact</div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-900">12,000</div>
+                <div className="text-sm text-gray-900">{application.school?.students?.length}</div>
                 <div className="text-sm text-gray-500">Students In Our Database</div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Application Details */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Application Details</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <div className="text-sm text-gray-900">APP-{String(school.id).padStart(4, '0')}</div>
-              <div className="text-sm text-gray-500">Application ID</div>
-            </div>
-
-            <div>
-              <div className="text-sm text-gray-900">{school.applicationDate}</div>
-              <div className="text-sm text-gray-500">Application Date</div>
-            </div>
-
-            <div>
-              <div className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                Pending
-              </div>
-              <div className="text-sm text-gray-500 mt-1">Current Status</div>
             </div>
           </div>
         </div>

@@ -1,26 +1,73 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { Student, School } from './SchoolsTable'
+import { School, Student } from '@/services/schoolService'
 
-// Extended interface to include additional fields from API
-interface ExtendedSchool extends School {
-  totalPoints?: number
-  availablePoints?: number
-  usedPoints?: number
-  isFirstLogin?: boolean
-  createdAt?: string
-  updatedAt?: string
+// Application interface to match the data structure
+interface Application {
+  _id: string;
+  school: {
+    _id: string;
+    schoolName: string;
+    address: string;
+    principal: string;
+    email: string;
+    students: Student[];
+    status: string;
+    isFirstLogin: boolean;
+    totalPoints: number;
+    availablePoints: number;
+    usedPoints: number;
+    __v: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  schoolName: string;
+  address: string;
+  schoolCode: string;
+  principal: string;
+  email: string;
+  phone: number;
+  numberOfStudents: number;
+  applicationStatus: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  reviewNotes?: string;
+  reviewedAt?: string;
 }
 
 interface SchoolDetailViewProps {
-  school: School
+  school: School | Application
   onBack: () => void
 }
 
 export default function SchoolDetailView({ school, onBack }: SchoolDetailViewProps) {
-  // Cast school to extended type to access additional properties
-  const extendedSchool = school as ExtendedSchool
+  console.log(school)
+  
+  // Determine if this is an Application or School
+  const isApplication = 'applicationStatus' in school
+  
+  // Get the display data based on type
+  const displayData = isApplication ? {
+    _id: school._id,
+    schoolName: school.schoolName,
+    address: school.address,
+    principal: school.principal,
+    email: school.email,
+    status: school.applicationStatus,
+    students: school.school?.students || [],
+    totalPoints: school.school?.totalPoints || 0,
+    availablePoints: school.school?.availablePoints || 0,
+    usedPoints: school.school?.usedPoints || 0,
+    isFirstLogin: school.school?.isFirstLogin || true,
+    createdAt: school.createdAt,
+    updatedAt: school.updatedAt,
+    numberOfStudents: school.numberOfStudents,
+    phone: school.phone,
+    reviewNotes: (school as Application).reviewNotes,
+    reviewedAt: (school as Application).reviewedAt
+  } : school as School
   const [showExportMenu, setShowExportMenu] = useState(false)
   const exportMenuRef = useRef<HTMLDivElement>(null)
 
@@ -39,19 +86,26 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
   }, [])
 
   const prepareStudentData = () => {
-    return school.students.map((student, index) => ({
+    if (!displayData.students || displayData.students.length === 0) {
+      return []
+    }
+    return displayData.students.map((student, index) => ({
       'S/N': index + 1,
-      'Student Name': student.name,
-      'Gender': student.gender,
-      'Class': student.class,
-      'Exam Year': student.examYear,
-      'Payment Status': student.paymentStatus,
-      'Onboarding Status': student.onboardingStatus
+      'Student Name': student.name || 'N/A',
+      'Gender': student.gender || 'N/A',
+      'Class': student.class || 'N/A',
+      'Exam Year': student.examYear || 'N/A',
+      'Payment Status': student.paymentStatus || 'Pending',
+      'Onboarding Status': student.onboardingStatus || 'Not Onboarded'
     }))
   }
 
   const handleExportExcel = () => {
     const studentData = prepareStudentData()
+    if (studentData.length === 0) {
+      alert('No student data to export')
+      return
+    }
     const headers = Object.keys(studentData[0])
     const csvContent = [
       headers.join(','),
@@ -64,7 +118,7 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
     const link = document.createElement('a')
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
-    link.setAttribute('download', `${school.name.replace(/\s+/g, '_')}_Students_${new Date().toISOString().split('T')[0]}.csv`)
+    link.setAttribute('download', `${displayData.schoolName.replace(/\s+/g, '_')}_Students_${new Date().toISOString().split('T')[0]}.csv`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
@@ -86,7 +140,7 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
       // Header
       doc.setFontSize(20)
       doc.setTextColor(40, 40, 40)
-      doc.text(school.name, 105, 20, { align: 'center' })
+      doc.text(displayData.schoolName, 105, 20, { align: 'center' })
       
       doc.setFontSize(16)
       doc.text('Student List Report', 105, 30, { align: 'center' })
@@ -99,15 +153,15 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
       doc.setTextColor(0, 0, 0)
       let yPos = 55
       
-      doc.text(`School Code: ${school.uniqueCode}`, 20, yPos)
+      doc.text(`School ID: ${displayData._id}`, 20, yPos)
       yPos += 7
-      doc.text(`Principal: ${school.principal}`, 20, yPos)
+      doc.text(`Principal: ${displayData.principal || 'Not specified'}`, 20, yPos)
       yPos += 7
-      doc.text(`Total Students: ${school.students.length}`, 20, yPos)
+      doc.text(`Total Students: ${displayData.students?.length || 0}`, 20, yPos)
       yPos += 7
-      doc.text(`Students Paid: ${school.studentsPaidFor}`, 20, yPos)
+      doc.text(`Students Paid: ${displayData.students?.filter(s => s.paymentStatus === 'Paid').length || 0}`, 20, yPos)
       yPos += 7
-      doc.text(`Students Onboarded: ${school.studentsOnboarded}`, 20, yPos)
+      doc.text(`Students Onboarded: ${displayData.students?.filter(s => s.onboardingStatus === 'Onboarded').length || 0}`, 20, yPos)
       yPos += 15
       
       // Table headers
@@ -131,41 +185,45 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
       doc.setFont('helvetica', 'normal')
       
       // Table data
-      studentData.forEach((student, index) => {
-        if (yPos > 270) { // Start new page if needed
-          doc.addPage()
-          yPos = 20
-        }
-        
-        xPos = 20
-        const rowData = [
-          student['S/N'].toString(),
-          student['Student Name'],
-          student['Gender'],
-          student['Class'],
-          student['Exam Year'],
-          student['Payment Status'],
-          student['Onboarding Status']
-        ]
-        
-        // Alternate row colors
-        if (index % 2 === 0) {
-          doc.setFillColor(249, 249, 249)
-          doc.rect(20, yPos - 5, 170, 8, 'F')
-        }
-        
-        rowData.forEach((data, colIndex) => {
-          // Truncate long text to fit column
-          let text = data
-          if (text.length > 15 && colIndex === 1) { // Student name column
-            text = text.substring(0, 15) + '...'
+      if (studentData.length > 0) {
+        studentData.forEach((student, index) => {
+          if (yPos > 270) { // Start new page if needed
+            doc.addPage()
+            yPos = 20
           }
-          doc.text(text, xPos + 2, yPos)
-          xPos += columnWidths[colIndex]
+          
+          xPos = 20
+          const rowData = [
+            student['S/N'].toString(),
+            student['Student Name'],
+            student['Gender'],
+            student['Class'],
+            student['Exam Year'],
+            student['Payment Status'],
+            student['Onboarding Status']
+          ]
+          
+          // Alternate row colors
+          if (index % 2 === 0) {
+            doc.setFillColor(249, 249, 249)
+            doc.rect(20, yPos - 5, 170, 8, 'F')
+          }
+          
+          rowData.forEach((data, colIndex) => {
+            // Truncate long text to fit column
+            let text = data
+            if (text.length > 15 && colIndex === 1) { // Student name column
+              text = text.substring(0, 15) + '...'
+            }
+            doc.text(text, xPos + 2, yPos)
+            xPos += columnWidths[colIndex]
+          })
+          
+          yPos += 8
         })
-        
-        yPos += 8
-      })
+      } else {
+        doc.text('No student data available', 20, yPos)
+      }
       
       // Footer
       const pageCount = doc.getNumberOfPages()
@@ -179,7 +237,7 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
       }
       
       // Save the PDF
-      const fileName = `${school.name.replace(/\s+/g, '_')}_Students_${new Date().toISOString().split('T')[0]}.pdf`
+      const fileName = `${displayData.schoolName.replace(/\s+/g, '_')}_Students_${new Date().toISOString().split('T')[0]}.pdf`
       doc.save(fileName)
       
     } catch (error) {
@@ -193,18 +251,17 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(12)
 
-  // Calculate totals from actual student data
-  const totalPaidStudents = school.students.filter(s => s.paymentStatus === 'Paid').length
-  const totalPaidAmount = totalPaidStudents * 500 // ₦500 per student
-  const transactionRef = `TXN-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}-${String(school.id).padStart(4, '0')}`
-
   // Filter students based on search
-  const filteredStudents = useMemo(() => 
-    school.students.filter(student =>
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.id.includes(searchTerm)
-    ), [school.students, searchTerm]
-  )
+  const filteredStudents = useMemo(() => {
+    if (!displayData.students || displayData.students.length === 0) {
+      return []
+    }
+    return displayData.students.filter((student: Student) =>
+      student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student._id?.includes(searchTerm) ||
+      student.class?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [displayData.students, searchTerm])
 
   // Paginate students
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -225,7 +282,7 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Application Review
+Back to Schools
               </button>
             </div>
             <div className="flex space-x-3">
@@ -265,9 +322,7 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
                   </div>
                 )}
               </div>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                Complete Onboarding
-              </button>
+             
             </div>
           </div>
         </div>
@@ -284,23 +339,27 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">School Name</label>
-                  <p className="text-lg font-semibold text-gray-900">{school.name}</p>
+                  <p className="text-lg font-semibold text-gray-900">{displayData.schoolName}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">School Code</label>
-                  <p className="text-base text-gray-900 font-mono bg-gray-50 px-2 py-1 rounded">{school.uniqueCode}</p>
+                  <label className="text-sm font-medium text-gray-500">School ID</label>
+                  <p className="text-base text-gray-900 font-mono bg-gray-50 px-2 py-1 rounded">{displayData._id}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Status</label>
                   <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
-                    school.status === 'approved' ? 'bg-green-100 text-green-800' :
-                    school.status === 'onboarded' ? 'bg-blue-100 text-blue-800' :
-                    school.status === 'completed' ? 'bg-purple-100 text-purple-800' :
-                    school.status === 'declined' ? 'bg-red-100 text-red-800' :
-                    school.status === 'applied' ? 'bg-yellow-100 text-yellow-800' :
+                    displayData.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    displayData.status === 'onboarded' ? 'bg-blue-100 text-blue-800' :
+                    displayData.status === 'completed' ? 'bg-purple-100 text-purple-800' :
+                    displayData.status === 'declined' ? 'bg-red-100 text-red-800' :
+                    displayData.status === 'applied' ? 'bg-yellow-100 text-yellow-800' :
+                    displayData.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    displayData.status === 'not applied' ? 'bg-gray-100 text-gray-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
-                    {school.status.charAt(0).toUpperCase() + school.status.slice(1)}
+                    {displayData.status === 'not applied' ? 'Not Applied' : 
+                     displayData.status === 'pending' ? 'Applied' :
+                     displayData.status.charAt(0).toUpperCase() + displayData.status.slice(1)}
                   </span>
                 </div>
               </div>
@@ -309,40 +368,77 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Principal</label>
-                  <p className="text-base text-gray-900">{school.principal}</p>
+                  <p className="text-base text-gray-900">{displayData.principal}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Email</label>
                   <p className="text-base text-gray-900">
-                    <a href={`mailto:${school.email}`} className="text-blue-600 hover:text-blue-800 hover:underline">
-                      {school.email}
+                    <a href={`mailto:${displayData.email}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                      {displayData.email}
                     </a>
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Phone</label>
-                  <p className="text-base text-gray-900">
-                    <a href={`tel:${school.phone}`} className="text-blue-600 hover:text-blue-800 hover:underline">
-                      {school.phone}
-                    </a>
-                  </p>
+                  <label className="text-sm font-medium text-gray-500">Address</label>
+                  <p className="text-base text-gray-900">{displayData.address || 'Not provided'}</p>
                 </div>
               </div>
 
               {/* Additional Info */}
               <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Address</label>
-                  <p className="text-base text-gray-900">{school.address}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Application Date</label>
-                  <p className="text-base text-gray-900">{school.applicationDate}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Date Approved</label>
-                  <p className="text-base text-gray-900">{school.dateApproved}</p>
-                </div>
+                {isApplication ? (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Phone</label>
+                      <p className="text-base text-gray-900">
+                        <a href={`tel:${displayData.phone}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                          {displayData.phone || 'Not provided'}
+                        </a>
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Number of Students</label>
+                      <p className="text-base text-gray-900">{displayData.numberOfStudents || 0}</p>
+                    </div>
+                    {displayData.reviewNotes && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Review Notes</label>
+                        <p className="text-base text-gray-900">{displayData.reviewNotes}</p>
+                      </div>
+                    )}
+                    {displayData.reviewedAt && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Reviewed Date</label>
+                        <p className="text-base text-gray-900">
+                          {new Date(displayData.reviewedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">First Login</label>
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                        displayData.isFirstLogin ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {displayData.isFirstLogin ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Created Date</label>
+                      <p className="text-base text-gray-900">
+                        {displayData.createdAt ? new Date(displayData.createdAt).toLocaleDateString() : 'Not available'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Last Updated</label>
+                      <p className="text-base text-gray-900">
+                        {displayData.updatedAt ? new Date(displayData.updatedAt).toLocaleDateString() : 'Not available'}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -360,7 +456,7 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-500">Total Points</p>
-                    <p className="text-2xl font-bold text-blue-600">{extendedSchool.totalPoints || 0}</p>
+                    <p className="text-2xl font-bold text-blue-600">{displayData.totalPoints || 0}</p>
                   </div>
                 </div>
               </div>
@@ -373,7 +469,7 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-500">Available Points</p>
-                    <p className="text-2xl font-bold text-green-600">{extendedSchool.availablePoints || 0}</p>
+                    <p className="text-2xl font-bold text-green-600">{displayData.availablePoints || 0}</p>
                   </div>
                 </div>
               </div>
@@ -386,7 +482,7 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-500">Used Points</p>
-                    <p className="text-2xl font-bold text-orange-600">{extendedSchool.usedPoints || 0}</p>
+                    <p className="text-2xl font-bold text-orange-600">{displayData.usedPoints || 0}</p>
                   </div>
                 </div>
               </div>
@@ -397,20 +493,24 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Total Paid</p>
-            <p className="text-2xl font-bold text-blue-600">₦{totalPaidAmount.toLocaleString()}</p>
+            <p className="text-sm text-gray-600 mb-1">Total Students</p>
+            <p className="text-2xl font-bold text-blue-600">{displayData.students?.length || 0}</p>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">No. of Students Paid For</p>
-            <p className="text-2xl font-bold text-blue-600">{totalPaidStudents}</p>
+            <p className="text-sm text-gray-600 mb-1">Students Paid</p>
+            <p className="text-2xl font-bold text-green-600">
+              {displayData.students?.filter((student: Student) => student.paymentStatus === 'Paid').length || 0}
+            </p>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Transaction Reference</p>
-            <p className="text-lg font-bold text-blue-600">{transactionRef}</p>
+            <p className="text-sm text-gray-600 mb-1">Students Onboarded</p>
+            <p className="text-2xl font-bold text-purple-600">
+              {displayData.students?.filter((student: Student) => student.onboardingStatus === 'Onboarded').length || 0}
+            </p>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Last Payment Date</p>
-            <p className="text-lg font-bold text-blue-600">{school.dateApproved}</p>
+            <p className="text-sm text-gray-600 mb-1">Total Points</p>
+            <p className="text-2xl font-bold text-orange-600">{displayData.totalPoints || 0}</p>
           </div>
         </div>
 
@@ -494,38 +594,56 @@ export default function SchoolDetailView({ school, onBack }: SchoolDetailViewPro
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedStudents.map((student, index) => (
-                  <tr key={`${student.id}-${index}`} className="hover:bg-gray-50">
+                {paginatedStudents.length > 0 ? paginatedStudents.map((student, index) => (
+                  <tr key={student._id || `student-${index}`} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {student.id}
+                      {startIndex + index + 1}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
                           <span className="text-xs font-medium text-gray-600">
-                            {student.name.split(' ').map(n => n[0]).join('')}
+                            {student.name ? student.name.split(' ').map((n: string) => n[0]).join('') : 'N/A'}
                           </span>
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{student.name}</span>
+                        <span className="text-sm font-medium text-gray-900">{student.name || 'N/A'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {student.gender}
+                      {student.gender || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {student.class}
+                      {student.class || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {student.examYear}
+                      {student.examYear || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {student.paymentStatus}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        student.paymentStatus === 'Paid' 
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {student.paymentStatus || 'Pending'}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {student.onboardingStatus}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        student.onboardingStatus === 'Onboarded'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {student.onboardingStatus || 'Not Onboarded'}
+                      </span>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+                      {displayData.students?.length === 0 ? 'No students registered yet' : 'No students found matching your search'}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

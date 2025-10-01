@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { BASE_URL } from '@/lib/api'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const response = await fetch(`${BASE_URL}/schools`, {
+    // Forward query params (e.g., page, limit, search, status)
+    const url = new URL(`${BASE_URL}/schools`)
+    req.nextUrl.searchParams.forEach((value, key) => {
+      url.searchParams.set(key, value)
+    })
+
+    const response = await fetch(url.toString(), {
       headers: {
         'ngrok-skip-browser-warning': 'true',
         'Content-Type': 'application/json',
@@ -15,6 +21,7 @@ export async function GET() {
     }
 
     const data = await response.json()
+    console.log(data)
     
     return NextResponse.json(data, {
       headers: {

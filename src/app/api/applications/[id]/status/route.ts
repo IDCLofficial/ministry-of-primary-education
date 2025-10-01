@@ -3,11 +3,12 @@ import { BASE_URL } from '@/lib/api'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json()
-    const { id } = params
+    const resolvedParams = await params
+    const { id } = resolvedParams
 
     console.log('Updating school status:', { id, body })
 
