@@ -41,10 +41,7 @@ export default function Dashboard() {
                             growthPercentage="4.6%"
                             description="This month daily sale volume is 4.6% large than last month"
                         />
-                        {/* <TransactionView
-                            totalAmount="$55,580"
-                            growthPercentage="4.6%"
-                        /> */}
+                        {/* Transaction Overview Skeleton */}
                     </div>
                 </div>
             </div>

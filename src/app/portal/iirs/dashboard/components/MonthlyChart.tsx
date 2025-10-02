@@ -231,56 +231,77 @@ export default function MonthlyChart({ totalTransaction, growthPercentage, descr
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">
-          {activeTab} - {selectedPeriod}
-        </h2>
-        <div className="relative">
-          <button 
-            className="flex items-center px-3 py-2 space-x-2 border border-gray-300 rounded-lg text-sm min-w-[100px] hover:bg-gray-50 transition-colors" 
-            onClick={() => setSelectPeriod(prev => !prev)}
-          >
-            <span className="truncate">{selectedPeriod}</span>
-            <FiChevronDown className={`text-gray-400 transition-transform ${selectPeriod ? 'rotate-180' : ''}`} />
-          </button>
-          <div className={`absolute top-full left-0 mt-1 p-2 bg-white rounded-lg border border-gray-200 w-full shadow-lg z-10 transition-all duration-200 ${
-            selectPeriod ? 'opacity-100 visible' : 'opacity-0 invisible'
-          }`}>
-            {periods.map((period) => (
+      {
+        isLoading ? ( 
+          <>
+            {/* Header Skeleton */}
+            <div className="flex justify-between items-center mb-6">
+              <div className="h-7 bg-gray-200 rounded w-32 animate-pulse"></div>
+              <div className="h-10 bg-gray-200 rounded-lg w-24 animate-pulse"></div>
+            </div>
+
+            {/* Tabs Skeleton */}
+            <div className="flex space-x-1 mb-6">
+              {[...Array(3)].map((_, index) => (
+                <div key={index} className="h-10 bg-gray-200 rounded-lg w-20 animate-pulse"></div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {activeTab}
+              </h2>
+              <div className="relative">
+                <button 
+                  className="flex items-center px-3 py-2 space-x-2 border border-gray-300 rounded-lg text-sm min-w-[100px] hover:bg-gray-50 transition-colors" 
+                  onClick={() => setSelectPeriod(prev => !prev)}
+                >
+                  <span className="truncate">{selectedPeriod}</span>
+                  <FiChevronDown className={`text-gray-400 transition-transform ${selectPeriod ? 'rotate-180' : ''}`} />
+                </button>
+                <div className={`absolute top-full left-0 mt-1 p-2 bg-white rounded-lg border border-gray-200 w-full shadow-lg z-10 transition-all duration-200 ${
+                selectPeriod ? 'opacity-100 visible' : 'opacity-0 invisible'
+                }`}>
+                {periods.map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => {
+                      setSelectedPeriod(period);
+                      setSelectPeriod(false);
+                    }}
+                    className={`w-full py-2 px-3 text-sm font-medium rounded-lg transition-colors text-left ${
+                      selectedPeriod === period
+                        ? 'bg-gray-900 text-white'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {period}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+          </div>
+          <div className="flex space-x-1 mb-6">
+            {tabs.map((tab) => (
               <button
-                key={period}
-                onClick={() => {
-                  setSelectedPeriod(period);
-                  setSelectPeriod(false);
-                }}
-                className={`w-full py-2 px-3 text-sm font-medium rounded-lg transition-colors text-left ${
-                  selectedPeriod === period
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === tab
                     ? 'bg-gray-900 text-white'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                {period}
+                {tab}
               </button>
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="flex space-x-1 mb-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === tab
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+        </>
+      )}
+      
 
       <div className="mb-6">
         {isLoading ? (
