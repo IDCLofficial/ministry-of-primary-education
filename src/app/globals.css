@@ -102,3 +102,15 @@ body {
 .animate-fadeIn {
   animation: fadeIn 1s ease forwards;
 }
+
+/* Admin Layout Styles */
+.admin-layout {
+  margin: 0;
+  padding: 0;
+  background-color: #f9fafb;
+}
+
+/* Ensure admin pages don't inherit main site styles */
+.admin-layout nav:not(.admin-nav) {
+  display: none !important;
+}
