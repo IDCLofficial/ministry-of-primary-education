@@ -7,7 +7,7 @@ export default function SideBar() {
     const pathname = usePathname()
 
     return (
-        <nav className='w-64 bg-white h-full border-r border-gray-200 flex flex-col'>
+        <nav className='w-64 bg-white h-full border-r border-gray-200 flex flex-col shrink-0'>
             {/* Logo/Title */}
             <div className='h-18 flex items-center border-b px-6 border-gray-200'>
                 <h1 className='text-xl font-bold text-gray-900'>
@@ -19,7 +19,7 @@ export default function SideBar() {
             <div className='flex-1 py-4'>
                 <ul className='space-y-1 px-3'>
                     {menuItems(pathname).map((item) => (
-                        <li key={item.href}>
+                        <li key={item.href} className='cursor-pointer active:scale-95 active:rotate-1 transition-all duration-150'>
                             <Link
                                 href={item.href}
                                 className={`flex items-center px-4 py-4 text-sm font-medium rounded-xl transition-colors duration-200 ${

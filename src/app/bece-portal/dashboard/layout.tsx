@@ -17,12 +17,10 @@ export default function BeceDashboardLayout({ children }: DashboardLayoutProps) 
                 <SideBar />
 
                 {/* Main Content */}
-                <main className="flex-1">
+                <main className="flex-1 max-h-screen h-screen flex flex-col overflow-hidden">
                     {/* Header */}
                     <Header />
-                    <div className="p-3">
-                        {children}
-                    </div>
+                    {children}
                 </main>
             </div>
         </BeceProtectedRoute>
