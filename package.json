@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.9.0",
+    "@useverse/useshortcuts": "^1.2.0",
     "contentful": "^11.7.15",
     "framer-motion": "^12.23.12",
     "next": "15.4.5",
