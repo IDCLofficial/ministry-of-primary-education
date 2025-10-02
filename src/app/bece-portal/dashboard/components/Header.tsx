@@ -12,10 +12,11 @@ export default function Header() {
 
     useShortcuts({
         shortcuts: [
+            { key: '/', ctrlKey: true },
             { key: 'F', ctrlKey: true },
         ],
-        onTrigger: (shortcut) => {
-            searchRef.current?.focus()
+        onTrigger: () => {
+            searchRef.current?.focus();
         }
     });
 
@@ -38,7 +39,7 @@ export default function Header() {
 
     return (
         <header className="bg-white border-b border-gray-200">
-            <div className="px-6 h-18 flex items-center w-full">
+            <div className="px-6 h-[4.45rem] flex items-center w-full">
                 <div className="flex items-center justify-between w-full">
                     {/* Center Section - Search */}
                     <div className="flex-1 max-w-md">

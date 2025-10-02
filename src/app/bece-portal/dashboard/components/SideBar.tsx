@@ -22,13 +22,15 @@ export default function SideBar() {
                         <li key={item.href}>
                             <Link
                                 href={item.href}
-                                className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                                className={`flex items-center px-4 py-4 text-sm font-medium rounded-xl transition-colors duration-200 ${
                                     item.active
                                         ? 'text-white bg-blue-600'
-                                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                        : 'text-gray-700 hover:bg-gray-50 bg-gray-50/50 border-2 border-transparent hover:border-blue-600/20 hover:text-gray-900'
                                 }`}
                             >
-                                <span className='mr-2 text-lg'>{item.icon}</span>
+                                <span className='mr-2 text-lg'>
+                                    {item.active ? item.iconActive : item.icon}
+                                </span>
                                 {item.label}
                             </Link>
                         </li>

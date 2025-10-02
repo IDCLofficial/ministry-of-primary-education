@@ -12,7 +12,7 @@ interface DashboardLayoutProps {
 export default function BeceDashboardLayout({ children }: DashboardLayoutProps) {
     return (
         <BeceProtectedRoute>
-            <div className="min-h-screen bg-[#f3f3f3] h-screen flex">
+            <div className="min-h-screen bg-[#f3f3f3] h-screen flex grided-sm">
                 {/* Sidebar */}
                 <SideBar />
 
@@ -20,7 +20,7 @@ export default function BeceDashboardLayout({ children }: DashboardLayoutProps) 
                 <main className="flex-1">
                     {/* Header */}
                     <Header />
-                    <div className="px-4 py-6 sm:px-0">
+                    <div className="p-3">
                         {children}
                     </div>
                 </main>
