@@ -145,19 +145,19 @@ export default function BeceLoginForm() {
     <div className="bg-white rounded-lg shadow-xl p-8 max-w-md mx-auto">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Admin Portal Login
+          BECE Portal
         </h2>
         <p className="text-gray-600 text-sm">
-          Access the administrative dashboard
+          Access the BECE Administrative Portal dashboard
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormInput
-          label="Admin Email"
+          label="Email"
           type="email"
           name="email"
-          placeholder="Enter your admin email"
+          placeholder="Enter your email"
           value={formData.email}
           onChange={handleInputChange('email')}
           error={errors.email}
@@ -165,10 +165,10 @@ export default function BeceLoginForm() {
         />
 
         <FormInput
-          label="Admin Password"
+          label="Password"
           type="password"
           name="password"
-          placeholder="Enter your admin password"
+          placeholder="Enter your password"
           value={formData.password}
           onChange={handleInputChange('password')}
           error={errors.password}

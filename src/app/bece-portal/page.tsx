@@ -3,7 +3,6 @@
 import React from 'react'
 import Image from 'next/image'
 import BeceLoginForm from './components/BeceLoginForm'
-import Link from 'next/link'
 
 export default function BecePortalPage() {
     return (
@@ -27,9 +26,6 @@ export default function BecePortalPage() {
                 {/* Form Container */}
                 <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
                     <BeceLoginForm />
-                </div>
-                <div className="w-full text-center px-4 text-sm text-black/80">
-                    Need admin access? <Link href="/bece-portal/application" className="text-blue-600 hover:text-blue-800 transition-colors duration-200 underline underline-offset-2">Contact IT support</Link>
                 </div>
             </main>
         </div>
