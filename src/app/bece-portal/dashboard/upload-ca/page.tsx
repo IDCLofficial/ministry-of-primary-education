@@ -54,7 +54,7 @@ export default function UploadCA() {
 
     if (isLoading) {
         return (
-            <div className='p-3 bg-white h-full overflow-y-auto border border-black/10 flex items-center justify-center'>
+            <div className='p-3 bg-white/50 backdrop-blur-[2px] h-full overflow-y-auto border border-black/10 flex items-center justify-center'>
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                     <p className="text-gray-600">Processing uploaded files...</p>
@@ -64,7 +64,7 @@ export default function UploadCA() {
     }
 
     return (
-        <div className={'p-3 bg-white border border-black/10 m-1 mb-0 space-y-4 flex-1 overflow-auto' + (hasData ? ' overflow-y-auto' : 'overflow-hidden')}>
+        <div className={'p-3 bg-white/50 backdrop-blur-[2px] border border-black/10 m-1 mb-0 space-y-4 flex-1 overflow-auto' + (hasData ? ' overflow-y-auto' : 'overflow-hidden')}>
             {hasData ? (
                 <DataTable 
                     data={studentData}
