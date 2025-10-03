@@ -3,12 +3,15 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import MultiFileUpload from './components/MultiFileUpload'
 import DataTable from './components/DataTable'
+import CAModal from './components/CAModal'
 import { parseCSVFile, StudentRecord } from './utils/csvParser'
+import { CAModalProvider, useCAModal } from './contexts/CAModalContext'
 import toast from 'react-hot-toast'
 
-export default function UploadCA() {
+function UploadCAContent() {
     const [studentData, setStudentData] = useState<StudentRecord[]>([])
     const [isLoading, setIsLoading] = useState(false)
+    const { isModalOpen, selectedStudent, closeModal, updateStudent } = useCAModal()
 
     // Warning message for unsaved data
     const warningMessage = "Unsaved data will be lost. Continue?"
@@ -115,6 +118,15 @@ export default function UploadCA() {
         setStudentData(newData)
     }, [])
 
+    const handleStudentUpdate = useCallback((updatedStudent: StudentRecord) => {
+        const updatedData = studentData.map(student => 
+            student.examNo === updatedStudent.examNo ? updatedStudent : student
+        )
+        setStudentData(updatedData)
+        updateStudent(updatedStudent)
+        toast.success(`Student data updated in main dataset`)
+    }, [studentData, updateStudent])
+
     const hasData = studentData.length > 0
 
     if (isLoading) {
@@ -129,21 +141,39 @@ export default function UploadCA() {
     }
 
     return (
-        <div className={'p-3 bg-white/50 backdrop-blur-[2px] border border-black/10 m-1 mb-0 space-y-4 flex-1 overflow-auto' + (hasData ? ' overflow-y-auto' : 'overflow-hidden')}>
-            {hasData ? (
-                <DataTable 
-                    data={studentData}
-                    onDataChange={handleDataChange}
-                    className="flex-1 overflow-hidden"
-                />
-            ) : (
-                /* Full screen upload when no data */
-                <MultiFileUpload 
-                    onFilesUploaded={handleFilesUploaded}
-                    hasData={hasData}
-                    className="flex-1"
-                />
-            )}
-        </div>
+        <React.Fragment>
+            <div className={'p-3 bg-white/50 backdrop-blur-[2px] border border-black/10 m-1 mb-0 space-y-4 flex-1 overflow-auto' + (hasData ? ' overflow-y-auto' : 'overflow-hidden')}>
+                {hasData ? (
+                    <DataTable 
+                        data={studentData}
+                        onDataChange={handleDataChange}
+                        className="flex-1 overflow-hidden"
+                    />
+                ) : (
+                    /* Full screen upload when no data */
+                    <MultiFileUpload 
+                        onFilesUploaded={handleFilesUploaded}
+                        hasData={hasData}
+                        className="flex-1"
+                    />
+                )}
+            </div>
+
+            {/* CA Modal */}
+            <CAModal
+                isOpen={isModalOpen}
+                onClose={closeModal}
+                student={selectedStudent}
+                onUpdate={handleStudentUpdate}
+            />
+        </React.Fragment>
+    )
+}
+
+export default function UploadCA() {
+    return (
+        <CAModalProvider onStudentUpdate={() => {}}>
+            <UploadCAContent />
+        </CAModalProvider>
     )
 }

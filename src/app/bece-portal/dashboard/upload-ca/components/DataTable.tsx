@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import { IoSearch, IoEye, IoTrash, IoCloudUpload, IoRefresh } from 'react-icons/io5'
-import CAModal from './CAModal'
+import { useCAModal } from '../contexts/CAModalContext'
 import toast from 'react-hot-toast'
 
 interface StudentRecord {
@@ -40,10 +40,9 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
     key: keyof StudentRecord | null
     direction: 'asc' | 'desc'
   }>({ key: null, direction: 'asc' })
-  const [selectedStudent, setSelectedStudent] = useState<StudentRecord | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
+  const { openModal } = useCAModal()
 
   const filteredData = useMemo(() => {
     return data.filter(record =>
@@ -119,27 +118,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
   }
 
   const handleViewCA = (student: StudentRecord) => {
-    setSelectedStudent(student)
-    setIsModalOpen(true)
-  }
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
-    setSelectedStudent(null)
-  }
-
-  const handleUpdateStudent = (updatedStudent: StudentRecord) => {
-    const updatedData = data.map(student => 
-      student.examNo === updatedStudent.examNo ? updatedStudent : student
-    )
-    onDataChange(updatedData)
-    
-    // Update the selected student to reflect the changes in the modal
-    if (selectedStudent && selectedStudent.examNo === updatedStudent.examNo) {
-      setSelectedStudent(updatedStudent)
-    }
-    
-    toast.success(`Student data updated in main dataset`)
+    openModal(student)
   }
 
   const handleClearData = () => {
@@ -174,42 +153,43 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
   }
 
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg overflow-hidden ${className}`}>
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900">CA Data</h3>
-            <p className="text-sm text-gray-500">
-              {data.length} total records, {filteredData.length} showing
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleSaveToDb}
-              title='Save to Database'
-              className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            >
-              <IoCloudUpload className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleClearData}
-              title='Clear CA Data'
-              className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              <IoRefresh className="w-4 h-4" />
-            </button>
-            {selectedRows.size > 0 && (
+    <React.Fragment>
+      <div className={`bg-white border border-gray-200 rounded-lg overflow-hidden ${className}`}>
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900">CA Data</h3>
+              <p className="text-sm text-gray-500">
+                {data.length} total records, {filteredData.length} showing
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
               <button
-                onClick={handleDeleteSelected}
+                onClick={handleSaveToDb}
+                title='Save to Database'
+                className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                <IoCloudUpload className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleClearData}
+                title='Clear CA Data'
                 className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
-                <IoTrash className="w-4 h-4 mr-2" />
-                Delete ({selectedRows.size})
+                <IoRefresh className="w-4 h-4" />
               </button>
-            )}
+              {selectedRows.size > 0 && (
+                <button
+                  onClick={handleDeleteSelected}
+                  className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  <IoTrash className="w-4 h-4 mr-2" />
+                  Delete ({selectedRows.size})
+                </button>
+              )}
+            </div>
           </div>
-        </div>
 
         {/* Search and Filters */}
         <div className="mt-4 flex items-center space-x-4">
@@ -406,13 +386,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
         </div>
       )}
 
-      {/* CA Details Modal */}
-      <CAModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        student={selectedStudent}
-        onUpdate={handleUpdateStudent}
-      />
-    </div>
+      </div>
+    </React.Fragment>
   )
 }
