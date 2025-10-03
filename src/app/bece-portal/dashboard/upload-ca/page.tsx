@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import MultiFileUpload from './components/MultiFileUpload'
 import DataTable from './components/DataTable'
 import { parseCSVFile, StudentRecord } from './utils/csvParser'
@@ -9,6 +9,71 @@ import toast from 'react-hot-toast'
 export default function UploadCA() {
     const [studentData, setStudentData] = useState<StudentRecord[]>([])
     const [isLoading, setIsLoading] = useState(false)
+
+    // Warning message for unsaved data
+    const warningMessage = "Unsaved data will be lost. Continue?"
+
+    // Handle browser refresh/close warning
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (studentData.length > 0) {
+                e.preventDefault()
+                e.returnValue = warningMessage
+                return warningMessage
+            }
+        }
+
+        window.addEventListener('beforeunload', handleBeforeUnload)
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload)
+        }
+    }, [studentData.length, warningMessage])
+
+    // Handle navigation via link clicks
+    useEffect(() => {
+        const handleLinkClick = (e: MouseEvent) => {
+            if (studentData.length > 0) {
+                const target = e.target as HTMLElement
+                const link = target.closest('a')
+                
+                if (link && link.href && !link.href.includes('#') && link.href !== window.location.href) {
+                    e.preventDefault()
+                    const confirmed = window.confirm(warningMessage)
+                    if (confirmed) {
+                        // Allow navigation by programmatically clicking the link
+                        window.location.href = link.href
+                    }
+                }
+            }
+        }
+
+        // Add click listener to document to catch all link clicks
+        document.addEventListener('click', handleLinkClick, true)
+
+        return () => {
+            document.removeEventListener('click', handleLinkClick, true)
+        }
+    }, [studentData.length, warningMessage])
+
+    // Handle programmatic navigation (back/forward buttons, router.push, etc.)
+    useEffect(() => {
+        const handlePopState = () => {
+            if (studentData.length > 0) {
+                const confirmed = window.confirm(warningMessage)
+                if (!confirmed) {
+                    // Push current state back to prevent navigation
+                    window.history.pushState(null, '', window.location.href)
+                }
+            }
+        }
+
+        window.addEventListener('popstate', handlePopState)
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState)
+        }
+    }, [studentData.length, warningMessage])
 
     const handleFilesUploaded = useCallback(async (files: File[]) => {
         setIsLoading(true)

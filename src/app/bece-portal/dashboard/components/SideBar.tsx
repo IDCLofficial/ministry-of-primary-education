@@ -2,9 +2,11 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { menuItems } from '../../utils/constants/Path.const'
+import { useBeceAuth } from '../../providers/AuthProvider'
 
 export default function SideBar() {
     const pathname = usePathname()
+    const { admin, logout } = useBeceAuth()
 
     return (
         <nav className='w-64 bg-white h-full border-r border-gray-200 flex flex-col shrink-0'>
@@ -38,34 +40,36 @@ export default function SideBar() {
                 </ul>
             </div>
 
-            {/* Bottom Section */}
-            <div className='p-4 border-t border-gray-200'>
-                <div className='space-y-2'>
-                    <Link
-                        href='/bece-portal/dashboard/settings'
-                        className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                            pathname.startsWith('/bece-portal/dashboard/settings')
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                        }`}
+            {/* Bottom Section - User Info & Logout */}
+            <div className='p-3 border-t border-gray-200'>
+                <div className='space-y-3'>
+                    {/* User Email */}
+                    <div className='px-3 py-2 bg-gray-50 rounded-lg border border-blue-300'>
+                        <div className='flex items-center space-x-3'>
+                            <div className='w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center border border-blue-600'>
+                                <span className='text-blue-600 font-medium text-sm'>
+                                    {admin?.email?.charAt(0).toUpperCase() || 'U'}
+                                </span>
+                            </div>
+                            <div className='flex-1 min-w-0'>
+                                <p className='text-sm font-medium text-gray-900 truncate'>
+                                    {admin?.email || 'User'}
+                                </p>
+                                <p className='text-xs text-gray-500'>Administrator</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Logout Button */}
+                    <button
+                        onClick={logout}
+                        className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 active:scale-90 border border-red-600 cursor-pointer active:rotate-1"
                     >
-                        <span className='mr-3 text-lg'>⚙️</span>
-                        Settings
-                    </Link>
-                    <Link
-                        href='/bece-portal/dashboard/help'
-                        className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                            pathname.startsWith('/bece-portal/dashboard/help')
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                        }`}
-                    >
-                        <span className='mr-3 text-lg'>❓</span>
-                        Help & Support
-                        <span className='ml-auto bg-green-500 text-white text-xs px-2 py-0.5 rounded-full'>
-                            3
-                        </span>
-                    </Link>
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Logout
+                    </button>
                 </div>
             </div>
         </nav>

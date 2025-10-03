@@ -1,11 +1,9 @@
 "use client"
 import React, { useState } from 'react'
-import { useBeceAuth } from '../../providers/AuthProvider'
 import useShortcuts from '@useverse/useshortcuts';
 import UploadDropdown from './UploadDropdown';
 
 export default function Header() {
-    const { admin, logout } = useBeceAuth()
     const [searchQuery, setSearchQuery] = useState('')
 
     const searchRef = React.useRef<HTMLInputElement>(null)
@@ -69,17 +67,6 @@ export default function Header() {
                     <div className="flex items-center space-x-4">
                         {/* Upload Dropdown */}
                         <UploadDropdown onSelect={handleUploadSelect} />
-                        
-                        {/* Logout Button */}
-                        <button
-                            onClick={logout}
-                            className="inline-flex cursor-pointer active:scale-90 active:rotate-1 items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
-                        >
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            Logout
-                        </button>
                     </div>
                 </div>
             </div>

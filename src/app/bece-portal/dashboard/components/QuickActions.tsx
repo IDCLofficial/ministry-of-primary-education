@@ -90,10 +90,10 @@ export default function QuickActions() {
           <Link
             key={action.id}
             href={action.href}
-            className={`p-4 rounded-lg border border-gray-200 transition-all duration-200 ${action.bgColor} hover:shadow-md group`}
+            className={`p-4 rounded-lg border border-gray-200 transition-all duration-200 hover:bg-blue-500/5 hover:border-blue-500 active:scale-95 active:rotate-1 group`}
           >
             <div className="flex flex-col items-center text-center space-y-3">
-              <div className={`${action.color} group-hover:scale-110 transition-transform duration-200`}>
+              <div className={`group-hover:text-blue-500 group-active:rotate-6 group-hover:scale-110 transition-transform duration-200`}>
                 {action.icon}
               </div>
               <div>
