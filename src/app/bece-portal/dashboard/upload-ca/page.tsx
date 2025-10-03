@@ -27,38 +27,16 @@ export default function UploadCA() {
             }
 
             if (allRecords.length > 0) {
-                let addedCount = 0
-                let duplicateCount = 0
+
                 
                 setStudentData(prev => {
                     // Create a Set of existing exam numbers for fast lookup
                     const existingExamNos = new Set(prev.map(record => record.examNo))
                     
                     // Filter out duplicates based on examNo
-                    const newRecords = allRecords.filter(record => !existingExamNos.has(record.examNo))
-                    
-                    addedCount = newRecords.length
-                    duplicateCount = allRecords.length - newRecords.length
-                    
+                    const newRecords = allRecords.filter(record => !existingExamNos.has(record.examNo))                    
                     return [...prev, ...newRecords]
                 })
-                
-                // Show appropriate toast messages
-                if (duplicateCount > 0) {
-                    toast(`${duplicateCount} duplicate record(s) skipped`, { 
-                        icon: '⚠️',
-                        style: { background: '#f59e0b', color: 'white' }
-                    })
-                }
-                
-                if (addedCount > 0) {
-                    toast.success(`${addedCount} new records added`)
-                } else {
-                    toast('No new records to add (all were duplicates)', { 
-                        icon: 'ℹ️',
-                        style: { background: '#3b82f6', color: 'white' }
-                    })
-                }
             }
         } catch (error) {
             console.error('Error processing files:', error)

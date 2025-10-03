@@ -32,4 +32,12 @@ export const menuItems: (pathname: string) => MenuItem[] = (pathname: string) =>
         href: '/bece-portal/dashboard/upload-exams',
         active: pathname === '/bece-portal/dashboard/upload-exams'
     },
+    {
+        icon: <IoFileTrayFullOutline />,
+        iconActive: <IoFileTrayFull />,
+        label: 'View Results',
+        abbr: 'Student Results',
+        href: '/bece-portal/dashboard/view-results',
+        active: pathname === '/bece-portal/dashboard/view-results'
+    },
 ]

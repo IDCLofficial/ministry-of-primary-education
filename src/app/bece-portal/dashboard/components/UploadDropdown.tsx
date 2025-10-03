@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname, useRouter } from 'next/navigation'
 import React, { useState, useRef, useEffect } from 'react'
 import { IoChevronDown, IoCloudUpload, IoDocument } from 'react-icons/io5'
 
@@ -16,8 +17,11 @@ interface UploadDropdownProps {
 }
 
 export default function UploadDropdown({ onSelect, className = "" }: UploadDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter()
+
+  const pathname = usePathname();
 
   const uploadOptions: UploadOption[] = [
     {
@@ -47,6 +51,7 @@ export default function UploadDropdown({ onSelect, className = "" }: UploadDropd
 
   const handleOptionClick = (optionValue: string) => {
     onSelect(optionValue)
+    router.push(`/bece-portal/dashboard/${optionValue}`)
     setIsOpen(false)
   }
 
@@ -57,16 +62,15 @@ export default function UploadDropdown({ onSelect, className = "" }: UploadDropd
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       {/* Upload Button */}
-      <button 
+      <button
         onClick={handleDropdownToggle}
         className="cursor-pointer active:scale-90 active:rotate-1 flex items-stretch border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
       >
         <div className="py-2 px-5">Upload</div>
         <div className='w-[1px] bg-white' />
         <div className="px-2 flex items-center">
-          <IoChevronDown className={`transition-transform duration-200 ${
-            isOpen ? 'transform rotate-180' : ''
-          }`} />
+          <IoChevronDown className={`transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''
+            }`} />
         </div>
       </button>
 
@@ -74,7 +78,7 @@ export default function UploadDropdown({ onSelect, className = "" }: UploadDropd
       {isOpen && (
         <div className="absolute right-0 z-50 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
           <div className="py-1">
-            {uploadOptions.map((option) => (
+            {uploadOptions.filter((option) => option.value !== pathname.split('/').pop()).map((option) => (
               <button
                 key={option.value}
                 type="button"

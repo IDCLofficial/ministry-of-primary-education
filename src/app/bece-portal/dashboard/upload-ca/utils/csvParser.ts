@@ -100,8 +100,6 @@ export const parseCSVText = (csvText: string): StudentRecord[] => {
   for (let i = 1; i < lines.length; i++) {
     const values = parseLine(lines[i])
 
-    i ===8 && console.log(values)
-
     // Skip rows where the first 5 columns (indices 0-4) are empty
     const isEmptyRow = values[0]?.trim() === 'Unknown School' && 
                       values[2]?.trim() === 'Unknown' && 

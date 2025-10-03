@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { IoSearch, IoFilter, IoEye, IoTrash, IoSave, IoTrashBin } from 'react-icons/io5'
+import { IoSearch, IoEye, IoTrash, IoCloudUpload, IoRefresh } from 'react-icons/io5'
 import CAModal from './CAModal'
 import toast from 'react-hot-toast'
 
@@ -44,22 +44,6 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
-
-  const subjects = [
-    { key: 'englishStudies', label: 'English Studies' },
-    { key: 'mathematics', label: 'Mathematics' },
-    { key: 'basicScience', label: 'Basic Science' },
-    { key: 'christianReligiousStudies', label: 'CRS' },
-    { key: 'nationalValues', label: 'National Values' },
-    { key: 'culturalAndCreativeArts', label: 'CCA' },
-    { key: 'businessStudies', label: 'Business Studies' },
-    { key: 'history', label: 'History' },
-    { key: 'igbo', label: 'Igbo' },
-    { key: 'hausa', label: 'Hausa' },
-    { key: 'yoruba', label: 'Yoruba' },
-    { key: 'preVocationalStudies', label: 'Pre-Vocational' },
-    { key: 'frenchLanguage', label: 'French' }
-  ]
 
   const filteredData = useMemo(() => {
     return data.filter(record =>
@@ -203,17 +187,17 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
           <div className="flex items-center space-x-3">
             <button
               onClick={handleSaveToDb}
+              title='Save to Database'
               className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
-              <IoSave className="w-4 h-4 mr-2" />
-              Save to DB
+              <IoCloudUpload className="w-4 h-4" />
             </button>
             <button
               onClick={handleClearData}
+              title='Clear CA Data'
               className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
-              <IoTrashBin className="w-4 h-4 mr-2" />
-              Clear
+              <IoRefresh className="w-4 h-4" />
             </button>
             {selectedRows.size > 0 && (
               <button
@@ -241,10 +225,6 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
               />
             </div>
           </div>
-          <button className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            <IoFilter className="w-4 h-4 mr-2" />
-            Filters
-          </button>
         </div>
       </div>
 
@@ -326,22 +306,18 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                     {record.schoolName}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center space-x-2">
-                    <button 
-                      onClick={() => handleViewCA(record)}
-                      className="text-blue-600 hover:text-blue-800 p-1 cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 rounded hover:bg-blue-50"
-                      title="View CA Details"
+                <td className=" py-4 whitespace-nowrap text-sm text-gray-500">
+                  <button 
+                    onClick={() => handleViewCA(record)}
+                    className="px-6 flex items-center justify-center cursor-pointer w-full"
+                    title="View CA Details"
+                  >
+                    <div 
+                      className="text-blue-600 text-center hover:text-blue-800 p-1 active:scale-90 active:rotate-1 transition-all duration-200 rounded hover:bg-blue-50 border border-transparent hover:border-blue-100"
                     >
-                      <IoEye className="w-4 h-4" />
-                    </button>
-                    <button 
-                      className="text-red-600 hover:text-red-800 p-1 cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 rounded hover:bg-red-50"
-                      title="Delete Record"
-                    >
-                      <IoTrash className="w-4 h-4" />
-                    </button>
-                  </div>
+                      <IoEye className="text-xl" />
+                    </div>
+                  </button>
                 </td>
               </tr>
             ))}
