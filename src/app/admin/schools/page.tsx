@@ -77,10 +77,8 @@ export default function AdminDashboard() {
        
 
             {/* Schools Table */}
-            <div className="bg-white rounded-lg shadow-sm mb-10">
-              <SchoolTable
-                
-              />
+            <div className="mb-10">
+              <SchoolTable/>
             </div>
           </div>
         </div>

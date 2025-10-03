@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { School, Student } from '@/services/schoolService'
+import Swal from 'sweetalert2'
 
 // Application interface to match the data structure
 interface Application {
@@ -43,14 +44,14 @@ interface ApplicationReviewProps {
 }
 
 export default function ApplicationReview({ application, onBack, onApprove, onDeny }: ApplicationReviewProps) {
-  const handleDenyApplication = () => {
+  const handleDenyApplication = async () => {
     if (onDeny) {
       onDeny(application._id)
     }
     console.log('Denying application for:', application.schoolName)
   }
 
-  const handleApproveApplication = () => {
+  const handleApproveApplication = async () => {
     if (onApprove) {
       onApprove(application._id)
     }
@@ -58,9 +59,9 @@ export default function ApplicationReview({ application, onBack, onApprove, onDe
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+    <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
+    {/* Header */}
+    <div className="bg-white shadow-sm border-b border-b-gray-200 sticky top-0 z-10">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -165,6 +166,7 @@ export default function ApplicationReview({ application, onBack, onApprove, onDe
           </div>
         </div>
       </div>
+
     </div>
   )
 }

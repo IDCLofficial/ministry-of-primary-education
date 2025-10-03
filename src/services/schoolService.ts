@@ -1,3 +1,5 @@
+
+
 export interface Student {
   _id: string;
   name: string;
@@ -121,19 +123,19 @@ export async function fetchAllSchools(
     page: page.toString(),
     limit: limit.toString(),
   });
-  
+
   if (search && search.trim()) {
-    params.append('search', search.trim());
-  }
-  
-  if (status && status.trim()) {
-    params.append('status', status.trim());
+    params.append("search", search.trim());
   }
 
-  const res = await fetch(
-    `https://moe-backend-nwp2.onrender.com/schools?${params.toString()}`,
-    { cache: "no-store" } // disables Next.js caching for fresh results
-  );
+  if (status && status.trim()) {
+    params.append("status", status.trim());
+  }
+
+  // ✅ Attach params to URL
+  const url = `https://moe-backend-nwp2.onrender.com/schools?${params.toString()}`;
+
+  const res = await fetch(url, { cache: "no-store" });
 
   if (!res.ok) {
     throw new Error("Failed to fetch schools");
@@ -141,6 +143,8 @@ export async function fetchAllSchools(
 
   return res.json();
 }
+
+
 
 export async function getSchoolNames(): Promise<School[]> {
   const res = await fetch(
@@ -231,7 +235,7 @@ export const fetchSchoolById = async (schoolId: string): Promise<School> => {
 // change status
 export async function changeApplicationStatus(
   appIds: string | string[],
-  status: "approved" | "rejected"
+  status: "approved" | "rejected" | "completed"
 ) {
   const ids = Array.isArray(appIds) ? appIds : [appIds];
 
@@ -259,3 +263,17 @@ export async function changeApplicationStatus(
   return responses;
 }
 
+// fetch a school transactions
+export const fetchSchoolTransactions = async (schoolId: string) => {
+  const res = await fetch(`${API_BASE_URL}/student-payments/school/${schoolId}`,
+    {
+      method: "GET",
+      cache: "no-store"
+    }
+
+  )
+  if (!res.ok){
+throw new Error('Failed to fetch transactions')
+  }
+  return res.json()
+}

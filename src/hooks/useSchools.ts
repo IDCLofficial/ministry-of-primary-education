@@ -76,6 +76,8 @@ export function useSchools(page: number, limit: number, search?: string, status?
     () => fetchAllSchools(page, limit, search, status)
   );
 
+  console.log(data)
+
   // Apply client-side filtering if search term exists
   const filteredSchools = useMemo(() => {
     if (!search || !search.trim() || !data?.data) {

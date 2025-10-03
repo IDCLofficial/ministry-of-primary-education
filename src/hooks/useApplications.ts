@@ -3,12 +3,12 @@ import { fetchApplications, Application } from "../lib/api";
 
 export type { Application };
 
-export function useApplications(applicationStatus?: string, searchTerm?: string, page: number = 1, limit: number = 20) {
+export function useApplications(page: number = 1, limit: number = 20, applicationStatus?: string, searchTerm?: string) {
   const { data, error, isLoading, mutate } = useSWR<Application[]>(
     ["applications", applicationStatus, searchTerm, page, limit],
     () => fetchApplications(applicationStatus, searchTerm, page, limit)
   );
-
+console.log(data)
   return {
     applications: data ?? [],
     isLoading,
@@ -16,4 +16,4 @@ export function useApplications(applicationStatus?: string, searchTerm?: string,
     refetch: () => mutate(),
     mutate
   };
-}
+}  

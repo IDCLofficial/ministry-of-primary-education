@@ -144,14 +144,13 @@ export async function fetchSchools(params?: {
 
 // get all applications
 
-
 export async function fetchApplications(
   applicationStatus?: string,
   searchTerm?: string,
   page: number = 1,
   limit: number = 20
 ): Promise<Application[]> {
-  const response = await fetch(`${BASE_URL}/applications`, {
+  const response = await fetch(`${BASE_URL}/applications?page=${page}&limit=${limit}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
@@ -161,6 +160,7 @@ export async function fetchApplications(
   }
 
   let apps: Application[] = await response.json();
+  
 
   if (applicationStatus) {
     apps = apps.filter((app) => app.applicationStatus === applicationStatus);
@@ -180,4 +180,4 @@ export async function fetchApplications(
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
   return apps.slice(startIndex, endIndex);
-}
+} 
