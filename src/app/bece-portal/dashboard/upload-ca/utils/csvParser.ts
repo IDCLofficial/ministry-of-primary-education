@@ -27,7 +27,6 @@ export const parseCSVFile = (file: File): Promise<StudentRecord[]> => {
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string
-        console.log(text)
         const records = parseCSVText(text)
         resolve(records)
       } catch (error) {

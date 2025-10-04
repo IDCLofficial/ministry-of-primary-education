@@ -6,12 +6,14 @@ import DataTable from './components/DataTable'
 import CAModal from './components/CAModal'
 import { parseCSVFile, StudentRecord } from './utils/csvParser'
 import { CAModalProvider, useCAModal } from './contexts/CAModalContext'
+import { CustomModalProvider, useCustomModal } from './contexts/CustomModalContext'
 import toast from 'react-hot-toast'
 
 function UploadCAContent() {
     const [studentData, setStudentData] = useState<StudentRecord[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const { isModalOpen, selectedStudent, closeModal, updateStudent } = useCAModal()
+    const { showConfirm } = useCustomModal()
 
     // Warning message for unsaved data
     const warningMessage = "Unsaved data will be lost. Continue?"
@@ -35,14 +37,14 @@ function UploadCAContent() {
 
     // Handle navigation via link clicks
     useEffect(() => {
-        const handleLinkClick = (e: MouseEvent) => {
+        const handleLinkClick = async (e: MouseEvent) => {
             if (studentData.length > 0) {
                 const target = e.target as HTMLElement
                 const link = target.closest('a')
                 
                 if (link && link.href && !link.href.includes('#') && link.href !== window.location.href) {
                     e.preventDefault()
-                    const confirmed = window.confirm(warningMessage)
+                    const confirmed = await showConfirm(warningMessage, 'Navigation Warning')
                     if (confirmed) {
                         // Allow navigation by programmatically clicking the link
                         window.location.href = link.href
@@ -57,13 +59,13 @@ function UploadCAContent() {
         return () => {
             document.removeEventListener('click', handleLinkClick, true)
         }
-    }, [studentData.length, warningMessage])
+    }, [studentData.length, warningMessage, showConfirm])
 
     // Handle programmatic navigation (back/forward buttons, router.push, etc.)
     useEffect(() => {
-        const handlePopState = () => {
+        const handlePopState = async () => {
             if (studentData.length > 0) {
-                const confirmed = window.confirm(warningMessage)
+                const confirmed = await showConfirm(warningMessage, 'Navigation Warning')
                 if (!confirmed) {
                     // Push current state back to prevent navigation
                     window.history.pushState(null, '', window.location.href)
@@ -76,7 +78,7 @@ function UploadCAContent() {
         return () => {
             window.removeEventListener('popstate', handlePopState)
         }
-    }, [studentData.length, warningMessage])
+    }, [studentData.length, warningMessage, showConfirm])
 
     const handleFilesUploaded = useCallback(async (files: File[]) => {
         setIsLoading(true)
@@ -172,8 +174,10 @@ function UploadCAContent() {
 
 export default function UploadCA() {
     return (
-        <CAModalProvider onStudentUpdate={() => {}}>
-            <UploadCAContent />
-        </CAModalProvider>
+        <CustomModalProvider>
+            <CAModalProvider onStudentUpdate={() => {}}>
+                <UploadCAContent />
+            </CAModalProvider>
+        </CustomModalProvider>
     )
 }

@@ -29,6 +29,31 @@ interface ProfileResponse {
   admin: Admin
 }
 
+interface Subject {
+  name: string
+  exam: number
+  ca: number
+}
+
+interface Student {
+  name: string
+  examNo: string
+  sex: string
+  age: number
+  subjects: Subject[]
+}
+
+interface BeceResultUploadRequest {
+  schoolName: string
+  lga: string
+  students: Student[]
+}
+
+interface BeceResultUploadResponse {
+  message: string
+  uploadedCount: number
+}
+
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Admin login
@@ -55,6 +80,17 @@ export const authApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Admin'],
     }),
+
+    // Upload BECE CA Results
+    uploadBeceResults: builder.mutation<BeceResultUploadResponse, BeceResultUploadRequest>({
+      query: (data) => ({
+        url: '/bece-result/upload',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Admin'],
+    }),
+    
   }),
 })
 
@@ -62,4 +98,5 @@ export const {
   useAdminLoginMutation,
   useGetAdminProfileQuery,
   useAdminChangePasswordMutation,
+  useUploadBeceResultsMutation,
 } = authApi

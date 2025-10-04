@@ -3,7 +3,10 @@
 import React, { useState, useMemo } from 'react'
 import { IoSearch, IoEye, IoTrash, IoCloudUpload, IoRefresh } from 'react-icons/io5'
 import { useCAModal } from '../contexts/CAModalContext'
+import { useCustomModal } from '../contexts/CustomModalContext'
+import { useUploadBeceResultsMutation } from '../../../store/api/authApi'
 import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 
 interface StudentRecord {
   schoolName: string
@@ -34,6 +37,7 @@ interface DataTableProps {
 }
 
 export default function DataTable({ data, onDataChange, className = "" }: DataTableProps) {
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
   const [sortConfig, setSortConfig] = useState<{
@@ -42,7 +46,11 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
   }>({ key: null, direction: 'asc' })
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [failedSchools, setFailedSchools] = useState<string[]>([])
+  const [isSaving, setIsSaving] = useState(false)
   const { openModal } = useCAModal()
+  const { showConfirm } = useCustomModal()
+  const [uploadBeceResults] = useUploadBeceResultsMutation()
 
   const filteredData = useMemo(() => {
     return data.filter(record =>
@@ -121,40 +129,135 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
     openModal(student)
   }
 
-  const handleClearData = () => {
-    if (window.confirm('Are you sure you want to clear all CA data? This action cannot be undone.')) {
+  const handleClearData = async () => {
+    const confirmed = await showConfirm(
+      'Are you sure you want to clear all CA data? This action cannot be undone.',
+      'Clear All Data',
+      'Clear Data',
+      'Cancel'
+    )
+    if (confirmed) {
       onDataChange([])
       toast.success('All CA data cleared successfully')
     }
   }
 
   const handleSaveToDb = async () => {
+    const startTime = performance.now()
+    setIsSaving(true)
+    
     try {
       toast.loading('Saving CA data to database...')
       
-      // TODO: Implement API call to save data to database
-      // Example API call:
-      // const response = await fetch('/api/ca-data', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ records: data })
-      // })
+      // Group students by school
+      const schoolGroups = data.reduce((groups, student) => {
+        const schoolName = student.schoolName
+        if (!groups[schoolName]) {
+          groups[schoolName] = []
+        }
+        groups[schoolName].push(student)
+        return groups
+      }, {} as Record<string, StudentRecord[]>)
+
+      // Transform data for each school
+      const uploadPromises = Object.entries(schoolGroups).map(([schoolName, students]) => {
+        const transformedStudents = students.map(student => ({
+          name: student.name,
+          examNo: student.examNo,
+          sex: student.sex === 'Male' ? 'M' : 'F',
+          age: student.age,
+          subjects: [
+            { name: 'English Studies', exam: 0, ca: student.englishStudies },
+            { name: 'Mathematics', exam: 0, ca: student.mathematics },
+            { name: 'Basic Science', exam: 0, ca: student.basicScience },
+            { name: 'Christian Religious Studies', exam: 0, ca: student.christianReligiousStudies },
+            { name: 'National Values', exam: 0, ca: student.nationalValues },
+            { name: 'Cultural and Creative Arts', exam: 0, ca: student.culturalAndCreativeArts },
+            { name: 'Business Studies', exam: 0, ca: student.businessStudies },
+            { name: 'History', exam: 0, ca: student.history },
+            { name: 'Igbo Language', exam: 0, ca: student.igbo },
+            { name: 'Hausa Language', exam: 0, ca: student.hausa },
+            { name: 'Yoruba Language', exam: 0, ca: student.yoruba },
+            { name: 'Pre-Vocational Studies', exam: 0, ca: student.preVocationalStudies },
+            { name: 'French Language', exam: 0, ca: student.frenchLanguage }
+          ].filter(subject => subject.ca > 0) // Only include subjects with CA scores
+        }))
+
+        return uploadBeceResults({
+          schoolName,
+          lga: 'Unknown', // Default LGA - you might want to extract this from data
+          students: transformedStudents
+        }).unwrap()
+      })
+
+      // Use Promise.allSettled to handle multiple uploads
+      const results = await Promise.allSettled(uploadPromises)
       
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Create school names array for mapping results
+      const schoolNames = Object.keys(schoolGroups)
+      
+      let successCount = 0
+      let failureCount = 0
+      const successfulSchools = new Set<string>()
+      const failedSchoolsList: string[] = []
+      
+      results.forEach((result, index) => {
+        const schoolName = schoolNames[index]
+        const studentCount = schoolGroups[schoolName]?.length || 0
+        
+        if (result.status === 'fulfilled') {
+          const uploadedCount = result.value.uploadedCount || studentCount
+          successCount += uploadedCount
+          successfulSchools.add(schoolName)
+        } else {
+          failureCount++
+          failedSchoolsList.push(schoolName)
+        }
+      })
+      
+      const endTime = performance.now()
+      const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
       
       toast.dismiss()
-      toast.success(`Successfully saved ${data.length} CA records to database`)
+      
+      // Update failed schools state for display
+      setFailedSchools(failedSchoolsList)
+      
+      // Filter out successful uploads from data
+      const remainingData = data.filter(student => !successfulSchools.has(student.schoolName))
+      
+      if (failureCount === 0) {
+        // All successful - clear all data
+        onDataChange([])
+        setFailedSchools([])
+        toast.success(`Successfully saved ${successCount} CA records to database in ${elapsedTime}s`)
+        router.push('/bece-portal/dashboard/students')
+      } else if (successCount > 0) {
+        // Partial success - keep only failed data
+        onDataChange(remainingData)
+        toast.success(`Partially successful: ${successCount} records saved, ${failureCount} schools failed (${elapsedTime}s)`)
+        toast.error(`Failed schools: ${failedSchoolsList.join(', ')}. Please retry these uploads.`)
+      } else {
+        // All failed - keep all data
+        toast.error(`Failed to save CA data to database (${elapsedTime}s)`)
+        toast.error(`All uploads failed. Please check your connection and try again.`)
+      }
+      
     } catch (error) {
+      const endTime = performance.now()
+      const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
+      console.error(JSON.stringify(error));
+      
       toast.dismiss()
-      toast.error('Failed to save CA data to database')
-      console.error('Save to DB error:', error)
+      toast.error(`Failed to save CA data to database (${elapsedTime}s)`)
+    } finally {
+      setIsSaving(false)
     }
   }
 
   return (
     <React.Fragment>
-      <div className={`bg-white border border-gray-200 rounded-lg overflow-hidden ${className}`}>
+      <div className={`bg-white border border-gray-200 rounded-lg overflow-hidden relative ${className}`}>
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -167,22 +270,47 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             <div className="flex items-center space-x-3">
               <button
                 onClick={handleSaveToDb}
-                title='Save to Database'
-                className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                disabled={isSaving}
+                title={isSaving ? 'Saving to Database...' : 'Save to Database'}
+                className={`inline-flex items-center transition-all duration-200 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  isSaving 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-green-600 hover:bg-green-700 focus:ring-green-500 cursor-pointer active:scale-90 active:rotate-1'
+                }`}
               >
-                <IoCloudUpload className="w-4 h-4" />
+                {isSaving ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                  </>
+                ) : (
+                  <IoCloudUpload className="w-4 h-4" />
+                )}
               </button>
               <button
                 onClick={handleClearData}
+                disabled={isSaving}
                 title='Clear CA Data'
-                className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                className={`inline-flex items-center transition-all duration-200 px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  isSaving 
+                    ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed' 
+                    : 'border-red-300 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500 cursor-pointer active:scale-90 active:rotate-1'
+                }`}
               >
                 <IoRefresh className="w-4 h-4" />
               </button>
               {selectedRows.size > 0 && (
                 <button
                   onClick={handleDeleteSelected}
-                  className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  disabled={isSaving}
+                  className={`inline-flex items-center transition-all duration-200 px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    isSaving 
+                      ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed' 
+                      : 'border-red-300 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500 cursor-pointer active:scale-90 active:rotate-1'
+                  }`}
                 >
                   <IoTrash className="w-4 h-4 mr-2" />
                   Delete ({selectedRows.size})
@@ -201,11 +329,26 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                 placeholder="Search by name, exam no, or school..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                disabled={isSaving}
+                className={`block w-full pl-10 pr-3 py-2 border rounded-md leading-5 placeholder-gray-500 focus:outline-none text-sm ${
+                  isSaving 
+                    ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed' 
+                    : 'border-gray-300 bg-white focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
+                }`}
               />
             </div>
           </div>
         </div>
+
+          {failedSchools.length > 0 && (
+            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-700 font-medium">⚠️ Upload Failed</p>
+              <p className="text-xs text-red-600">
+                The following schools failed to upload: {failedSchools.join(', ')}.
+                Please retry the upload for these records.
+              </p>
+            </div>
+          )}
       </div>
 
       {/* Table */}
@@ -218,7 +361,10 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                   type="checkbox"
                   checked={selectedRows.size === sortedData.length && sortedData.length > 0}
                   onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  disabled={isSaving}
+                  className={`rounded text-blue-600 focus:ring-blue-500 ${
+                    isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
+                  }`}
                 />
               </th>
               {[
@@ -257,7 +403,10 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                     type="checkbox"
                     checked={selectedRows.has(index)}
                     onChange={(e) => handleSelectRow(index, e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    disabled={isSaving}
+                    className={`rounded text-blue-600 focus:ring-blue-500 ${
+                      isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
+                    }`}
                   />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -289,11 +438,18 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                 <td className=" py-4 whitespace-nowrap text-sm text-gray-500">
                   <button 
                     onClick={() => handleViewCA(record)}
-                    className="px-6 flex items-center justify-center cursor-pointer w-full"
-                    title="View CA Details"
+                    disabled={isSaving}
+                    className={`px-6 flex items-center justify-center w-full ${
+                      isSaving ? 'cursor-not-allowed' : 'cursor-pointer'
+                    }`}
+                    title={isSaving ? 'Saving in progress...' : 'View CA Details'}
                   >
                     <div 
-                      className="text-blue-600 text-center hover:text-blue-800 p-1 active:scale-90 active:rotate-1 transition-all duration-200 rounded hover:bg-blue-50 border border-transparent hover:border-blue-100"
+                      className={`text-center p-1 transition-all duration-200 rounded border border-transparent ${
+                        isSaving 
+                          ? 'text-gray-400' 
+                          : 'text-blue-600 hover:text-blue-800 active:scale-90 active:rotate-1 hover:bg-blue-50 hover:border-blue-100'
+                      }`}
                     >
                       <IoEye className="text-xl" />
                     </div>
@@ -383,6 +539,22 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
       {sortedData.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500">No records found</p>
+        </div>
+      )}
+
+      {/* Loading Overlay */}
+      {isSaving && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200 flex items-center space-x-4">
+            <svg className="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <div>
+              <p className="text-lg font-medium text-gray-900">Saving to Database</p>
+              <p className="text-sm text-gray-500">Please wait while we save your CA data...</p>
+            </div>
+          </div>
         </div>
       )}
 

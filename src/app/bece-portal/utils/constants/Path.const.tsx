@@ -1,4 +1,4 @@
-import { IoFileTrayFull, IoFileTrayFullOutline, IoFolderOpen, IoFolderOpenOutline, IoGrid, IoGridOutline, IoLockOpen, IoLockOpenOutline, IoPeople, IoPeopleOutline, IoRibbon, IoRibbonOutline} from "react-icons/io5"
+import { IoFileTrayFull, IoFileTrayFullOutline, IoFolderOpen, IoFolderOpenOutline, IoGrid, IoGridOutline, IoLockOpen, IoLockOpenOutline, IoPeople, IoPeopleOutline} from "react-icons/io5"
 
 interface MenuItem {
     icon: React.ReactNode,
@@ -44,18 +44,10 @@ export const menuItems: (pathname: string) => MenuItem[] = (pathname: string) =>
     {
         icon: <IoFileTrayFullOutline />,
         iconActive: <IoFileTrayFull />,
-        label: 'View Results',
-        abbr: 'Student Results',
-        href: '/bece-portal/dashboard/view-results',
-        active: pathname === '/bece-portal/dashboard/view-results'
-    },
-    {
-        icon: <IoRibbonOutline />,
-        iconActive: <IoRibbon />,
-        label: 'Certificates',
-        abbr: 'Generate Certificates',
-        href: '/bece-portal/dashboard/certificates',
-        active: pathname === '/bece-portal/dashboard/certificates'
+        label: 'View Uploads',
+        abbr: 'View Uploads',
+        href: '/bece-portal/dashboard/view-uploads',
+        active: pathname === '/bece-portal/dashboard/view-uploads'
     },
     {
         icon: <IoLockOpenOutline />,
