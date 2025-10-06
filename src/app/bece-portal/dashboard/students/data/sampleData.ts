@@ -13,7 +13,7 @@ export const sampleSchools: School[] = [
                 lastName: 'Asante',
                 gender: 'Male',
                 dateOfBirth: '2008-03-15',
-                class: 'JHS 3A'
+                class: 'JSS 3'
             },
             {
                 id: '2',
@@ -22,7 +22,7 @@ export const sampleSchools: School[] = [
                 lastName: 'Mensah',
                 gender: 'Female',
                 dateOfBirth: '2008-07-22',
-                class: 'JHS 3A'
+                class: 'JSS 3'
             },
             {
                 id: '3',
@@ -31,7 +31,7 @@ export const sampleSchools: School[] = [
                 lastName: 'Owusu',
                 gender: 'Male',
                 dateOfBirth: '2008-01-10',
-                class: 'JHS 3B'
+                class: 'JSS 3'
             }
         ]
     },
@@ -47,7 +47,7 @@ export const sampleSchools: School[] = [
                 lastName: 'Osei',
                 gender: 'Female',
                 dateOfBirth: '2008-05-18',
-                class: 'JHS 3A'
+                class: 'JSS 3'
             },
             {
                 id: '5',
@@ -56,7 +56,7 @@ export const sampleSchools: School[] = [
                 lastName: 'Boateng',
                 gender: 'Male',
                 dateOfBirth: '2008-09-03',
-                class: 'JHS 3A'
+                class: 'JSS 3'
             }
         ]
     },
@@ -72,7 +72,7 @@ export const sampleSchools: School[] = [
                 lastName: 'Mohammed',
                 gender: 'Female',
                 dateOfBirth: '2008-11-12',
-                class: 'JHS 3A'
+                class: 'JSS 3'
             },
             {
                 id: '7',
@@ -81,7 +81,7 @@ export const sampleSchools: School[] = [
                 lastName: 'Rahman',
                 gender: 'Male',
                 dateOfBirth: '2008-04-25',
-                class: 'JHS 3B'
+                class: 'JSS 3'
             },
             {
                 id: '8',
@@ -90,7 +90,7 @@ export const sampleSchools: School[] = [
                 lastName: 'Ibrahim',
                 gender: 'Female',
                 dateOfBirth: '2008-08-14',
-                class: 'JHS 3A'
+                class: 'JSS 3'
             }
         ]
     }

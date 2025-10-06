@@ -3,6 +3,7 @@ import { School, Student } from '../types/student.types'
 import SchoolRow from './SchoolRow'
 import StudentRow from './StudentRow'
 import Pagination from './Pagination'
+import { useGetResultsQuery } from '@/app/bece-portal/store/api/authApi'
 
 interface PaginatedSchool extends School {
     paginatedStudents: Student[]
@@ -26,6 +27,22 @@ export default function StudentsTable({
     onViewStudent, 
     onSchoolPageChange 
 }: StudentsTableProps) {
+
+    // const { data: results, isLoading, refetch } = useGetResultsQuery({
+    //     schoolId: 
+    // });
+
+    // React.useEffect(() => {
+    //     refetch();
+    // }, [refetch]);
+
+    // React.useEffect(() => {
+    //     if (isLoading) {
+    //         return;
+    //     }
+
+    //     console.log(results);
+    // }, [results, isLoading]);
     return (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">

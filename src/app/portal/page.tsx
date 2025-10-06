@@ -6,6 +6,15 @@ import Link from 'next/link'
 export default function PortalPage() {
     return (
         <div className="min-h-screen grid place-items-center bg-[#F3F3F3]">
+            <div className='absolute h-full w-full inset-0 z-[0]'>
+                <Image
+                    src="/images/asset.png"
+                    alt="logo"
+                    fill
+                    className='object-cover hue-rotate-[0deg] saturate-200 brightness-[0.75]'
+                    title='Imo State Ministry of Primary Education logo'
+                />
+            </div>
             <div className="flex max-md:flex-row flex-col justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
                 <Image
                     src="/images/ministry-logo.png"
@@ -20,7 +29,7 @@ export default function PortalPage() {
                 </span>
                 <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>Imo State Ministry of Primary Education</span>
             </div>
-            <main className="py-8 gap-4 flex flex-col w-full">
+            <main className="py-8 gap-4 flex flex-col w-full relative z-10">
                 {/* Header */}
 
                 {/* Form Container */}

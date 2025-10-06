@@ -45,7 +45,7 @@ export default function StudentRow({ student, onViewStudent }: StudentRowProps) 
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 <button
                     onClick={() => onViewStudent(student)}
-                    className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
+                    className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all cursor-pointer active:scale-75 active:rotate-1"
                 >
                     <IoEye className="w-3 h-3 mr-1" />
                     View

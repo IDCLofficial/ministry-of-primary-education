@@ -95,6 +95,14 @@ export const authApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Admin'],
     }),
     
+    // Fetch Results 
+    getResults: builder.query<BeceResultUploadResponse, string>({
+      query: (schoolId: string) => {
+        return `/bece-result/results/${schoolId}`
+      },
+      providesTags: ['Admin'],
+    }),
+
   }),
 })
 
@@ -103,4 +111,5 @@ export const {
   useGetAdminProfileQuery,
   useAdminChangePasswordMutation,
   useUploadBeceResultsMutation,
+  useGetResultsQuery,
 } = authApi

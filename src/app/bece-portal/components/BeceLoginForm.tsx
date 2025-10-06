@@ -101,8 +101,6 @@ export default function BeceLoginForm() {
           password: formData.password.trim()
         }
 
-        console.log('Admin Login attempt:', sanitizedData)
-
         const result = await adminLoginMutation(sanitizedData).unwrap()
 
         // Use auth context to store authentication data

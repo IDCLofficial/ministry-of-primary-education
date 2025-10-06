@@ -102,8 +102,8 @@ export const parseCSVText = (csvText: string, lga: string): StudentRecord[] => {
     const values = parseLine(lines[i])
 
     // Skip rows where the first 5 columns (indices 0-4) are empty
-    const isEmptyRow = values[0]?.trim() === 'Unknown School' && 
-                      values[2]?.trim() === 'Unknown'
+    const isEmptyRow = (values[0]?.trim() === 'Unknown School' || values[0]?.trim() === '') && 
+                      (values[2]?.trim() === 'Unknown' || values[2]?.trim() === '')
     
     if (isEmptyRow) {
       continue // Skip this row
@@ -112,7 +112,7 @@ export const parseCSVText = (csvText: string, lga: string): StudentRecord[] => {
     try {
       const record: StudentRecord = {
         schoolName: getStringValue(values, columnIndices.schoolName, 'Unknown School'),
-        serialNo: getNumberValue(values, columnIndices.serialNo, i),
+        serialNo: i+1,
         name: getStringValue(values, columnIndices.name, 'Unknown'),
         examNo: getStringValue(values, columnIndices.examNo, `EXAM${i.toString().padStart(3, '0')}`),
         sex: getSexValue(values, columnIndices.sex),
