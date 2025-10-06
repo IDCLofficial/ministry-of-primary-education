@@ -165,7 +165,7 @@ interface ApplicationStatusUpdateResponse {
 }
 
 interface CreatePasswordRequest {
-  password: string,
+  newPassword: string,
   confirmPassword: string
 }
 

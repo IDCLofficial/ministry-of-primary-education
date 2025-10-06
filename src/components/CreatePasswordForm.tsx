@@ -100,7 +100,7 @@ export default function CreatePasswordForm({ school }: CreatePasswordFormProps) 
     if (!hasErrors) {
       try {
         const sanitizedData = {
-          password: formData.password.trim(),
+          newPassword: formData.password.trim(),
           confirmPassword: formData.confirmPassword.trim()
         }
 
