@@ -7,28 +7,7 @@ import { useCustomModal } from '../contexts/CustomModalContext'
 import { useUploadBeceResultsMutation } from '../../../store/api/authApi'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
-
-interface StudentRecord {
-  schoolName: string
-  serialNo: number
-  name: string
-  examNo: string
-  sex: "Male" | "Female"
-  age: number
-  englishStudies: number
-  mathematics: number
-  basicScience: number
-  christianReligiousStudies: number
-  nationalValues: number
-  culturalAndCreativeArts: number
-  businessStudies: number
-  history: number
-  igbo: number
-  hausa: number
-  yoruba: number
-  preVocationalStudies: number
-  frenchLanguage: number
-}
+import { StudentRecord } from '../utils/csvParser'
 
 interface DataTableProps {
   data: StudentRecord[]
@@ -158,10 +137,12 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
         groups[schoolName].push(student)
         return groups
       }, {} as Record<string, StudentRecord[]>)
-
-      // Transform data for each school
-      const uploadPromises = Object.entries(schoolGroups).map(([schoolName, students]) => {
-        const transformedStudents = students.map(student => ({
+  
+      // Transform data according to API structure
+      const results = Object.entries(schoolGroups).map(([schoolName, students]) => ({
+        schoolName,
+        lga: students[0]?.lga, // Extract LGA from first student or use default
+        students: students.map(student => ({
           name: student.name,
           examNo: student.examNo,
           sex: student.sex === 'Male' ? 'M' : 'F',
@@ -182,74 +163,32 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             { name: 'French Language', exam: 0, ca: student.frenchLanguage }
           ].filter(subject => subject.ca > 0) // Only include subjects with CA scores
         }))
-
-        return uploadBeceResults({
-          schoolName,
-          lga: 'Unknown', // Default LGA - you might want to extract this from data
-          students: transformedStudents
-        }).unwrap()
-      })
-
-      // Use Promise.allSettled to handle multiple uploads
-      const results = await Promise.allSettled(uploadPromises)
-      
-      // Create school names array for mapping results
-      const schoolNames = Object.keys(schoolGroups)
-      
-      let successCount = 0
-      let failureCount = 0
-      const successfulSchools = new Set<string>()
-      const failedSchoolsList: string[] = []
-      
-      results.forEach((result, index) => {
-        const schoolName = schoolNames[index]
-        const studentCount = schoolGroups[schoolName]?.length || 0
-        
-        if (result.status === 'fulfilled') {
-          const uploadedCount = result.value.uploadedCount || studentCount
-          successCount += uploadedCount
-          successfulSchools.add(schoolName)
-        } else {
-          failureCount++
-          failedSchoolsList.push(schoolName)
-        }
-      })
+      }))
+  
+      await uploadBeceResults({ result: results }).unwrap()
       
       const endTime = performance.now()
       const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
       
       toast.dismiss()
       
-      // Update failed schools state for display
-      setFailedSchools(failedSchoolsList)
-      
-      // Filter out successful uploads from data
-      const remainingData = data.filter(student => !successfulSchools.has(student.schoolName))
-      
-      if (failureCount === 0) {
-        // All successful - clear all data
-        onDataChange([])
-        setFailedSchools([])
-        toast.success(`Successfully saved ${successCount} CA records to database in ${elapsedTime}s`)
-        router.push('/bece-portal/dashboard/students')
-      } else if (successCount > 0) {
-        // Partial success - keep only failed data
-        onDataChange(remainingData)
-        toast.success(`Partially successful: ${successCount} records saved, ${failureCount} schools failed (${elapsedTime}s)`)
-        toast.error(`Failed schools: ${failedSchoolsList.join(', ')}. Please retry these uploads.`)
-      } else {
-        // All failed - keep all data
-        toast.error(`Failed to save CA data to database (${elapsedTime}s)`)
-        toast.error(`All uploads failed. Please check your connection and try again.`)
-      }
+      // Clear data and show success message
+      onDataChange([])
+      setFailedSchools([])
+      toast.success(
+        `Successfully saved ${data.length} CA records to database in ${elapsedTime}s`
+      )
+      router.push('/bece-portal/dashboard/students')
       
     } catch (error) {
       const endTime = performance.now()
       const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
-      console.error(JSON.stringify(error));
+      
+      console.error('Error saving CA data:', error)
       
       toast.dismiss()
       toast.error(`Failed to save CA data to database (${elapsedTime}s)`)
+      toast.error('Please check your connection and try again.')
     } finally {
       setIsSaving(false)
     }

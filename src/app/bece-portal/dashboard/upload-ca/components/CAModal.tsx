@@ -3,28 +3,7 @@
 import React, { useState } from 'react'
 import { IoClose, IoSave, IoPencil } from 'react-icons/io5'
 import toast from 'react-hot-toast'
-
-interface StudentRecord {
-  schoolName: string
-  serialNo: number
-  name: string
-  examNo: string
-  sex: "Male" | "Female"
-  age: number
-  englishStudies: number
-  mathematics: number
-  basicScience: number
-  christianReligiousStudies: number
-  nationalValues: number
-  culturalAndCreativeArts: number
-  businessStudies: number
-  history: number
-  igbo: number
-  hausa: number
-  yoruba: number
-  preVocationalStudies: number
-  frenchLanguage: number
-}
+import { StudentRecord } from '../utils/csvParser'
 
 interface CAModalProps {
   isOpen: boolean

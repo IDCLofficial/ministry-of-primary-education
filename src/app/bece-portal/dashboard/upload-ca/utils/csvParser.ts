@@ -18,6 +18,7 @@ interface StudentRecord {
   yoruba: number
   preVocationalStudies: number
   frenchLanguage: number
+  lga: string
 }
 
 export const parseCSVFile = (file: File): Promise<StudentRecord[]> => {
@@ -27,7 +28,8 @@ export const parseCSVFile = (file: File): Promise<StudentRecord[]> => {
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string
-        const records = parseCSVText(text)
+        const lga = file.name.split(" - ")[1];
+        const records = parseCSVText(text, lga)
         resolve(records)
       } catch (error) {
         reject(error)
@@ -42,7 +44,7 @@ export const parseCSVFile = (file: File): Promise<StudentRecord[]> => {
   })
 }
 
-export const parseCSVText = (csvText: string): StudentRecord[] => {
+export const parseCSVText = (csvText: string, lga: string): StudentRecord[] => {
   const lines = csvText.trim().split('\n').filter(line => line.trim() !== '')
 
   if (lines.length < 2) {
@@ -101,8 +103,7 @@ export const parseCSVText = (csvText: string): StudentRecord[] => {
 
     // Skip rows where the first 5 columns (indices 0-4) are empty
     const isEmptyRow = values[0]?.trim() === 'Unknown School' && 
-                      values[2]?.trim() === 'Unknown' && 
-                      values[3].startsWith('EXAM')
+                      values[2]?.trim() === 'Unknown'
     
     if (isEmptyRow) {
       continue // Skip this row
@@ -128,7 +129,8 @@ export const parseCSVText = (csvText: string): StudentRecord[] => {
         hausa: getNumberValue(values, columnIndices.hausa, 0),
         yoruba: getNumberValue(values, columnIndices.yoruba, 0),
         preVocationalStudies: getNumberValue(values, columnIndices.preVocationalStudies, 0),
-        frenchLanguage: getNumberValue(values, columnIndices.frenchLanguage, 0)
+        frenchLanguage: getNumberValue(values, columnIndices.frenchLanguage, 0),
+        lga: lga
       }
 
       records.push(record)

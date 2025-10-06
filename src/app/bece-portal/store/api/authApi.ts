@@ -43,10 +43,14 @@ interface Student {
   subjects: Subject[]
 }
 
-interface BeceResultUploadRequest {
+interface BeceResultUpload{
   schoolName: string
   lga: string
   students: Student[]
+}
+
+interface BeceResultUploadRequest {
+  result: BeceResultUpload[]
 }
 
 interface BeceResultUploadResponse {
