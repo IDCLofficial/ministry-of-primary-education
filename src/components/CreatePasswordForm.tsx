@@ -5,8 +5,8 @@ import FormInput from './FormInput'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
 
 interface CreatePasswordFormProps {
-  uniqueCode: string
-  onSubmit: (data: { uniqueCode: string; password: string; confirmPassword: string }) => void
+  school: string
+  onSubmit: (data: { password: string; confirmPassword: string }) => void
 }
 
 interface PasswordData {
@@ -19,7 +19,7 @@ interface PasswordErrors {
   confirmPassword?: string
 }
 
-export default function CreatePasswordForm({ uniqueCode, onSubmit }: CreatePasswordFormProps) {
+export default function CreatePasswordForm({ school, onSubmit }: CreatePasswordFormProps) {
   const [formData, setFormData] = useState<PasswordData>({
     password: '',
     confirmPassword: ''
@@ -102,7 +102,6 @@ export default function CreatePasswordForm({ uniqueCode, onSubmit }: CreatePassw
       setIsLoading(true)
       try {
         const sanitizedData = {
-          uniqueCode: uniqueCode,
           password: formData.password.trim(),
           confirmPassword: formData.confirmPassword.trim()
         }
@@ -123,7 +122,7 @@ export default function CreatePasswordForm({ uniqueCode, onSubmit }: CreatePassw
       
       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
         <p className="text-sm text-blue-700">
-          <strong>Unique Code:</strong> {uniqueCode}
+          <strong>School Name:</strong> {school}
         </p>
         <p className="text-xs text-blue-600 mt-1">
           Please create a secure password for your account
