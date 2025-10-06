@@ -1,16 +1,32 @@
+export interface Subject {
+    name: string
+    exam: number
+    ca: number
+}
+
 export interface Student {
-    id: string
+    _id: string
+    name: string
     examNo: string
-    firstName: string
-    lastName: string
-    gender: 'Male' | 'Female'
-    dateOfBirth: string
-    class: string
+    sex: string
+    age: number
+    school: string
+    subjects: Subject[]
+    createdAt: string
+    updatedAt: string
+    __v: number
 }
 
 export interface School {
-    id: string
-    name: string
-    location: string
-    students: Student[]
+    _id: string
+    schoolName: string
+    lga: string | { _id: string; name: string }
+    studentCount: number
+    students?: Student[] // Optional as it will be fetched separately
+}
+
+export interface BeceResultUploadResponse {
+    message: string
+    uploadedCount: number
+    students?: Student[] // The actual students data from the results endpoint
 }

@@ -10,16 +10,16 @@ export function useSchoolPagination(schools: School[], itemsPerPage: number = 5)
 
     const paginatedSchools = useMemo(() => {
         return schools.map(school => {
-            const currentPage = paginationState[school.id] || 1
+            const currentPage = paginationState[school._id] || 1
             const startIndex = (currentPage - 1) * itemsPerPage
             const endIndex = startIndex + itemsPerPage
             
             return {
                 ...school,
-                paginatedStudents: school.students.slice(startIndex, endIndex),
+                paginatedStudents: (school.students || []).slice(startIndex, endIndex),
                 currentPage,
-                totalPages: Math.ceil(school.students.length / itemsPerPage),
-                totalStudents: school.students.length
+                totalPages: Math.ceil((school.students || []).length / itemsPerPage),
+                totalStudents: (school.students || []).length
             }
         })
     }, [schools, paginationState, itemsPerPage])

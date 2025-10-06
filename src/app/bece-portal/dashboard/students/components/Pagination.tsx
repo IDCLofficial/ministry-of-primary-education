@@ -71,7 +71,7 @@ export default function Pagination({
                 <button
                     onClick={() => onPageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all active:scale-75 active:rotate-1 cursor-pointer ${
                         currentPage === 1
                             ? 'text-gray-400 cursor-not-allowed'
                             : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
@@ -90,7 +90,7 @@ export default function Pagination({
                             ) : (
                                 <button
                                     onClick={() => onPageChange(page as number)}
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-all active:scale-75 active:rotate-1 cursor-pointer ${
                                         currentPage === page
                                             ? 'bg-blue-600 text-white'
                                             : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
@@ -107,7 +107,7 @@ export default function Pagination({
                 <button
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all active:scale-75 active:rotate-1 cursor-pointer ${
                         currentPage === totalPages
                             ? 'text-gray-400 cursor-not-allowed'
                             : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'

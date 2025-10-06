@@ -24,18 +24,34 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
     const [isEditing, setIsEditing] = useState(false)
     const [editedResults, setEditedResults] = useState<ExamResult[]>([])
 
-    // Sample exam results and grades - memoized to prevent re-creation on every render
-    const initialExamResults: ExamResult[] = useMemo(() => [
-        { subject: 'English Language', caScore: 25, examScore: 68, total: 93, grade: 'A1' },
-        { subject: 'Mathematics', caScore: 28, examScore: 72, total: 100, grade: 'A1' },
-        { subject: 'Basic Science', caScore: 22, examScore: 65, total: 87, grade: 'B2' },
-        { subject: 'Social Studies', caScore: 24, examScore: 58, total: 82, grade: 'B2' },
-        { subject: 'French Language', caScore: 20, examScore: 45, total: 65, grade: 'C4' },
-        { subject: 'Creative Arts', caScore: 26, examScore: 62, total: 88, grade: 'B2' },
-        { subject: 'Business Studies', caScore: 23, examScore: 55, total: 78, grade: 'B3' },
-        { subject: 'Computer Studies', caScore: 27, examScore: 70, total: 97, grade: 'A1' },
-        { subject: 'Agricultural Science', caScore: 21, examScore: 48, total: 69, grade: 'C5' }
-    ], [])
+    // Grade calculation function
+    const calculateGrade = (total: number): string => {
+        if (total >= 80) return 'A1'
+        if (total >= 70) return 'B2'
+        if (total >= 65) return 'B3'
+        if (total >= 60) return 'C4'
+        if (total >= 55) return 'C5'
+        if (total >= 50) return 'C6'
+        if (total >= 45) return 'D7'
+        if (total >= 40) return 'E8'
+        return 'F9'
+    }
+
+    // Convert student subjects to exam results format
+    const initialExamResults: ExamResult[] = useMemo(() => {
+        if (!student?.subjects) return []
+        
+        return student.subjects.map(subject => {
+            const total = subject.ca + subject.exam
+            return {
+                subject: subject.name,
+                caScore: subject.ca,
+                examScore: subject.exam,
+                total,
+                grade: calculateGrade(total)
+            }
+        })
+    }, [student?.subjects])
 
     // Initialize edited results when modal opens or student changes
     useEffect(() => {
@@ -56,18 +72,6 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
 
     const examResults = isEditing ? editedResults : initialExamResults
 
-    const calculateGrade = (total: number): string => {
-        if (total >= 80) return 'A1'
-        if (total >= 70) return 'B2'
-        if (total >= 65) return 'B3'
-        if (total >= 60) return 'C4'
-        if (total >= 55) return 'C5'
-        if (total >= 50) return 'C6'
-        if (total >= 45) return 'D7'
-        if (total >= 40) return 'E8'
-        return 'F9'
-    }
-
     const handleEdit = () => {
         setIsEditing(true)
     }
@@ -77,7 +81,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
             onUpdate(student, editedResults)
         }
         setIsEditing(false)
-        toast.success(`Successfully updated exam results for ${student.firstName} ${student.lastName}`)
+        toast.success(`Successfully updated exam results for ${student.name}`)
     }
 
     const handleCancel = () => {
@@ -155,7 +159,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                 BECE Student Report
                             </h3>
                             <p className="text-sm text-gray-600 mt-1">
-                                {student.firstName} {student.lastName} - {student.examNo}
+                                <span className="capitalize">{student.name?.toLowerCase()}</span> - <span className="uppercase">{student.examNo}</span>
                             </p>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -205,11 +209,11 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                     <IoSchool className="w-4 h-4 mr-1" />
                                     School Name
                                 </label>
-                                <p className="text-sm text-gray-900 mt-1">{schoolName || 'N/A'}</p>
+                                <p className="text-sm text-gray-900 mt-1 capitalize">{schoolName?.toLowerCase() || 'N/A'}</p>
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-gray-500">Full Name</label>
-                                <p className="text-sm text-gray-900 mt-1">{student.firstName} {student.lastName}</p>
+                                <p className="text-sm text-gray-900 mt-1 capitalize">{student.name?.toLowerCase() || 'N/A'}</p>
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-gray-500">Exam Number</label>
@@ -217,23 +221,21 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-gray-500 flex items-center">
-                                    {student.gender === 'Male' ? <IoMale className="w-4 h-4 mr-1" /> : <IoFemale className="w-4 h-4 mr-1" />}
+                                    {student.sex === 'M' ? <IoMale className="w-4 h-4 mr-1" /> : <IoFemale className="w-4 h-4 mr-1" />}
                                     Gender
                                 </label>
-                                <p className="text-sm text-gray-900 mt-1">{student.gender}</p>
+                                <p className="text-sm text-gray-900 mt-1">{student.sex === 'M' ? 'Male' : 'Female'}</p>
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-gray-500 flex items-center">
                                     <IoCalendar className="w-4 h-4 mr-1" />
-                                    Date of Birth
+                                    Updated At
                                 </label>
-                                <p className="text-sm text-gray-900 mt-1">
-                                    {new Date(student.dateOfBirth).toLocaleDateString('en-GB')}
-                                </p>
+                                <p className="text-sm text-gray-900 mt-1">{new Date(student.updatedAt).toUTCString()}</p>
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-gray-500">Class</label>
-                                <p className="text-sm text-gray-900 mt-1">{student.class}</p>
+                                <label className="text-sm font-medium text-gray-500">Created At</label>
+                                <p className="text-sm text-gray-900 mt-1">{new Date(student.createdAt).toUTCString()}</p>
                             </div>
                         </div>
                     </div>

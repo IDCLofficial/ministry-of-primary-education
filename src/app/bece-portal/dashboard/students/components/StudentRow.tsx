@@ -12,35 +12,32 @@ export default function StudentRow({ student, onViewStudent }: StudentRowProps) 
         <tr className="hover:bg-gray-50 transition-colors">
             <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center pl-10">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-xs font-medium text-gray-600">
-                            {student.firstName.charAt(0)}{student.lastName.charAt(0)}
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-3 border border-black/10">
+                        <span className="text-xs font-semibold text-gray-600">
+                            {student.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2)}
                         </span>
                     </div>
                     <div>
-                        <div className="text-sm font-medium text-gray-900">
-                            {student.firstName} {student.lastName}
+                        <div className="text-sm font-medium text-gray-900 capitalize">
+                            {student.name.toLowerCase()}
                         </div>
                     </div>
                 </div>
             </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono uppercase">
                 {student.examNo}
             </td>
             <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                    student.gender === 'Male' 
+                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border border-black/10 ${
+                    student.sex === 'M' 
                         ? 'bg-blue-100 text-blue-800' 
                         : 'bg-pink-100 text-pink-800'
                 }`}>
-                    {student.gender}
+                    {student.sex}
                 </span>
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {new Date(student.dateOfBirth).toLocaleDateString('en-GB')}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {student.class}
+                {student.subjects.length} subjects
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 <button

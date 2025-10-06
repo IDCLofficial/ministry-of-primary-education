@@ -3,7 +3,6 @@ import { School, Student } from '../types/student.types'
 import SchoolRow from './SchoolRow'
 import StudentRow from './StudentRow'
 import Pagination from './Pagination'
-import { useGetResultsQuery } from '@/app/bece-portal/store/api/authApi'
 
 interface PaginatedSchool extends School {
     paginatedStudents: Student[]
@@ -27,22 +26,6 @@ export default function StudentsTable({
     onViewStudent, 
     onSchoolPageChange 
 }: StudentsTableProps) {
-
-    // const { data: results, isLoading, refetch } = useGetResultsQuery({
-    //     schoolId: 
-    // });
-
-    // React.useEffect(() => {
-    //     refetch();
-    // }, [refetch]);
-
-    // React.useEffect(() => {
-    //     if (isLoading) {
-    //         return;
-    //     }
-
-    //     console.log(results);
-    // }, [results, isLoading]);
     return (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -59,10 +42,7 @@ export default function StudentsTable({
                                 Gender
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Date of Birth
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Class
+                                Subjects
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Actions
@@ -71,19 +51,19 @@ export default function StudentsTable({
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {schools.map((school) => (
-                            <React.Fragment key={school.id}>
+                            <React.Fragment key={school._id}>
                                 <SchoolRow 
                                     school={school}
-                                    isExpanded={expandedSchools.has(school.id)}
+                                    isExpanded={expandedSchools.has(school._id)}
                                     onToggle={onToggleSchool}
                                 />
-                                {expandedSchools.has(school.id) && (
+                                {expandedSchools.has(school._id) && (
                                     <>
-                                        {school.paginatedStudents.map((student) => (
+                                        {school.paginatedStudents.map((student, index) => (
                                             <StudentRow 
-                                                key={student.id} 
+                                                key={`${student.examNo}-${index}`} 
                                                 student={student} 
-                                                onViewStudent={(student) => onViewStudent(student, school.name)}
+                                                onViewStudent={(student) => onViewStudent(student, school.schoolName)}
                                             />
                                         ))}
                                         {school.totalPages > 1 && (
@@ -92,7 +72,7 @@ export default function StudentsTable({
                                                     <Pagination
                                                         currentPage={school.currentPage}
                                                         totalPages={school.totalPages}
-                                                        onPageChange={(page) => onSchoolPageChange(school.id, page)}
+                                                        onPageChange={(page) => onSchoolPageChange(school._id, page)}
                                                         itemsPerPage={5}
                                                         totalItems={school.totalStudents}
                                                     />

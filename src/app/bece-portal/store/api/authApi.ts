@@ -58,6 +58,18 @@ interface BeceResultUploadResponse {
   uploadedCount: number
 }
 
+interface BeceResultsResponse {
+  message: string
+  students: Student[]
+}
+
+interface School {
+  _id: string
+  schoolName: string
+  lga: string | { _id: string; name: string },
+  studentCount: number,
+}
+
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Admin login
@@ -96,10 +108,16 @@ export const authApi = apiSlice.injectEndpoints({
     }),
     
     // Fetch Results 
-    getResults: builder.query<BeceResultUploadResponse, string>({
+    getResults: builder.query<BeceResultsResponse, string>({
       query: (schoolId: string) => {
         return `/bece-result/results/${schoolId}`
       },
+      providesTags: ['Admin'],
+    }),
+
+    // Fetch Schools
+    getSchools: builder.query<School[], void>({
+      query: () => '/bece-schools',
       providesTags: ['Admin'],
     }),
 
@@ -112,4 +130,5 @@ export const {
   useAdminChangePasswordMutation,
   useUploadBeceResultsMutation,
   useGetResultsQuery,
+  useGetSchoolsQuery,
 } = authApi

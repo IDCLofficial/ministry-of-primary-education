@@ -5,10 +5,10 @@ import SearchBar from './components/SearchBar'
 import StudentsTable from './components/StudentsTable'
 import EmptyState from './components/EmptyState'
 import StudentModal from './components/StudentModal'
-import { sampleSchools } from './data/sampleData'
 import { useStudentFiltering } from './hooks/useStudentFiltering'
 import { useSchoolPagination } from './hooks/useSchoolPagination'
 import { Student } from './types/student.types'
+import { useSchoolsWithStudents } from './hooks/useSchoolsWithStudents'
 
 export default function StudentsPage() {
     const [expandedSchools, setExpandedSchools] = useState<Set<string>>(new Set())
@@ -17,8 +17,10 @@ export default function StudentsPage() {
     const [selectedSchoolName, setSelectedSchoolName] = useState<string>('')
     const [isModalOpen, setIsModalOpen] = useState(false)
 
-    const { filteredSchools, totalStudents } = useStudentFiltering(sampleSchools, searchQuery)
-    const { paginatedSchools, setSchoolPage } = useSchoolPagination(filteredSchools, 5)
+
+    const { schools, isLoading, hasError, error } = useSchoolsWithStudents()
+    const { filteredSchools, totalStudents: filteredTotalStudents } = useStudentFiltering(schools, searchQuery)
+    const { paginatedSchools, setSchoolPage } = useSchoolPagination(filteredSchools, 5);
 
     const toggleSchool = (schoolId: string) => {
         const newExpanded = new Set(expandedSchools)
@@ -42,12 +44,38 @@ export default function StudentsPage() {
         setSelectedSchoolName('')
     }
 
+    if (isLoading) {
+        return (
+            <div className='p-6 bg-white/50 backdrop-blur-[2px] h-full overflow-y-auto border border-black/10 m-1 mb-0 space-y-6'>
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="mt-4 text-gray-600">Loading schools and students...</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (hasError) {
+        return (
+            <div className='p-6 bg-white/50 backdrop-blur-[2px] h-full overflow-y-auto border border-black/10 m-1 mb-0 space-y-6'>
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                        <div className="text-red-600 text-lg font-medium">Error Loading Data</div>
+                        <p className="mt-2 text-gray-600">{typeof error === 'string' ? error : 'Failed to load schools and students'}</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <React.Fragment>
             <div className='p-6 bg-white/50 backdrop-blur-[2px] h-full overflow-y-auto border border-black/10 m-1 mb-0 space-y-6'>
                 <StudentTableHeader
-                    schoolCount={sampleSchools.length}
-                    studentCount={totalStudents}
+                    schoolCount={schools.length}
+                    studentCount={filteredTotalStudents}
                 />
                 <SearchBar
                     searchQuery={searchQuery}

@@ -5,18 +5,17 @@ export function useStudentFiltering(schools: School[], searchQuery: string) {
     const filteredSchools = useMemo(() => {
         return schools.map(school => ({
             ...school,
-            students: school.students.filter(student =>
+            students: (school.students || []).filter(student =>
                 searchQuery === '' ||
-                student.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                student.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 student.examNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                school.name.toLowerCase().includes(searchQuery.toLowerCase())
+                school.schoolName.toLowerCase().includes(searchQuery.toLowerCase())
             )
-        })).filter(school => school.students.length > 0 || searchQuery === '')
+        })).filter(school => (school.students || []).length > 0 || searchQuery === '')
     }, [schools, searchQuery])
 
     const totalStudents = useMemo(() => {
-        return schools.reduce((sum, school) => sum + school.students.length, 0)
+        return schools.reduce((sum, school) => sum + (school.students || []).length, 0)
     }, [schools])
 
     return {

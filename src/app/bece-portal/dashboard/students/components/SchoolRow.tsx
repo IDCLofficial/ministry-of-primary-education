@@ -8,11 +8,19 @@ interface SchoolRowProps {
     onToggle: (schoolId: string) => void
 }
 
+// Helper function to safely extract LGA name
+const getLgaName = (lga: string | { _id: string; name: string }): string => {
+    if (typeof lga === 'string') {
+        return lga
+    }
+    return lga?.name || 'Unknown LGA'
+}
+
 export default function SchoolRow({ school, isExpanded, onToggle }: SchoolRowProps) {
     return (
         <tr 
             className="bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors"
-            onClick={() => onToggle(school.id)}
+            onClick={() => onToggle(school._id)}
         >
             <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
@@ -25,11 +33,11 @@ export default function SchoolRow({ school, isExpanded, onToggle }: SchoolRowPro
                     </div>
                     <IoSchool className="w-5 h-5 text-blue-600 mr-3" />
                     <div>
-                        <div className="text-sm font-medium text-gray-900">
-                            {school.name}
+                        <div className="text-sm font-medium text-gray-900 capitalize">
+                            {school.schoolName.toLowerCase()}
                         </div>
-                        <div className="text-sm text-gray-500">
-                            {school.location} • {school.students.length} students
+                        <div className="text-sm text-gray-500 capitalize">
+                            {getLgaName(school.lga).toLowerCase()} • {school.students?.length || school.studentCount} students
                         </div>
                     </div>
                 </div>
