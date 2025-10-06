@@ -40,22 +40,17 @@ export default function ProtectedRoute({ children, requireAuth = true }: Protect
     return null
   }
 
-  const handlePasswordCreation = (data: { password: string; confirmPassword: string; }) => {
-    console.log({
-      data
-    })
-  }
-
   if (school?.isFirstLogin) {
-    <div className="min-h-screen grid place-items-center bg-[#F3F3F3]">
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+    return (
+      <div className="min-h-screen grid place-items-center bg-[#F3F3F3]">
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
 
           <CreatePasswordForm
             school={school.schoolName}
-            onSubmit={handlePasswordCreation}
           />
+        </div>
       </div>
-    </div>
+    )
   }
 
   return <>{children}</>

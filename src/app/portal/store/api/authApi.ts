@@ -164,6 +164,15 @@ interface ApplicationStatusUpdateResponse {
   success: boolean
 }
 
+interface CreatePasswordRequest {
+  password: string,
+  confirmPassword: string
+}
+
+interface CreatePasswordResponse {
+  message: string
+}
+
 // Auth API endpoints
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -208,6 +217,18 @@ export const authApi = apiSlice.injectEndpoints({
         url: `${API_BASE_URL}${endpoints.LOGIN}`,
         method: 'POST',
         body: loginData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+    }),
+
+    // Create password
+    createPassword: builder.mutation<CreatePasswordResponse, CreatePasswordRequest>({
+      query: (createPasswordData) => ({
+        url: `${API_BASE_URL}${endpoints.CREATE_PASSWORD}`,
+        method: 'PATCH',
+        body: createPasswordData,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -315,6 +336,7 @@ export const {
   useGetSchoolNamesQuery,
   useSubmitSchoolApplicationMutation,
   useLoginMutation,
+  useCreatePasswordMutation,
   useGetProfileQuery,
   useGetStudentsBySchoolQuery,
   useCreateStudentPaymentMutation,
