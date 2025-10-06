@@ -80,6 +80,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
         onClose()
       }
     } catch (error) {
+      setIsProcessing(false);
       console.error('Payment initiation failed:', error)
       const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'Payment initiation failed. Please try again.'
       alert(errorMessage)

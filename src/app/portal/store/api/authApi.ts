@@ -248,15 +248,28 @@ export const authApi = apiSlice.injectEndpoints({
     }),
 
     // Get students by school ID
-    getStudentsBySchool: builder.query<StudentsResponse, { schoolId: string; page?: number; limit?: number }>({
-      query: ({ schoolId, page = 1, limit = 12 }) => ({
-        url: `${API_BASE_URL}${endpoints.GET_STUDENTS_BY_SCHOOL}/${schoolId}?page=${page}&limit=${limit}`,
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
-          'Content-Type': 'application/json',
-        },
-      }),
+    getStudentsBySchool: builder.query<StudentsResponse, { schoolId: string; page?: number; limit?: number; sort?: string; class?: string; year?: number; gender?: string, searchTerm?: string }>({
+      query: ({ schoolId, page = 1, limit = 12, sort, class: className, year, gender, searchTerm }) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+        });
+
+        if (sort) params.append('sort', sort);
+        if (className) params.append('class', className);
+        if (year) params.append('year', year.toString());
+        if (gender) params.append('gender', gender);
+        if (searchTerm) params.append('searchTerm', searchTerm);
+
+        return {
+          url: `${API_BASE_URL}${endpoints.GET_STUDENTS_BY_SCHOOL}/${schoolId}?${params.toString()}`,
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+            'Content-Type': 'application/json',
+          },
+        };
+      },
       providesTags: ['Students'],
     }),
 

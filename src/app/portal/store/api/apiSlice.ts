@@ -8,7 +8,7 @@ export const apiSlice = createApi({
         prepareHeaders: (headers, { endpoint } ) => {
             const token = localStorage.getItem('access_token');
             // Add ngrok header for external API calls
-            const skipAuthEndpoints = ['login', 'register']
+            const skipAuthEndpoints = ['login', 'submitSchoolApplication', "getSchoolNames"]
             headers.set('ngrok-skip-browser-warning', 'true')
             if (!skipAuthEndpoints.includes(endpoint)) {
                 if (!token) {

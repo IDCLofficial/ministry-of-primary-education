@@ -19,6 +19,15 @@ interface Student {
   onboardingStatus: 'onboarded' | 'pending' | 'not_onboarded'
 }
 
+export type SortableField = 'id' | 'name' | 'gender' | 'class' | 'year' | 'paymentStatus'
+type SortDirection = 'asc' | 'desc' | null
+
+export interface SortState {
+  field: SortableField | null
+  direction: SortDirection
+  clickCount: number
+}
+
 interface StudentRegistrationProps {
   students: Student[]
   selectedStudents: string[]
@@ -40,25 +49,16 @@ interface StudentRegistrationProps {
   onPageChange: (page: number) => void
   onItemsPerPageChange: (itemsPerPage: number) => void
   isLoading?: boolean
-}
-
-type SortableField = 'studentId' | 'fullName' | 'gender' | 'class' | 'examYear' | 'paymentStatus'
-type SortDirection = 'asc' | 'desc' | null
-
-interface SortState {
-  field: SortableField | null
-  direction: SortDirection
-  clickCount: number
+  handleSort: (field: SortableField) => void
+  sortState: SortState
 }
 
 export default function StudentRegistration({
   students,
   selectedStudents,
   onStudentSelect,
-  // onSelectAll,
   searchTerm,
   onSearchChange,
-  // filters,
   onRefreshStudents,
   currentPage: currentPageProp,
   totalPages: totalPagesProp,
@@ -66,16 +66,13 @@ export default function StudentRegistration({
   totalItems: totalItemsProp,
   onPageChange,
   onItemsPerPageChange,
+  handleSort,
+  sortState,
   isLoading = false
 }: StudentRegistrationProps) {
   const { school } = useAuth()
   const [showOnboardingModal, setShowOnboardingModal] = useState(false)
   const [updateStudent, setUpdateStudent] = useState<Student | null>(null)
-  const [sortState, setSortState] = useState<SortState>({
-    field: null,
-    direction: null,
-    clickCount: 0
-  })
   
   // Check if selection should be disabled
   const isSelectionDisabled = process.env.NEXT_PUBLIC_ENV === 'temp'
@@ -83,27 +80,6 @@ export default function StudentRegistration({
   // Show skeleton while loading
   if (isLoading) {
     return <StudentRegistrationSkeleton />
-  }
-
-  // Handle column sorting
-  const handleSort = (field: SortableField) => {
-    setSortState(prevState => {
-      if (prevState.field === field) {
-        // Same field clicked
-        const newClickCount = prevState.clickCount + 1
-        if (newClickCount === 1) {
-          return { field, direction: 'asc', clickCount: 1 }
-        } else if (newClickCount === 2) {
-          return { field, direction: 'desc', clickCount: 2 }
-        } else {
-          // Third click - reset to default
-          return { field: null, direction: null, clickCount: 0 }
-        }
-      } else {
-        // Different field clicked - reset count and start with asc
-        return { field, direction: 'asc', clickCount: 1 }
-      }
-    })
   }
 
   // Note: With server-side pagination, filtering and sorting should be handled by the API
@@ -267,17 +243,17 @@ export default function StudentRegistration({
               </th>}
               <th 
                 className="text-left py-3 px-4 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-                onClick={() => handleSort('studentId')}
+                onClick={() => handleSort('id')}
               >
                 Student ID
-                {getSortIcon('studentId')}
+                {getSortIcon('id')}
               </th>
               <th 
                 className="text-left py-3 px-4 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-                onClick={() => handleSort('fullName')}
+                onClick={() => handleSort('name')}
               >
                 Full Name
-                {getSortIcon('fullName')}
+                {getSortIcon('name')}
               </th>
               <th 
                 className="text-left py-3 px-4 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
@@ -295,17 +271,15 @@ export default function StudentRegistration({
               </th>
               <th 
                 className="text-left py-3 px-4 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-                onClick={() => handleSort('examYear')}
+                onClick={() => handleSort('year')}
               >
                 Exam Year
-                {getSortIcon('examYear')}
+                {getSortIcon('year')}
               </th>
               <th 
                 className="text-left py-3 px-4 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-                onClick={() => handleSort('paymentStatus')}
               >
                 Payment Status
-                {getSortIcon('paymentStatus')}
               </th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
                 Onboarding Status

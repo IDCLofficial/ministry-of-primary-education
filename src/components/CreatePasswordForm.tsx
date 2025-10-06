@@ -107,6 +107,8 @@ export default function CreatePasswordForm({ school }: CreatePasswordFormProps) 
         await createPasswordMutation(sanitizedData).unwrap();
         refetchProfile();
       } catch (error) {
+        const apiError = error as { data?: { message?: string } }
+        setErrors((prev)=> ({...prev, password: apiError.data?.message}))
         console.error('Password creation error:', error)
         throw new Error('Failed to create password')
       }
@@ -131,8 +133,8 @@ export default function CreatePasswordForm({ school }: CreatePasswordFormProps) 
       </h2>
       
       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-700">
-          <strong>School Name:</strong> {school}
+        <p className="text-sm text-blue-700 capitalize">
+          <strong>School Name:</strong> {school.toLowerCase()}
         </p>
         <p className="text-xs text-blue-600 mt-1">
           You&apos;re almost done! Please create a new, secure password to complete your account setup
