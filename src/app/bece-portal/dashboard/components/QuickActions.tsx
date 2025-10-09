@@ -5,16 +5,23 @@ import {
   IoFileTrayFull, 
   IoFolderOpen, 
   IoEye, 
-  IoRibbon, 
   IoPersonAdd, 
-  IoLockOpen
+  IoLockOpen,
+  IoCloudUploadOutline,
+  IoFileTrayFullOutline,
+  IoFolderOpenOutline,
+  IoEyeOutline,
+  IoPersonAddOutline,
+  IoLockOpenOutline,
+  IoCloudUpload
 } from 'react-icons/io5'
 
 interface QuickAction {
   id: string
   title: string
   description: string
-  icon: React.ReactNode
+  icon: React.ReactNode,
+  activeIcon: React.ReactNode,
   href: string
   color: string
   bgColor: string
@@ -26,7 +33,8 @@ export default function QuickActions() {
       id: '1',
       title: 'Upload CA',
       description: 'Upload Continuous Assessment results',
-      icon: <IoFileTrayFull className="w-6 h-6" />,
+      icon: <IoFileTrayFullOutline className="w-6 h-6" />,
+      activeIcon: <IoFileTrayFull className="w-6 h-6" />,
       href: '/bece-portal/dashboard/upload-ca',
       color: 'text-gray-700',
       bgColor: 'bg-gray-50 hover:bg-gray-100'
@@ -35,7 +43,8 @@ export default function QuickActions() {
       id: '2',
       title: 'Upload Exams',
       description: 'Upload examination results',
-      icon: <IoFolderOpen className="w-6 h-6" />,
+      icon: <IoFolderOpenOutline className="w-6 h-6" />,
+      activeIcon: <IoFolderOpen className="w-6 h-6" />,
       href: '/bece-portal/dashboard/upload-exams',
       color: 'text-gray-700',
       bgColor: 'bg-gray-50 hover:bg-gray-100'
@@ -44,25 +53,28 @@ export default function QuickActions() {
       id: '3',
       title: 'View Results',
       description: 'Review and manage student results',
-      icon: <IoEye className="w-6 h-6" />,
+      icon: <IoEyeOutline className="w-6 h-6" />,
+      activeIcon: <IoEye className="w-6 h-6" />,
       href: '/bece-portal/dashboard/view-results',
       color: 'text-gray-700',
       bgColor: 'bg-gray-50 hover:bg-gray-100'
     },
     {
       id: '4',
-      title: 'Generate Certificates',
-      description: 'Create and download certificates',
-      icon: <IoRibbon className="w-6 h-6" />,
-      href: '/bece-portal/dashboard/certificates',
-      color: 'text-gray-700',
+      title: 'View Uploads',
+      description: 'View Upload History',
+      icon: <IoCloudUploadOutline className="w-6 h-6" />,
+      activeIcon: <IoCloudUpload className="w-6 h-6" />,
+      href: '/bece-portal/dashboard/view-uploads',
+      color: 'text-gray-700', 
       bgColor: 'bg-gray-50 hover:bg-gray-100'
     },
     {
       id: '5',
       title: 'Student Management',
       description: 'Manage student records',
-      icon: <IoPersonAdd className="w-6 h-6" />,
+      icon: <IoPersonAddOutline className="w-6 h-6" />,
+      activeIcon: <IoPersonAdd className="w-6 h-6" />,
       href: '/bece-portal/dashboard/students',
       color: 'text-gray-700',
       bgColor: 'bg-gray-50 hover:bg-gray-100'
@@ -71,7 +83,8 @@ export default function QuickActions() {
       id: '6',
       title: 'Audit Trail',
       description: 'View audit trail',
-      icon: <IoLockOpen className="w-6 h-6" />,
+      icon: <IoLockOpenOutline className="w-6 h-6" />,
+      activeIcon: <IoLockOpen className="w-6 h-6" />,
       href: '/bece-portal/dashboard/audit-trail',
       color: 'text-gray-700',
       bgColor: 'bg-gray-50 hover:bg-gray-100'
@@ -93,8 +106,9 @@ export default function QuickActions() {
             className={`p-4 rounded-lg border border-gray-200 transition-all duration-200 hover:bg-blue-500/5 hover:border-blue-500 active:scale-95 active:rotate-1 group`}
           >
             <div className="flex flex-col items-center text-center space-y-3">
-              <div className={`group-hover:text-blue-500 group-active:rotate-6 group-hover:scale-110 transition-transform duration-200`}>
-                {action.icon}
+              <div className={`group-hover:text-blue-500 group-active:rotate-6 group-hover:scale-110 transition-transform duration-200 relative`}>
+                <span className='group-hover:opacity-0 transition-all duration-200 group-hover:scale-75'>{action.icon}</span>
+                <span className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-200 opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100'>{action.activeIcon}</span>
               </div>
               <div>
                 <h4 className="font-medium text-gray-900 text-sm">
