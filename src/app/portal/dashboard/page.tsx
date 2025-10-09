@@ -210,7 +210,13 @@ export default function DashboardPage() {
     
     const renderDashboard = () => {
         if (!school || !studentsData) {
-            return null;
+            return (
+                <div className="flex-1 overflow-y-hidden mt-4 sm:mt-6 flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6">
+                    <div className="col-span-full">
+                        <p className="text-center text-gray-600">Loading...</p>
+                    </div>
+                </div>
+            );
         }
         const hasPointsOrStudents =  school.availablePoints > 0 || studentsData.data?.length > 0
         if (hasPointsOrStudents) {
