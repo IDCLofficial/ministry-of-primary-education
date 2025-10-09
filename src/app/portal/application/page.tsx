@@ -16,7 +16,7 @@ export default async function Page({ searchParams }: PageProps) {
     }
 
     return (
-        <main className="py-8 gap-4 flex flex-col bg-[#F3F3F3]">
+        <main className="py-8 gap-4 h-screen flex flex-col bg-[#F3F3F3]">
             <div className='absolute h-full w-full inset-0 z-[0]'>
                 <Image
                     src="/images/asset.png"
