@@ -18,7 +18,9 @@ export default async function Page({ searchParams }: PageProps) {
 
     return (
         <main className="py-8 gap-4 min-h-screen flex flex-col bg-[#F3F3F3]">
-            <HangingTree/>
+            <HangingTree
+                type='right'
+            />
             <div className="flex max-md:flex-row flex-col max-md:mb-0 mb-5 justify-center gap-2 items-center relative z-20">
                 <Image
                     src="/images/ministry-logo.png"

@@ -7,7 +7,9 @@ import HangingTree from './components/HangingTree'
 export default function PortalPage() {
     return (
         <div className="min-h-screen grid place-items-center bg-[#F3F3F3]">
-            <HangingTree/>
+            <HangingTree
+                type='left'
+            />
             <div className="flex max-md:flex-row flex-col justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
                 <Image
                     src="/images/ministry-logo.png"
