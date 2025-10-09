@@ -13,6 +13,7 @@
     "@useverse/useshortcuts": "^1.2.0",
     "contentful": "^11.7.15",
     "framer-motion": "^12.23.12",
+    "lottie-react": "^2.4.1",
     "next": "15.4.5",
     "nextjs-toploader": "^3.9.17",
     "react": "19.1.0",

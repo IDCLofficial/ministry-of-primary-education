@@ -1,4 +1,4 @@
-import { IoFileTrayFull, IoFileTrayFullOutline, IoFolderOpen, IoFolderOpenOutline, IoGrid, IoGridOutline, IoLockOpen, IoLockOpenOutline, IoPeople, IoPeopleOutline} from "react-icons/io5"
+import { IoCloudDone, IoCloudDoneOutline, IoFileTrayFull, IoFileTrayFullOutline, IoFolderOpen, IoFolderOpenOutline, IoGrid, IoGridOutline, IoLockOpen, IoLockOpenOutline, IoPeople, IoPeopleOutline} from "react-icons/io5"
 
 interface MenuItem {
     icon: React.ReactNode,
@@ -42,8 +42,8 @@ export const menuItems: (pathname: string) => MenuItem[] = (pathname: string) =>
         active: pathname === '/bece-portal/dashboard/upload-exams'
     },
     {
-        icon: <IoFileTrayFullOutline />,
-        iconActive: <IoFileTrayFull />,
+        icon: <IoCloudDoneOutline />,
+        iconActive: <IoCloudDone />,
         label: 'View Uploads',
         abbr: 'View Uploads',
         href: '/bece-portal/dashboard/view-uploads',
