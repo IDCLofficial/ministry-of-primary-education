@@ -1,32 +1,15 @@
 'use client'
 import React from 'react'
-import { IoTrendingUp, IoTrendingDown, IoArrowUp } from 'react-icons/io5'
+import { IoArrowUp } from 'react-icons/io5'
 
 interface StatCardProps {
   title: string
   value: string | number,
   bgColor?: string,
-  change?: string
-  trend?: 'up' | 'down' | 'neutral'
   icon?: React.ReactNode
 }
 
-function StatCard({ title, value, change, trend = 'neutral', icon, bgColor='#fcf1e5' }: StatCardProps) {
-  const getTrendColor = () => {
-    switch (trend) {
-      case 'up': return 'text-green-600'
-      case 'down': return 'text-red-600'
-      default: return 'text-gray-600'
-    }
-  }
-
-  const getTrendIcon = () => {
-    switch (trend) {
-      case 'up': return <IoTrendingUp className="w-4 h-4" />
-      case 'down': return <IoTrendingDown className="w-4 h-4" />
-      default: return null
-    }
-  }
+function StatCard({ title, value, icon, bgColor='#fcf1e5' }: StatCardProps) {
 
   return (
     <div 
@@ -43,12 +26,6 @@ function StatCard({ title, value, change, trend = 'neutral', icon, bgColor='#fcf
       <div className="flex items-end justify-between">
         <div>
           <p className="text-2xl font-bold text-gray-900">{value}</p>
-          {change && (
-            <div className={`flex items-center gap-1 mt-1 ${getTrendColor()}`}>
-              {getTrendIcon()}
-              <span className="text-sm font-medium">{change}</span>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -94,8 +71,6 @@ export default function StatsCards() {
           key={index}
           title={stat.title}
           value={stat.value}
-          change={stat.change}
-          trend={stat.trend}
           bgColor={stat.bgColor}
         />
       ))}

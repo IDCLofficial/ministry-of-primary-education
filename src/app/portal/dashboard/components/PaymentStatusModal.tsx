@@ -41,7 +41,7 @@ export default function PaymentStatusModal({ status, onClose }: PaymentStatusMod
             
             <button
               onClick={onClose}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 cursor-pointer active:scale-95 active:rotate-1"
             >
               Continue to Onboarding
             </button>
@@ -68,7 +68,7 @@ export default function PaymentStatusModal({ status, onClose }: PaymentStatusMod
             <div className="space-y-3">
               <button
                 onClick={onClose}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 cursor-pointer active:scale-95 active:rotate-1"
               >
                 Try Again
               </button>
