@@ -16,7 +16,7 @@ export default function RegistrationPendingView() {
                     clearInterval(timer)
                     // Use setTimeout to move navigation outside of state update
                     setTimeout(() => {
-                        router.replace('/portal/application')
+                        router.replace('/portal')
                     }, 0)
                     return 0
                 }

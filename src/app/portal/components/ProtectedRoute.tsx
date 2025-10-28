@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../providers/AuthProvider'
+import CreatePasswordForm from '@/components/CreatePasswordForm'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -10,7 +11,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requireAuth = true }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, school } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -37,6 +38,19 @@ export default function ProtectedRoute({ children, requireAuth = true }: Protect
   // If authentication is required but user is not authenticated, show nothing (redirect will happen)
   if (requireAuth && !isAuthenticated) {
     return null
+  }
+
+  if (school?.isFirstLogin) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-[#F3F3F3]">
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+
+          <CreatePasswordForm
+            school={school.schoolName}
+          />
+        </div>
+      </div>
+    )
   }
 
   return <>{children}</>

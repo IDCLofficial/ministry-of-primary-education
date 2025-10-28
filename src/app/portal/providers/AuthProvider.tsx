@@ -96,8 +96,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (profileData && token) {
       setSchool(profileData)
       setIsAuthenticated(true)
-
-      console.log('Profile data updated:', profileData)
       // Update localStorage with fresh profile data
       localStorage.setItem('school', JSON.stringify(profileData))
     } else if (profileError) {

@@ -314,11 +314,10 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
                 min="2020"
                 max="2030"
                 value={formData.examYear}
-                onChange={(e) => handleInputChange('examYear', e.target.value)}
                 className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.examYear ? 'border-red-500' : 'border-gray-300'
                 }`}
-                disabled={isSubmitting}
+                disabled={true}
               />
               {errors.examYear && (
                 <p className="mt-1 text-sm text-red-600">{errors.examYear}</p>

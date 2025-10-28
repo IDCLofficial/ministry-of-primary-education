@@ -26,7 +26,7 @@ export default function PaymentStatusModal({ status, onClose }: PaymentStatusMod
         {isSuccess && (
           <>
             <div className="mb-6">
-              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 border border-black/10">
                 <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -35,13 +35,13 @@ export default function PaymentStatusModal({ status, onClose }: PaymentStatusMod
               <p className="text-gray-600">
                 Your payment has been received.
                 <br />
-                Continue to validation result
+                Continue onboarding your students
               </p>
             </div>
             
             <button
               onClick={onClose}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 cursor-pointer active:scale-95 active:rotate-1"
             >
               Continue to Onboarding
             </button>
@@ -52,7 +52,7 @@ export default function PaymentStatusModal({ status, onClose }: PaymentStatusMod
         {!isSuccess && (
           <>
             <div className="mb-6">
-              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 border border-black/10">
                 <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -68,7 +68,7 @@ export default function PaymentStatusModal({ status, onClose }: PaymentStatusMod
             <div className="space-y-3">
               <button
                 onClick={onClose}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 cursor-pointer active:scale-95 active:rotate-1"
               >
                 Try Again
               </button>
