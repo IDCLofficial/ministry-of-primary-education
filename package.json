@@ -10,10 +10,13 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.9.0",
+    "@useverse/useshortcuts": "^1.2.0",
     "contentful": "^11.7.15",
     "framer-motion": "^12.23.12",
+    "lottie-react": "^2.4.1",
     "jspdf": "^2.5.2",
     "next": "15.4.5",
+    "nextjs-toploader": "^3.9.17",
     "react": "19.1.0",
     "react-countup": "^6.5.3",
     "react-dom": "19.1.0",

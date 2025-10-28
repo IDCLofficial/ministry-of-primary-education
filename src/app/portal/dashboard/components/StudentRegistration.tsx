@@ -7,6 +7,7 @@ import CustomDropdown from './CustomDropdown'
 import StudentOnboardingModal from './StudentOnboardingModal'
 import StudentRegistrationSkeleton from './StudentRegistrationSkeleton'
 import { useAuth } from '../../providers/AuthProvider'
+import { useGetProfileQuery } from '../../store/api/authApi'
 
 interface Student {
   id: string
@@ -17,6 +18,15 @@ interface Student {
   examYear: number
   paymentStatus: 'Not Paid' | 'Completed' | 'Pending'
   onboardingStatus: 'onboarded' | 'pending' | 'not_onboarded'
+}
+
+export type SortableField = 'id' | 'name' | 'gender' | 'class' | 'year' | 'paymentStatus'
+type SortDirection = 'asc' | 'desc' | null
+
+export interface SortState {
+  field: SortableField | null
+  direction: SortDirection
+  clickCount: number
 }
 
 interface StudentRegistrationProps {
@@ -40,25 +50,16 @@ interface StudentRegistrationProps {
   onPageChange: (page: number) => void
   onItemsPerPageChange: (itemsPerPage: number) => void
   isLoading?: boolean
-}
-
-type SortableField = 'studentId' | 'fullName' | 'gender' | 'class' | 'examYear' | 'paymentStatus'
-type SortDirection = 'asc' | 'desc' | null
-
-interface SortState {
-  field: SortableField | null
-  direction: SortDirection
-  clickCount: number
+  handleSort: (field: SortableField) => void
+  sortState: SortState
 }
 
 export default function StudentRegistration({
   students,
   selectedStudents,
   onStudentSelect,
-  // onSelectAll,
   searchTerm,
   onSearchChange,
-  // filters,
   onRefreshStudents,
   currentPage: currentPageProp,
   totalPages: totalPagesProp,
@@ -66,16 +67,14 @@ export default function StudentRegistration({
   totalItems: totalItemsProp,
   onPageChange,
   onItemsPerPageChange,
+  handleSort,
+  sortState,
   isLoading = false
 }: StudentRegistrationProps) {
   const { school } = useAuth()
+  const { isFetching: isAdminProfileFetching } = useGetProfileQuery()
   const [showOnboardingModal, setShowOnboardingModal] = useState(false)
   const [updateStudent, setUpdateStudent] = useState<Student | null>(null)
-  const [sortState, setSortState] = useState<SortState>({
-    field: null,
-    direction: null,
-    clickCount: 0
-  })
   
   // Check if selection should be disabled
   const isSelectionDisabled = process.env.NEXT_PUBLIC_ENV === 'temp'
@@ -83,27 +82,6 @@ export default function StudentRegistration({
   // Show skeleton while loading
   if (isLoading) {
     return <StudentRegistrationSkeleton />
-  }
-
-  // Handle column sorting
-  const handleSort = (field: SortableField) => {
-    setSortState(prevState => {
-      if (prevState.field === field) {
-        // Same field clicked
-        const newClickCount = prevState.clickCount + 1
-        if (newClickCount === 1) {
-          return { field, direction: 'asc', clickCount: 1 }
-        } else if (newClickCount === 2) {
-          return { field, direction: 'desc', clickCount: 2 }
-        } else {
-          // Third click - reset to default
-          return { field: null, direction: null, clickCount: 0 }
-        }
-      } else {
-        // Different field clicked - reset count and start with asc
-        return { field, direction: 'asc', clickCount: 1 }
-      }
-    })
   }
 
   // Note: With server-side pagination, filtering and sorting should be handled by the API
@@ -220,8 +198,12 @@ export default function StudentRegistration({
           {/* Onboard Student Button */}
           {school && school.status !== "completed" && school.availablePoints > 0 && (
             <button
-              onClick={() => setShowOnboardingModal(true)}
-              className="inline-flex cursor-pointer active:scale-95 active:rotate-2 items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
+              onClick={() => {
+                if (isAdminProfileFetching) return
+                setShowOnboardingModal(true)
+              }}
+              disabled={isAdminProfileFetching}
+              className="inline-flex cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 active:rotate-2 items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -267,17 +249,17 @@ export default function StudentRegistration({
               </th>}
               <th 
                 className="text-left py-3 px-4 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-                onClick={() => handleSort('studentId')}
+                onClick={() => handleSort('id')}
               >
                 Student ID
-                {getSortIcon('studentId')}
+                {getSortIcon('id')}
               </th>
               <th 
                 className="text-left py-3 px-4 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-                onClick={() => handleSort('fullName')}
+                onClick={() => handleSort('name')}
               >
                 Full Name
-                {getSortIcon('fullName')}
+                {getSortIcon('name')}
               </th>
               <th 
                 className="text-left py-3 px-4 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
@@ -295,17 +277,15 @@ export default function StudentRegistration({
               </th>
               <th 
                 className="text-left py-3 px-4 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-                onClick={() => handleSort('examYear')}
+                onClick={() => handleSort('year')}
               >
                 Exam Year
-                {getSortIcon('examYear')}
+                {getSortIcon('year')}
               </th>
               <th 
                 className="text-left py-3 px-4 text-sm font-medium text-gray-600 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-                onClick={() => handleSort('paymentStatus')}
               >
                 Payment Status
-                {getSortIcon('paymentStatus')}
               </th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
                 Onboarding Status

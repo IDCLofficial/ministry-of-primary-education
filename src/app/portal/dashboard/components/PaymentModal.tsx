@@ -27,18 +27,20 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
   const maxPointsAllowed = school ? Math.max(0, school.numberOfStudents - school.totalPoints) : 0
   
   // Preset suggestions (filtered to not exceed max allowed)
-  const suggestions = [10, 25, 50, 100, 200, 500].filter(count => count <= maxPointsAllowed)
+  const suggestions = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500].filter(count => count <= maxPointsAllowed)
 
   const handleSuggestionClick = (count: number) => {
     if (count <= maxPointsAllowed) {
       setSelectedStudentCount(count)
-      setCustomInput('')
+      setCustomInput(count.toString())
     }
   }
 
   const handleCustomInputChange = (value: string) => {
-    setCustomInput(value)
-    const numValue = parseInt(value)
+    const numValue = parseInt(value) || 0;
+    if (numValue <= maxPointsAllowed) {
+      setCustomInput(value)
+    }
     if (!isNaN(numValue) && numValue > 0 && numValue <= maxPointsAllowed) {
       setSelectedStudentCount(numValue)
     }
@@ -50,7 +52,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
       // Set to the minimum of numberOfStudents or maxPointsAllowed
       const initialCount = Math.min(numberOfStudents, maxPointsAllowed)
       setSelectedStudentCount(initialCount)
-      setCustomInput('')
+      setCustomInput(initialCount.toString())
     }
   }, [isOpen, numberOfStudents, maxPointsAllowed])
 
@@ -80,6 +82,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
         onClose()
       }
     } catch (error) {
+      setIsProcessing(false);
       console.error('Payment initiation failed:', error)
       const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'Payment initiation failed. Please try again.'
       alert(errorMessage)
