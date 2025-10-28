@@ -3,62 +3,63 @@
 import React, { useState, useCallback } from 'react'
 import FormInput from './FormInput'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
-
-interface LoginFormProps {
-  onSubmit: (data: { uniqueCode: string; password: string }) => void
-}
+import { useLoginMutation } from '@/app/portal/store/api/authApi'
+import { useAuth } from '@/app/portal/providers/AuthProvider'
+import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 
 interface LoginData {
-  uniqueCode: string
+  email: string
   password: string
 }
 
 interface LoginErrors {
-  uniqueCode?: string
+  email?: string
   password?: string
 }
 
-export default function LoginForm({ onSubmit }: LoginFormProps) {
+export default function LoginForm() {
   const [formData, setFormData] = useState<LoginData>({
-    uniqueCode: '',
+    email: '',
     password: ''
   })
 
   const [errors, setErrors] = useState<LoginErrors>({})
-  const [isLoading, setIsLoading] = useState(false)
+  const [loginMutation, { isLoading }] = useLoginMutation()
+  const { login } = useAuth()
+  const router = useRouter()
 
   // Debounced values for validation
-  const debouncedUniqueCode = useDebounce(formData.uniqueCode, 500)
+  const debouncedEmail = useDebounce(formData.email, 500)
   const debouncedPassword = useDebounce(formData.password, 500)
 
   // Validation function
   const validateField = useCallback((field: keyof LoginData, value: string): string | undefined => {
     const sanitizedValue = value.trim()
-    
+
     switch (field) {
-      case 'uniqueCode':
-        if (!sanitizedValue) return 'Unique code is required'
-        if (!/^[A-Z0-9]{8}$/.test(sanitizedValue.toUpperCase())) {
-          return 'Unique code must be an alphanumeric 8 digits string'
-        }
+      case 'email':
+        if (!sanitizedValue) return 'Email is required'
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(sanitizedValue)) return 'Please enter a valid email address'
         break
-        
+
       case 'password':
         if (!sanitizedValue) return 'Password is required'
         if (sanitizedValue.length < 6) return 'Password must be at least 6 characters'
         break
     }
-    
+
     return undefined
   }, [])
 
   // Validation effects
   React.useEffect(() => {
-    if (debouncedUniqueCode) {
-      const error = validateField('uniqueCode', debouncedUniqueCode)
-      setErrors(prev => ({ ...prev, uniqueCode: error }))
+    if (debouncedEmail) {
+      const error = validateField('email', debouncedEmail)
+      setErrors(prev => ({ ...prev, email: error }))
     }
-  }, [debouncedUniqueCode, validateField])
+  }, [debouncedEmail, validateField])
 
   React.useEffect(() => {
     if (debouncedPassword) {
@@ -77,11 +78,11 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validate all fields
     const newErrors: LoginErrors = {}
     let hasErrors = false
-    
+
     Object.keys(formData).forEach((key) => {
       const field = key as keyof LoginData
       const error = validateField(field, formData[field])
@@ -90,21 +91,51 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
         hasErrors = true
       }
     })
-    
+
     setErrors(newErrors)
-    
+
     if (!hasErrors) {
-      setIsLoading(true)
       try {
         const sanitizedData = {
-          uniqueCode: formData.uniqueCode.trim().toUpperCase(),
+          email: formData.email.trim(),
           password: formData.password.trim()
         }
-        await onSubmit(sanitizedData)
-      } catch (error) {
+
+        const result = await loginMutation(sanitizedData).unwrap()
+
+        // Use auth context to store authentication data
+        login(result.access_token, result.school)
+
+        toast.success('Login successful!')
+
+        router.push('/portal/dashboard')
+
+      } catch (error: unknown) {
+        alert("error")
         console.error('Login error:', error)
-      } finally {
-        setIsLoading(false)
+
+        // Handle different error types
+        const apiError = error as {
+          status?: number;
+          data?: {
+            message?: string;
+            error?: string;
+            statusCode?: number
+          }
+        }
+
+        if (apiError?.status === 400) {
+          const message = apiError.data?.message || 'New password required for first-time login'
+          toast.error(message)
+          // If it's a first-time login requiring new password, redirect to create password
+          router.push('/portal/create-password')
+        } else if (apiError?.status === 401) {
+          const message = apiError.data?.message || 'Invalid credentials'
+          toast.error(message)
+        } else {
+          const message = apiError.data?.message || 'Login failed. Please try again.'
+          toast.error(message)
+        }
       }
     }
   }
@@ -114,19 +145,19 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
       <h2 className="sm:text-2xl text-lg font-semibold text-gray-800 text-center mb-6">
         School Login
       </h2>
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormInput
-          label="Unique Code"
-          placeholder="Enter your unique code"
-          name="uniqueCode"
-          isUpperCase
-          value={formData.uniqueCode}
-          onChange={handleInputChange('uniqueCode')}
-          error={errors.uniqueCode}
+          label="Email"
+          placeholder="Enter your email address"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleInputChange('email')}
+          error={errors.email}
           required
         />
-        
+
         <FormInput
           label="Password"
           placeholder="Enter your password"
@@ -137,7 +168,7 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
           error={errors.password}
           required
         />
-        
+
         <button
           type="submit"
           disabled={isLoading}
