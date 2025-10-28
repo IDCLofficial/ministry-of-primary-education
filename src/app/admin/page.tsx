@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import DashboardLayout from '@/components/admin/DashboardLayout'
 import StatsCards from '@/components/admin/StatsCards'
-import SchoolsTable from '@/components/admin/SchoolsTable'
+
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('approved')
+
 
   return (
     <DashboardLayout>

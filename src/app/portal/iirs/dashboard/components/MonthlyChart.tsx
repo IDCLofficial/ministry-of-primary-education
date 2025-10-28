@@ -1,7 +1,9 @@
 'use client';
 
+import { getPaymentsData } from '@/lib/iirs/dataInteraction';
 import { useEffect, useState, useMemo } from 'react';
 import { FiChevronDown } from 'react-icons/fi';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 
 interface MonthlyChartProps {
   totalTransaction: string;
@@ -27,10 +29,9 @@ interface paymentProps{
 }
 
 interface ChartDataPoint {
-  x: number;
-  y: number;
   date: string;
   value: number;
+  formattedDate: string;
 }
 
 // Helper functions
@@ -76,50 +77,45 @@ const generateChartData = (payments: paymentProps[], activeTab: string, period: 
     return acc;
   }, {} as Record<string, { totalAmount: number; totalEarnings: number; count: number }>);
   
-  // Convert to chart data points
+  // Convert to Recharts format
   const sortedDates = Object.keys(groupedData).sort();
-  const maxPoints = 10;
+  const maxPoints = 12;
   const step = Math.max(1, Math.floor(sortedDates.length / maxPoints));
   
-  const chartPoints = sortedDates
+  const selectedDates = sortedDates
     .filter((_, index) => index % step === 0)
-    .slice(0, maxPoints)
-    .map((date, index) => {
-      const data = groupedData[date];
-      let value = 0;
-      
-      switch (activeTab) {
-        case 'Total payments':
-          value = data.count;
-          break;
-        case 'Amount Processed':
-          value = data.totalAmount;
-          break;
-        case 'IIRS earnings':
-          value = data.totalEarnings;
-          break;
-      }
-      
-      return {
-        x: 10 + (index * 360 / (maxPoints - 1)),
-        y: 20 + (80 - (value / Math.max(...Object.values(groupedData).map(d => {
-          switch (activeTab) {
-            case 'Total payments': return d.count;
-            case 'Amount Processed': return d.totalAmount;
-            case 'IIRS earnings': return d.totalEarnings;
-            default: return d.count;
-          }
-        }))) * 60),
-        date,
-        value
-      };
-    });
+    .slice(0, maxPoints);
   
-  return chartPoints;
+  return selectedDates.map(date => {
+    const data = groupedData[date];
+    const dateObj = new Date(date);
+    const formattedDate = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    
+    let value: number;
+    switch (activeTab) {
+      case 'Payments':
+        value = data.count;
+        break;
+      case 'Amount Processed':
+        value = Math.round(data.totalAmount / 1000); // Convert to thousands for better readability
+        break;
+      case 'IIRS earnings':
+        value = Math.round(data.totalEarnings / 1000); // Convert to thousands for better readability
+        break;
+      default:
+        value = data.count;
+    }
+    
+    return {
+      date,
+      value,
+      formattedDate
+    };
+  });
 };
 
 export default function MonthlyChart({ totalTransaction, growthPercentage, description }: MonthlyChartProps) {
-  const tabs = ['Total payments', 'Amount Processed', 'IIRS earnings'];
+  const tabs = ['Payments', 'Amount Processed', 'IIRS earnings'];
   const periods = ['1Month', '3Months', '1year', '2Years']
   const [selectedPeriod, setSelectedPeriod] = useState(periods[0]);
   const [activeTab, setActiveTab] = useState(tabs[0]);
@@ -128,26 +124,20 @@ export default function MonthlyChart({ totalTransaction, growthPercentage, descr
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+
   useEffect(() => {
     async function fetchData() {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch('https://moe-backend-nwp2.onrender.com/iirs-admin/payments', {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        const response = await getPaymentsData();
+        console.log(response)
         
-        if (!response.ok) {
+        if (!response) {
           throw new Error('Failed to fetch data');
         }
         
-        const responseData = await response.json();
-        console.log(responseData);
-        setData(responseData);
+        setData(response);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
         console.error('Error fetching data:', err);
@@ -174,10 +164,10 @@ export default function MonthlyChart({ totalTransaction, growthPercentage, descr
     }
 
     switch (activeTab) {
-      case 'Total payments':
+      case 'Payments':
         return {
           displayValue: filteredPayments.length.toLocaleString(),
-          displayLabel: `Total payments in the last ${selectedPeriod.toLowerCase()}`
+          displayLabel: `Payments made in the last ${selectedPeriod.toLowerCase()}`
         };
       case 'Amount Processed':
         const totalAmount = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -200,34 +190,6 @@ export default function MonthlyChart({ totalTransaction, growthPercentage, descr
   const chartData = useMemo(() => {
     return generateChartData(data?.payments || [], activeTab, selectedPeriod);
   }, [data?.payments, activeTab, selectedPeriod]);
-
-  // Generate SVG path
-  const pathData = useMemo(() => {
-    if (chartData.length === 0) return '';
-    return chartData.map((point, index) => 
-      `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
-    ).join(' ');
-  }, [chartData]);
-
-  // Get date range for labels
-  const { startLabel, endLabel } = useMemo(() => {
-    if (chartData.length === 0) {
-      const now = new Date();
-      const start = getDateRange(selectedPeriod);
-      return {
-        startLabel: start.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-        endLabel: now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-      };
-    }
-    
-    const firstDate = new Date(chartData[0].date);
-    const lastDate = new Date(chartData[chartData.length - 1].date);
-    
-    return {
-      startLabel: firstDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-      endLabel: lastDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-    };
-  }, [chartData, selectedPeriod]);
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
@@ -289,7 +251,7 @@ export default function MonthlyChart({ totalTransaction, growthPercentage, descr
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                className={`px-2 py-1 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === tab
                     ? 'bg-gray-900 text-white'
                     : 'text-gray-600 hover:bg-gray-100'
@@ -322,7 +284,7 @@ export default function MonthlyChart({ totalTransaction, growthPercentage, descr
         )}
       </div>
 
-      <div className="relative h-32 bg-gradient-to-b from-red-50 to-transparent rounded-lg overflow-hidden">
+      <div className="relative h-64 bg-gradient-to-b from-red-50 to-transparent rounded-lg overflow-hidden p-4">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-pulse text-gray-400">Loading chart...</div>
@@ -334,63 +296,32 @@ export default function MonthlyChart({ totalTransaction, growthPercentage, descr
             </div>
           </div>
         ) : (
-          <>
-            <svg className="w-full h-full" viewBox="0 0 400 100">
-              {/* Grid lines */}
-              <defs>
-                <pattern id="grid" width="40" height="20" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 20" fill="none" stroke="#f3f4f6" strokeWidth="1"/>
-                </pattern>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#ef4444" stopOpacity="0.3"/>
-                  <stop offset="100%" stopColor="#ef4444" stopOpacity="0"/>
-                </linearGradient>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-              
-              {pathData && (
-                <>
-                  {/* Area under curve */}
-                  <path
-                    d={`${pathData} L ${chartData[chartData.length - 1]?.x || 370} 100 L ${chartData[0]?.x || 10} 100 Z`}
-                    fill="url(#gradient)"
-                    opacity="0.3"
-                  />
-                  
-                  {/* Line */}
-                  <path
-                    d={pathData}
-                    fill="none"
-                    stroke="#ef4444"
-                    strokeWidth="2"
-                  />
-                </>
-              )}
-              
-              {/* Data points */}
-              {chartData.map((point, index) => (
-                <g key={index}>
-                  <circle
-                    cx={point.x}
-                    cy={point.y}
-                    r="4"
-                    fill="#ef4444"
-                    stroke="white"
-                    strokeWidth="2"
-                    className="hover:r-6 transition-all cursor-pointer"
-                  />
-                  {/* Tooltip on hover */}
-                  <title>
-                    {new Date(point.date).toLocaleDateString('en-GB')}: {point.value.toLocaleString()}
-                  </title>
-                </g>
-              ))}
-            </svg>
-            
-            {/* Date labels */}
-            <div className="absolute bottom-2 left-4 text-xs text-gray-500">{startLabel}</div>
-            <div className="absolute bottom-2 right-4 text-xs text-gray-500">{endLabel}</div>
-          </>
+          <div className="w-full h-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis 
+                  dataKey="formattedDate" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#6b7280' }}
+                />
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#6b7280' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#ef4444" 
+                  strokeWidth={2}
+                  dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, fill: '#ef4444' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </div>

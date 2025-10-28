@@ -50,7 +50,7 @@ export default function TransactionView({ totalAmount, growthPercentage }: Trans
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch('https://moe-backend-nwp2.onrender.com/iirs-admin/payments', {
+        const response = await fetch('http://localhost:3002/iirs-admin/payments', {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
