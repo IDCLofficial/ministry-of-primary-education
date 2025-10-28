@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import FormInput from './FormInput'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
 import { useCreatePasswordMutation, useGetProfileQuery } from '@/app/portal/store/api/authApi'
@@ -81,43 +81,34 @@ export default function CreatePasswordForm({ school }: CreatePasswordFormProps) 
     }
   }
 
-  const handleSubmit = async () => {
-    // Validate all fields
-    const newErrors: PasswordErrors = {}
-    let hasErrors = false
-    
-    Object.keys(formData).forEach((key) => {
-      const field = key as keyof PasswordData
-      const error = validateField(field, formData[field])
-      if (error) {
-        newErrors[field] = error
-        hasErrors = true
-      }
-    })
-    
-    setErrors(newErrors)
-    
-    if (!hasErrors) {
-      try {
-        const sanitizedData = {
-          newPassword: formData.password.trim(),
-          confirmPassword: formData.confirmPassword.trim()
-        }
+  const canProceed = useMemo(() => {
+    return (!errors.password && !errors.confirmPassword) && (formData.password === formData.confirmPassword) && (formData.password.length >= 8)
+  }, [errors, formData])
 
-        await createPasswordMutation(sanitizedData).unwrap();
-        refetchProfile();
-      } catch (error) {
-        const apiError = error as { data?: { message?: string } }
-        setErrors((prev)=> ({...prev, password: apiError.data?.message}))
-        console.error('Password creation error:', error)
-        throw new Error('Failed to create password')
+  const handleSubmit = async () => {
+    if (!canProceed) {
+      throw new Error('Please fill in all required fields')
+    }
+
+    try {
+      const sanitizedData = {
+        newPassword: formData.password.trim(),
+        confirmPassword: formData.confirmPassword.trim()
       }
+
+      await createPasswordMutation(sanitizedData).unwrap();
+      refetchProfile();
+    } catch (error) {
+      const apiError = error as { data?: { message?: string } }
+      setErrors((prev) => ({ ...prev, password: apiError.data?.message }))
+      console.error('Password creation error:', error)
+      throw new Error('Failed to create password')
     }
   }
 
   const submitWatcher = (e: React.FormEvent) => {
-    e.preventDefault()
-    const promise = handleSubmit()
+    e.preventDefault();
+    const promise = handleSubmit();
     
     toast.promise(promise, {
       loading: 'Creating password...',
@@ -175,13 +166,13 @@ export default function CreatePasswordForm({ school }: CreatePasswordFormProps) 
             <li>• One uppercase letter (A-Z)</li>
             <li>• One lowercase letter (a-z)</li>
             <li>• One number (0-9)</li>
-            <li>• One special character (@$!%*?&)</li>
+            <li>• One special character (@$!%*?&) {JSON.stringify({errors, canProceed})}</li>
           </ul>
         </div>
         
         <button
           type="submit"
-          disabled={isCreatingPassword}
+          disabled={isCreatingPassword || !canProceed}
           className="w-full bg-blue-600 cursor-pointer active:scale-95 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isCreatingPassword ? 'Creating Password...' : 'Create Password'}

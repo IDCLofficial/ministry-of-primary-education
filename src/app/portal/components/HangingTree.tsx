@@ -8,7 +8,7 @@ import animationData02 from "./lottie/open-doodles-sitting-man.json"
 export default function HangingTree({ type = "both" }: { type?: "left" | "right" | "both" }) {
     return (
         <div className={
-            'fixed inset-0 h-screen w-screen flex ' 
+            'fixed inset-0 h-screen w-screen flex animate-fadeIn-y ' 
             + (type === "both" ? "sm:justify-between justify-center items-end" : "")
             + (type === "right" ? "sm:justify-end justify-center items-end" : "")
             + (type === "left" ? "sm:justify-start justify-center items-end" : "")

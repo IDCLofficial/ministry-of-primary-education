@@ -32,12 +32,12 @@ export default function FilterBar({ onFilterChange, isMobile = false }: FilterBa
   // Dropdown options
   const classOptions = [
     { value: 'All', label: 'All' },
-    { value: 'SS1', label: 'SS1' },
-    { value: 'SS2', label: 'SS2' },
+    // { value: 'SS1', label: 'SS1' },
+    // { value: 'SS2', label: 'SS2' },
     { value: 'SS3', label: 'SS3' },
-    { value: 'JSS1', label: 'JSS1' },
-    { value: 'JSS2', label: 'JSS2' },
-    { value: 'JSS3', label: 'JSS3' }
+    // { value: 'JSS1', label: 'JSS1' },
+    // { value: 'JSS2', label: 'JSS2' },
+    // { value: 'JSS3', label: 'JSS3' }
   ]
 
   const yearOptions = [
@@ -169,12 +169,12 @@ export default function FilterBar({ onFilterChange, isMobile = false }: FilterBa
           />
         </div>
 
-        <div
+        {/* <div
           className='h-full min-h-5 w-[1px] bg-gray-300'
-        />
+        /> */}
 
         {/* Year Filter */}
-        <div className="flex flex-1 items-center gap-2">
+        {/* <div className="flex flex-1 items-center gap-2">
           <label className="text-sm font-medium text-gray-600">Year</label>
           <CustomDropdown
             options={yearOptions}
@@ -182,7 +182,7 @@ export default function FilterBar({ onFilterChange, isMobile = false }: FilterBa
             onChange={(value) => handleFilterChange('year', value)}
             className="flex-1"
           />
-        </div>
+        </div> */}
 
         <div
           className='h-full min-h-5 w-[1px] bg-gray-300'
