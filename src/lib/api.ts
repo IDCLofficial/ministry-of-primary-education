@@ -1,5 +1,7 @@
+import { Student } from '@/services/schoolService'
+
 // Base URL for the API
-export const BASE_URL = 'https://11cd2e67d06a.ngrok-free.app'
+export const BASE_URL = 'https://moe-backend-nwp2.onrender.com'
 
 // Status types for school applications
 export type SchoolStatus = 'applied' | 'approved' | 'declined' | 'onboarded' | 'completed' | 'pending'
@@ -14,8 +16,44 @@ export interface UpdateSchoolStatusRequest {
 export interface UpdateSchoolStatusResponse {
   success: boolean
   message?: string
-  data?: any
+  data?: Record<string, unknown>
 }
+
+
+
+export interface Application {
+  _id: string;
+  school: {
+    _id: string;
+    schoolName: string;
+    address: string;
+    principal: string;
+    email: string;
+    students: Student[];
+    status: string;
+    isFirstLogin: boolean;
+    totalPoints: number;
+    availablePoints: number;
+    usedPoints: number;
+    __v: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  schoolName: string;
+  address: string;
+  schoolCode: string;
+  principal: string;
+  email: string;
+  phone: number;
+  numberOfStudents: number;
+  applicationStatus: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  reviewNotes?: string;
+  reviewedAt?: string;
+}
+
 
 /**
  * Updates the status of a school application
@@ -67,11 +105,24 @@ export async function updateSchoolStatus(
 
 /**
  * Fetches schools data from the API
+ * Supports pagination and optional filters
+ * @param params Optional query params { page, limit, search, status }
  * @returns Promise with schools data
  */
-export async function fetchSchools() {
+export async function fetchSchools(params?: {
+  page?: number
+  limit?: number
+  search?: string
+  status?: string
+}) {
   try {
-    const response = await fetch(`${BASE_URL}/schools`, {
+    const url = new URL(`${BASE_URL}/schools`)
+    if (params?.page) url.searchParams.set('page', String(params.page))
+    if (params?.limit) url.searchParams.set('limit', String(params.limit))
+    if (params?.search) url.searchParams.set('search', params.search)
+    if (params?.status) url.searchParams.set('status', params.status)
+
+    const response = await fetch(url.toString(), {
       headers: {
         'ngrok-skip-browser-warning': 'true',
         'Content-Type': 'application/json',
@@ -89,3 +140,44 @@ export async function fetchSchools() {
     throw error
   }
 }
+
+
+// get all applications
+
+export async function fetchApplications(
+  applicationStatus?: string,
+  searchTerm?: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<Application[]> {
+  const response = await fetch(`${BASE_URL}/applications?page=${page}&limit=${limit}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch applications: ${response.status}`);
+  }
+
+  let apps: Application[] = await response.json();
+  
+
+  if (applicationStatus) {
+    apps = apps.filter((app) => app.applicationStatus === applicationStatus);
+  }
+
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    apps = apps.filter(
+      (app) =>
+        app.schoolName.toLowerCase().includes(term) ||
+        app.address.toLowerCase().includes(term) ||
+        app.principal.toLowerCase().includes(term)
+    );
+  }
+
+  // Apply pagination
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  return apps.slice(startIndex, endIndex);
+} 
