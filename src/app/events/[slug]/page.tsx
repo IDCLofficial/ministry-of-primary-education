@@ -97,7 +97,6 @@ function Countdown({ targetDate }: { targetDate: string }) {
 export default function EventDetailPage() {
   const params = useParams();
   const [event, setEvent] = useState<Event | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -118,8 +117,6 @@ export default function EventDetailPage() {
       } catch (error) {
         console.error('Error fetching event:', error);
         setEvent(null);
-      } finally {
-        setLoading(false);
       }
     };
 

@@ -23,6 +23,10 @@ export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
+  if (pathname.startsWith('/portal') || pathname.startsWith('/bece-portal')) {
+    return null;
+  }
+
   return (
     <nav className={`fixed top-0 left-0 w-full z-50 py-3 ${sidebarOpen ? 'bg-white' : 'bg-gradient-to-b from-[#3a2c1a]/80 to-[#232c39]/80'} lg:bg-gradient-to-b lg:from-[#3a2c1a]/80 lg:to-[#232c39]/80  xl:py-4`}>
      

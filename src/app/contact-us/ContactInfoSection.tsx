@@ -1,5 +1,5 @@
 import React from "react";
-import { FaMapMarkerAlt, FaEnvelope, FaPhone, FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from "react-icons/fa";
+import { FaMapMarkerAlt, FaPhone, FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 
 const contactInfo = {
   address: "Block 7, New Owerri Secretariat 460281",
