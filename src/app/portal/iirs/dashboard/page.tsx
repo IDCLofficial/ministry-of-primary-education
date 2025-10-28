@@ -7,15 +7,38 @@ import { useEffect, useState } from 'react';
 import { getTransactionData } from '@/lib/iirs/dataInteraction';
 import MetricsCards from './components/MetricsCards';
 import { redirect } from 'next/navigation';
-
+import { useAuth } from '../context/authContext';
 
 export default function Dashboard() {
-    useEffect(()=>{    
-        if(localStorage.getItem('token') === null){
-            redirect('/portal/iirs/login')
-        }
+    const { isAuthenticated, user } = useAuth();
+    const [isLoading, setIsLoading] = useState(true);
+    
+    useEffect(() => {
+        // Wait for auth context to complete validation
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1000);
+
+        return () => clearTimeout(timer);
     }, []);
 
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated) {
+            redirect('/portal/iirs/login');
+        }
+    }, [isAuthenticated, isLoading]);
+
+    if (isLoading || !isAuthenticated) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading dashboard...</p>
+                </div>
+            </div>
+        );
+    }
+    
     return (
         <div className="h-full w-full overflow-y-auto">
             <div className="w-full mt-10">

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-export const BASE_URL = "https://moe-backend-nwp2.onrender.com/iirs-admin";
+export const BASE_URL = "http://localhost:3002/iirs-admin";
 
 export async function getTransactionData() {
     const response = await fetch(`${BASE_URL}/stats`, {

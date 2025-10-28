@@ -1,10 +1,16 @@
 "use client"
 import { createContext, useContext, useState, ReactNode, FC, useEffect } from "react";
+import { getProfile } from "@/lib/iirs/dataInteraction";
 
 interface User {
   id: string;
   email: string;
   name: string;
+  percentage?: number;
+  state?: string;
+  totalEarnings?: number;
+  totalAmountProcessed?: number;
+  adminType?: string;
 }
 
 interface AuthContextType {
@@ -36,11 +42,30 @@ export const AuthContextProvider: FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if(token){
-      setIsAuthenticated(true);
-      setUser(JSON.parse(`{"token": "${token}"}`));
-    }
+    const validateToken = async () => {
+      const token = localStorage.getItem('token');
+      if(token){
+        try {
+          const profileData = await getProfile();
+          if(profileData && profileData.id) {
+            setIsAuthenticated(true);
+            setUser(profileData);
+          } else {
+            // Token is invalid, clear it
+            localStorage.removeItem('token');
+            setIsAuthenticated(false);
+            setUser(null);
+          }
+        } catch (error) {
+          // Token validation failed, clear it
+          localStorage.removeItem('token');
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      }
+    };
+    
+    validateToken();
   }, []);
 
   const login = (userData: User) => {
@@ -49,6 +74,7 @@ export const AuthContextProvider: FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
     setUser(null);
     setIsAuthenticated(false);
   };
