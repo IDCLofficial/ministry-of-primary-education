@@ -31,8 +31,8 @@ export default function Header(){
 
     return(
         <>
-            <header className="w-full py-4 flex items-center justify-center backdrop-blur-sm">
-                <div className="w-full flex items-center justify-between bg-white shadow-lg rounded-xl py-4 px-4 border border-gray-200">
+            <header className="w-full flex sticky top-0 py-4 px-6 items-center justify-center bg-white/30 backdrop-blur-[25px]">
+                <div className="w-full flex items-center justify-between backdrop-blur-[25px] rounded-[100px] py-4 px-4 border border-gray-200">
                     <img src="/images/iirs/logo.png" alt="" />
                     <div className='flex items-center gap-2'>
                         <div 

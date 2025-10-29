@@ -1,7 +1,7 @@
 import { Student } from '@/services/schoolService'
 
 // Base URL for the API
-export const BASE_URL = 'https://moe-backend-nwp2.onrender.com'
+export const BASE_URL = 'http://localhost:3002'
 
 // Status types for school applications
 export type SchoolStatus = 'applied' | 'approved' | 'declined' | 'onboarded' | 'completed' | 'pending'

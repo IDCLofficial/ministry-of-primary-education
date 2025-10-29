@@ -32,7 +32,7 @@ export interface School {
 }
 
 
-const API_BASE_URL = 'https://moe-backend-nwp2.onrender.com'
+const API_BASE_URL = 'http://localhost:3002'
 
 export interface ApiResponse<T> {
   data: T
@@ -133,7 +133,7 @@ export async function fetchAllSchools(
   }
 
   // ✅ Attach params to URL
-  const url = `https://moe-backend-nwp2.onrender.com/schools?${params.toString()}`;
+  const url = `http://localhost:3002/schools?${params.toString()}`;
 
   const res = await fetch(url, { cache: "no-store" });
 

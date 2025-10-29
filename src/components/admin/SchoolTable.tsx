@@ -9,6 +9,7 @@ import { Button } from "../ui";
 import SchoolDetailView from "./SchoolDetailView";
 import ApplicationReview from "./ApplicationReview";
 import Swal from "sweetalert2";
+import { useSchoolManagement } from "@/hooks/useSchoolManagement";
 
 type Tab =
   | "notApplied"
@@ -30,6 +31,7 @@ export default function SchoolsTable() {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [showDetailView, setShowDetailView] = useState(false);
   const [showApplicationReview, setShowApplicationReview] = useState(false);
+  const { handleSchoolSelect } = useSchoolManagement()
   
   // Search functionality using getSchoolNames API
   const [searchResults, setSearchResults] = useState<School[]>([]);
@@ -901,7 +903,7 @@ export default function SchoolsTable() {
                             <div className="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
                               <div className="py-1">
                                 <button
-                                  onClick={() => handleViewDetails(school)}
+                                  onClick={() => {}}
                                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                                 >
                                   View Full Details

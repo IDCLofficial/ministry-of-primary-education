@@ -40,7 +40,7 @@ export default function Dashboard() {
     }
     
     return (
-        <div className="h-full w-full overflow-y-auto">
+        <div className="h-full w-full overflow-y-auto px-6">
             <div className="w-full mt-10">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8">

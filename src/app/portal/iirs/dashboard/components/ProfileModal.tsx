@@ -72,7 +72,7 @@ export default function ProfileModal({ isOpen, onClose, userProfile }: ProfileMo
         e.preventDefault();
         try{
             setIsChanging(true)
-            const req = await fetch('https://moe-backend-nwp2.onrender.com/iirs-admin/change-password', {
+            const req = await fetch('http://localhost:3002/iirs-admin/change-password', {
                 method: "POST",
                 headers:{
                     "Content-Type": "application/json",
