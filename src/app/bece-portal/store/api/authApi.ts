@@ -1,3 +1,4 @@
+import { Student } from '../../dashboard/students/types/student.types'
 import { apiSlice } from './apiSlice'
 
 interface Admin {
@@ -29,19 +30,6 @@ interface ProfileResponse {
   admin: Admin
 }
 
-interface Subject {
-  name: string
-  exam: number
-  ca: number
-}
-
-interface Student {
-  name: string
-  examNo: string
-  sex: string
-  age: number
-  subjects: Subject[]
-}
 
 interface BeceResultUpload{
   schoolName: string
@@ -59,16 +47,27 @@ interface BeceResultUploadResponse {
   uploadedCount: number
 }
 
-interface BeceResultsResponse {
-  message: string
-  students: Student[]
-}
-
 interface School {
   _id: string
   schoolName: string
   lga: string | { _id: string; name: string },
-  studentCount: number,
+  students: number,
+}
+
+interface UpdateScoreSubject {
+  subjectName: string
+  ca?: number
+  exam?: number
+}
+
+interface UpdateScoreRequest {
+  examNo: string
+  subjects: UpdateScoreSubject[]
+}
+
+interface UpdateScoreResponse {
+  message: string
+  student: Student
 }
 
 export const authApi = apiSlice.injectEndpoints({
@@ -119,17 +118,34 @@ export const authApi = apiSlice.injectEndpoints({
     }),
     
     // Fetch Results 
-    getResults: builder.query<BeceResultsResponse, string>({
+    getResults: builder.query<Student[], string>({
       query: (schoolId: string) => {
         return `/bece-result/results/${schoolId}`
       },
-      providesTags: ['Admin'],
+      providesTags: (result, error, schoolId) => [
+        { type: 'Admin', id: 'LIST' },
+        { type: 'Admin', id: schoolId }
+      ],
     }),
 
     // Fetch Schools
     getSchools: builder.query<School[], void>({
       query: () => '/bece-school',
-      providesTags: ['Admin'],
+      providesTags: [{ type: 'Admin', id: 'SCHOOLS' }],
+    }),
+
+    // Update Student Score
+    updateStudentScore: builder.mutation<UpdateScoreResponse, UpdateScoreRequest>({
+      query: (data) => ({
+        url: '/bece-result/update-score',
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: (result) => [
+        { type: 'Admin', id: 'LIST' },
+        // Invalidate the specific school's results if we can determine it
+        ...(result?.student?.school ? [{ type: 'Admin' as const, id: result.student.school }] : [])
+      ],
     }),
 
   }),
@@ -143,4 +159,5 @@ export const {
   useUploadBeceExamResultsMutation,
   useGetResultsQuery,
   useGetSchoolsQuery,
+  useUpdateStudentScoreMutation,
 } = authApi

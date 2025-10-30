@@ -21,8 +21,7 @@ export interface School {
     _id: string
     schoolName: string
     lga: string | { _id: string; name: string }
-    studentCount: number
-    students?: Student[] // Optional as it will be fetched separately
+    students: number // Number of students in the school
 }
 
 export interface BeceResultUploadResponse {

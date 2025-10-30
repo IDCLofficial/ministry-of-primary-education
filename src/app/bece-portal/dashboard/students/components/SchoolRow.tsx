@@ -37,7 +37,7 @@ export default function SchoolRow({ school, isExpanded, onToggle }: SchoolRowPro
                             {school.schoolName.toLowerCase()}
                         </div>
                         <div className="text-sm text-gray-500 capitalize">
-                            {getLgaName(school.lga).toLowerCase()} • {school.students?.length || school.studentCount} students
+                            {getLgaName(school.lga).toLowerCase()} • {school.students} students
                         </div>
                     </div>
                 </div>

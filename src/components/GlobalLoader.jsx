@@ -27,7 +27,7 @@ export default function GlobalLoader() {
     return () => clearTimeout(timeout);
   }, [pathname]);
 
-  if (pathname.startsWith('/portal') || pathname.startsWith('/bece-portal')) {
+  if (pathname.startsWith('/portal') || pathname.startsWith('/bece-portal') || pathname.startsWith('/student-portal')) {
     return null;
   }
 
