@@ -1,0 +1,169 @@
+/* Satoshi Font Faces */
+@font-face {
+    font-family: 'Satoshi';
+    src: url('/fonts/Satoshi-Variable.woff2') format('woff2'),
+        url('/fonts/Satoshi-Variable.woff') format('woff'),
+        url('/fonts/Satoshi-Variable.ttf') format('truetype');
+    font-weight: 300 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Satoshi';
+    src: url('/fonts/Satoshi-VariableItalic.woff2') format('woff2'),
+        url('/fonts/Satoshi-VariableItalic.woff') format('woff'),
+        url('/fonts/Satoshi-VariableItalic.ttf') format('truetype');
+    font-weight: 300 900;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* Fallback font faces for specific weights */
+@font-face {
+    font-family: 'Satoshi';
+    src: url('/fonts/Satoshi-Light.woff2') format('woff2'),
+        url('/fonts/Satoshi-Light.woff') format('woff'),
+        url('/fonts/Satoshi-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Satoshi';
+    src: url('/fonts/Satoshi-Regular.woff2') format('woff2'),
+        url('/fonts/Satoshi-Regular.woff') format('woff'),
+        url('/fonts/Satoshi-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Satoshi';
+    src: url('/fonts/Satoshi-Medium.woff2') format('woff2'),
+        url('/fonts/Satoshi-Medium.woff') format('woff'),
+        url('/fonts/Satoshi-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Satoshi';
+    src: url('/fonts/Satoshi-Bold.woff2') format('woff2'),
+        url('/fonts/Satoshi-Bold.woff') format('woff'),
+        url('/fonts/Satoshi-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Satoshi';
+    src: url('/fonts/Satoshi-Black.woff2') format('woff2'),
+        url('/fonts/Satoshi-Black.woff') format('woff'),
+        url('/fonts/Satoshi-Black.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Italic variants */
+@font-face {
+    font-family: 'Satoshi';
+    src: url('/fonts/Satoshi-Italic.woff2') format('woff2'),
+        url('/fonts/Satoshi-Italic.woff') format('woff'),
+        url('/fonts/Satoshi-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Satoshi';
+    src: url('/fonts/Satoshi-BoldItalic.woff2') format('woff2'),
+        url('/fonts/Satoshi-BoldItalic.woff') format('woff'),
+        url('/fonts/Satoshi-BoldItalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* Apply the font to the body */
+.satoshi-font {
+    font-family: 'Satoshi', sans-serif;
+}
+
+.grided {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.25) .1em, transparent .1em), linear-gradient(90deg, rgba(255, 255, 255, .25) .1em, transparent .1em);
+    background-size: 3em 3em;
+}
+
+.grided-sm {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.5) .1em, transparent .1em), linear-gradient(90deg, rgba(255, 255, 255, .5) .1em, transparent .1em);
+    background-size: 1em 1em;
+}
+
+/* Custom Animations for Student Portal */
+@keyframes fadeIn-y {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounce-slow {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes pulse-slow {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.animate-fadeIn-y {
+    animation: fadeIn-y 0.6s ease-out forwards;
+}
+
+.animate-bounce-slow {
+    animation: bounce-slow 3s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+    animation: shimmer 2s linear infinite;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 1000px 100%;
+}
