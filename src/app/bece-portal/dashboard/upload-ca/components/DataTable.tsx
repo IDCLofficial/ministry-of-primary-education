@@ -165,7 +165,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
         }))
       }))
   
-      await uploadBeceResults({ result: results }).unwrap()
+      await uploadBeceResults({ result: results,   type: "ca" }).unwrap()
       
       const endTime = performance.now()
       const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)

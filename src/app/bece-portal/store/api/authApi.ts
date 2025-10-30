@@ -51,6 +51,7 @@ interface BeceResultUpload{
 
 interface BeceResultUploadRequest {
   result: BeceResultUpload[]
+  type: "ca" | "exam"
 }
 
 interface BeceResultUploadResponse {
@@ -107,6 +108,16 @@ export const authApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Admin'],
     }),
     
+    // Upload BECE EXAMS Results
+    uploadBeceExamResults: builder.mutation<BeceResultUploadResponse, BeceResultUploadRequest>({
+      query: (data) => ({
+        url: '/bece-result/upload',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Admin'],
+    }),
+    
     // Fetch Results 
     getResults: builder.query<BeceResultsResponse, string>({
       query: (schoolId: string) => {
@@ -117,7 +128,7 @@ export const authApi = apiSlice.injectEndpoints({
 
     // Fetch Schools
     getSchools: builder.query<School[], void>({
-      query: () => '/bece-schools',
+      query: () => '/bece-school',
       providesTags: ['Admin'],
     }),
 
@@ -129,6 +140,7 @@ export const {
   useGetAdminProfileQuery,
   useAdminChangePasswordMutation,
   useUploadBeceResultsMutation,
+  useUploadBeceExamResultsMutation,
   useGetResultsQuery,
   useGetSchoolsQuery,
 } = authApi
