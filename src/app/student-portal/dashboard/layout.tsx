@@ -8,7 +8,7 @@ interface DashboardLayoutProps {
 
 export default function StudentDashboardLayout({ children }: DashboardLayoutProps) {
     return (
-        <div className="satoshi-font">
+        <div className="min-h-screen bg-[#f3f3f3] h-screen flex flex-col">
             {children}
         </div>
     )
