@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import { fetchApplications, Application } from "../lib/api";
+import { fetchApplications, Application } from "../lib/admin-schools/api";
 
 export type { Application };
 

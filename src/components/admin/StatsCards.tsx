@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { fetchAllSchools, getAllStudents, fetchAllPayments, getSchoolNames } from "@/services/schoolService";
-import { fetchApplications } from "@/lib/api";
+import { fetchApplications } from "@/lib/admin-schools/api";
 import { School as SchoolType } from "@/services/schoolService";
 import CountUp from "react-countup";
 

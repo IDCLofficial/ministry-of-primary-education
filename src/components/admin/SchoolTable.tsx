@@ -1,14 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSchools } from "@/hooks/useSchools";
-import { useApplications, Application } from "@/hooks/useApplications";
+import { useApplications } from '@/hooks/useApplications';
+import { changeApplicationStatus } from '@/services/schoolService';
+import ApplicationReview from './ApplicationReview';
+import Swal from 'sweetalert2';
+import { useSchoolStatusActions } from './SchoolStatusActions';
 import { School } from "@/services/schoolService";
-import { changeApplicationStatus, getSchoolNames } from "@/services/schoolService";
+import { Application } from "@/lib/admin-schools/api";
+import { getSchoolNames } from "@/services/schoolService";
 import { Button } from "../ui";
 import SchoolDetailView from "./SchoolDetailView";
-import ApplicationReview from "./ApplicationReview";
-import Swal from "sweetalert2";
 import { useSchoolManagement } from "@/hooks/useSchoolManagement";
 
 type Tab =
@@ -21,11 +25,12 @@ type Tab =
   | "all";
 
 export default function SchoolsTable() {
+  const router = useRouter();
   const [currentTab, setCurrentTab] = useState<Tab>("notApplied");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
   const [page, setPage] = useState(1);
-  const limit = 20;
+  const limit = 30;
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [selectedSchool, setSelectedSchool] = useState<School | Application | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
@@ -122,11 +127,15 @@ export default function SchoolsTable() {
 
   // Decide dataset and sort by newest first
   const data: (School | Application)[] =
-    currentTab === "notApplied" || currentTab === "all"
+    currentTab === "notApplied"
       ? searchTerm.trim() 
-        ? searchResults.slice().sort((a, b) => new Date(b.createdAt || b.updatedAt || '').getTime() - new Date(a.createdAt || a.updatedAt || '').getTime())
-        : schools?.slice().sort((a, b) => new Date(b.createdAt || b.updatedAt || '').getTime() - new Date(a.createdAt || a.updatedAt || '').getTime()) || []
-      : applications?.slice().sort((a, b) => new Date(b.createdAt || b.updatedAt || '').getTime() - new Date(a.createdAt || a.updatedAt || '').getTime()) || [];
+        ? searchResults.filter(school => school.status === "not applied").slice().sort((a, b) => new Date(b.createdAt || b.updatedAt || '').getTime() - new Date(a.createdAt || a.updatedAt || '').getTime())
+        : schools?.filter(school => school.status === "not applied").slice().sort((a, b) => new Date(b.createdAt || b.updatedAt || '').getTime() - new Date(a.createdAt || a.updatedAt || '').getTime()) || []
+      : currentTab === "all"
+        ? searchTerm.trim() 
+          ? searchResults.slice().sort((a, b) => new Date(b.createdAt || b.updatedAt || '').getTime() - new Date(a.createdAt || a.updatedAt || '').getTime())
+          : schools?.slice().sort((a, b) => new Date(b.createdAt || b.updatedAt || '').getTime() - new Date(a.createdAt || a.updatedAt || '').getTime()) || []
+        : applications?.slice().sort((a, b) => new Date(b.createdAt || b.updatedAt || '').getTime() - new Date(a.createdAt || a.updatedAt || '').getTime()) || [];
 
   // Selection handlers
   const handleSelectApplication = (appId: string) => {
@@ -174,20 +183,13 @@ export default function SchoolsTable() {
   };
 
   const handleViewDetails = (school: School) => {
-    setSelectedSchool(school);
-    setShowDetailView(true);
     setOpenDropdown(null);
+    router.push(`/admin/schools/${school._id}`);
   };
 
   const handleViewApplicationDetails = (app: Application) => {
-    // For applied applications, show ApplicationReview; for others, show SchoolDetailView
-    if (currentTab === "applied") {
-      setSelectedApplication(app);
-      setShowApplicationReview(true);
-    } else {
-      setSelectedSchool(app);
-      setShowDetailView(true);
-    }
+    // Always navigate to the individual school details page with application ID as query param
+    router.push(`/admin/schools/${app.school._id}?ad=${app._id}`);
     setOpenDropdown(null);
   };
 
@@ -201,266 +203,23 @@ export default function SchoolsTable() {
     setSelectedApplication(null);
   };
 
-  // --- Approve One ---
-  const handleApproveOne = async (appId: string) => {
-    const result = await Swal.fire({
-      title: 'Confirm Approval',
-      text: 'Are you sure you want to approve this school?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, approve it!'
-    });
+  // Initialize the reusable school status actions
+  const {
+    handleApproveOne,
+    handleApproveSelected,
+    handleRejectSelected,
+    handleSendConfirmation,
+    handleSendConfirmationSingle,
+    handleRejectOne
+  } = useSchoolStatusActions({
+    mutate,
+    mutateApproved,
+    refetchApps,
+    setSelectedApplications,
+    setOpenDropdown
+  });
 
-    if (result.isConfirmed) {
-      // Show loading
-      Swal.fire({
-        title: 'Processing...',
-        text: 'Approving application, please wait.',
-        icon: 'info',
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
 
-      try {
-        // Optimistic remove from applied
-        mutate((apps) => apps?.filter((a) => a._id !== appId), false);
-
-        const [updatedApp] = await changeApplicationStatus(appId, "approved");
-        
-        Swal.fire({
-          title: 'Success!',
-          text: 'Application approved successfully!',
-          icon: 'success'
-        });
-
-        // Optimistic add to approved
-        mutateApproved((apps) => [...(apps ?? []), updatedApp], false);
-
-        mutate();
-        mutateApproved();
-      } catch (error) {
-        console.error(error);
-        Swal.fire({
-          title: 'Error!',
-          text: 'Failed to approve application. Please try again.',
-          icon: 'error'
-        });
-        mutate();
-      }
-    }
-  };
-
-  // --- Approve Selected ---
-  const handleApproveSelected = async () => {
-    const result = await Swal.fire({
-      title: 'Confirm Approval',
-      text: `Are you sure you want to approve ${selectedApplications.length} school${selectedApplications.length > 1 ? 's' : ''}?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, approve them!'
-    });
-
-    if (result.isConfirmed) {
-      // Show loading
-      Swal.fire({
-        title: 'Processing...',
-        text: 'Approving applications, please wait.',
-        icon: 'info',
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
-
-      try {
-        const updatedApps = await changeApplicationStatus(
-          selectedApplications,
-          "approved"
-        );
-
-        Swal.fire({
-          title: 'Success!',
-          text: `${selectedApplications.length} application(s) approved successfully!`,
-          icon: 'success'
-        });
-        
-        // Optimistic add
-        mutateApproved((apps) => [...(apps ?? []), ...updatedApps], false);
-        // Optimistic remove
-        mutate(
-          (apps) =>
-            apps?.filter((a) => !selectedApplications.includes(a._id)) ?? [],
-          false
-        );
-
-        setSelectedApplications([]);
-        mutate();
-        mutateApproved();
-      } catch (error) {
-        console.error(error);
-        Swal.fire({
-          title: 'Error!',
-          text: 'Failed to approve selected applications. Please try again.',
-          icon: 'error'
-        });
-        mutate();
-      }
-    }
-  };
-
-  // --- Reject Selected ---
-  const handleRejectSelected = async () => {
-    const result = await Swal.fire({
-      title: 'Confirm Rejection',
-      text: `Are you sure you want to reject ${selectedApplications.length} application${selectedApplications.length > 1 ? 's' : ''}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, reject them!'
-    });
-
-    if (result.isConfirmed) {
-      // Show loading
-      Swal.fire({
-        title: 'Processing...',
-        text: 'Rejecting applications, please wait.',
-        icon: 'info',
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
-
-      try {
-        await changeApplicationStatus(selectedApplications, "rejected");
-        
-        Swal.fire({
-          title: 'Success!',
-          text: `${selectedApplications.length} application(s) rejected successfully!`,
-          icon: 'success'
-        });
-        
-        refetchApps();
-        setSelectedApplications([]);
-      } catch (error) {
-        console.error(error);
-        Swal.fire({
-          title: 'Error!',
-          text: 'Failed to reject selected applications. Please try again.',
-          icon: 'error'
-        });
-      }
-    }
-  };
-
-  // --- Send Confirmation (Complete Selected) ---
-  const handleSendConfirmation = async () => {
-    const result = await Swal.fire({
-      title: 'Send Confirmation',
-      text: `Are you sure you want to mark ${selectedApplications.length} school${selectedApplications.length > 1 ? 's' : ''} as completed?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#7c3aed',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, send confirmation!'
-    });
-
-    if (result.isConfirmed) {
-      // Show loading
-      Swal.fire({
-        title: 'Processing...',
-        text: 'Sending confirmations, please wait.',
-        icon: 'info',
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
-
-      try {
-        await changeApplicationStatus(selectedApplications, "completed");
-        
-        Swal.fire({
-          title: 'Success!',
-          text: `${selectedApplications.length} school${selectedApplications.length > 1 ? 's' : ''} marked as completed successfully!`,
-          icon: 'success'
-        });
-        
-        refetchApps();
-        setSelectedApplications([]);
-      } catch (error) {
-        console.error(error);
-        Swal.fire({
-          title: 'Error!',
-          text: 'Failed to send confirmations. Please try again.',
-          icon: 'error'
-        });
-      }
-    }
-  };
-
-  // --- Send Confirmation Single ---
-  const handleSendConfirmationSingle = async (appId: string) => {
-    const result = await Swal.fire({
-      title: 'Send Confirmation',
-      text: 'Are you sure you want to mark this school as completed?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#7c3aed',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, send confirmation!'
-    });
-
-    if (result.isConfirmed) {
-      // Show loading
-      Swal.fire({
-        title: 'Processing...',
-        text: 'Sending confirmation, please wait.',
-        icon: 'info',
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
-
-      try {
-        await changeApplicationStatus(appId, "completed");
-        
-        Swal.fire({
-          title: 'Success!',
-          text: 'School marked as completed successfully!',
-          icon: 'success'
-        });
-        
-        refetchApps();
-        setOpenDropdown(null); // Close the dropdown
-      } catch (error) {
-        console.error(error);
-        Swal.fire({
-          title: 'Error!',
-          text: 'Failed to send confirmation. Please try again.',
-          icon: 'error'
-        });
-      }
-    }
-  };
 
   // Show application review if selected (for applied tab)
   if (showApplicationReview && selectedApplication) {
@@ -468,98 +227,8 @@ export default function SchoolsTable() {
       <ApplicationReview
         application={selectedApplication}
         onBack={handleBackFromApplicationReview}
-        onApprove={async (appId: string) => {
-          const result = await Swal.fire({
-            title: 'Confirm Approval',
-            text: 'Are you sure you want to approve this school?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, approve it!'
-          });
-
-          if (result.isConfirmed) {
-            // Show loading
-            Swal.fire({
-              title: 'Processing...',
-              text: 'Approving application, please wait.',
-              icon: 'info',
-              allowOutsideClick: false,
-              allowEscapeKey: false,
-              showConfirmButton: false,
-              didOpen: () => {
-                Swal.showLoading();
-              }
-            });
-
-            try {
-              await changeApplicationStatus(appId, "approved");
-              await refetchApps();
-              setShowApplicationReview(false);
-              setSelectedApplication(null);
-              
-              Swal.fire({
-                title: 'Approved!',
-                text: 'The school has been approved successfully.',
-                icon: 'success'
-              });
-            } catch (error) {
-              console.error("Error approving application:", error);
-              Swal.fire({
-                title: 'Error!',
-                text: 'Failed to approve the application.',
-                icon: 'error'
-              });
-            }
-          }
-        }}
-        onDeny={async (appId: string) => {
-          const result = await Swal.fire({
-            title: 'Confirm Denial',
-            text: 'Are you sure you want to deny this application?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, deny it!'
-          });
-
-          if (result.isConfirmed) {
-            // Show loading
-            Swal.fire({
-              title: 'Processing...',
-              text: 'Rejecting application, please wait.',
-              icon: 'info',
-              allowOutsideClick: false,
-              allowEscapeKey: false,
-              showConfirmButton: false,
-              didOpen: () => {
-                Swal.showLoading();
-              }
-            });
-
-            try {
-              await changeApplicationStatus(appId, "rejected");
-              await refetchApps();
-              setShowApplicationReview(false);
-              setSelectedApplication(null);
-              
-              Swal.fire({
-                title: 'Denied!',
-                text: 'The application has been denied.',
-                icon: 'success'
-              });
-            } catch (error) {
-              console.error("Error denying application:", error);
-              Swal.fire({
-                title: 'Error!',
-                text: 'Failed to deny the application.',
-                icon: 'error'
-              });
-            }
-          }
-        }}
+        onApprove={handleApproveOne}
+        onDeny={handleRejectOne}
       />
     );
   }
@@ -663,13 +332,13 @@ export default function SchoolsTable() {
                 <>
                   <button
                     className="bg-green-500 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-colors"
-                    onClick={handleApproveSelected}
+                    onClick={() => handleApproveSelected(selectedApplications)}
                   >
                     Approve Selected ({selectedApplications.length})
                   </button>
                   <button
                     className="bg-red-500 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-red-600 transition-colors"
-                    onClick={handleRejectSelected}
+                    onClick={() => handleRejectSelected(selectedApplications)}
                   >
                     Reject Selected ({selectedApplications.length})
                   </button>
@@ -678,7 +347,7 @@ export default function SchoolsTable() {
               {currentTab === "onboarded" && (
                 <button
                   className="bg-purple-500 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-purple-600 transition-colors"
-                  onClick={handleSendConfirmation}
+                  onClick={() => handleSendConfirmation(selectedApplications)}
                 >
                   Send Confirmation ({selectedApplications.length})
                 </button>
@@ -856,8 +525,34 @@ export default function SchoolsTable() {
                   <tr>
                     <td colSpan={currentTab === "applied" ? 6 : 5} className="px-6 py-12 text-center">
                       <div className="text-gray-500">
-                        <div className="text-lg font-medium mb-2">No data found</div>
-                        <p className="text-sm">Try adjusting your search terms or check back later.</p>
+                        <div className="text-6xl mb-4">🏫</div>
+                        <div className="text-lg font-medium text-gray-900 mb-2">No Schools Found</div>
+                        <p className="text-sm text-gray-600 mb-4">
+                          {searchTerm 
+                            ? `No schools match your search for "${searchTerm}". Try adjusting your search terms.`
+                            : currentTab === "notApplied" 
+                              ? "All schools have submitted applications. Great progress!"
+                              : currentTab === "applied"
+                                ? "No pending applications at the moment."
+                                : currentTab === "approved"
+                                  ? "No approved schools yet. Review pending applications to get started."
+                                  : currentTab === "rejected"
+                                    ? "No rejected applications. All submissions are being processed."
+                                    : currentTab === "onboarded"
+                                      ? "No schools have been onboarded yet. Approve applications to begin onboarding."
+                                      : currentTab === "completed"
+                                        ? "No completed schools yet. Send confirmations to onboarded schools."
+                                        : "No data available for this category."
+                          }
+                        </p>
+                        {searchTerm && (
+                          <button
+                            onClick={() => setSearchTerm("")}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            Clear search
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -903,7 +598,7 @@ export default function SchoolsTable() {
                             <div className="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
                               <div className="py-1">
                                 <button
-                                  onClick={() => {}}
+                                  onClick={() => {handleViewDetails(school)}}
                                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                                 >
                                   View Full Details

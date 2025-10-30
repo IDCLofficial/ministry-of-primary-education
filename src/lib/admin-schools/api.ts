@@ -1,7 +1,8 @@
 import { Student } from '@/services/schoolService'
 
 // Base URL for the API
-export const BASE_URL = 'http://localhost:3002'
+
+export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
 
 // Status types for school applications
 export type SchoolStatus = 'applied' | 'approved' | 'declined' | 'onboarded' | 'completed' | 'pending'
@@ -154,12 +155,13 @@ export async function fetchApplications(
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
-
+  
   if (!response.ok) {
     throw new Error(`Failed to fetch applications: ${response.status}`);
   }
-
-  let apps: Application[] = await response.json();
+  const data = await response.json()
+  let apps: Application[] = data.data;
+  
   
 
   if (applicationStatus) {

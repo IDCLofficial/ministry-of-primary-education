@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { updateSchoolStatus } from '@/lib/api'
+import { updateSchoolStatus } from '@/lib/admin-schools/api'
 
 export function useSchoolManagement() {
   const [selectedSchools, setSelectedSchools] = useState<string[]>([])

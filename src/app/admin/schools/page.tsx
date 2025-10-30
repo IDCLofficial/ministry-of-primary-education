@@ -8,10 +8,20 @@ import SchoolDetailView from '@/components/admin/SchoolDetailView'
 import NotificationBanner from '@/components/admin/NotificationBanner'
 import { useSchoolManagement } from '@/hooks/useSchoolManagement'
 import SchoolTable from '@/components/admin/SchoolTable'
+import { AuthProvider } from '@/contexts/AuthContext'
+import ProtectedRoute from '@/components/admin/ProtectedRoute'
+import { useActivityTimeout } from '@/hooks/useActivityTimeout'
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null)
   const [selectedPendingSchool, setSelectedPendingSchool] = useState<School | null>(null)
+  
+  // Initialize activity timeout (5 minutes of inactivity)
+  useActivityTimeout({
+    timeoutMinutes: 5,
+    warningMinutes: 1,
+    redirectPath: '/admin/systemlogin'
+  });
   
   const {
     selectedSchools,
@@ -84,5 +94,15 @@ export default function AdminDashboard() {
         </div>
       </div>
     </DashboardLayout>
+  )
+}
+
+export default function AdminDashboard() {
+  return (
+    <AuthProvider>
+      <ProtectedRoute>
+        <AdminDashboardContent />
+      </ProtectedRoute>
+    </AuthProvider>
   )
 }
