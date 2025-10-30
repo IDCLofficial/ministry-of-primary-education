@@ -1,6 +1,3 @@
-'use client'
-
-import { useState } from 'react'
 import DashboardLayout from '@/components/admin/DashboardLayout'
 import StatsCards from '@/components/admin/StatsCards'
 
@@ -22,12 +19,12 @@ export default function AdminDashboard() {
         <div className="p-6">
           {/* Statistics Cards */}
           <StatsCards />
-<div className="flex justify-center items-center h-50">
-  <h1 className="text-2xl font-semibold text-gray-900">
-    WELCOME ADMIN
-  </h1>
+          <div className="flex justify-center items-center h-50">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              WELCOME ADMIN
+            </h1>
 
-</div>
+          </div>
         </div>
       </div>
     </DashboardLayout>

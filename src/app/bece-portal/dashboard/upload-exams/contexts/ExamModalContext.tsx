@@ -1,32 +1,11 @@
 'use client'
 
 import React, { createContext, useContext, useState, ReactNode } from 'react'
-
-interface StudentRecord {
-  schoolName: string
-  serialNo: number
-  name: string
-  examNo: string
-  sex: "Male" | "Female"
-  age: number
-  englishStudies: number
-  mathematics: number
-  basicScience: number
-  christianReligiousStudies: number
-  nationalValues: number
-  culturalAndCreativeArts: number
-  businessStudies: number
-  history: number
-  igbo: number
-  hausa: number
-  yoruba: number
-  preVocationalStudies: number
-  frenchLanguage: number
-}
+import { StudentRecord } from '../../upload-ca/utils/csvParser'
 
 interface ExamModalContextType {
   isModalOpen: boolean
-  selectedStudent: StudentRecord | null
+  selectedStudent: StudentRecord   | null
   openModal: (student: StudentRecord) => void
   closeModal: () => void
   updateStudent: (updatedStudent: StudentRecord) => void
