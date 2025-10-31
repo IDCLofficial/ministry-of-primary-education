@@ -161,26 +161,6 @@ export default function StudentDashboardPage() {
                         {/* Results */}
                         <ResultsCard student={student} />
                     </div>
-
-                    {/* Footer Info */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 print:hidden">
-                        <h3 className="text-sm font-semibold text-blue-900 mb-2">
-                            Important Information
-                        </h3>
-                        <ul className="text-sm text-blue-800 space-y-1">
-                            <li>• This is an official BECE results statement</li>
-                            <li>• Keep this document safe for future reference</li>
-                            <li>• For any discrepancies, contact your school or the examination board</li>
-                            <li>• Results are final and cannot be altered</li>
-                        </ul>
-                    </div>
-
-                    {/* Demo Notice */}
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 print:hidden">
-                        <p className="text-sm text-yellow-800">
-                            <strong>Demo Mode:</strong> This is a demonstration portal with sample data. In production, this would display real student results from the database.
-                        </p>
-                    </div>
                 </div>
             </main>
 
