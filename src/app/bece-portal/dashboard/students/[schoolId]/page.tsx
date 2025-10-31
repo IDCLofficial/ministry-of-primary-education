@@ -5,6 +5,7 @@ import { IoArrowBack, IoSchool, IoLocationOutline, IoPeopleOutline } from 'react
 import { useGetResultsQuery, useGetSchoolsQuery } from '../../../store/api/authApi'
 import SchoolStudentsTable from '../components/SchoolStudentsTable'
 import StudentModal from '../components/StudentModal'
+import CertificateModal from '../components/CertificateModal'
 import SearchBar from '../components/SearchBar'
 import EmptyState from '../components/EmptyState'
 import { Student } from '../types/student.types'
@@ -26,6 +27,8 @@ export default function SchoolDetailsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
+    const [certificateStudent, setCertificateStudent] = useState<Student | null>(null)
 
     // Fetch schools to get school details
     const { data: schools = [], isLoading: schoolsLoading, error: schoolsError } = useGetSchoolsQuery()
@@ -72,6 +75,16 @@ export default function SchoolDetailsPage() {
 
     const handleBack = () => {
         router.push('/bece-portal/dashboard/students')
+    }
+
+    const handleGenerateCertificate = (student: Student) => {
+        setCertificateStudent(student)
+        setIsCertificateModalOpen(true)
+    }
+
+    const handleCloseCertificateModal = () => {
+        setIsCertificateModalOpen(false)
+        setCertificateStudent(null)
     }
 
     if (isLoading) {
@@ -168,6 +181,7 @@ export default function SchoolDetailsPage() {
                     <SchoolStudentsTable
                         students={filteredStudents}
                         onViewStudent={handleViewStudent}
+                        onGenerateCertificate={handleGenerateCertificate}
                     />
                 )}
             </div>
@@ -178,7 +192,17 @@ export default function SchoolDetailsPage() {
                 student={selectedStudent}
                 schoolName={school.schoolName}
                 onUpdate={handleUpdateStudent}
+                onGenerateCertificate={handleGenerateCertificate}
             />
+
+            {certificateStudent && (
+                <CertificateModal
+                    isOpen={isCertificateModalOpen}
+                    onClose={handleCloseCertificateModal}
+                    student={certificateStudent}
+                    schoolName={school.schoolName}
+                />
+            )}
         </React.Fragment>
     )
 }
