@@ -37,3 +37,6 @@ export default function HangingTree({ type = "both" }: { type?: "left" | "right"
         </div>
     )
 }
+
+
+
