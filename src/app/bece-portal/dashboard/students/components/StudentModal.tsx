@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useMemo } from 'react'
-import { IoClose, IoSchool, IoPerson, IoCalendar, IoMale, IoFemale, IoRibbon, IoPencil, IoSave } from 'react-icons/io5'
+import { IoClose, IoSchool, IoPerson, IoCalendar, IoMale, IoFemale, IoRibbon, IoPencil, IoSave, IoDocumentText } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import { Student } from '../types/student.types'
 import { useUpdateStudentScoreMutation } from '../../../store/api/authApi'
@@ -19,9 +19,10 @@ interface StudentModalProps {
     student: Student | null
     schoolName?: string
     onUpdate?: (student: Student, examResults: ExamResult[]) => void
+    onGenerateCertificate?: (student: Student) => void
 }
 
-export default function StudentModal({ isOpen, onClose, student, schoolName, onUpdate }: StudentModalProps) {
+export default function StudentModal({ isOpen, onClose, student, schoolName, onUpdate, onGenerateCertificate }: StudentModalProps) {
     const [isEditing, setIsEditing] = useState(false)
     const [editedResults, setEditedResults] = useState<ExamResult[]>([])
     const [updateStudentScore, { isLoading: isUpdating }] = useUpdateStudentScoreMutation()
@@ -215,13 +216,27 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                     </button>
                                 </>
                             ) : (
-                                <button
-                                    onClick={handleEdit}
-                                    className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                >
-                                    <IoPencil className="w-4 h-4 mr-2" />
-                                    Edit Results
-                                </button>
+                                <>
+                                    <button
+                                        onClick={handleEdit}
+                                        className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                        <IoPencil className="w-4 h-4 mr-2" />
+                                        Edit Results
+                                    </button>
+                                    {onGenerateCertificate && (
+                                        <button
+                                            onClick={() => {
+                                                onGenerateCertificate(student)
+                                                onClose()
+                                            }}
+                                            className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                        >
+                                            <IoDocumentText className="w-4 h-4 mr-2" />
+                                            Generate Certificate
+                                        </button>
+                                    )}
+                                </>
                             )}
                             <button
                                 onClick={onClose}

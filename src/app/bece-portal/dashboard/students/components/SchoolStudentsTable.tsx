@@ -6,9 +6,10 @@ import Pagination from './Pagination'
 interface SchoolStudentsTableProps {
     students: Student[]
     onViewStudent: (student: Student) => void
+    onGenerateCertificate: (student: Student) => void
 }
 
-export default function SchoolStudentsTable({ students, onViewStudent }: SchoolStudentsTableProps) {
+export default function SchoolStudentsTable({ students, onViewStudent, onGenerateCertificate }: SchoolStudentsTableProps) {
     const [currentPage, setCurrentPage] = useState(1)
     const itemsPerPage = 10
 
@@ -46,6 +47,7 @@ export default function SchoolStudentsTable({ students, onViewStudent }: SchoolS
                                 key={`${student.examNo}-${index}`} 
                                 student={student} 
                                 onViewStudent={onViewStudent}
+                                onGenerateCertificate={onGenerateCertificate}
                             />
                         ))}
                     </tbody>
