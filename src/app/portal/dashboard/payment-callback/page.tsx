@@ -9,7 +9,7 @@ export default function PaymentCallbackPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { school } = useAuth()
-  
+
   const [paymentDetails, setPaymentDetails] = useState<{
     reference: string
     trxref: string
@@ -23,10 +23,10 @@ export default function PaymentCallbackPage() {
   const reference = searchParams.get('reference')
 
   // Use query hook to verify payment
-  const { 
-    data: verificationResponse, 
-    isLoading, 
-    error 
+  const {
+    data: verificationResponse,
+    isLoading,
+    error
   } = useVerifyPaymentQuery(reference || '', {
     skip: !reference // Skip query if no reference
   })
@@ -70,12 +70,12 @@ export default function PaymentCallbackPage() {
   useEffect(() => {
     if (status === 'success' || status === 'failed') {
       setCountdown(5)
-      
+
       const timer = setInterval(() => {
         setCountdown(prev => {
           if (prev === null || prev <= 1) {
             clearInterval(timer)
-            return null
+            return 0
           }
           return prev - 1
         })
@@ -88,16 +88,15 @@ export default function PaymentCallbackPage() {
   // Separate effect for handling redirect when countdown reaches 0
   useEffect(() => {
     if (countdown === 0) {
-      // Use setTimeout to ensure redirect happens after render
-      const redirectTimer = setTimeout(() => {
-        if (status === 'success') {
-          router.replace('/portal/dashboard?payment=success')
-        } else {
-          router.replace('/portal/dashboard?payment=failed')
-        }
-      }, 0);
-
-      return () => clearTimeout(redirectTimer)
+      console.log("status",{
+        status,
+        countdown
+      })
+      if (status === 'success') {
+        router.replace('/portal/dashboard?payment=success')
+      } else {
+        router.replace('/portal/dashboard?payment=failed')
+      }
     }
   }, [countdown, status, router])
 
@@ -136,10 +135,10 @@ export default function PaymentCallbackPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          
+
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
           <p className="text-gray-600 mb-4">Your student payment has been processed successfully.</p>
-          
+
           {countdown !== null && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
               <p className="text-sm text-blue-800">
@@ -147,7 +146,7 @@ export default function PaymentCallbackPage() {
               </p>
             </div>
           )}
-          
+
           <div className="bg-green-50 rounded-lg p-4 mb-6 text-left">
             <h3 className="font-semibold text-green-800 mb-3">Payment Details</h3>
             <div className="space-y-2 text-sm">
@@ -177,7 +176,7 @@ export default function PaymentCallbackPage() {
               </div>
             </div>
           </div>
-          
+
           <button
             onClick={handleContinue}
             className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200"
@@ -198,12 +197,12 @@ export default function PaymentCallbackPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        
+
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Failed</h2>
         <p className="text-gray-600 mb-4">
           We couldn&apos;t process your payment. This could be due to insufficient funds, network issues, or other payment gateway problems.
         </p>
-        
+
         {countdown !== null && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
             <p className="text-sm text-blue-800">
@@ -211,13 +210,13 @@ export default function PaymentCallbackPage() {
             </p>
           </div>
         )}
-        
+
         <div className="bg-red-50 rounded-lg p-4 mb-6">
           <p className="text-sm text-red-800">
             If you were charged, don&apos;t worry. The amount will be refunded within 3-5 business days.
           </p>
         </div>
-        
+
         <div className="space-y-3">
           <button
             onClick={handleRetry}
