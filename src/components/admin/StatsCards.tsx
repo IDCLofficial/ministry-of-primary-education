@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fetchAllSchools, getAllStudents, fetchAllPayments, getSchoolNames } from "@/services/schoolService";
-import { fetchApplications } from "@/lib/api";
+import { getAllStudents, fetchAllPayments, getSchoolNames } from "@/services/schoolService";
 import { School as SchoolType } from "@/services/schoolService";
 import CountUp from "react-countup";
 
@@ -143,10 +142,9 @@ const [loading, setLoading] = useState(true)
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* {[1, 2, 3, 4].map((i) => ( */}
         {stats.map((s, i) => (
           <div
-            key={s.title}
+            key={`${s.title}-${i}`}
             className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 animate-pulse"
           >
             <div className="h-4 text-sm py-2 rounded w-3/4 font-bold mb-4">{s.title}</div>
