@@ -1,16 +1,15 @@
 'use client'
 import React from 'react'
-import { IoArrowUp } from 'react-icons/io5'
+import { useGetDashboardSummaryQuery } from '../../store/api/authApi'
 
 interface StatCardProps {
   title: string
   value: string | number,
   bgColor?: string,
-  icon?: React.ReactNode
+  isLoading?: boolean
 }
 
-function StatCard({ title, value, icon, bgColor='#fcf1e5' }: StatCardProps) {
-
+function StatCard({ title, value, bgColor='#fcf1e5', isLoading }: StatCardProps) {
   return (
     <div 
       className="p-6 rounded-xl shadow-lg shadow-black/[0.01] border border-black/5" 
@@ -18,14 +17,15 @@ function StatCard({ title, value, icon, bgColor='#fcf1e5' }: StatCardProps) {
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-gray-600">{title}</h3>
-        <div className="flex items-center gap-1">
-          {icon && <IoArrowUp className="w-4 h-4 text-gray-400" />}
-        </div>
       </div>
       
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          {isLoading ? (
+            <div className="h-8 w-20 bg-gray-200 animate-pulse rounded"></div>
+          ) : (
+            <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
+          )}
         </div>
       </div>
     </div>
@@ -33,34 +33,28 @@ function StatCard({ title, value, icon, bgColor='#fcf1e5' }: StatCardProps) {
 }
 
 export default function StatsCards() {
+  const { data, isLoading } = useGetDashboardSummaryQuery()
+
   const stats = [
     {
       title: 'Total Students',
-      value: '2,847',
-      change: '12% than last year',
+      value: data?.students || 0,
       bgColor: '#fcf1e5',
-      trend: 'up' as const
     },
     {
       title: 'Results Uploaded',
-      value: '1,203',
-      change: '8% than last month',
+      value: data?.resultUploaded || 0,
       bgColor: '#ebf0fe',
-      trend: 'up' as const
+    },
+    {
+      title: 'Total Schools',
+      value: data?.totalSchools || 0,
+      bgColor: '#ecf5f4',
     },
     {
       title: 'Certificates Generated',
-      value: '856',
-      change: '15% than last month',
-      bgColor: '#ecf5f4',
-      trend: 'up' as const
-    },
-    {
-      title: 'Pending Reviews',
-      value: '47',
-      change: '3% than last week',
+      value: data?.certificateGenerated || 0,
       bgColor: '#ecf5e7',
-      trend: 'down' as const
     }
   ]
 
@@ -72,6 +66,7 @@ export default function StatsCards() {
           title={stat.title}
           value={stat.value}
           bgColor={stat.bgColor}
+          isLoading={isLoading}
         />
       ))}
     </div>

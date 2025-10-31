@@ -49,12 +49,12 @@ export const menuItems: (pathname: string) => MenuItem[] = (pathname: string) =>
         href: '/bece-portal/dashboard/view-uploads',
         active: pathname === '/bece-portal/dashboard/view-uploads'
     },
-    {
-        icon: <IoLockOpenOutline />,
-        iconActive: <IoLockOpen />,
-        label: 'Audit Trail',
-        abbr: 'System Audit',
-        href: '/bece-portal/dashboard/audit-trail',
-        active: pathname === '/bece-portal/dashboard/audit-trail'
-    }
+    // {
+    //     icon: <IoLockOpenOutline />,
+    //     iconActive: <IoLockOpen />,
+    //     label: 'Audit Trail',
+    //     abbr: 'System Audit',
+    //     href: '/bece-portal/dashboard/audit-trail',
+    //     active: pathname === '/bece-portal/dashboard/audit-trail'
+    // }
 ]

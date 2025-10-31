@@ -2,7 +2,7 @@
 import useShortcuts from '@useverse/useshortcuts';
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { IoSchoolOutline, IoPeopleOutline, IoDocumentTextOutline, IoTimeOutline, IoTrendingUpOutline, IoSettingsOutline, IoStatsChartOutline, IoCloseCircle } from 'react-icons/io5';
+import { IoSchoolOutline, IoPeopleOutline, IoDocumentTextOutline, IoTimeOutline, IoTrendingUpOutline, IoStatsChartOutline, IoCloseCircle } from 'react-icons/io5';
 
 type SearchCategory = 'pages' | 'actions' | 'schools' | 'students';
 
@@ -60,14 +60,14 @@ export default function SearchComponent() {
             icon: <IoDocumentTextOutline className="w-5 h-5" />,
             action: () => router.push('/bece-portal/dashboard/view-uploads')
         },
-        {
-            id: 'audit-trail',
-            title: 'Audit Trail',
-            description: 'View system audit trail',
-            category: 'pages',
-            icon: <IoSettingsOutline className="w-5 h-5" />,
-            action: () => router.push('/bece-portal/dashboard/audit-trail')
-        },
+        // {
+        //     id: 'audit-trail',
+        //     title: 'Audit Trail',
+        //     description: 'View system audit trail',
+        //     category: 'pages',
+        //     icon: <IoSettingsOutline className="w-5 h-5" />,
+        //     action: () => router.push('/bece-portal/dashboard/audit-trail')
+        // },
         {
             id: 'certificates',
             title: 'Certificates',
@@ -228,6 +228,8 @@ export default function SearchComponent() {
         schools: 'Schools',
         students: 'Students'
     };
+
+    if (true) return <div></div>;
     
     return (
         <div className="flex-1 max-w-md relative" ref={dropdownRef}>
