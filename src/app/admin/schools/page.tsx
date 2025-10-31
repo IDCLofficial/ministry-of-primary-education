@@ -1,20 +1,15 @@
 'use client'
 
-import { useState } from 'react'
 import DashboardLayout from '@/components/admin/DashboardLayout'
-import StatsCards from '@/components/admin/StatsCards'
-import { School } from '@/services/schoolService'
-import SchoolDetailView from '@/components/admin/SchoolDetailView'
+import StatsCards from '@/components/admin/schools/StatsCards'
 import NotificationBanner from '@/components/admin/NotificationBanner'
 import { useSchoolManagement } from '@/hooks/useSchoolManagement'
-import SchoolTable from '@/components/admin/SchoolTable'
+import SchoolTableRTK from '@/components/admin/schools/SchoolTable'
 import { AuthProvider } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/admin/ProtectedRoute'
 import { useActivityTimeout } from '@/hooks/useActivityTimeout'
 
 function AdminDashboardContent() {
-  const [selectedSchool, setSelectedSchool] = useState<School | null>(null)
-  const [selectedPendingSchool, setSelectedPendingSchool] = useState<School | null>(null)
   
   // Initialize activity timeout (5 minutes of inactivity)
   useActivityTimeout({
@@ -34,38 +29,6 @@ function AdminDashboardContent() {
     clearNotification
   } = useSchoolManagement()
 
-  
-  const handleSchoolClick = (school: School) => {
-    setSelectedSchool(school)
-  }
-  
-  const handlePendingSchoolClick = (school: School) => {
-    console.log(school)
-    setSelectedPendingSchool(school)
-  }
-
-  const handleBackToList = () => {
-    setSelectedSchool(null)
-    setSelectedPendingSchool(null)
-  }
-
-  // If a pending school is selected, show the application review
-  if (selectedPendingSchool) {
-    return (
-      <DashboardLayout>
-        <SchoolDetailView school={selectedPendingSchool} onBack={handleBackToList} />
-      </DashboardLayout>
-    )
-  }
-
-  // If an approved school is selected, show the detail view
-  if (selectedSchool) {
-    return (
-      <DashboardLayout>
-        <SchoolDetailView school={selectedSchool} onBack={handleBackToList} />
-      </DashboardLayout>
-    )
-  }
 
   return (
     <DashboardLayout>
@@ -88,7 +51,7 @@ function AdminDashboardContent() {
 
             {/* Schools Table */}
             <div className="mb-10">
-              <SchoolTable/>
+              <SchoolTableRTK/>
             </div>
           </div>
         </div>

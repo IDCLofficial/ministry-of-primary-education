@@ -5,11 +5,12 @@ import RegistrationPendingView from './components/RegistrationPendingView'
 import HangingTree from '../components/HangingTree'
 
 interface PageProps {
-    searchParams: { [key: string]: string | string[] | undefined }
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export default async function Page({ searchParams }: PageProps) {
-    const { submitted } = await searchParams
+    const resolvedSearchParams = await searchParams
+    const { submitted } = resolvedSearchParams
     const isSubmitted = submitted === 'true'
 
     if (isSubmitted) {

@@ -1,6 +1,7 @@
 "use client";
 import { useAuth } from '@/contexts/AuthContext';
-import AdminSystemLogin from '@/app/admin/systemlogin/page';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,6 +9,14 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
+
+  // Redirect to login if not authenticated (after loading is complete)
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push('/admin/systemlogin');
+    }
+  }, [isAuthenticated, loading, router]);
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -21,9 +30,16 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Show login if not authenticated
+  // Show loading while redirecting if not authenticated
   if (!isAuthenticated) {
-    return <AdminSystemLogin />;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
   // Show protected content if authenticated

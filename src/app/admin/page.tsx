@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import DashboardLayout from '@/components/admin/DashboardLayout'
-import StatsCards from '@/components/admin/StatsCards'
+import StatsCards from '@/components/admin/schools/StatsCards'
 
 
 export default function AdminDashboard() {

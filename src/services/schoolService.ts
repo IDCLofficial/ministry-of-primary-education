@@ -13,6 +13,7 @@ export interface Student {
 export interface School {
   _id: string;
   schoolName: string;
+  schoolCode?: string;
   address: string;
   principal: string;
   email: string;
@@ -46,6 +47,7 @@ export interface ApiResponse<T> {
 export interface SchoolApiData {
   _id: string
   schoolName?: string
+  schoolCode?: string
   name?: string
   address?: string
   principal?: string
@@ -68,11 +70,11 @@ export interface SchoolApiData {
  * Transform API school data to match our School interface
  */
 export const transformSchoolData = (apiSchool: SchoolApiData): School => {
-  console.log("Here 001")
-  console.log({apiSchool})
+
   return {
     _id: apiSchool._id,
     schoolName: apiSchool.schoolName || apiSchool.name || 'N/A',
+    schoolCode: apiSchool.schoolCode,
     address: apiSchool.address || 'N/A',
     principal: apiSchool.principal || 'N/A',
     email: apiSchool.email || 'N/A',
@@ -231,10 +233,7 @@ export const fetchSchoolById = async (schoolId: string): Promise<School> => {
       throw new Error('School not found')
     }
 
-    console.log("Here 001")
     const returnData = transformSchoolData(data);
-
-    console.log(returnData);
 
     return returnData
   } catch (error) {
@@ -258,7 +257,7 @@ export async function adminLogin(email: string, password: string) {
   }
 
   const data = await res.json();
-  console.log(data)
+
 
   if (data.accessToken) {
     localStorage.setItem("admin_token", data.accessToken);
@@ -277,11 +276,8 @@ export async function changeApplicationStatus(
   const ids = Array.isArray(appIds) ? appIds : [appIds];
 
   // Get login credentials from localStorage
-  const adminEmail = localStorage.getItem('admin_email');
   const adminToken = localStorage.getItem('admin_token');
 
-  console.log(`Admin Email: ${adminEmail}`)
-  console.log(`Admin Token: ${adminToken}`)
 
   const responses = await Promise.all(
     ids.map(async (appId) => {
@@ -299,8 +295,7 @@ export async function changeApplicationStatus(
         }
       );
      
-      console.log(appId, status, { adminEmail, adminToken })
-
+      
       if (!res.ok) {
         throw new Error(`Failed to update application ${appId} to ${status}`);
       }

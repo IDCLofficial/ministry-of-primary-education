@@ -73,19 +73,19 @@ const [loading, setLoading] = useState(true)
       try {
         // Fetch school stats
         const getSchoolStats = await getSchoolNames()
-        console.log(getSchoolStats)
+     
         const getApproved = getSchoolStats.filter((school: SchoolType) => school.status === "approved")
         setSchoolLength(getSchoolStats.length)
         setApprovedSchools(getApproved.length)
         
         // Fetch students
         const lengthOfStudents = await getAllStudents()
-        console.log(lengthOfStudents.totalItems)
+
         setStudentsLength(lengthOfStudents.totalItems)
         
         // Fetch payments and calculate total amount
         const totalPayments = await fetchAllPayments();
-        console.log(totalPayments.data)
+    
         
         // Sum all totalAmount values from payments
         const totalPaymentAmount = totalPayments.data.reduce((sum: number, payment: Payment) => {

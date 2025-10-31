@@ -66,7 +66,7 @@ export async function updateSchoolStatus(
   id: string | number,
   statusData: UpdateSchoolStatusRequest
 ): Promise<UpdateSchoolStatusResponse> {
-  console.log('🔄 updateSchoolStatus called with:', { id, statusData })
+ 
   
   try {
     const response = await fetch(`${BASE_URL}/applications/${id}/status`, {
@@ -78,24 +78,20 @@ export async function updateSchoolStatus(
       body: JSON.stringify(statusData),
     })
 
-    console.log('📡 API Response status:', response.status)
-    console.log('📡 API Response headers:', Object.fromEntries(response.headers.entries()))
+    
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('❌ API Error response:', errorText)
+      await response.text()
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
     const data = await response.json()
-    console.log('✅ API Success response data:', data)
     
     return {
       success: true,
       data,
     }
   } catch (error) {
-    console.error('Error updating school status:', error)
     
     return {
       success: false,

@@ -40,7 +40,7 @@ export default function BulkActions({
           }
         );
 
-        console.log("Approving school:", schoolId);
+     
 
         if (!response.ok) {
           throw new Error(
@@ -50,7 +50,7 @@ export default function BulkActions({
 
         // Debugging raw response
         const raw = await response.text();
-        console.log("Server response for", schoolId, ":", raw);
+      
 
         return raw ? JSON.parse(raw) : {};
       });

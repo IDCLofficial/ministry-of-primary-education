@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { School, Student } from '@/services/schoolService'
-import Swal from 'sweetalert2'
+
+import { Student } from '@/services/schoolService'
+
 
 // Application interface to match the data structure
 interface Application {
@@ -48,14 +48,14 @@ export default function ApplicationReview({ application, onBack, onApprove, onDe
     if (onDeny) {
       onDeny(application._id)
     }
-    console.log('Denying application for:', application.schoolName)
+    
   }
 
   const handleApproveApplication = async () => {
     if (onApprove) {
       onApprove(application._id)
     }
-    console.log('Approving application for:', application.schoolName)
+    
   }
 
   return (

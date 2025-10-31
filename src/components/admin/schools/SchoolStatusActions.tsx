@@ -1,12 +1,17 @@
 "use client";
 import Swal from 'sweetalert2';
 import { changeApplicationStatus } from '@/services/schoolService';
+import { useReapproveApplicationMutation } from '@/store/api/schoolsApi';
+
+import { Application } from '@/lib/admin-schools/api';
+
+type MutateFunction<T> = (updater?: (data: T[]) => T[], revalidate?: boolean) => void;
 
 interface SchoolStatusActionsProps {
   onSuccess?: () => void;
   onError?: () => void;
-  mutate?: (updater?: any, revalidate?: boolean) => void;
-  mutateApproved?: (updater?: any, revalidate?: boolean) => void;
+  mutate?: MutateFunction<Application>;
+  mutateApproved?: MutateFunction<Application>;
   refetchApps?: () => void;
   setSelectedApplications?: (apps: string[]) => void;
   setOpenDropdown?: (dropdown: string | null) => void;
@@ -21,10 +26,12 @@ export function useSchoolStatusActions({
   setSelectedApplications,
   setOpenDropdown
 }: SchoolStatusActionsProps = {}) {
+  // RTK Query mutation for reapproving applications
+  const [reapproveApplication] = useReapproveApplicationMutation();
 
   // --- Approve One ---
   const handleApproveOne = async (appId: string) => {
-    console.log(appId);
+  
     const result = await Swal.fire({
       title: 'Confirm Approval',
       text: 'Are you sure you want to approve this school?',
@@ -52,7 +59,7 @@ export function useSchoolStatusActions({
       try {
         // Optimistic remove from applied
         if (mutate) {
-          mutate((apps: any) => apps?.filter((a: any) => a._id !== appId), false);
+          mutate((apps: Application[]) => apps?.filter((a: Application) => a._id !== appId), false);
         }
 
         const [updatedApp] = await changeApplicationStatus(appId, "approved");
@@ -65,7 +72,7 @@ export function useSchoolStatusActions({
 
         // Optimistic add to approved
         if (mutateApproved) {
-          mutateApproved((apps: any) => [...(apps ?? []), updatedApp], false);
+          mutateApproved((apps: Application[]) => [...(apps ?? []), updatedApp], false);
         }
 
         if (mutate) mutate();
@@ -124,13 +131,13 @@ export function useSchoolStatusActions({
         
         // Optimistic add
         if (mutateApproved) {
-          mutateApproved((apps: any) => [...(apps ?? []), ...updatedApps], false);
+          mutateApproved((apps: Application[]) => [...(apps ?? []), ...updatedApps], false);
         }
         // Optimistic remove
         if (mutate) {
           mutate(
-            (apps: any) =>
-              apps?.filter((a: any) => !selectedApplications.includes(a._id)) ?? [],
+            (apps: Application[]) =>
+              apps?.filter((a: Application) => !selectedApplications.includes(a._id)) ?? [],
             false
           );
         }
@@ -329,6 +336,11 @@ export function useSchoolStatusActions({
       });
 
       try {
+        // Optimistic remove from applied tab
+        if (mutate) {
+          mutate((apps: Application[]) => apps?.filter((a: Application) => a._id !== appId), false);
+        }
+
         await changeApplicationStatus(appId, "rejected");
         
         Swal.fire({
@@ -337,7 +349,7 @@ export function useSchoolStatusActions({
           icon: 'success'
         });
         
-        if (refetchApps) refetchApps();
+        if (mutate) mutate();
         if (setOpenDropdown) setOpenDropdown(null);
         if (onSuccess) onSuccess();
       } catch (error) {
@@ -345,6 +357,62 @@ export function useSchoolStatusActions({
         Swal.fire({
           title: 'Error!',
           text: 'Failed to reject application. Please try again.',
+          icon: 'error'
+        });
+        if (mutate) mutate(); // Revert optimistic update on error
+        if (onError) onError();
+      }
+    }
+  };
+
+  // --- Reapprove Rejected Application ---
+  const handleReapproveOne = async (appId: string) => {
+    const result = await Swal.fire({
+      title: 'Reapprove Application',
+      text: 'Are you sure you want to reapprove this rejected application?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, reapprove it!'
+    });
+
+    if (result.isConfirmed) {
+      // Show loading
+      Swal.fire({
+        title: 'Processing...',
+        text: 'Reapproving application, please wait.',
+        icon: 'info',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      try {
+        await reapproveApplication(appId).unwrap();
+        
+        Swal.fire({
+          title: 'Success!',
+          text: 'Application has been reapproved successfully!',
+          icon: 'success'
+        });
+
+        // Close dropdown if it exists
+        if (setOpenDropdown) setOpenDropdown(null);
+        
+        // Refresh data
+        if (refetchApps) refetchApps();
+        if (mutate) mutate();
+        if (mutateApproved) mutateApproved();
+        if (onSuccess) onSuccess();
+      } catch (error) {
+        console.error(error);
+        Swal.fire({
+          title: 'Error!',
+          text: 'Failed to reapprove application. Please try again.',
           icon: 'error'
         });
         if (onError) onError();
@@ -358,6 +426,7 @@ export function useSchoolStatusActions({
     handleRejectSelected,
     handleSendConfirmation,
     handleSendConfirmationSingle,
-    handleRejectOne
+    handleRejectOne,
+    handleReapproveOne
   };
 }
