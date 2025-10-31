@@ -1,4 +1,4 @@
-import { IoCloudDone, IoCloudDoneOutline, IoFileTrayFull, IoFileTrayFullOutline, IoFolderOpen, IoFolderOpenOutline, IoGrid, IoGridOutline, IoLockOpen, IoLockOpenOutline, IoPeople, IoPeopleOutline} from "react-icons/io5"
+import { IoCloudDone, IoCloudDoneOutline, IoFileTrayFull, IoFileTrayFullOutline, IoFolderOpen, IoFolderOpenOutline, IoGrid, IoGridOutline, IoPeople, IoPeopleOutline} from "react-icons/io5"
 
 interface MenuItem {
     icon: React.ReactNode,
