@@ -6,7 +6,7 @@ import { useExamModal } from '../contexts/ExamModalContext'
 import toast from 'react-hot-toast'
 import { StudentRecord } from '../../upload-ca/utils/csvParser'
 import { useRouter } from 'next/navigation'
-import { useUploadBeceExamResultsMutation } from '../../../store/api/authApi'
+import { BeceResultUpload, useUploadBeceExamResultsMutation } from '../../../store/api/authApi'
 
 interface DataTableProps {
     data: StudentRecord[]
@@ -130,6 +130,19 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                 return groups
             }, {} as Record<string, StudentRecord[]>)
 
+            const filesWithStudentsCount: { fileName: string, fileSize: number, students: number }[] = data.reduce((files, student) => {
+                const filename = student.file.name
+                const existingFile = files.find(file => file.fileName === filename)
+
+                if (existingFile) {
+                    existingFile.students++
+                } else {
+                    files.push({ fileName: filename, fileSize: student.file.size, students: 1 })
+                }
+
+                return files
+            }, [] as { fileName: string, fileSize: number, students: number }[])
+
             // Transform data according to API structure
             const results = Object.entries(schoolGroups).map(([schoolName, students]) => ({
                 schoolName,
@@ -157,7 +170,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                 }))
             }));
 
-            await uploadBeceExamResults({ result: results, type: 'exam' }).unwrap()
+            await uploadBeceExamResults({ result: results as BeceResultUpload[], type: 'exam', file: filesWithStudentsCount }).unwrap()
 
             const endTime = performance.now()
             const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)

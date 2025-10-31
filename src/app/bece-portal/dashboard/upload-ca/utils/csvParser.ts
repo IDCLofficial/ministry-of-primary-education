@@ -19,6 +19,10 @@ interface StudentRecord {
   preVocationalStudies: number
   frenchLanguage: number
   lga: string
+  file: {
+    name: string,
+    size: number,
+  }
 }
 
 export const parseCSVFile = (file: File): Promise<StudentRecord[]> => {
@@ -29,7 +33,7 @@ export const parseCSVFile = (file: File): Promise<StudentRecord[]> => {
       try {
         const text = e.target?.result as string
         const lga = file.name.split(" - ")[1];
-        const records = parseCSVText(text, lga)
+        const records = parseCSVText(text, lga, {name: file.name, size: file.size})
         resolve(records)
       } catch (error) {
         reject(error)
@@ -44,7 +48,7 @@ export const parseCSVFile = (file: File): Promise<StudentRecord[]> => {
   })
 }
 
-export const parseCSVText = (csvText: string, lga: string): StudentRecord[] => {
+export const parseCSVText = (csvText: string, lga: string, file: {name: string, size: number}): StudentRecord[] => {
   const lines = csvText.trim().split('\n').filter(line => line.trim() !== '')
 
   if (lines.length < 2) {
@@ -130,7 +134,8 @@ export const parseCSVText = (csvText: string, lga: string): StudentRecord[] => {
         yoruba: getNumberValue(values, columnIndices.yoruba, 0),
         preVocationalStudies: getNumberValue(values, columnIndices.preVocationalStudies, 0),
         frenchLanguage: getNumberValue(values, columnIndices.frenchLanguage, 0),
-        lga: lga
+        lga: lga,
+        file: file
       }
 
       records.push(record)

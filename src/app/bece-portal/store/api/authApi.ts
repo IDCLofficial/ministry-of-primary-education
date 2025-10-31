@@ -31,7 +31,7 @@ interface ProfileResponse {
 }
 
 
-interface BeceResultUpload{
+export interface BeceResultUpload{
   schoolName: string
   lga: string
   students: Student[]
@@ -39,7 +39,8 @@ interface BeceResultUpload{
 
 interface BeceResultUploadRequest {
   result: BeceResultUpload[]
-  type: "ca" | "exam"
+  type: "ca" | "exam",
+  file: {fileName: string, fileSize: number, students: number}[]
 }
 
 interface BeceResultUploadResponse {
