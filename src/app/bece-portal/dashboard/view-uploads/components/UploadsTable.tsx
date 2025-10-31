@@ -1,6 +1,5 @@
 'use client'
 import { IoDocumentTextOutline, IoCalendarOutline, IoPersonOutline } from 'react-icons/io5'
-import { StatusIcon, StatusBadge } from './StatusBadge'
 
 interface Upload {
     id: string
@@ -38,7 +37,6 @@ export function UploadsTable({ uploads }: UploadsTableProps) {
                             <th className="text-left px-6 py-4 text-sm font-medium text-gray-900">File Details</th>
                             <th className="text-left px-6 py-4 text-sm font-medium text-gray-900">Subject & Type</th>
                             <th className="text-left px-6 py-4 text-sm font-medium text-gray-900">Upload Info</th>
-                            <th className="text-left px-6 py-4 text-sm font-medium text-gray-900">Status</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -73,14 +71,6 @@ export function UploadsTable({ uploads }: UploadsTableProps) {
                                     <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                                         <IoPersonOutline className="w-4 h-4" />
                                         <span>{upload.uploadedBy}</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                        <StatusIcon status={upload.status} />
-                                        <span className={StatusBadge({ status: upload.status })}>
-                                            {upload.status}
-                                        </span>
                                     </div>
                                 </td>
                             </tr>
