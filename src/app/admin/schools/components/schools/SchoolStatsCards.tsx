@@ -1,6 +1,6 @@
 "use client";
 
-import { Student } from '@/services/schoolService';
+import { Student, School } from '@/services/schoolService';
 
 interface Transaction {
   _id: string;
@@ -10,22 +10,6 @@ interface Transaction {
   paymentStatus: string;
   paidAt?: string;
   createdAt: string;
-}
-
-interface School {
-  _id: string;
-  schoolName: string;
-  address: string;
-  status: string;
-  principal?: string;
-  principalName?: string;
-  email?: string;
-  phone?: string;
-  phoneNumber?: string;
-  totalStudentsDeclared?: number;
-  totalPoints?: number;
-  availablePoints?: number;
-  students?: Student[];
 }
 
 interface SchoolStatsCardsProps {
@@ -166,7 +150,7 @@ export default function SchoolStatsCards({
           
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <div className="text-lg font-bold text-gray-900">
-              {school.totalStudentsDeclared || 0}
+              {school.numberOfStudents || 0}
             </div>
             <div className="text-sm text-gray-600 mt-1">Total Students Declared</div>
           </div>

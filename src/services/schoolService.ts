@@ -2,7 +2,7 @@
 
 export interface Student {
   _id: string;
-  name: string;
+  studentName: string;
   gender: string;
   class: string;
   examYear: string;

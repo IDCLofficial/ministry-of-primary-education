@@ -1,9 +1,8 @@
 "use client";
 import Swal from 'sweetalert2';
-import { changeApplicationStatus } from '@/services/schoolService';
-import { useReapproveApplicationMutation } from '@/store/api/schoolsApi';
+import { useReapproveApplicationMutation, useUpdateApplicationStatusMutation } from '@/app/admin/schools/store/api/schoolsApi';
 
-import { Application } from '@/lib/admin-schools/api';
+import { Application } from '../../store/api/schoolsApi';
 
 type MutateFunction<T> = (updater?: (data: T[]) => T[], revalidate?: boolean) => void;
 
@@ -21,13 +20,12 @@ export function useSchoolStatusActions({
   onSuccess,
   onError,
   mutate,
-  mutateApproved,
-  refetchApps,
   setSelectedApplications,
   setOpenDropdown
 }: SchoolStatusActionsProps = {}) {
-  // RTK Query mutation for reapproving applications
+  // RTK Query mutations
   const [reapproveApplication] = useReapproveApplicationMutation();
+  const [updateApplicationStatus] = useUpdateApplicationStatusMutation();
 
   // --- Approve One ---
   const handleApproveOne = async (appId: string) => {
@@ -62,7 +60,7 @@ export function useSchoolStatusActions({
           mutate((apps: Application[]) => apps?.filter((a: Application) => a._id !== appId), false);
         }
 
-        const [updatedApp] = await changeApplicationStatus(appId, "approved");
+        await updateApplicationStatus({ appIds: appId, status: "approved" }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -70,13 +68,7 @@ export function useSchoolStatusActions({
           icon: 'success'
         });
 
-        // Optimistic add to approved
-        if (mutateApproved) {
-          mutateApproved((apps: Application[]) => [...(apps ?? []), updatedApp], false);
-        }
-
-        if (mutate) mutate();
-        if (mutateApproved) mutateApproved();
+        // RTK Query will automatically invalidate and refetch the cache
         if (onSuccess) onSuccess();
       } catch (error) {
         console.error(error);
@@ -85,7 +77,7 @@ export function useSchoolStatusActions({
           text: 'Failed to approve application. Please try again.',
           icon: 'error'
         });
-        if (mutate) mutate();
+        if (mutate) mutate(); // Revert optimistic update on error
         if (onError) onError();
       }
     }
@@ -118,10 +110,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        const updatedApps = await changeApplicationStatus(
-          selectedApplications,
-          "approved"
-        );
+        await updateApplicationStatus({ appIds: selectedApplications, status: "approved" }).unwrap();
 
         Swal.fire({
           title: 'Success!',
@@ -129,11 +118,7 @@ export function useSchoolStatusActions({
           icon: 'success'
         });
         
-        // Optimistic add
-        if (mutateApproved) {
-          mutateApproved((apps: Application[]) => [...(apps ?? []), ...updatedApps], false);
-        }
-        // Optimistic remove
+        // Optimistic remove from applied tab
         if (mutate) {
           mutate(
             (apps: Application[]) =>
@@ -143,8 +128,7 @@ export function useSchoolStatusActions({
         }
 
         if (setSelectedApplications) setSelectedApplications([]);
-        if (mutate) mutate();
-        if (mutateApproved) mutateApproved();
+        // RTK Query will automatically invalidate and refetch the cache
         if (onSuccess) onSuccess();
       } catch (error) {
         console.error(error);
@@ -153,7 +137,7 @@ export function useSchoolStatusActions({
           text: 'Failed to approve selected applications. Please try again.',
           icon: 'error'
         });
-        if (mutate) mutate();
+        if (mutate) mutate(); // Revert optimistic update on error
         if (onError) onError();
       }
     }
@@ -186,7 +170,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await changeApplicationStatus(selectedApplications, "rejected");
+        await updateApplicationStatus({ appIds: selectedApplications, status: "rejected" }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -194,8 +178,8 @@ export function useSchoolStatusActions({
           icon: 'success'
         });
         
-        if (refetchApps) refetchApps();
         if (setSelectedApplications) setSelectedApplications([]);
+        // RTK Query will automatically invalidate and refetch the cache
         if (onSuccess) onSuccess();
       } catch (error) {
         console.error(error);
@@ -236,7 +220,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await changeApplicationStatus(selectedApplications, "completed");
+        await updateApplicationStatus({ appIds: selectedApplications, status: "completed" }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -244,8 +228,8 @@ export function useSchoolStatusActions({
           icon: 'success'
         });
         
-        if (refetchApps) refetchApps();
         if (setSelectedApplications) setSelectedApplications([]);
+        // RTK Query will automatically invalidate and refetch the cache
         if (onSuccess) onSuccess();
       } catch (error) {
         console.error(error);
@@ -286,7 +270,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await changeApplicationStatus(appId, "completed");
+        await updateApplicationStatus({ appIds: appId, status: "completed" }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -294,8 +278,8 @@ export function useSchoolStatusActions({
           icon: 'success'
         });
         
-        if (refetchApps) refetchApps();
         if (setOpenDropdown) setOpenDropdown(null); // Close the dropdown
+        // RTK Query will automatically invalidate and refetch the cache
         if (onSuccess) onSuccess();
       } catch (error) {
         console.error(error);
@@ -341,7 +325,7 @@ export function useSchoolStatusActions({
           mutate((apps: Application[]) => apps?.filter((a: Application) => a._id !== appId), false);
         }
 
-        await changeApplicationStatus(appId, "rejected");
+        await updateApplicationStatus({ appIds: appId, status: "rejected" }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -349,8 +333,8 @@ export function useSchoolStatusActions({
           icon: 'success'
         });
         
-        if (mutate) mutate();
         if (setOpenDropdown) setOpenDropdown(null);
+        // RTK Query will automatically invalidate and refetch the cache
         if (onSuccess) onSuccess();
       } catch (error) {
         console.error(error);
@@ -403,10 +387,7 @@ export function useSchoolStatusActions({
         // Close dropdown if it exists
         if (setOpenDropdown) setOpenDropdown(null);
         
-        // Refresh data
-        if (refetchApps) refetchApps();
-        if (mutate) mutate();
-        if (mutateApproved) mutateApproved();
+        // RTK Query will automatically invalidate and refetch the cache
         if (onSuccess) onSuccess();
       } catch (error) {
         console.error(error);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface DashboardHeaderProps {
   title?: string;
@@ -24,7 +25,7 @@ export default function DashboardHeader({
     // Clear admin token
     localStorage.removeItem('admin_token');
     // Redirect to login
-    router.push('/admin/login');
+    router.push('/admin/systemlogin');
   };
 
   return (
@@ -53,30 +54,30 @@ export default function DashboardHeader({
 
           {/* Center - Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <a
+            <Link
               href="/admin/dashboard"
               className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
             >
               Dashboard
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/schools"
               className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
             >
               Schools
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/students"
               className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
             >
               Students
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/reports"
               className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
             >
               Reports
-            </a>
+            </Link>
           </nav>
 
           {/* Right side - Actions */}
@@ -146,18 +147,18 @@ export default function DashboardHeader({
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                   <div className="py-1">
-                    <a
+                    <Link
                       href="/admin/profile"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Profile Settings
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/admin/preferences"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Preferences
-                    </a>
+                    </Link>
                     <hr className="my-1" />
                     <button
                       onClick={handleLogout}

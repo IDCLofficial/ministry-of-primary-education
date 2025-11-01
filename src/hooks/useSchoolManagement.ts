@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { updateSchoolStatus } from '@/lib/admin-schools/api'
+import { useUpdateApplicationStatusMutation } from '@/app/admin/schools/store/api/schoolsApi'
 
 export function useSchoolManagement() {
   const [selectedSchools, setSelectedSchools] = useState<string[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
+  const [updateApplicationStatus] = useUpdateApplicationStatusMutation()
 
   const handleSchoolSelect = (schoolId: string, isSelected: boolean) => {
     if (isSelected) {
@@ -31,34 +32,22 @@ export function useSchoolManagement() {
     setNotification(null)
     
     try {
-      const promises = selectedSchools.map(schoolId => {
-        console.log('📤 Sending approve request for school ID:', schoolId)
-        return updateSchoolStatus(schoolId, { 
-          status: 'approved',
-          reviewNotes: 'Approved by admin'
-        })
+      console.log('📤 Sending approve request for schools:', selectedSchools)
+      
+      const result = await updateApplicationStatus({
+        appIds: selectedSchools,
+        status: 'approved'
+      }).unwrap()
+      
+      console.log('📥 API response received:', result)
+      
+      // RTK Query mutation succeeded
+      setNotification({ 
+        type: 'success', 
+        message: `Successfully approved ${selectedSchools.length} school(s)` 
       })
-      
-      const results = await Promise.all(promises)
-      console.log('📥 All API responses received:', results)
-      
-      const failedUpdates = results.filter(result => !result.success)
-      console.log('❌ Failed updates:', failedUpdates)
-      
-      if (failedUpdates.length === 0) {
-        setNotification({ 
-          type: 'success', 
-          message: `Successfully approved ${selectedSchools.length} school(s)` 
-        })
-        setSelectedSchools([])
-        // Refresh the page to show updated data
-        window.location.reload()
-      } else {
-        setNotification({ 
-          type: 'error', 
-          message: `Failed to approve ${failedUpdates.length} school(s)` 
-        })
-      }
+      setSelectedSchools([])
+      // RTK Query will automatically update the cache, no need to reload
     } catch (error) {
       console.error('Error approving schools:', error)
       setNotification({ 
@@ -77,30 +66,14 @@ export function useSchoolManagement() {
     setNotification(null)
     
     try {
-      const promises = selectedSchools.map(schoolId => 
-        updateSchoolStatus(schoolId, { 
-          status: 'declined',
-          reviewNotes: 'Bulk declined by admin'
-        })
-      )
       
-      const results = await Promise.all(promises)
-      const failedUpdates = results.filter(result => !result.success)
-      
-      if (failedUpdates.length === 0) {
-        setNotification({ 
-          type: 'success', 
-          message: `Successfully declined ${selectedSchools.length} school(s)` 
-        })
-        setSelectedSchools([])
-        // Refresh the page to show updated data
-        window.location.reload()
-      } else {
-        setNotification({ 
-          type: 'error', 
-          message: `Failed to decline ${failedUpdates.length} school(s)` 
-        })
-      }
+      // RTK Query mutation succeeded
+      setNotification({ 
+        type: 'success', 
+        message: `Successfully declined ${selectedSchools.length} school(s)` 
+      })
+      setSelectedSchools([])
+      // RTK Query will automatically update the cache, no need to reload
     } catch (error) {
       console.error('Error declining schools:', error)
       setNotification({ 

@@ -46,7 +46,7 @@ export default function SchoolSearchBar({
     }
   };
 
-  const handleSchoolSelect = (school: School) => {
+  const handleSchoolSelect = () => {
     // Clear the search after selection
     clearSearch();
   };

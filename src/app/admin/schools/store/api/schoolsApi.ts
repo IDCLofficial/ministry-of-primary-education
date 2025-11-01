@@ -1,8 +1,41 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { School, Student } from '@/services/schoolService'
-import { Application } from '@/lib/admin-schools/api'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
+
+// Application interface
+export interface Application {
+  _id: string;
+  school: {
+    _id: string;
+    schoolName: string;
+    address: string;
+    principal: string;
+    email: string;
+    students: Student[];
+    status: string;
+    isFirstLogin: boolean;
+    totalPoints: number;
+    availablePoints: number;
+    usedPoints: number;
+    __v: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  schoolName: string;
+  address: string;
+  schoolCode: string;
+  principal: string;
+  email: string;
+  phone: number;
+  numberOfStudents: number;
+  applicationStatus: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  reviewNotes?: string;
+  reviewedAt?: string;
+}
 
 // Types
 export interface PaginatedResponse<T> {
@@ -179,7 +212,7 @@ export const schoolsApi = createApi({
       appIds: string | string[]
       status: 'approved' | 'rejected' | 'completed'
     }>({
-      queryFn: async ({ appIds, status }, { getState }) => {
+      queryFn: async ({ appIds, status }) => {
         const ids = Array.isArray(appIds) ? appIds : [appIds]
         const adminToken = localStorage.getItem('admin_token')
         
@@ -208,7 +241,15 @@ export const schoolsApi = createApi({
           return { error: { status: 'CUSTOM_ERROR', error: error instanceof Error ? error.message : 'Unknown error' } }
         }
       },
-      invalidatesTags: ['Application', 'School'],
+      invalidatesTags: (result, error, { appIds }) => {
+        const ids = Array.isArray(appIds) ? appIds : [appIds];
+        return [
+          'Application', 
+          'School',
+          // Invalidate specific school records that might be affected
+          ...ids.map(id => ({ type: 'School' as const, id }))
+        ];
+      },
     }),
 
     // Reapprove rejected application

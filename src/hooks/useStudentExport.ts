@@ -1,14 +1,5 @@
 import { useCallback } from 'react';
-
-interface Student {
-  _id: string;
-  name: string;
-  gender: string;
-  class: string;
-  examYear: string;
-  paymentStatus: string;
-  onboardingStatus: string;
-}
+import { Student } from '@/services/schoolService';
 
 export function useStudentExport() {
   const exportStudentList = useCallback((students: Student[], schoolName: string) => {
@@ -17,7 +8,7 @@ export function useStudentExport() {
     const studentData = students.map((student, index) => ({
       'S/N': index + 1,
       'Student ID': student._id || 'N/A',
-      'Name': student.name || 'N/A',
+      'Name': student.studentName || 'N/A',
       'Gender': student.gender || 'N/A',
       'Class': student.class || 'N/A',
       'Exam Year': student.examYear || 'N/A',

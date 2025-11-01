@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { Application } from '@/lib/admin-schools/api';
+import { Application } from '../../store/api/schoolsApi';
 
 interface ApplicationReviewLayoutProps {
   application: Application;
@@ -12,7 +12,6 @@ interface ApplicationReviewLayoutProps {
 
 export default function ApplicationReviewLayout({
   application,
-  applicationId,
   onApprove,
   onReject,
   onReapprove
@@ -44,10 +43,10 @@ export default function ApplicationReviewLayout({
       {/* Header with buttons */}
       <div className="flex items-center justify-between p-6 pt-0 border-b border-gray-200">
         <h2 className="text-xl font-semibold text-gray-900">
-          {application.applicationStatus === 'declined' ? 'Rejected Application Review' : 'Application Review'}
+          {application.applicationStatus === 'declined' || application.applicationStatus === 'rejected' ? 'Rejected Application Review' : 'Application Review'}
         </h2>
         <div className="flex space-x-3">
-          {application.applicationStatus === 'declined' ? (
+          {application.applicationStatus === 'declined' || application.applicationStatus === 'rejected' ? (
             /* Rejected Application - Show Reapprove Button */
             <button
               onClick={onReapprove}

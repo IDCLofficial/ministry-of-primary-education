@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import GlobalLoader from '@/components/GlobalLoader'
-import { ReduxProvider } from '@/store/provider'
+import { ReduxProvider } from '@/app/admin/schools/store/provider'
 
 
 

@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 import { 
   useGetApplicationsQuery, 
   useUpdateApplicationStatusMutation
-} from '@/store/api/schoolsApi';
-import ApplicationReview from './ApplicationReview';
+} from '@/app/admin/schools/store/api/schoolsApi';
 import { School } from "@/services/schoolService";
-import { Application } from "@/lib/admin-schools/api";
+import { Application } from "@/app/admin/schools/store/api/schoolsApi"
 import { useSchoolStatusActions } from './SchoolStatusActions';
 import PaginationControls from './PaginationControls';
 import SchoolDataTable from './SchoolDataTable';
@@ -20,7 +19,6 @@ export default function SchoolTableRTK() {
   const [currentTab, setCurrentTab] = useState<Tab>("notApplied");
   const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
   const [page, setPage] = useState(1);
-  const [showApplicationReview, setShowApplicationReview] = useState(false);
 
 
   // RTK Query hooks - using only useGetApplicationsQuery for all tabs
@@ -53,22 +51,8 @@ export default function SchoolTableRTK() {
 
   const [updateApplicationStatus] = useUpdateApplicationStatusMutation();
 
-  // Custom handlers with optimistic updates for tab switching
-  const handleApproveOneWithUpdate = async (id: string) => {
-    // Optimistically update the cache to move item from current tab
-    // This will make the item disappear from current tab immediately
-    await updateApplicationStatus({
-      appIds: id,
-      status: 'approved'
-    }).unwrap();
-  };
-
-  const handleRejectOneWithUpdate = async (id: string) => {
-    await updateApplicationStatus({
-      appIds: id,
-      status: 'rejected'
-    }).unwrap();
-  };
+ 
+ 
 
   const handleApproveSelectedWithUpdate = async () => {
     if (selectedApplications.length === 0) return;
@@ -99,8 +83,7 @@ export default function SchoolTableRTK() {
 
   // Initialize SchoolStatusActions hook for SweetAlert dialogs
   const {
-    handleApproveOne,
-    handleRejectOne,
+   
     handleApproveSelected,
     handleRejectSelected,
     handleSendConfirmation

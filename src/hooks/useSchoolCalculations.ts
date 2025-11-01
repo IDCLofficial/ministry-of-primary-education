@@ -1,14 +1,5 @@
 import { useMemo } from 'react';
-
-interface Student {
-  _id: string;
-  name: string;
-  gender: string;
-  class: string;
-  examYear: string;
-  paymentStatus: string;
-  onboardingStatus: string;
-}
+import { Student, School } from '@/services/schoolService';
 
 interface Transaction {
   _id: string;
@@ -18,12 +9,6 @@ interface Transaction {
   paymentStatus: string;
   paidAt?: string;
   createdAt: string;
-}
-
-interface School {
-  _id: string;
-  schoolName: string;
-  students?: Student[];
 }
 
 export function useSchoolCalculations(school: School | undefined, transactions: Transaction[]) {
@@ -42,7 +27,7 @@ export function useSchoolCalculations(school: School | undefined, transactions: 
       : 0;
     
     const latestTransaction = transactions.length > 0 
-      ? transactions.sort((a, b) => {
+      ? [...transactions].sort((a, b) => {
           const dateA = new Date(a.paidAt || a.createdAt).getTime();
           const dateB = new Date(b.paidAt || b.createdAt).getTime();
           return dateB - dateA;

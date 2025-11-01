@@ -2,9 +2,20 @@
 
 import { useState, useMemo } from "react";
 import PaginationControls from './PaginationControls';
-import { useGetStudentsBySchoolIdQuery } from '@/store/api/schoolsApi';
+import { useGetStudentsBySchoolIdQuery } from '@/app/admin/schools/store/api/schoolsApi';
 import { useStudentExport } from '@/hooks/useStudentExport';
 import { Student } from '@/services/schoolService';
+
+// Define possible response structures for students API
+interface StudentsDataResponse {
+  data: Student[];
+}
+
+interface StudentsNestedResponse {
+  students: Student[];
+}
+
+
 
 interface StudentsSectionProps {
   schoolId: string;
@@ -23,6 +34,16 @@ export default function StudentsSection({
     error
   } = useGetStudentsBySchoolIdQuery(schoolId);
 
+  // Debug logging
+  console.log('StudentsSection Debug:', {
+    schoolId,
+    studentsResponse,
+    isLoading,
+    error,
+    responseType: typeof studentsResponse,
+    isArray: Array.isArray(studentsResponse)
+  });
+
   // Initialize export hook
   const { exportStudentList } = useStudentExport();
 
@@ -34,7 +55,26 @@ export default function StudentsSection({
 
   // Extract students array from response
   const students = useMemo(() => {
-    return Array.isArray(studentsResponse) ? studentsResponse : [];
+    console.log('Processing studentsResponse:', studentsResponse);
+    
+    // Handle different possible response structures
+    if (Array.isArray(studentsResponse)) {
+      return studentsResponse;
+    }
+    
+    // If response has a data property
+    if (studentsResponse && typeof studentsResponse === 'object' && 'data' in studentsResponse) {
+      const data = (studentsResponse as StudentsDataResponse).data;
+      return Array.isArray(data) ? data : [];
+    }
+    
+    // If response has students property
+    if (studentsResponse && typeof studentsResponse === 'object' && 'students' in studentsResponse) {
+      const students = (studentsResponse as StudentsNestedResponse).students;
+      return Array.isArray(students) ? students : [];
+    }
+    
+    return [];
   }, [studentsResponse]);
 
   // Filter students based on search
@@ -43,7 +83,7 @@ export default function StudentsSection({
       return [];
     }
     return students.filter((student: Student) =>
-      student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student._id?.includes(searchTerm) ||
       student.class?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -189,7 +229,7 @@ export default function StudentsSection({
                       {student._id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {student.name}
+                      {student.studentName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {student.gender}

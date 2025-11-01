@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth, AuthProvider } from '@/contexts/AuthContext';
 import Swal from 'sweetalert2';
 import { FaBookOpen, FaPencilAlt, FaUniversity } from "react-icons/fa";
@@ -74,11 +75,7 @@ function AdminSystemLoginContent() {
       {/* LEFT SIDE */}
       <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-green-500 via-green-600 to-green-700 relative overflow-hidden items-center justify-center text-white">
         {/* Multiple Flowing Wave Layers */}
-        <div className="absolute inset-0 overflow-hidden">
-         \
-          
-        
-          
+        <div className="absolute inset-0 overflow-hidden"> 
           {/* Flowing Particles */}
           <div className="absolute inset-0">
             <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full opacity-40 animate-float" style={{animationDelay: '0s'}}></div>
@@ -94,11 +91,12 @@ function AdminSystemLoginContent() {
 
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center px-6 text-center animate-fadeIn">
-          <img
+          <Image
             src="/images/IMSG-Logo.svg"
             alt="Nigeria Coat of Arms"
+            width={96}
+            height={96}
             className="w-24 h-24 mb-6"
-           
           />
          <h1
   className="text-xl md:text-2xl font-extrabold tracking-wide text-white drop-shadow-lg leading-snug text-center animate-fadeIn-y"

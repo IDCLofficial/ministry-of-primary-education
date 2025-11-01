@@ -1,12 +1,12 @@
 'use client'
 
-import DashboardLayout from '@/components/admin/DashboardLayout'
-import StatsCards from '@/components/admin/schools/StatsCards'
-import NotificationBanner from '@/components/admin/NotificationBanner'
+import DashboardLayout from '@/app/admin/schools/components/DashboardLayout'
+import StatsCards from '@/app/admin/schools/components/schools/StatsCards'
+import NotificationBanner from '@/app/admin/schools/components/NotificationBanner'
 import { useSchoolManagement } from '@/hooks/useSchoolManagement'
-import SchoolTableRTK from '@/components/admin/schools/SchoolTable'
+import SchoolTableRTK from '@/app/admin/schools/components/schools/SchoolTable'
 import { AuthProvider } from '@/contexts/AuthContext'
-import ProtectedRoute from '@/components/admin/ProtectedRoute'
+import ProtectedRoute from '@/app/admin/schools/components/ProtectedRoute'
 import { useActivityTimeout } from '@/hooks/useActivityTimeout'
 
 function AdminDashboardContent() {
@@ -19,13 +19,7 @@ function AdminDashboardContent() {
   });
   
   const {
-    selectedSchools,
-    isProcessing,
     notification,
-    handleSchoolSelect,
-    handleSelectAll,
-    handleApproveSelected,
-    handleDeclineSelected,
     clearNotification
   } = useSchoolManagement()
 

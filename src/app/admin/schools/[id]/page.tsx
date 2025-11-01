@@ -1,19 +1,19 @@
 "use client";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import DashboardLayout from '@/components/admin/DashboardLayout';
+import DashboardLayout from '@/app/admin/schools/components/DashboardLayout';
 import { 
   useGetSchoolByIdQuery, 
   useGetSchoolTransactionsQuery,
   useGetApplicationsQuery
-} from "@/store/api/schoolsApi";
-import { useSchoolStatusActions } from '@/components/admin/schools/SchoolStatusActions';
-import { Application } from '@/lib/admin-schools/api';
-import SchoolDetailsHeader from '@/components/admin/schools/SchoolDetailsHeader';
+} from "@/app/admin/schools/store/api/schoolsApi";
+import { useSchoolStatusActions } from '@/app/admin/schools/components/schools/SchoolStatusActions';
+import { Application } from '@/app/admin/schools/store/api/schoolsApi';
+import SchoolDetailsHeader from '@/app/admin/schools/components/schools/SchoolDetailsHeader';
 import { AuthProvider } from '@/contexts/AuthContext';
-import ProtectedRoute from '@/components/admin/ProtectedRoute';
-import SchoolStatsCards from '@/components/admin/schools/SchoolStatsCards';
-import StudentsSection from '@/components/admin/schools/StudentsSection';
-import ApplicationReviewLayout from '@/components/admin/schools/ApplicationReviewLayout';
+import ProtectedRoute from '@/app/admin/schools/components/ProtectedRoute';
+import SchoolStatsCards from '@/app/admin/schools/components/schools/SchoolStatsCards';
+import StudentsSection from '@/app/admin/schools/components/schools/StudentsSection';
+import ApplicationReviewLayout from '@/app/admin/schools/components/schools/ApplicationReviewLayout';
 import { useSchoolCalculations } from '@/hooks/useSchoolCalculations';
 import { useStudentExport } from '@/hooks/useStudentExport';
 
@@ -56,8 +56,9 @@ function SchoolDetailsPageContent() {
     handleReapproveOne
   } = useSchoolStatusActions({
     onSuccess: () => {
-      // Refetch school data after status change
       // RTK Query will automatically refetch due to cache invalidation
+      // The cache invalidation tags ['Application', 'School'] will trigger refetch
+      console.log('Status change successful - RTK Query will automatically update the UI');
     }
   });
 
@@ -71,8 +72,8 @@ function SchoolDetailsPageContent() {
   // Determine the status: use applicationStatus if available, otherwise fallback to school.status
   const effectiveStatus = schoolApplication?.applicationStatus || school?.status;
 
-  // Create a fallback application object for declined schools without application data
-  const applicationForReview: Application | null = schoolApplication || (effectiveStatus === 'declined' ? {
+  // Create a fallback application object for declined/rejected schools without application data
+  const applicationForReview: Application | null = schoolApplication || ((effectiveStatus === 'declined' || effectiveStatus === 'rejected') ? {
     _id: schoolId,
     school: school!,
     schoolName: school?.schoolName || '',
@@ -82,11 +83,23 @@ function SchoolDetailsPageContent() {
     email: school?.email || '',
     phone: school?.phone || 0,
     numberOfStudents: school?.numberOfStudents || 0,
-    applicationStatus: 'declined' as const,
+    applicationStatus: effectiveStatus as 'declined' | 'rejected',
     createdAt: school?.createdAt || '',
     updatedAt: school?.updatedAt || '',
     __v: 0
   } : null);
+
+  // Create enhanced school object with Application data for completed schools
+  // At this point, we know school exists due to the guard clause above
+  const enhancedSchool = schoolApplication ? {
+    ...school!,
+    principal: schoolApplication.principal || school!.principal || '',
+    email: schoolApplication.email || school!.email || '',
+    address: schoolApplication.address || school!.address || '',
+    schoolName: schoolApplication.schoolName || school!.schoolName || '',
+    phone: schoolApplication.phone || school!.phone || 0,
+    numberOfStudents: schoolApplication.numberOfStudents || school!.numberOfStudents || 0
+  } : school!;
 
   // Use custom hooks for calculations and export
   const {
@@ -95,13 +108,13 @@ function SchoolDetailsPageContent() {
     totalPaid,
     totalTransactionStudents,
     latestTransaction
-  } = useSchoolCalculations(school, transactions);
+  } = useSchoolCalculations(enhancedSchool, transactions);
 
   const { exportStudentList } = useStudentExport();
 
   const handleExportStudentList = () => {
-    if (!school?.students) return;
-    exportStudentList(school.students, school.schoolName);
+    if (!enhancedSchool?.students) return;
+    exportStudentList(enhancedSchool.students, enhancedSchool.schoolName);
   };
 
   // Handle status actions using the SchoolStatusActions hook
@@ -169,7 +182,7 @@ function SchoolDetailsPageContent() {
   }
 
   // Check if this is an applied or rejected school
-  const isAppliedSchool = (effectiveStatus === 'pending' || effectiveStatus === 'rejected' || effectiveStatus === 'declined')
+  const isAppliedSchool = (effectiveStatus === 'pending' || effectiveStatus === 'declined' || effectiveStatus === 'rejected')
 
   return (
     <DashboardLayout>
@@ -198,7 +211,7 @@ function SchoolDetailsPageContent() {
 
               {/* Statistics Cards */}
               <SchoolStatsCards
-                school={school as any}
+                school={enhancedSchool}
                 transactions={transactions}
                 transactionsLoading={transactionsLoading}
                 totalStudents={totalStudents}
