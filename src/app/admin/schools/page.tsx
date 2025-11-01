@@ -1,61 +1,28 @@
 'use client'
 
-import { useState } from 'react'
-import DashboardLayout from '@/components/admin/DashboardLayout'
-import StatsCards from '@/components/admin/StatsCards'
-import { School } from '@/services/schoolService'
-import SchoolDetailView from '@/components/admin/SchoolDetailView'
-import NotificationBanner from '@/components/admin/NotificationBanner'
+import DashboardLayout from '@/app/admin/schools/components/DashboardLayout'
+import StatsCards from '@/app/admin/schools/components/schools/StatsCards'
+import NotificationBanner from '@/app/admin/schools/components/NotificationBanner'
 import { useSchoolManagement } from '@/hooks/useSchoolManagement'
-import SchoolTable from '@/components/admin/SchoolTable'
+import SchoolTableRTK from '@/app/admin/schools/components/schools/SchoolTable'
+import { AuthProvider } from '@/contexts/AuthContext'
+import ProtectedRoute from '@/app/admin/schools/components/ProtectedRoute'
+import { useActivityTimeout } from '@/hooks/useActivityTimeout'
 
-export default function AdminDashboard() {
-  const [selectedSchool, setSelectedSchool] = useState<School | null>(null)
-  const [selectedPendingSchool, setSelectedPendingSchool] = useState<School | null>(null)
+function AdminDashboardContent() {
+  
+  // Initialize activity timeout (5 minutes of inactivity)
+  useActivityTimeout({
+    timeoutMinutes: 5,
+    warningMinutes: 1,
+    redirectPath: '/admin/systemlogin'
+  });
   
   const {
-    selectedSchools,
-    isProcessing,
     notification,
-    handleSchoolSelect,
-    handleSelectAll,
-    handleApproveSelected,
-    handleDeclineSelected,
     clearNotification
   } = useSchoolManagement()
 
-  
-  const handleSchoolClick = (school: School) => {
-    setSelectedSchool(school)
-  }
-  
-  const handlePendingSchoolClick = (school: School) => {
-    console.log(school)
-    setSelectedPendingSchool(school)
-  }
-
-  const handleBackToList = () => {
-    setSelectedSchool(null)
-    setSelectedPendingSchool(null)
-  }
-
-  // If a pending school is selected, show the application review
-  if (selectedPendingSchool) {
-    return (
-      <DashboardLayout>
-        <SchoolDetailView school={selectedPendingSchool} onBack={handleBackToList} />
-      </DashboardLayout>
-    )
-  }
-
-  // If an approved school is selected, show the detail view
-  if (selectedSchool) {
-    return (
-      <DashboardLayout>
-        <SchoolDetailView school={selectedSchool} onBack={handleBackToList} />
-      </DashboardLayout>
-    )
-  }
 
   return (
     <DashboardLayout>
@@ -78,11 +45,21 @@ export default function AdminDashboard() {
 
             {/* Schools Table */}
             <div className="mb-10">
-              <SchoolTable/>
+              <SchoolTableRTK/>
             </div>
           </div>
         </div>
       </div>
     </DashboardLayout>
+  )
+}
+
+export default function AdminDashboard() {
+  return (
+    <AuthProvider>
+      <ProtectedRoute>
+        <AdminDashboardContent />
+      </ProtectedRoute>
+    </AuthProvider>
   )
 }

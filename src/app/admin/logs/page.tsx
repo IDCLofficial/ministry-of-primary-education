@@ -1,6 +1,6 @@
 'use client'
 
-import DashboardLayout from '@/components/admin/DashboardLayout'
+import DashboardLayout from '@/app/admin/schools/admin/DashboardLayout'
 
 export default function LogsPage() {
   return (

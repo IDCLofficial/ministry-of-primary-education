@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import DashboardLayout from '@/components/admin/DashboardLayout'
-import StatsCards from '@/components/admin/StatsCards'
+import DashboardLayout from '@/app/admin/schools/components/DashboardLayout'
+import StatsCards from '@/app/admin/schools/components/schools/StatsCards'
 
 
 export default function AdminDashboard() {

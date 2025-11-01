@@ -1,26 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fetchAllSchools, getAllStudents, fetchAllPayments, getSchoolNames } from "@/services/schoolService";
-import { fetchApplications } from "@/lib/api";
-import { School as SchoolType } from "@/services/schoolService";
+import { getAllStudents, fetchAllPayments, getSchoolNames, School as SchoolType } from "@/services/schoolService";
 import CountUp from "react-countup";
 
 interface Payment {
   _id: string;
   totalAmount: number;
   [key: string]: unknown;
-}
-
-// ✅ Define Student interface
-export interface Student {
-  id: string;
-  name: string;
-  gender: string;
-  class: string;
-  examYear: string;
-  paymentStatus: "Paid" | "Pending";
-  onboardingStatus: "Onboarded" | "Not Onboarded";
 }
 
 // ✅ Define School interface with students typed
@@ -73,19 +60,19 @@ const [loading, setLoading] = useState(true)
       try {
         // Fetch school stats
         const getSchoolStats = await getSchoolNames()
-        console.log(getSchoolStats)
+     
         const getApproved = getSchoolStats.filter((school: SchoolType) => school.status === "approved")
         setSchoolLength(getSchoolStats.length)
         setApprovedSchools(getApproved.length)
         
         // Fetch students
         const lengthOfStudents = await getAllStudents()
-        console.log(lengthOfStudents.totalItems)
+
         setStudentsLength(lengthOfStudents.totalItems)
         
         // Fetch payments and calculate total amount
         const totalPayments = await fetchAllPayments();
-        console.log(totalPayments.data)
+    
         
         // Sum all totalAmount values from payments
         const totalPaymentAmount = totalPayments.data.reduce((sum: number, payment: Payment) => {
@@ -105,15 +92,6 @@ const [loading, setLoading] = useState(true)
     fetchAllStats()
  }, [])
 
-  // const { schools, isLoading: loadingSchools } = useSchools(1, 1000);
-  // const { applications, isLoading: loadingApps } = useApplications(
-  //   undefined,
-  //   "",
-  //   1,
-  //   1000
-  // );
-
-  // const loading = loadingSchools || loadingApps;
 
   // --- Calculate stats ---
  
@@ -143,8 +121,8 @@ const [loading, setLoading] = useState(true)
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* {[1, 2, 3, 4].map((i) => ( */}
-        {stats.map((s, i) => (
+       
+        {stats.map((s) => (
           <div
             key={s.title}
             className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 animate-pulse"

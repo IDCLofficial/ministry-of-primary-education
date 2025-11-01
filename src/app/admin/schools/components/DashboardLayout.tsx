@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -23,7 +24,15 @@ const navigationItems = [
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const { logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+    setUserMenuOpen(false)
+    router.push('/admin/systemlogin')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -87,9 +96,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     Settings
                   </a>
                   <div className="border-t border-gray-100"></div>
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <button 
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
                     Sign out
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
