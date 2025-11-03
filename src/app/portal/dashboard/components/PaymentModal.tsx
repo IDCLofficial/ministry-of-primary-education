@@ -18,7 +18,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
   const [selectedStudentCount, setSelectedStudentCount] = useState(numberOfStudents)
   const [customInput, setCustomInput] = useState('')
   
-  const feePerStudent = 2000 // Fee per student
+  const feePerStudent = 500 // Fee per student
   const studentFees = selectedStudentCount * feePerStudent
   const processingFee = Math.round(studentFees * 0.015) // 1.5% processing fee
   const totalAmount = studentFees + processingFee
