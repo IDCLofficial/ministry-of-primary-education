@@ -24,7 +24,7 @@ export default function Dashboard() {
             <div className="w-full mt-10">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">TSA Dashboard <span className="text-gray-500 text-base">{role === "admin" ? "" : "(View Only)"}</span></h1>
+                    <h1 className="text-3xl font-bold text-gray-900">IIRS Dashboard <span className="text-gray-500 text-base">{role === "admin" ? "" : "(View Only)"}</span></h1>
                 </div>
 
                 {/* Metrics Cards */}

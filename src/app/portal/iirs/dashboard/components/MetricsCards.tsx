@@ -128,7 +128,7 @@ export default function MetricsCards() {
       {/* IIRS Earnings Card */}
       <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 flex-1">
         <div className="flex flex-col space-y-2">
-          <h3 className="text-sm font-medium text-gray-600">IIRS Earnings</h3>
+          <h3 className="text-sm font-medium text-gray-600">TSA Earnings</h3>
           <p className="text-2xl font-bold text-gray-900">₦{data?.iirsEarnings?.toLocaleString()}</p>
           <div className="flex items-center space-x-1">
             {(data?.percentage || 0) > 0 ? (
