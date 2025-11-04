@@ -1,45 +1,48 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from "react"
-import { useAuth } from "./context/authContext"
+import LoginForm from "./login/LoginForm";
+import {login} from "@/lib/iirs/dataInteraction"
+import React from "react";
+import toast from "react-hot-toast";
+import { useAuth } from "@/app/portal/iirs/providers/AuthProvider";
 
-export default function IIRS(){
-    const { isAuthenticated, user } = useAuth();
-    const [isLoading, setIsLoading] = useState(true);
+export default function Revenue() {
+    const {login: authLogin} = useAuth();
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    useEffect(()=>{
-        // Wait a moment for the auth context to complete token validation
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1000);
-
-        return () => clearTimeout(timer);
-    }, [])
-
-    useEffect(() => {
-        if (!isLoading) {
-            if (!isAuthenticated) {
-                window.location.href = '/portal/iirs/login';
-            } else {
-                window.location.href = '/portal/iirs/dashboard';
+    const handleLogin = async (email: string, password: string) => {
+        try {
+            setIsSubmitting(true);
+            const result = await login(email, password);
+            if(!result?.success){
+                throw new Error(result?.message)
             }
+            authLogin(result.access_token)
+        } catch (error) {
+            console.error('Login failed:', error);
+            throw new Error((error as Error)?.message);
+        } finally {
+            setIsSubmitting(false);
         }
-    }, [isAuthenticated, isLoading]);
+    };
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Validating authentication...</p>
-                </div>
-            </div>
-        );
+    const watchLogin = (email: string, password: string) => {
+        const promise = handleLogin(email, password)
+
+        toast.promise(promise, {
+            loading: 'Logging in...',
+            success: 'Login successful',
+            error: 'Login failed'
+        })
     }
+        
+    
 
-    return(
-        <div>
-            <div></div>
-        </div>
+    return (
+        <React.Fragment>
+            <div className="h-screen w-full bg-[#f1f1f1] flex justify-center items-center">
+                <LoginForm onSubmit={watchLogin} isSubmitting={isSubmitting} />
+            </div>
+        </React.Fragment>
     )
 }

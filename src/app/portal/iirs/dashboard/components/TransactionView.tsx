@@ -1,7 +1,6 @@
 'use client';
 
-import { number } from 'framer-motion';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 
 interface TransactionViewProps {
   totalAmount?: string;
@@ -35,12 +34,7 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-const getDateRange = (monthsBack: number) => {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth() - monthsBack, now.getDate());
-};
-
-export default function TransactionView({ totalAmount, growthPercentage }: TransactionViewProps) {
+export default function TransactionView() {
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

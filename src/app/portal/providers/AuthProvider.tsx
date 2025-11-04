@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useGetProfileQuery } from '../store/api/authApi'
 
 interface School {
@@ -35,6 +35,7 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  const path = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [school, setSchool] = useState<School | null>(null)
   const [token, setToken] = useState<string | null>(null)
@@ -85,6 +86,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSchool(null)
       setIsAuthenticated(false)
       setSkipProfileQuery(true) // Disable profile query
+
+      console.log("logging out from AuthProvider->school")
       router.push('/portal')
     } catch (error) {
       console.error('Error during logout:', error)
@@ -93,6 +96,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Handle profile data updates
   useEffect(() => {
+    if (path.includes('portal/iirs')) return;
+
     if (profileData && token) {
       setSchool(profileData)
       setIsAuthenticated(true)
@@ -103,7 +108,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // If profile fetch fails, clear auth data
       logout()
     }
-  }, [profileData, profileError, token, logout])
+  }, [profileData, profileError, token, logout, path])
 
   const login = (newToken: string, newSchool: School) => {
     try {
