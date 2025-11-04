@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { IoClose, IoPersonAddOutline, IoSearchOutline, IoTrashOutline, IoShieldCheckmarkOutline, IoMailOutline, IoRefreshOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
+import { IoClose, IoPersonAddOutline, IoSearchOutline, IoTrashOutline, IoShieldCheckmarkOutline, IoMailOutline, IoDiceOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -18,6 +18,12 @@ interface UserManagementModalProps {
     onClose: () => void;
 }
 
+interface FormErrors {
+    name?: string;
+    email?: string;
+    password?: string;
+}
+
 export default function UserManagementModal({ isOpen, onClose }: UserManagementModalProps) {
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -30,6 +36,8 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPassword, setShowPassword] = useState(true);
+    const [errors, setErrors] = useState<FormErrors>({});
+    const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
 
     useEffect(() => {
         if (isOpen) {
@@ -39,15 +47,75 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
 
     if (!isOpen) return null;
 
+    const validateField = (name: string, value: string): string | undefined => {
+        switch (name) {
+            case 'name':
+                if (!value.trim()) return 'Name is required';
+                if (value.trim().length < 2) return 'Name must be at least 2 characters';
+                if (value.trim().length > 50) return 'Name must be less than 50 characters';
+                return undefined;
+            
+            case 'email':
+                if (!value.trim()) return 'Email is required';
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) return 'Invalid email format';
+                return undefined;
+            
+            case 'password':
+                if (!value) return 'Password is required';
+                if (value.length < 8) return 'Password must be at least 8 characters';
+                if (value.length > 50) return 'Password must be less than 50 characters';
+                if (!/[a-z]/.test(value)) return 'Password must contain a lowercase letter';
+                if (!/[A-Z]/.test(value)) return 'Password must contain an uppercase letter';
+                if (!/[0-9]/.test(value)) return 'Password must contain a number';
+                if (!/[!@#$%^&*.,<>?()_+]/.test(value)) return 'Password must contain a special character';
+                return undefined;
+            
+            default:
+                return undefined;
+        }
+    };
+
+    const validateForm = (): boolean => {
+        const newErrors: FormErrors = {
+            name: validateField('name', newUser.name),
+            email: validateField('email', newUser.email),
+            password: validateField('password', newUser.password)
+        };
+        
+        setErrors(newErrors);
+        return !Object.values(newErrors).some(error => error !== undefined);
+    };
+
+    const handleFieldChange = (field: string, value: string) => {
+        setNewUser({ ...newUser, [field]: value });
+        
+        // Validate on change if field has been touched
+        if (touched[field]) {
+            const error = validateField(field, value);
+            setErrors(prev => ({ ...prev, [field]: error }));
+        }
+    };
+
+    const handleFieldBlur = (field: string) => {
+        setTouched(prev => ({ ...prev, [field]: true }));
+        const error = validateField(field, newUser[field as keyof typeof newUser]);
+        setErrors(prev => ({ ...prev, [field]: error }));
+    };
+
     const generatePassword = () => {
-        const length = 12;
-        const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+        const length = 16;
+        const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*.,<>?()_+";
         let password = "";
         for (let i = 0; i < length; i++) {
             password += charset.charAt(Math.floor(Math.random() * charset.length));
         }
         setNewUser({ ...newUser, password });
-        toast.success('Password generated!');
+        
+        // Clear password error when generated
+        if (touched.password) {
+            setErrors(prev => ({ ...prev, password: undefined }));
+        }
     };
 
     const fetchUsers = async () => {
@@ -71,8 +139,12 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
     const handleAddUser = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (!newUser.name || !newUser.email || !newUser.password) {
-            toast.error('Please fill in all required fields');
+        // Mark all fields as touched
+        setTouched({ name: true, email: true, password: true });
+        
+        // Validate form
+        if (!validateForm()) {
+            toast.error('Please fix all errors before submitting');
             return;
         }
 
@@ -96,6 +168,8 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
             } else {
                 toast.success('User created successfully!', { id: loadingToast });
                 setNewUser({ name: '', email: '', password: '' });
+                setErrors({});
+                setTouched({});
                 setActiveTab('users');
                 fetchUsers();
             }
@@ -142,21 +216,18 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
 
     const getAdminTypeDisplay = (type: string) => {
         switch (type) {
-            case 'iirs_admin': return 'IIRS Admin';
-            case 'super_admin': return 'Super Admin';
-            case 'state_admin': return 'State Admin';
+            case 'iirs_admin': return 'Admin';
+            case 'iirs_user': return 'Viewer';
             default: return 'Admin';
         }
     };
 
     const getAdminTypeBadge = (type: string) => {
         switch (type) {
-            case 'super_admin':
+            case 'iirs_user':
                 return 'bg-red-100 text-red-700 border-red-200';
             case 'iirs_admin':
                 return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'state_admin':
-                return 'bg-purple-100 text-purple-700 border-purple-200';
             default:
                 return 'bg-gray-100 text-gray-700 border-gray-200';
         }
@@ -233,22 +304,40 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
                                     <input
                                         type="text"
                                         value={newUser.name}
-                                        onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
+                                        onChange={(e) => handleFieldChange('name', e.target.value)}
+                                        onBlur={() => handleFieldBlur('name')}
+                                        className={`w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 transition-colors ${
+                                            errors.name && touched.name
+                                                ? 'border-red-500 focus:ring-red-500'
+                                                : 'border-gray-300 focus:ring-green-500'
+                                        }`}
                                         placeholder="John Doe"
-                                        required
                                     />
+                                    {errors.name && touched.name && (
+                                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                            <span>⚠</span> {errors.name}
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">Email Address *</label>
                                     <input
                                         type="email"
                                         value={newUser.email}
-                                        onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
+                                        onChange={(e) => handleFieldChange('email', e.target.value)}
+                                        onBlur={() => handleFieldBlur('email')}
+                                        className={`w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 transition-colors ${
+                                            errors.email && touched.email
+                                                ? 'border-red-500 focus:ring-red-500'
+                                                : 'border-gray-300 focus:ring-green-500'
+                                        }`}
                                         placeholder="john@example.com"
-                                        required
                                     />
+                                    {errors.email && touched.email && (
+                                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                            <span>⚠</span> {errors.email}
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <div className="flex items-center justify-between mb-1">
@@ -256,9 +345,11 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
                                         <button
                                             type="button"
                                             onClick={generatePassword}
-                                            className="flex items-center gap-1 px-2 py-1 text-xs cursor-pointer text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors font-medium"
+                                            className="flex items-center group gap-1 px-2 py-1 text-xs cursor-pointer text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors font-medium"
                                         >
-                                            <IoRefreshOutline size={14} />
+                                            <span className='group-active:rotate-45 transition-all duration-300'>
+                                                <IoDiceOutline size={14} />
+                                            </span>
                                             Generate
                                         </button>
                                     </div>
@@ -266,10 +357,14 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
                                         <input
                                             type={showPassword ? "text" : "password"}
                                             value={newUser.password}
-                                            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
+                                            onChange={(e) => handleFieldChange('password', e.target.value)}
+                                            onBlur={() => handleFieldBlur('password')}
+                                            className={`w-full px-4 py-3 pr-12 border rounded-lg outline-none focus:ring-2 transition-colors ${
+                                                errors.password && touched.password
+                                                    ? 'border-red-500 focus:ring-red-500'
+                                                    : 'border-gray-300 focus:ring-green-500'
+                                            }`}
                                             placeholder="Minimum 8 characters"
-                                            required
                                         />
                                         <button
                                             type="button"
@@ -279,7 +374,15 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
                                             {showPassword ? <IoEyeOffOutline size={20} /> : <IoEyeOutline size={20} />}
                                         </button>
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
+                                    {errors.password && touched.password ? (
+                                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                            <span>⚠</span> {errors.password}
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Must contain: 8+ chars, uppercase, lowercase, number, special char
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             
@@ -288,6 +391,8 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
                                     type="button"
                                     onClick={() => {
                                         setNewUser({ name: '', email: '', password: '' });
+                                        setErrors({});
+                                        setTouched({});
                                     }}
                                     className="flex-1 px-4 py-3 cursor-pointer border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                                     disabled={isSubmitting}
@@ -321,7 +426,7 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
                                     <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                                     <input
                                         type="text"
-                                        placeholder="Search users by name, email, or state..."
+                                        placeholder="Search users by name or email..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
