@@ -24,7 +24,8 @@ export default function SchoolTableRTK() {
   // RTK Query hooks - using only useGetApplicationsQuery for all tabs
   const { 
     data: applicationsResponse, 
-    isLoading: applicationsLoading, 
+    isLoading: applicationsLoading,
+    isFetching: applicationsFetching,
     error: applicationsError 
   } = useGetApplicationsQuery({
     page,
@@ -229,6 +230,7 @@ export default function SchoolTableRTK() {
         onSelectApplication={handleSelectApplication}
         onSelectAllApplications={handleSelectAllApplications}
         onViewFullDetails={handleViewFullDetails}
+        isFetching={applicationsFetching}
       />
 
       {/* Pagination */}

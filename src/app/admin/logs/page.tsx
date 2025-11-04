@@ -1,10 +1,7 @@
 'use client'
 
-import DashboardLayout from '@/app/admin/schools/admin/DashboardLayout'
-
 export default function LogsPage() {
   return (
-    <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-white shadow-sm border-b">
@@ -30,6 +27,5 @@ export default function LogsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   )
 }

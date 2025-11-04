@@ -170,7 +170,7 @@ export const schoolsApi = createApi({
       },
       transformResponse: (response: { data?: Application[], meta?: { page?: string, totalPages?: string, total?: string, limit?: string, hasNextPage?: boolean, hasPrevPage?: boolean } }) => {
         // Return the full response with data and meta
-        console.log(response)
+          
         return {
           data: response.data || [],
           meta: {
@@ -272,6 +272,18 @@ export const schoolsApi = createApi({
         body: { email, password },
       }),
     }),
+
+    // Admin change password
+    adminChangePassword: builder.mutation<{ message: string }, {
+      email: string
+      newPassword: string
+    }>({
+      query: ({ email, newPassword }) => ({
+        url: 'admin/changePassword',
+        method: 'POST',
+        body: { email, newPassword },
+      }),
+    }),
   }),
 })
 
@@ -287,4 +299,5 @@ export const {
   useUpdateApplicationStatusMutation,
   useReapproveApplicationMutation,
   useAdminLoginMutation,
+  useAdminChangePasswordMutation,
 } = schoolsApi

@@ -31,7 +31,7 @@ export default function SchoolSearchDropdown({
     <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
       {isLoading ? (
         <div className="p-4 text-center">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600 mx-auto"></div>
           <p className="mt-2 text-sm text-gray-600">Loading schools...</p>
         </div>
       ) : schools.length === 0 ? (

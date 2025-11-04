@@ -20,12 +20,11 @@ export interface School {
 interface StatCardProps {
   title: string;
   value: number;
-  color: string;
   delay?: number;
 }
 
 
-function StatCard({ title, value, color, delay = 0 }: StatCardProps) {
+function StatCard({ title, value, delay = 0 }: StatCardProps) {
   
   const [startAnimation, setStartAnimation] = useState(false);
 
@@ -37,7 +36,7 @@ function StatCard({ title, value, color, delay = 0 }: StatCardProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
       <p className="text-lg font-medium text-gray-600 mb-1">{title}</p>
-      <p className={`text-2xl font-bold ${color}`}>
+      <p className={`text-2xl font-bold text-teal-800`}>
         {startAnimation ? (
           <CountUp end={value} duration={2} separator="," />
         ) : (
@@ -99,22 +98,22 @@ const [loading, setLoading] = useState(true)
     {
       title: "Total Schools Registered",
       value: schoolsLength,
-      color: "text-blue-600",
+     
     },
     {
       title: "Total Approved",
       value: approvedSchools,
-      color: "text-blue-600",
+    
     },
     {
       title: "Total Students Onboarded",
       value: studentsLength,
-      color: "text-blue-600",
+      
     },
     {
       title: "Total Payments Collected (Naira)",
       value: paymentsLength,
-      color: "text-blue-600",
+      
     },
   ];
 
@@ -144,7 +143,6 @@ const [loading, setLoading] = useState(true)
           key={s.title}
           title={s.title}
           value={s.value}
-          color={s.color}
           delay={i * 200}
         />
       ))}

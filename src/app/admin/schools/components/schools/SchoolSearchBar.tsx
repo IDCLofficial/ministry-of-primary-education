@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSchoolSearch } from '@/hooks/useSchoolSearch';
 import SchoolSearchDropdown from './SchoolSearchDropdown';
-import { School } from '@/services/schoolService';
 
 interface SchoolSearchBarProps {
   placeholder?: string;

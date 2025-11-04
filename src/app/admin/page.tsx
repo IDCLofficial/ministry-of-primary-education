@@ -1,6 +1,5 @@
 'use client'
 
-import DashboardLayout from '@/app/admin/schools/components/DashboardLayout'
 import StatsCards from '@/app/admin/schools/components/schools/StatsCards'
 
 
@@ -8,7 +7,7 @@ export default function AdminDashboard() {
 
 
   return (
-    <DashboardLayout>
+   
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-white shadow-sm border-b">
@@ -29,6 +28,6 @@ export default function AdminDashboard() {
 </div>
         </div>
       </div>
-    </DashboardLayout>
+   
   )
 }

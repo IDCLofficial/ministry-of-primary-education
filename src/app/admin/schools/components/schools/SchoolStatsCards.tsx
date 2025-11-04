@@ -1,6 +1,6 @@
 "use client";
 
-import { Student, School } from '@/services/schoolService';
+import { School } from '@/services/schoolService';
 
 interface Transaction {
   _id: string;
