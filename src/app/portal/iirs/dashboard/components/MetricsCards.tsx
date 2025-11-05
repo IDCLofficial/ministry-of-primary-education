@@ -1,5 +1,6 @@
 "use client"
 
+import { useAuth } from '@/app/portal/iirs/providers/AuthProvider';
 import { getTransactionData } from "@/lib/iirs/dataInteraction";
 import { useEffect, useState } from "react";
 import { CgArrowLongUp, CgArrowLongDown } from "react-icons/cg";
@@ -23,25 +24,26 @@ interface PaymentSummary {
 }
 
 export default function MetricsCards() {
-
+  const { token } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<PaymentSummary | null>(null);
   
   useEffect(() => {
-    async function getData(){
+    // if(!token || token === null) return;
+    async function getData(tokenKey: string){
       try{
         setIsLoading(true);
-        const result = await getTransactionData();
+        const result = await getTransactionData(tokenKey);
         setData(result)
-        console.log(result)
         setIsLoading(false);
       }catch(e){
         console.error('Error fetching data:', e);
         setIsLoading(false);
+        throw e;
       }
     }
-    getData();
-  }, [])
+    getData(token || "");
+  }, [token])
 
   if (isLoading) {
     return (
@@ -126,7 +128,7 @@ export default function MetricsCards() {
       {/* IIRS Earnings Card */}
       <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 flex-1">
         <div className="flex flex-col space-y-2">
-          <h3 className="text-sm font-medium text-gray-600">IIRS Earnings</h3>
+          <h3 className="text-sm font-medium text-gray-600">TSA Earnings</h3>
           <p className="text-2xl font-bold text-gray-900">₦{data?.iirsEarnings?.toLocaleString()}</p>
           <div className="flex items-center space-x-1">
             {(data?.percentage || 0) > 0 ? (

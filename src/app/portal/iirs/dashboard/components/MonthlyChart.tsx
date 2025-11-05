@@ -1,15 +1,10 @@
 'use client';
 
+import { useAuth } from '@/app/portal/iirs/providers/AuthProvider';
 import { getPaymentsData } from '@/lib/iirs/dataInteraction';
 import { useEffect, useState, useMemo } from 'react';
 import { FiChevronDown } from 'react-icons/fi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
-
-interface MonthlyChartProps {
-  totalTransaction: string;
-  growthPercentage: string;
-  description: string;
-}
 
 interface dataProps{
   payments: paymentProps[]
@@ -47,12 +42,12 @@ const formatCurrency = (amount: number) => {
 const getDateRange = (period: string) => {
   const now = new Date();
   const ranges = {
-    '1Month': new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()),
-    '3Months': new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()),
-    '1year': new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
-    '2Years': new Date(now.getFullYear() - 2, now.getMonth(), now.getDate()),
+    '1 Month': new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()),
+    '3 Months': new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()),
+    '1 Year': new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
+    '2 Years': new Date(now.getFullYear() - 2, now.getMonth(), now.getDate()),
   };
-  return ranges[period as keyof typeof ranges] || ranges['1Month'];
+  return ranges[period as keyof typeof ranges] || ranges['1 Month'];
 };
 
 const generateChartData = (payments: paymentProps[], activeTab: string, period: string): ChartDataPoint[] => {
@@ -114,9 +109,10 @@ const generateChartData = (payments: paymentProps[], activeTab: string, period: 
   });
 };
 
-export default function MonthlyChart({ totalTransaction, growthPercentage, description }: MonthlyChartProps) {
+export default function MonthlyChart() {
+  const {token} = useAuth();
   const tabs = ['Payments', 'Amount Processed', 'IIRS earnings'];
-  const periods = ['1Month', '3Months', '1year', '2Years']
+  const periods = ['1 Month', '3 Months', '1 Year', '2 Years']
   const [selectedPeriod, setSelectedPeriod] = useState(periods[0]);
   const [activeTab, setActiveTab] = useState(tabs[0]);
   const [selectPeriod, setSelectPeriod] = useState(false);
@@ -126,12 +122,13 @@ export default function MonthlyChart({ totalTransaction, growthPercentage, descr
 
 
   useEffect(() => {
-    async function fetchData() {
+    if(!token) return;
+
+    async function fetchData(tokenKey: string) {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await getPaymentsData();
-        console.log(response)
+        const response = await getPaymentsData(tokenKey);
         
         if (!response) {
           throw new Error('Failed to fetch data');
@@ -145,8 +142,9 @@ export default function MonthlyChart({ totalTransaction, growthPercentage, descr
         setIsLoading(false);
       }
     }
-    fetchData();
-  }, []);
+
+    fetchData(token);
+  }, [token]);
 
   // Calculate filtered data based on selected period
   const filteredPayments = useMemo(() => {
@@ -217,13 +215,13 @@ export default function MonthlyChart({ totalTransaction, growthPercentage, descr
               </h2>
               <div className="relative">
                 <button 
-                  className="flex items-center px-3 py-2 space-x-2 border border-gray-300 rounded-lg text-sm min-w-[100px] hover:bg-gray-50 transition-colors" 
+                  className="flex items-center px-3 py-2 space-x-2 border border-gray-300 rounded-lg text-sm min-w-[120px] hover:bg-gray-50 transition-colors" 
                   onClick={() => setSelectPeriod(prev => !prev)}
                 >
                   <span className="truncate">{selectedPeriod}</span>
                   <FiChevronDown className={`text-gray-400 transition-transform ${selectPeriod ? 'rotate-180' : ''}`} />
                 </button>
-                <div className={`absolute top-full left-0 mt-1 p-2 bg-white rounded-lg border border-gray-200 w-full shadow-lg z-10 transition-all duration-200 ${
+                <div className={`absolute top-full right-0 mt-1 p-2 bg-white rounded-lg border border-gray-200 w-full shadow-lg z-10 transition-all duration-200 ${
                 selectPeriod ? 'opacity-100 visible' : 'opacity-0 invisible'
                 }`}>
                 {periods.map((period) => (

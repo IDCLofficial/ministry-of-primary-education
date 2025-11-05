@@ -1,17 +1,11 @@
 "use client"
 
 import { FaMagnifyingGlass } from "react-icons/fa6";
-import { FiFilter } from "react-icons/fi";
 import { useState, useMemo, useEffect } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
-import { useRouter, useSearchParams } from "next/navigation";
 import InvoiceDetails from "./InvoiceDetails";
-import router from "next/router";
-import { getPaymentsData } from "@/lib/iirs/dataInteraction";
-
-interface InvoiceTableProps {
-  data: any;
-}
+import { getPaymentsData, Payment } from "@/lib/iirs/dataInteraction";
+import { useAuth } from '@/app/portal/iirs/providers/AuthProvider';
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -28,27 +22,30 @@ const formatAmount = (amount: number) => {
 
 
 export default function InvoiceTable() {
-  const [transactions, setTransactions] = useState([]);
+  const {token} = useAuth();
+  const [transactions, setTransactions] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [invoiceData, setInvoiceData] = useState(null);
+  const [invoiceData, setInvoiceData] = useState<Payment | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const searchParams = useSearchParams();
   const itemsPerPage = 10;
 
-  useEffect(()=>{
-    async function fetchData() {
-      try{
-          const result = await getPaymentsData();
-          console.log(result)
-          setTransactions(result.payments);
-          setLoading(false);
-      }catch(e){
-          return <div>OOps, check your network and try again.</div>
+  useEffect(() => {
+    if(!token) return;
+    async function fetchData(tokenKey: string) {
+      try {
+        const result = await getPaymentsData(tokenKey);
+        setTransactions(result.payments);
+        setLoading(false);
+      } catch (e) {
+        console.error(e)
+        return <div>OOps, check your network and try again.</div>
       }
-  }
-  fetchData();
-  },[])
+    }
+    fetchData(token);
+
+  }, [token]);
+  
   // const router = useRouter();
   // const id = useSearchParams().get('transactionId');
 
@@ -57,9 +54,9 @@ export default function InvoiceTable() {
     if (!searchTerm.trim()) {
       return transactions;
     }
-    
+
     const searchLower = searchTerm.toLowerCase();
-    return transactions.filter((transaction: any) => {
+    return transactions.filter((transaction: Payment) => {
       return (
         transaction.schoolName?.toLowerCase().includes(searchLower) ||
         transaction.reference?.toLowerCase().includes(searchLower) ||
@@ -68,15 +65,10 @@ export default function InvoiceTable() {
         formatDate(transaction.paidAt)?.toLowerCase().includes(searchLower)
       );
     });
-  }, [transactions, searchTerm]);
-
-  // Reset to first page when search changes
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+  }, [transactions, searchTerm]); 
 
   // Calculate pagination based on filtered results
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const totalPages = Math.ceil((filteredTransactions || []).length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentTransactions = filteredTransactions?.slice(startIndex, endIndex);
@@ -85,7 +77,7 @@ export default function InvoiceTable() {
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pageNumbers.push(i);
@@ -116,11 +108,11 @@ export default function InvoiceTable() {
     return pageNumbers;
   };
 
-  const closeInvoiceDetails = () =>{
+  const closeInvoiceDetails = () => {
     setInvoiceData(null);
   }
 
-  if(loading){
+  if (loading) {
     return (
       <div className="bg-white rounded-lg p-6 shadow-sm border h-full overflow-y-auto border-gray-100">
         {/* Header Skeleton */}
@@ -208,10 +200,10 @@ export default function InvoiceTable() {
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          <button className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+          {/* <button className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
             <span>Filter</span>
             <FiFilter className="text-gray-400" />
-          </button>
+          </button> */}
           {/* <button className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600 transition-colors">
             + Request Payment
           </button> */}
@@ -234,9 +226,9 @@ export default function InvoiceTable() {
             </tr>
           </thead>
           <tbody>
-            {currentTransactions.length > 0 ? (
-              currentTransactions.map((transaction:any) => (
-                <tr key={transaction.id} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={()=>setInvoiceData(transaction)}>
+            {(currentTransactions || []).length > 0 ? (
+              currentTransactions.map((transaction: Payment) => (
+                <tr key={transaction.id} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => setInvoiceData(transaction)}>
                   <td className="py-4 px-4">
                     <div className="flex items-center space-x-3">
                       <span className="font-medium text-gray-900">{transaction.schoolName.toLowerCase()}</span>
@@ -286,17 +278,16 @@ export default function InvoiceTable() {
               </span>
             )}
           </div>
-          
+
           <div className="flex items-center space-x-2">
             {/* Previous Button */}
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                currentPage === 1
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${currentPage === 1
                   ? 'text-gray-400 cursor-not-allowed'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <FaChevronLeft className="w-4 h-4 mr-1" />
               Previous
@@ -312,16 +303,15 @@ export default function InvoiceTable() {
                     </span>
                   );
                 }
-                
+
                 return (
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum as number)}
-                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      currentPage === pageNum
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${currentPage === pageNum
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
+                      }`}
                   >
                     {pageNum}
                   </button>
@@ -333,11 +323,10 @@ export default function InvoiceTable() {
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                currentPage === totalPages
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${currentPage === totalPages
                   ? 'text-gray-400 cursor-not-allowed'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+                }`}
             >
               Next
               <FaChevronRight className="w-4 h-4 ml-1" />

@@ -1,12 +1,6 @@
 'use client';
 
-import { number } from 'framer-motion';
-import { useEffect, useState, useMemo } from 'react';
-
-interface TransactionViewProps {
-  totalAmount?: string;
-  growthPercentage?: string;
-}
+import { useEffect, useState } from 'react';
 
 interface PaymentData {
   id: string;
@@ -35,12 +29,7 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-const getDateRange = (monthsBack: number) => {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth() - monthsBack, now.getDate());
-};
-
-export default function TransactionView({ totalAmount, growthPercentage }: TransactionViewProps) {
+export default function TransactionView() {
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,14 +101,6 @@ export default function TransactionView({ totalAmount, growthPercentage }: Trans
       ) : (
         <div className="flex items-center justify-center mb-6">
           <div className="relative">
-            <svg width="200" height="200" viewBox="0 0 100 100" className="transform -rotate-90">
-              {apiData?.payments.map((item, index) => {
-                const percentage = totalTransactions&& totalTransactions > 0 ? (item.amount / totalTransactions) * 100 : 0;
-                return (
-                  <></>
-                )
-              })}
-            </svg>
           </div>
         </div>
       )}
