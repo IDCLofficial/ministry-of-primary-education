@@ -1,9 +1,12 @@
 import { useMemo, useEffect, useState } from 'react'
 import { useGetSchoolsQuery } from '../../../store/api/authApi'
-import { School, Student } from '../types/student.types'
+import { Student } from '../types/student.types'
 import { API_BASE_URL } from '../../../utils/constants/Api.const'
 
-export interface SchoolWithStudents extends School {
+export interface SchoolWithStudents {
+    _id: string
+    schoolName: string
+    lga: string | { _id: string; name: string }
     students: Student[]
     isLoading: boolean
     error?: string
