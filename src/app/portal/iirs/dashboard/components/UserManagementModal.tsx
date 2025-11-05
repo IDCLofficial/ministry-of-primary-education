@@ -170,7 +170,7 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
         setIsSubmitting(true);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin/add-user`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin/users`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
