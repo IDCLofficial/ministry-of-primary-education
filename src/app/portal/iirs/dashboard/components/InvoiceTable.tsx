@@ -32,11 +32,9 @@ export default function InvoiceTable() {
 
   useEffect(() => {
     if(!token) return;
-
     async function fetchData(tokenKey: string) {
       try {
         const result = await getPaymentsData(tokenKey);
-        console.log(result)
         setTransactions(result.payments);
         setLoading(false);
       } catch (e) {
@@ -70,7 +68,7 @@ export default function InvoiceTable() {
   }, [transactions, searchTerm]); 
 
   // Calculate pagination based on filtered results
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const totalPages = Math.ceil((filteredTransactions || []).length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentTransactions = filteredTransactions?.slice(startIndex, endIndex);
@@ -228,7 +226,7 @@ export default function InvoiceTable() {
             </tr>
           </thead>
           <tbody>
-            {currentTransactions.length > 0 ? (
+            {(currentTransactions || []).length > 0 ? (
               currentTransactions.map((transaction: Payment) => (
                 <tr key={transaction.id} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => setInvoiceData(transaction)}>
                   <td className="py-4 px-4">

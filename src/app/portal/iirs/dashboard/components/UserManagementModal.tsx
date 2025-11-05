@@ -1,16 +1,24 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { IoClose, IoPersonAddOutline, IoSearchOutline, IoTrashOutline, IoShieldCheckmarkOutline, IoMailOutline, IoDiceOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../providers/AuthProvider';
 
 interface User {
-    id: string;
+    _id: string;
     name: string;
     email: string;
+    password: string;
     adminType: string;
+    isActive: boolean;
+    percentage: number;
     state: string;
+    totalEarnings: number;
+    totalAmountProcessed: number;
     createdAt: string;
+    updatedAt: string;
+    __v: number;
 }
 
 interface UserManagementModalProps {
@@ -25,8 +33,10 @@ interface FormErrors {
 }
 
 export default function UserManagementModal({ isOpen, onClose }: UserManagementModalProps) {
+    const { token } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState<'users' | 'add'>('users');
     const [newUser, setNewUser] = useState({
@@ -38,14 +48,6 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
     const [showPassword, setShowPassword] = useState(true);
     const [errors, setErrors] = useState<FormErrors>({});
     const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
-
-    useEffect(() => {
-        if (isOpen) {
-            fetchUsers();
-        }
-    }, [isOpen]);
-
-    if (!isOpen) return null;
 
     const validateField = (name: string, value: string): string | undefined => {
         switch (name) {
@@ -118,23 +120,39 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
         }
     };
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         try {
             setIsLoading(true);
+            setFetchError(false);
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin/users`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
-            const data = await response.json();
-            setUsers(data.users || []);
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch users');
+            }
+
+            const data = await response.json() as User[];
+            console.log({data});
+            setUsers(data || []);
         } catch (error) {
             console.error('Error fetching users:', error);
+            setFetchError(true);
             toast.error('Failed to load users');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchUsers();
+        }
+    }, [isOpen, fetchUsers]);
+
+    if (!isOpen) return null;
 
     const handleAddUser = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -152,11 +170,11 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
         setIsSubmitting(true);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin/users`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin/add-user`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(newUser)
             });
@@ -185,12 +203,11 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
         if (!confirm(`Are you sure you want to delete ${userName}?`)) return;
 
         const loadingToast = toast.loading('Deleting user...');
-
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin/users/${userId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
@@ -443,6 +460,27 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
                                 <p className="text-gray-600">Loading users...</p>
                             </div>
                         </div>
+                    ) : fetchError ? (
+                        <div className="text-center py-12">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <p className="text-gray-900 font-semibold mb-2">Failed to load users</p>
+                            <p className="text-gray-500 text-sm mb-4">
+                                There was an error loading the user list. Please try again.
+                            </p>
+                            <button
+                                onClick={fetchUsers}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium cursor-pointer"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Retry
+                            </button>
+                        </div>
                     ) : filteredUsers.length === 0 ? (
                         <div className="text-center py-12">
                             <IoShieldCheckmarkOutline className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -454,7 +492,7 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {filteredUsers.map((user) => (
-                                <div key={user.id} className="group p-4 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition-all">
+                                <div key={user._id} className="group p-4 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition-all">
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex-1">
                                             <h3 className="font-semibold text-gray-900 mb-1">{user.name}</h3>
@@ -464,7 +502,7 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
                                             </div>
                                         </div>
                                         <button
-                                            onClick={() => handleDeleteUser(user.id, user.name)}
+                                            onClick={() => handleDeleteUser(user._id, user.name)}
                                             className="opacity-0 group-hover:opacity-100 cursor-pointer p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                             title="Delete user"
                                         >

@@ -82,6 +82,10 @@ export async function getProfile(token: string): Promise<UserProfile>{
                 'Authorization': `Bearer ${token}`
             }
         });
+        
+        if(response.status === 401){
+            throw new Error('Unauthorized');
+        }
         return response.json();
     } catch (error) {
         console.error('Profile fetch failed:', error);

@@ -15,15 +15,7 @@ export default function ProtectedRoute({ children, redirectTo = '/portal/iirs' }
 
     useEffect(() => {
         // Only redirect if not loading and not authenticated
-        console.log({
-            isAuthenticated,
-            isLoading,
-        })
         if (!isLoading && !isAuthenticated) {
-            console.log("redirecting", {
-                isAuthenticated,
-                isLoading,
-            })
             router.replace(redirectTo)
         }
     }, [isAuthenticated, isLoading, router, redirectTo])

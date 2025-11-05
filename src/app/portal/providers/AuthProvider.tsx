@@ -51,6 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Check for existing authentication on mount
   useEffect(() => {
     const checkAuth = () => {
+      if (path.includes('portal/iirs')) return;
       try {
         const storedToken = localStorage.getItem('access_token')
         const storedSchool = localStorage.getItem('school')
@@ -76,7 +77,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     checkAuth()
-  }, [])
+  }, [path])
 
   const logout = useCallback(() => {
     try {
@@ -117,7 +118,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(newToken)
       setSchool(newSchool)
       setIsAuthenticated(true)
-      setSkipProfileQuery(false) // Enable profile query for future updates
     } catch (error) {
       console.error('Error storing authentication data:', error)
     }
