@@ -1,8 +1,9 @@
 'use client'
 import React, { useState, useEffect, useMemo } from 'react'
-import { IoClose, IoSchool, IoPerson, IoCalendar, IoMale, IoFemale, IoRibbon, IoPencil, IoSave } from 'react-icons/io5'
+import { IoClose, IoSchool, IoPerson, IoCalendar, IoMale, IoFemale, IoRibbon, IoPencil, IoSave, IoDocumentText } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import { Student } from '../types/student.types'
+import { useUpdateStudentScoreMutation } from '../../../store/api/authApi'
 
 interface ExamResult {
     subject: string
@@ -18,11 +19,13 @@ interface StudentModalProps {
     student: Student | null
     schoolName?: string
     onUpdate?: (student: Student, examResults: ExamResult[]) => void
+    onGenerateCertificate?: (student: Student) => void
 }
 
-export default function StudentModal({ isOpen, onClose, student, schoolName, onUpdate }: StudentModalProps) {
+export default function StudentModal({ isOpen, onClose, student, schoolName, onUpdate, onGenerateCertificate }: StudentModalProps) {
     const [isEditing, setIsEditing] = useState(false)
     const [editedResults, setEditedResults] = useState<ExamResult[]>([])
+    const [updateStudentScore, { isLoading: isUpdating }] = useUpdateStudentScoreMutation()
 
     // Grade calculation function
     const calculateGrade = (total: number): string => {
@@ -76,12 +79,35 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
         setIsEditing(true)
     }
 
-    const handleSave = () => {
-        if (onUpdate) {
-            onUpdate(student, editedResults)
+    const handleSave = async () => {
+        if (!student) return
+
+        try {
+            // Transform edited results to API format
+            const subjects = editedResults.map(result => ({
+                subjectName: result.subject,
+                ca: result.caScore,
+                exam: result.examScore
+            }))
+
+            // Call the API
+            const response = await updateStudentScore({
+                examNo: student.examNo,
+                subjects
+            }).unwrap()
+
+            // Call onUpdate callback if provided
+            if (onUpdate) {
+                onUpdate(response.student, editedResults)
+            }
+
+            setIsEditing(false)
+            onClose()
+            toast.success(`Successfully updated exam results for ${student.name}`)
+        } catch (error) {
+            console.error('Failed to update scores:', error)
+            toast.error('Failed to update exam results. Please try again.')
         }
-        setIsEditing(false)
-        toast.success(`Successfully updated exam results for ${student.name}`)
     }
 
     const handleCancel = () => {
@@ -167,10 +193,20 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                 <>
                                     <button
                                         onClick={handleSave}
-                                        className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                        disabled={isUpdating}
+                                        className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        <IoSave className="w-4 h-4 mr-2" />
-                                        Save
+                                        {isUpdating ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <IoSave className="w-4 h-4 mr-2" />
+                                                Save
+                                            </>
+                                        )}
                                     </button>
                                     <button
                                         onClick={handleCancel}
@@ -180,13 +216,27 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                     </button>
                                 </>
                             ) : (
-                                <button
-                                    onClick={handleEdit}
-                                    className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                >
-                                    <IoPencil className="w-4 h-4 mr-2" />
-                                    Edit Results
-                                </button>
+                                <>
+                                    <button
+                                        onClick={handleEdit}
+                                        className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                        <IoPencil className="w-4 h-4 mr-2" />
+                                        Edit Results
+                                    </button>
+                                    {onGenerateCertificate && (
+                                        <button
+                                            onClick={() => {
+                                                onGenerateCertificate(student)
+                                                onClose()
+                                            }}
+                                            className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                        >
+                                            <IoDocumentText className="w-4 h-4 mr-2" />
+                                            Generate Certificate
+                                        </button>
+                                    )}
+                                </>
                             )}
                             <button
                                 onClick={onClose}

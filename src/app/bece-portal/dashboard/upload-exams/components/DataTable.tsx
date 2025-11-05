@@ -4,28 +4,9 @@ import React, { useState, useMemo } from 'react'
 import { IoSearch, IoEye, IoTrash, IoCloudUpload, IoRefresh } from 'react-icons/io5'
 import { useExamModal } from '../contexts/ExamModalContext'
 import toast from 'react-hot-toast'
-
-interface StudentRecord {
-    schoolName: string
-    serialNo: number
-    name: string
-    examNo: string
-    sex: "Male" | "Female"
-    age: number
-    englishStudies: number
-    mathematics: number
-    basicScience: number
-    christianReligiousStudies: number
-    nationalValues: number
-    culturalAndCreativeArts: number
-    businessStudies: number
-    history: number
-    igbo: number
-    hausa: number
-    yoruba: number
-    preVocationalStudies: number
-    frenchLanguage: number
-}
+import { StudentRecord } from '../../upload-ca/utils/csvParser'
+import { useRouter } from 'next/navigation'
+import { BeceResultUpload, useUploadBeceExamResultsMutation } from '../../../store/api/authApi'
 
 interface DataTableProps {
     data: StudentRecord[]
@@ -42,7 +23,11 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
     }>({ key: null, direction: 'asc' })
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
+    const [isSaving, setIsSaving] = useState(false)
+    const [failedSchools, setFailedSchools] = useState<string[]>([])
     const { openModal } = useExamModal()
+    const router = useRouter()
+    const [uploadBeceExamResults] = useUploadBeceExamResultsMutation()
 
     const filteredData = useMemo(() => {
         return data.filter(record =>
@@ -129,26 +114,89 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
     }
 
     const handleSaveToDb = async () => {
+        const startTime = performance.now()
+        setIsSaving(true)
+
         try {
-            toast.loading('Saving Exam data to database...')
+            toast.loading('Saving CA data to database...')
 
-            // TODO: Implement API call to save data to database
-            // Example API call:
-            // const response = await fetch('/api/exam-data', {
-            //   method: 'POST',
-            //   headers: { 'Content-Type': 'application/json' },
-            //   body: JSON.stringify({ records: data })
-            // })
+            // Group students by school
+            const schoolGroups = data.reduce((groups, student) => {
+                const schoolName = student.schoolName
+                if (!groups[schoolName]) {
+                    groups[schoolName] = []
+                }
+                groups[schoolName].push(student)
+                return groups
+            }, {} as Record<string, StudentRecord[]>)
 
-            // Simulate API call for now
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            const filesWithStudentsCount: { fileName: string, fileSize: number, students: number }[] = data.reduce((files, student) => {
+                const filename = student.file.name
+                const existingFile = files.find(file => file.fileName === filename)
+
+                if (existingFile) {
+                    existingFile.students++
+                } else {
+                    files.push({ fileName: filename, fileSize: student.file.size, students: 1 })
+                }
+
+                return files
+            }, [] as { fileName: string, fileSize: number, students: number }[])
+
+            // Transform data according to API structure
+            const results = Object.entries(schoolGroups).map(([schoolName, students]) => ({
+                schoolName,
+                lga: students[0]?.lga, // Extract LGA from first student or use default
+                students: students.map(student => ({
+                    name: student.name,
+                    examNo: student.examNo,
+                    sex: student.sex === 'Male' ? 'M' : 'F',
+                    age: student.age,
+                    subjects: [
+                        { name: 'English Studies', exam: student.englishStudies, ca: 0 },
+                        { name: 'Mathematics', exam: student.mathematics, ca: 0 },
+                        { name: 'Basic Science', exam: student.basicScience, ca: 0 },
+                        { name: 'Christian Religious Studies', exam: student.christianReligiousStudies, ca: 0 },
+                        { name: 'National Values', exam: student.nationalValues, ca: 0 },
+                        { name: 'Cultural and Creative Arts', exam: student.culturalAndCreativeArts, ca: 0 },
+                        { name: 'Business Studies', exam: student.businessStudies, ca: 0 },
+                        { name: 'History', exam: student.history, ca: 0 },
+                        { name: 'Igbo Language', exam: student.igbo, ca: 0 },
+                        { name: 'Hausa Language', exam: student.hausa, ca: 0 },
+                        { name: 'Yoruba Language', exam: student.yoruba, ca: 0 },
+                        { name: 'Pre-Vocational Studies', exam: student.preVocationalStudies, ca: 0 },
+                        { name: 'French Language', exam: student.frenchLanguage, ca: 0 }
+                    ].filter(subject => subject.exam > 0) // Only include subjects with CA scores
+                }))
+            }));
+
+            await uploadBeceExamResults({ result: results as BeceResultUpload[], type: 'exam', file: filesWithStudentsCount }).unwrap()
+
+            const endTime = performance.now()
+            const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
 
             toast.dismiss()
-            toast.success(`Successfully saved ${data.length} Exam records to database`)
+
+            // Clear data and show success message
+            onDataChange([])
+            setFailedSchools([])
+            toast.success(
+                `Successfully saved ${data.length} CA records to database in ${elapsedTime}s`
+            )
+
+            router.push('/bece-portal/dashboard/students')
+
         } catch (error) {
+            const endTime = performance.now()
+            const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
+
+            console.error('Error saving CA data:', error)
+
             toast.dismiss()
-            toast.error('Failed to save Exam data to database')
-            console.error('Save to DB error:', error)
+            toast.error(`Failed to save CA data to database (${elapsedTime}s)`)
+            toast.error('Please check your connection and try again.')
+        } finally {
+            setIsSaving(false)
         }
     }
 
@@ -167,22 +215,44 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                         <div className="flex items-center space-x-3">
                             <button
                                 onClick={handleSaveToDb}
-                                title='Save to Database'
-                                className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                disabled={isSaving}
+                                title={isSaving ? 'Saving to Database...' : 'Save to Database'}
+                                className={`inline-flex items-center transition-all duration-200 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSaving
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-green-600 hover:bg-green-700 focus:ring-green-500 cursor-pointer active:scale-90 active:rotate-1'
+                                    }`}
                             >
-                                <IoCloudUpload className="w-4 h-4" />
+                                {isSaving ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <IoCloudUpload className="w-4 h-4" />
+                                )}
                             </button>
                             <button
                                 onClick={handleClearData}
-                                title='Clear Exam Data'
-                                className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                disabled={isSaving}
+                                title='Clear Exams Data'
+                                className={`inline-flex items-center transition-all duration-200 px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSaving
+                                        ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
+                                        : 'border-red-300 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500 cursor-pointer active:scale-90 active:rotate-1'
+                                    }`}
                             >
                                 <IoRefresh className="w-4 h-4" />
                             </button>
                             {selectedRows.size > 0 && (
                                 <button
                                     onClick={handleDeleteSelected}
-                                    className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-1 transition-all duration-200 px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                    disabled={isSaving}
+                                    className={`inline-flex items-center transition-all duration-200 px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSaving
+                                        ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
+                                        : 'border-red-300 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500 cursor-pointer active:scale-90 active:rotate-1'
+                                        }`}
                                 >
                                     <IoTrash className="w-4 h-4 mr-2" />
                                     Delete ({selectedRows.size})
@@ -200,12 +270,26 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                     placeholder="Search by name, exam no, or school..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    disabled={isSaving}
+                                    className={`block w-full pl-10 pr-3 py-2 border rounded-md leading-5 placeholder-gray-500 focus:outline-none text-sm ${isSaving
+                                            ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                            : 'border-gray-300 bg-white focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
+                                        }`}
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
+
+                {failedSchools.length > 0 && (
+                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-sm text-red-700 font-medium">⚠️ Upload Failed</p>
+                        <p className="text-xs text-red-600">
+                            The following schools failed to upload: {failedSchools.join(', ')}.
+                            Please retry the upload for these records.
+                        </p>
+                    </div>
+                )}
                 {/* Table */}
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -216,7 +300,9 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                         type="checkbox"
                                         checked={selectedRows.size === sortedData.length && sortedData.length > 0}
                                         onChange={(e) => handleSelectAll(e.target.checked)}
-                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        disabled={isSaving}
+                                        className={`rounded text-blue-600 focus:ring-blue-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
+                                            }`}
                                     />
                                 </th>
                                 {[
@@ -255,7 +341,9 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                             type="checkbox"
                                             checked={selectedRows.has(index)}
                                             onChange={(e) => handleSelectRow(index, e.target.checked)}
-                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            disabled={isSaving}
+                                            className={`rounded text-blue-600 focus:ring-blue-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
+                                                }`}
                                         />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -269,8 +357,8 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${record.sex === 'Male'
-                                                ? 'bg-blue-100 text-blue-800'
-                                                : 'bg-pink-100 text-pink-800'
+                                            ? 'bg-blue-100 text-blue-800'
+                                            : 'bg-pink-100 text-pink-800'
                                             }`}>
                                             {record.sex}
                                         </span>
@@ -286,11 +374,16 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                     <td className=" py-4 whitespace-nowrap text-sm text-gray-500">
                                         <button
                                             onClick={() => handleViewExam(record)}
-                                            className="px-6 flex items-center justify-center cursor-pointer w-full"
-                                            title="View Exam Details"
+                                            disabled={isSaving}
+                                            className={`px-6 flex items-center justify-center w-full ${isSaving ? 'cursor-not-allowed' : 'cursor-pointer'
+                                                }`}
+                                            title={isSaving ? 'Saving in progress...' : 'View CA Details'}
                                         >
                                             <div
-                                                className="text-blue-600 text-center hover:text-blue-800 p-1 active:scale-90 active:rotate-1 transition-all duration-200 rounded hover:bg-blue-50 border border-transparent hover:border-blue-100"
+                                                className={`text-center p-1 transition-all duration-200 rounded border border-transparent ${isSaving
+                                                    ? 'text-gray-400'
+                                                    : 'text-blue-600 hover:text-blue-800 active:scale-90 active:rotate-1 hover:bg-blue-50 hover:border-blue-100'
+                                                    }`}
                                             >
                                                 <IoEye className="text-xl" />
                                             </div>
@@ -348,8 +441,8 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum)}
                                         className={`px-3 py-1 text-sm border rounded active:scale-90 active:rotate-1 transition-all duration-200 cursor-pointer ${currentPage === pageNum
-                                                ? 'bg-blue-600 text-white border-blue-600'
-                                                : 'border-gray-300 hover:bg-gray-100'
+                                            ? 'bg-blue-600 text-white border-blue-600'
+                                            : 'border-gray-300 hover:bg-gray-100'
                                             }`}
                                     >
                                         {pageNum}
@@ -379,6 +472,23 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                         <p className="text-gray-500">No records found</p>
                     </div>
                 )}
+
+                {/* Loading Overlay */}
+                {isSaving && (
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200 flex items-center space-x-4">
+                            <svg className="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <div>
+                                <p className="text-lg font-medium text-gray-900">Saving to Database</p>
+                                <p className="text-sm text-gray-500">Please wait while we save your CA data...</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
             </div>
         </React.Fragment>
     )

@@ -1,3 +1,4 @@
+import { Student } from '../../dashboard/students/types/student.types'
 import { apiSlice } from './apiSlice'
 
 interface Admin {
@@ -29,21 +30,8 @@ interface ProfileResponse {
   admin: Admin
 }
 
-interface Subject {
-  name: string
-  exam: number
-  ca: number
-}
 
-interface Student {
-  name: string
-  examNo: string
-  sex: string
-  age: number
-  subjects: Subject[]
-}
-
-interface BeceResultUpload{
+export interface BeceResultUpload{
   schoolName: string
   lga: string
   students: Student[]
@@ -51,6 +39,8 @@ interface BeceResultUpload{
 
 interface BeceResultUploadRequest {
   result: BeceResultUpload[]
+  type: "ca" | "exam",
+  file: {fileName: string, fileSize: number, students: number}[]
 }
 
 interface BeceResultUploadResponse {
@@ -58,16 +48,69 @@ interface BeceResultUploadResponse {
   uploadedCount: number
 }
 
-interface BeceResultsResponse {
-  message: string
-  students: Student[]
-}
-
 interface School {
   _id: string
   schoolName: string
   lga: string | { _id: string; name: string },
-  studentCount: number,
+  students: number,
+}
+
+interface UpdateScoreSubject {
+  subjectName: string
+  ca?: number
+  exam?: number
+}
+
+interface UpdateScoreRequest {
+  examNo: string
+  subjects: UpdateScoreSubject[]
+}
+
+interface UpdateScoreResponse {
+  message: string
+  student: Student
+}
+
+export interface UploadLog {
+  _id: string
+  editor: string
+  activity: string
+  type: 'UPLOAD'
+  timestamp: string
+  status: 'processed' | 'pending' | 'error'
+  subject: string
+  subjectType: string
+  fileName: string
+  fileSize: string
+  studentsAffected: number
+  role: string
+}
+
+export interface UploadLogsResponse {
+  data: UploadLog[]
+  meta: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+    hasNextPage: boolean
+    hasPrevPage: boolean
+  }
+}
+
+export interface UploadLogsParams {
+  page?: number
+  limit?: number
+  search?: string
+  status?: string
+  type?: string
+}
+
+export interface DashboardSummary {
+  students: number
+  resultUploaded: number
+  totalSchools: number
+  certificateGenerated: number
 }
 
 export const authApi = apiSlice.injectEndpoints({
@@ -104,21 +147,70 @@ export const authApi = apiSlice.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Admin'],
+      invalidatesTags: ['Admin', { type: 'Admin', id: 'UPLOAD_LOGS' }, { type: 'Admin', id: 'SUMMARY' }],
+    }),
+    
+    // Upload BECE EXAMS Results
+    uploadBeceExamResults: builder.mutation<BeceResultUploadResponse, BeceResultUploadRequest>({
+      query: (data) => ({
+        url: '/bece-result/upload',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Admin', { type: 'Admin', id: 'UPLOAD_LOGS' }, { type: 'Admin', id: 'SUMMARY' }],
     }),
     
     // Fetch Results 
-    getResults: builder.query<BeceResultsResponse, string>({
+    getResults: builder.query<Student[], string>({
       query: (schoolId: string) => {
         return `/bece-result/results/${schoolId}`
       },
-      providesTags: ['Admin'],
+      providesTags: (result, error, schoolId) => [
+        { type: 'Admin', id: 'LIST' },
+        { type: 'Admin', id: schoolId }
+      ],
     }),
 
     // Fetch Schools
     getSchools: builder.query<School[], void>({
-      query: () => '/bece-schools',
-      providesTags: ['Admin'],
+      query: () => '/bece-school',
+      providesTags: [{ type: 'Admin', id: 'SCHOOLS' }],
+    }),
+
+    // Update Student Score
+    updateStudentScore: builder.mutation<UpdateScoreResponse, UpdateScoreRequest>({
+      query: (data) => ({
+        url: '/bece-result/update-score',
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: (result) => [
+        { type: 'Admin', id: 'LIST' },
+        // Invalidate the specific school's results if we can determine it
+        ...(result?.student?.school ? [{ type: 'Admin' as const, id: result.student.school }] : [])
+      ],
+    }),
+
+    // Get Upload Logs
+    getUploadLogs: builder.query<UploadLogsResponse, UploadLogsParams | void>({
+      query: (params) => {
+        const queryParams = new URLSearchParams()
+        if (params && params.page) queryParams.append('page', params.page.toString())
+        if (params && params.limit) queryParams.append('limit', params.limit.toString())
+        if (params && params.search) queryParams.append('search', params.search)
+        if (params && params.status) queryParams.append('status', params.status)
+        if (params && params.type) queryParams.append('type', params.type)
+        
+        const queryString = queryParams.toString()
+        return `/bece-result/upload-logs${queryString ? `?${queryString}` : ''}`
+      },
+      providesTags: [{ type: 'Admin', id: 'UPLOAD_LOGS' }],
+    }),
+
+    // Get Dashboard Summary
+    getDashboardSummary: builder.query<DashboardSummary, void>({
+      query: () => '/bece-result/summary',
+      providesTags: [{ type: 'Admin', id: 'SUMMARY' }],
     }),
 
   }),
@@ -129,6 +221,10 @@ export const {
   useGetAdminProfileQuery,
   useAdminChangePasswordMutation,
   useUploadBeceResultsMutation,
+  useUploadBeceExamResultsMutation,
   useGetResultsQuery,
   useGetSchoolsQuery,
+  useUpdateStudentScoreMutation,
+  useGetUploadLogsQuery,
+  useGetDashboardSummaryQuery,
 } = authApi

@@ -33,12 +33,12 @@ interface BeceAuthProviderProps {
 }
 
 export function BeceAuthProvider({ children }: BeceAuthProviderProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [admin, setAdmin] = useState<Admin | null>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [skipProfileQuery, setSkipProfileQuery] = useState(true)
-  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [admin, setAdmin] = useState<Admin | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [skipProfileQuery, setSkipProfileQuery] = useState(true);
+  const router = useRouter();
 
   // Profile query - only runs when we have a token
   const { data: profileData, error: profileError, refetch: refetchProfile } = useGetAdminProfileQuery(undefined, {

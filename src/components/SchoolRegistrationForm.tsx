@@ -318,7 +318,7 @@ export default function SchoolRegistrationForm() {
             <CustomDropdown
               options={schoolNamesList.map(school => ({
                 value: school._id,
-                label: school.schoolName
+                label: String(school.schoolName).startsWith(`"`) ? String(school.schoolName).slice(1) : school.schoolName
               }))}
               value={formData.schoolId}
               onChange={handleInputChange('schoolId')}

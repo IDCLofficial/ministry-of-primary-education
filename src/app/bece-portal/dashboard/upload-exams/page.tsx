@@ -4,9 +4,9 @@ import React, { useState, useCallback, useEffect } from 'react'
 import MultiFileUpload from './components/MultiFileUpload'
 import DataTable from './components/DataTable'
 import ExamModal from './components/ExamModal'
-import { parseCSVFile, StudentRecord } from './utils/csvParser'
 import { ExamModalProvider, useExamModal } from './contexts/ExamModalContext'
 import toast from 'react-hot-toast'
+import { parseCSVFile, StudentRecord } from '../upload-ca/utils/csvParser'
 
 function UploadExamsContent() {
     const [studentData, setStudentData] = useState<StudentRecord[]>([])

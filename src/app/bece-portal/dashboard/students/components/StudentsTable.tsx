@@ -16,6 +16,7 @@ interface StudentsTableProps {
     expandedSchools: Set<string>
     onToggleSchool: (schoolId: string) => void
     onViewStudent: (student: Student, schoolName: string) => void
+    onGenerateCertificate: (student: Student, schoolName: string) => void
     onSchoolPageChange: (schoolId: string, page: number) => void
 }
 
@@ -23,7 +24,8 @@ export default function StudentsTable({
     schools, 
     expandedSchools, 
     onToggleSchool, 
-    onViewStudent, 
+    onViewStudent,
+    onGenerateCertificate,
     onSchoolPageChange 
 }: StudentsTableProps) {
     return (
@@ -64,6 +66,7 @@ export default function StudentsTable({
                                                 key={`${student.examNo}-${index}`} 
                                                 student={student} 
                                                 onViewStudent={(student) => onViewStudent(student, school.schoolName)}
+                                                onGenerateCertificate={(student) => onGenerateCertificate(student, school.schoolName)}
                                             />
                                         ))}
                                         {school.totalPages > 1 && (

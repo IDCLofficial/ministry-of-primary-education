@@ -1,4 +1,4 @@
-import { IoCloudDone, IoCloudDoneOutline, IoFileTrayFull, IoFileTrayFullOutline, IoFolderOpen, IoFolderOpenOutline, IoGrid, IoGridOutline, IoLockOpen, IoLockOpenOutline, IoPeople, IoPeopleOutline} from "react-icons/io5"
+import { IoCloudDone, IoCloudDoneOutline, IoFileTrayFull, IoFileTrayFullOutline, IoFolderOpen, IoFolderOpenOutline, IoGrid, IoGridOutline, IoPeople, IoPeopleOutline} from "react-icons/io5"
 
 interface MenuItem {
     icon: React.ReactNode,
@@ -49,12 +49,12 @@ export const menuItems: (pathname: string) => MenuItem[] = (pathname: string) =>
         href: '/bece-portal/dashboard/view-uploads',
         active: pathname === '/bece-portal/dashboard/view-uploads'
     },
-    {
-        icon: <IoLockOpenOutline />,
-        iconActive: <IoLockOpen />,
-        label: 'Audit Trail',
-        abbr: 'System Audit',
-        href: '/bece-portal/dashboard/audit-trail',
-        active: pathname === '/bece-portal/dashboard/audit-trail'
-    }
+    // {
+    //     icon: <IoLockOpenOutline />,
+    //     iconActive: <IoLockOpen />,
+    //     label: 'Audit Trail',
+    //     abbr: 'System Audit',
+    //     href: '/bece-portal/dashboard/audit-trail',
+    //     active: pathname === '/bece-portal/dashboard/audit-trail'
+    // }
 ]

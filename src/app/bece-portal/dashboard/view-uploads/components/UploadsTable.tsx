@@ -1,21 +1,9 @@
 'use client'
 import { IoDocumentTextOutline, IoCalendarOutline, IoPersonOutline } from 'react-icons/io5'
-import { StatusIcon, StatusBadge } from './StatusBadge'
-
-interface Upload {
-    id: string
-    fileName: string
-    subject: string
-    examType: 'BECE' | 'CA' | 'Mock'
-    uploadDate: string
-    uploadedBy: string
-    fileSize: string
-    status: 'processed' | 'pending' | 'error'
-    studentsCount: number
-}
+import { UploadLog } from '../../../store/api/authApi'
 
 interface UploadsTableProps {
-    uploads: Upload[]
+    uploads: UploadLog[]
 }
 
 export function UploadsTable({ uploads }: UploadsTableProps) {
@@ -38,12 +26,11 @@ export function UploadsTable({ uploads }: UploadsTableProps) {
                             <th className="text-left px-6 py-4 text-sm font-medium text-gray-900">File Details</th>
                             <th className="text-left px-6 py-4 text-sm font-medium text-gray-900">Subject & Type</th>
                             <th className="text-left px-6 py-4 text-sm font-medium text-gray-900">Upload Info</th>
-                            <th className="text-left px-6 py-4 text-sm font-medium text-gray-900">Status</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {uploads.map((upload) => (
-                            <tr key={upload.id} className="hover:bg-gray-50 transition-colors">
+                            <tr key={upload._id} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-6 py-4">
                                     <div className="flex items-start gap-3">
                                         <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -54,7 +41,7 @@ export function UploadsTable({ uploads }: UploadsTableProps) {
                                                 {upload.fileName}
                                             </p>
                                             <p className="text-sm text-gray-500">
-                                                {upload.fileSize} • {upload.studentsCount} students
+                                                {upload.fileSize} • {upload.studentsAffected} students
                                             </p>
                                         </div>
                                     </div>
@@ -62,25 +49,17 @@ export function UploadsTable({ uploads }: UploadsTableProps) {
                                 <td className="px-6 py-4">
                                     <div>
                                         <p className="text-sm font-medium text-gray-900">{upload.subject}</p>
-                                        <p className="text-sm text-gray-500">{upload.examType}</p>
+                                        <p className="text-sm text-gray-500">{upload.subjectType}</p>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-2 text-sm text-gray-600">
                                         <IoCalendarOutline className="w-4 h-4" />
-                                        <span>{new Date(upload.uploadDate).toLocaleDateString()}</span>
+                                        <span>{new Date(upload.timestamp).toLocaleDateString()}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                                         <IoPersonOutline className="w-4 h-4" />
-                                        <span>{upload.uploadedBy}</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                        <StatusIcon status={upload.status} />
-                                        <span className={StatusBadge({ status: upload.status })}>
-                                            {upload.status}
-                                        </span>
+                                        <span>{upload.editor}</span>
                                     </div>
                                 </td>
                             </tr>

@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react'
 import { IoSearch, IoEye, IoTrash, IoCloudUpload, IoRefresh } from 'react-icons/io5'
 import { useCAModal } from '../contexts/CAModalContext'
 import { useCustomModal } from '../contexts/CustomModalContext'
-import { useUploadBeceResultsMutation } from '../../../store/api/authApi'
+import { BeceResultUpload, useUploadBeceResultsMutation } from '../../../store/api/authApi'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { StudentRecord } from '../utils/csvParser'
@@ -137,6 +137,19 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
         groups[schoolName].push(student)
         return groups
       }, {} as Record<string, StudentRecord[]>)
+
+      const filesWithStudentsCount: {fileName: string, fileSize: number, students: number}[] = data.reduce((files, student) => {
+        const filename = student.file.name
+        const existingFile = files.find(file => file.fileName === filename)
+        
+        if (existingFile) {
+          existingFile.students++
+        } else {
+          files.push({fileName: filename, fileSize: student.file.size, students: 1})
+        }
+        
+        return files
+      }, [] as {fileName: string, fileSize: number, students: number}[])
   
       // Transform data according to API structure
       const results = Object.entries(schoolGroups).map(([schoolName, students]) => ({
@@ -163,9 +176,9 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             { name: 'French Language', exam: 0, ca: student.frenchLanguage }
           ].filter(subject => subject.ca > 0) // Only include subjects with CA scores
         }))
-      }))
+      }));
   
-      await uploadBeceResults({ result: results }).unwrap()
+      await uploadBeceResults({ result: results as BeceResultUpload[],   type: "ca", file: filesWithStudentsCount }).unwrap()
       
       const endTime = performance.now()
       const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
@@ -184,11 +197,11 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
       const endTime = performance.now()
       const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
       
-      console.error('Error saving CA data:', error)
+      console.error('Error saving CA data:', error);
       
-      toast.dismiss()
-      toast.error(`Failed to save CA data to database (${elapsedTime}s)`)
-      toast.error('Please check your connection and try again.')
+      toast.dismiss();
+      toast.error(`Failed to save CA data to database (${elapsedTime}s)`);
+      toast.error('Please check your connection and try again.');
     } finally {
       setIsSaving(false)
     }
