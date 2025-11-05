@@ -26,7 +26,7 @@ export default function LoginForm() {
 
   const [errors, setErrors] = useState<LoginErrors>({})
   const [loginMutation, { isLoading }] = useLoginMutation()
-  const { login } = useAuth()
+  const { login, isAuthenticated} = useAuth()
   const router = useRouter()
 
   // Debounced values for validation
@@ -171,10 +171,10 @@ export default function LoginForm() {
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || isAuthenticated}
           className="w-full bg-blue-600 cursor-pointer active:scale-95 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-transform duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Logging in...' : 'Login'}
+          {isAuthenticated ? 'Already logged in' : (isLoading ? 'Logging in...' : 'Login')}
         </button>
       </form>
     </div>
