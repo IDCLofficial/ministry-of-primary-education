@@ -69,7 +69,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
         schoolId: school.id,
         paymentData: {
           numberOfStudents: selectedStudentCount,
-          amountPerStudent: feePerStudent + (feePerStudent * 0.015)
+          amountPerStudent: feePerStudent
         }
       }).unwrap()
 
