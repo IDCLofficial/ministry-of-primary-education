@@ -2,11 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-interface TransactionViewProps {
-  totalAmount?: string;
-  growthPercentage?: string;
-}
-
 interface PaymentData {
   id: string;
   schoolName: string;
@@ -106,14 +101,6 @@ export default function TransactionView() {
       ) : (
         <div className="flex items-center justify-center mb-6">
           <div className="relative">
-            <svg width="200" height="200" viewBox="0 0 100 100" className="transform -rotate-90">
-              {apiData?.payments.map((item, index) => {
-                const percentage = totalTransactions&& totalTransactions > 0 ? (item.amount / totalTransactions) * 100 : 0;
-                return (
-                  <></>
-                )
-              })}
-            </svg>
           </div>
         </div>
       )}
