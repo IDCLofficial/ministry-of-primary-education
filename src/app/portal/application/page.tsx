@@ -33,9 +33,9 @@ export default async function Page({ searchParams }: PageProps) {
                     title='Imo State Ministry of Primary Education logo'
                 />
                 <span className='sm:text-2xl text-xl font-bold max-md:block hidden'>
-                    <abbr title="Imo State Ministry of Primary Education">IMMoE</abbr>
+                    <abbr title="Imo State Ministry of Primary Education">MOPSE</abbr>
                 </span>
-                <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>Imo State Ministry of Primary Education</span>
+                <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>Imo State Ministry of Primary and Secondary Education</span>
             </div>
             <div className="max-w-7xl w-full mx-auto px-2 sm:px-6 lg:px-8 relative z-20">
                 <SchoolRegistrationForm />

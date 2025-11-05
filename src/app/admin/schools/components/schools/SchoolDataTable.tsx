@@ -8,7 +8,7 @@ interface SchoolDataTableProps {
   onSelectApplication: (id: string) => void;
   onSelectAllApplications: () => void;
   onViewFullDetails: (item: School | Application) => void;
-  isLoading?: boolean;
+  isFetching?: boolean;
 }
 
 export default function SchoolDataTable({
@@ -18,7 +18,7 @@ export default function SchoolDataTable({
   onSelectApplication,
   onSelectAllApplications,
   onViewFullDetails,
-  isLoading = false,
+  isFetching = false,
 }: SchoolDataTableProps) {
   // Type guard functions
   const isApplication = (item: School | Application): item is Application => {
@@ -39,31 +39,6 @@ export default function SchoolDataTable({
     }
   };
 
-  // Loading skeleton row component
-  const LoadingRow = () => (
-    <tr className="animate-pulse">
-      {(currentTab === "applied" || currentTab === "onboarded") && (
-        <td className="px-6 py-4">
-          <div className="w-4 h-4 bg-gray-200 rounded"></div>
-        </td>
-      )}
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="h-4 bg-gray-200 rounded w-32"></div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="h-4 bg-gray-200 rounded w-24"></div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="h-6 bg-gray-200 rounded-full w-20"></div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="h-4 bg-gray-200 rounded w-12"></div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="h-4 bg-gray-200 rounded w-28"></div>
-      </td>
-    </tr>
-  );
 
   return (
     <div className="overflow-x-auto">
@@ -98,11 +73,20 @@ export default function SchoolDataTable({
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {isLoading ? (
-            // Show loading skeleton rows
-            Array.from({ length: 5 }).map((_, index) => (
-              <LoadingRow key={`loading-${index}`} />
-            ))
+          {isFetching ? (
+            // Show loading overlay with spinner
+            <tr>
+              <td 
+                colSpan={(currentTab === "applied" || currentTab === "onboarded") ? 6 : 5} 
+                className="px-6 py-20 text-center"
+              >
+                <div className="flex flex-col items-center justify-center">
+                  <span className="loaderAnimation 
+                   mb-4"></span>
+                  <p className="text-gray-600 text-sm mt-4">Loading {currentTab} schools...</p>
+                </div>
+              </td>
+            </tr>
           ) : data.length === 0 ? (
             // Show empty state
             <tr>
@@ -122,7 +106,6 @@ export default function SchoolDataTable({
           ) : (
             // Show actual data
             data.map((item) => {
-              console.log(item);
               return (
               <tr key={item._id} className="hover:bg-gray-50">
               {(currentTab === "applied" || currentTab === "onboarded") && (

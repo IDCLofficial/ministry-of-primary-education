@@ -1,11 +1,8 @@
-'use client'
-
-import DashboardLayout from '@/app/admin/schools/admin/DashboardLayout'
+'use client'  
 
 export default function DigitizationPage() {
   return (
-    <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-white shadow-sm border-b">
           <div className="px-6 py-4">
@@ -30,6 +27,5 @@ export default function DigitizationPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   )
 }

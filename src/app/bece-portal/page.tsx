@@ -29,7 +29,7 @@ export default function BecePortalPage() {
                 <span className='sm:text-2xl text-xl font-bold max-md:block hidden'>
                     <abbr title="Basic Education Certificate Examination">BECE</abbr> Portal
                 </span>
-                <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>BECE Portal - Imo State Ministry of Primary Education</span>
+                <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>BECE Portal - Imo State Ministry of Primary and Secondary Education</span>
             </div>
             <main className="py-8 gap-4 flex flex-col w-full relative z-10">
                 {/* Form Container */}

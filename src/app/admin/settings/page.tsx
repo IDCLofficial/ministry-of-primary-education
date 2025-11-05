@@ -1,10 +1,7 @@
 'use client'
 
-import DashboardLayout from '@/app/admin/schools/admin/DashboardLayout'
-
 export default function SettingsPage() {
   return (
-    <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-white shadow-sm border-b">
@@ -132,6 +129,5 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   )
 }
