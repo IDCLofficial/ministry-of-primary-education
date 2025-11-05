@@ -153,6 +153,7 @@ export default function LoginForm() {
           name="email"
           type="email"
           value={formData.email}
+          disabled={isAuthenticated}
           onChange={handleInputChange('email')}
           error={errors.email}
           required
@@ -164,18 +165,29 @@ export default function LoginForm() {
           name="password"
           type="password"
           value={formData.password}
+          disabled={isAuthenticated}
           onChange={handleInputChange('password')}
           error={errors.password}
           required
         />
 
-        <button
-          type="submit"
-          disabled={isLoading || isAuthenticated}
-          className="w-full bg-blue-600 cursor-pointer active:scale-95 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-transform duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isAuthenticated ? 'Already logged in' : (isLoading ? 'Logging in...' : 'Login')}
-        </button>
+        {isAuthenticated ? (
+          <button
+            type="button"
+            onClick={() => router.push('/portal/dashboard')}
+            className="w-full bg-green-600 cursor-pointer active:scale-95 text-white py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-transform duration-200 font-medium"
+          >
+            Go to Dashboard
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-blue-600 cursor-pointer active:scale-95 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-transform duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Logging in...' : 'Login'}
+          </button>
+        )}
       </form>
     </div>
   )

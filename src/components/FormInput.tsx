@@ -13,6 +13,7 @@ interface FormInputProps {
   error?: string,
   className?: string,
   name: string,
+  disabled?: boolean,
   isUpperCase?: boolean
 }
 
@@ -27,6 +28,7 @@ export default function FormInput({
   maxLength,
   error,
   name,
+  disabled = false,
   className: inputClassName,
   isUpperCase = false
 }: FormInputProps) {
@@ -131,12 +133,13 @@ export default function FormInput({
           placeholder={placeholder}
           value={value}
           title={label}
+          disabled={disabled}
           maxLength={maxLength}
           onChange={handleInputChange}
           name={name}
           onFocus={handleInputFocus}
           onKeyDown={handleKeyDown}
-          className={`w-full text-sm px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-[#F5F5F5] ${
+          className={`w-full text-sm px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-[#F5F5F5] disabled:bg-gray-200 disabled:text-gray-400 ${
             error 
               ? 'border-red-500 focus:ring-red-500' 
               : 'border-gray-300 focus:ring-blue-500'
