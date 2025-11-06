@@ -86,10 +86,20 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  accessToken: string;
+  message: string;
   admin: {
+    _id: string;
     email: string;
+    percentage: number;
+    isActive: boolean;
+    lastLogin: string;
+    adminType: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
   };
+  accessToken: string;
+  tokenType: string;
 }
 
 // RTK Query API slice

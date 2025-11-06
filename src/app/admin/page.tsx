@@ -8,12 +8,11 @@ import { FaBookOpen, FaPencilAlt, FaUniversity } from "react-icons/fa";
 
 function AdminSystemLoginContent() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,39 +34,7 @@ function AdminSystemLoginContent() {
       });
       return;
     }
-
-    setLoading(true);
-
-    try {
-      const success = await login(formData.email, formData.password);
-
-      if (success) {
-        Swal.fire({
-          title: 'Success!',
-          text: 'Login successful!',
-          icon: 'success',
-          timer: 1500,
-          showConfirmButton: false
-        });
-        // Redirect to schools page after successful login
-        router.push('/admin/schools');
-      } else {
-        Swal.fire({
-          title: 'Error!',
-          text: 'Invalid credentials. Please try again.',
-          icon: 'error'
-        });
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      Swal.fire({
-        title: 'Error!',
-        text: 'Login failed. Please check your credentials and try again.',
-        icon: 'error'
-      });
-    } finally {
-      setLoading(false);
-    }
+    login(formData.email, formData.password);
   };
 
   return (
