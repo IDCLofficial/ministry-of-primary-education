@@ -24,7 +24,7 @@ export default function Header() {
                     className='object-contain'
                 />
                 <span className='sm:text-base text-sm font-extrabold max-md:block hidden'>
-                    <abbr title="Imo State Ministry of Primary and Secondary Education">IMMoE</abbr>
+                    <abbr title="Imo State Ministry of Primary and Secondary Education">MOPSE</abbr>
                 </span>
                 <span className='sm:text-base text-sm font-extrabold max-md:hidden block'>Imo State Ministry of Primary and Secondary Education</span>
             </div>

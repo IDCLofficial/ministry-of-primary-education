@@ -11,7 +11,7 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
   const pathname = usePathname()
   
   // Don't show DashboardLayout on login page
-  if (pathname === '/admin/systemlogin') {
+  if (pathname === '/admin') {
     return <>{children}</>
   }
   

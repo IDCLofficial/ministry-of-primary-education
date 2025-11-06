@@ -27,6 +27,7 @@ export default function SchoolTableRTK() {
   const { 
     data: applicationsResponse, 
     isLoading: applicationsLoading, 
+    isFetching: applicationsFetching,
     error: applicationsError 
   } = useGetApplicationsQuery({
     page,
@@ -234,6 +235,7 @@ export default function SchoolTableRTK() {
         onSelectApplication={handleSelectApplication}
         onSelectAllApplications={handleSelectAllApplications}
         onViewFullDetails={handleViewFullDetails}
+        isFetching={applicationsFetching}
       />
 
       {/* Pagination */}

@@ -1,6 +1,5 @@
 "use client";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import DashboardLayout from '@/app/admin/schools/components/DashboardLayout';
 import { 
   useGetSchoolByIdQuery, 
   useGetSchoolTransactionsQuery,
@@ -158,8 +157,7 @@ function SchoolDetailsPageContent() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading school details...</p>
+         <span className="loaderAnimation"></span>
         </div>
       </div>
     );
@@ -185,7 +183,7 @@ function SchoolDetailsPageContent() {
   const isAppliedSchool = (effectiveStatus === 'pending' || effectiveStatus === 'declined' || effectiveStatus === 'rejected')
 
   return (
-    <DashboardLayout>
+    
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {isAppliedSchool && applicationForReview ? (
@@ -231,7 +229,7 @@ function SchoolDetailsPageContent() {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    
   );
 }
 

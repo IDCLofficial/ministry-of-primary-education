@@ -1,6 +1,5 @@
 'use client'
 
-import DashboardLayout from '@/app/admin/schools/components/DashboardLayout'
 import StatsCards from '@/app/admin/schools/components/schools/StatsCards'
 import NotificationBanner from '@/app/admin/schools/components/NotificationBanner'
 import { useSchoolManagement } from '@/hooks/useSchoolManagement'
@@ -15,7 +14,7 @@ function AdminDashboardContent() {
   useActivityTimeout({
     timeoutMinutes: 5,
     warningMinutes: 1,
-    redirectPath: '/admin/systemlogin'
+    redirectPath: '/admin'
   });
   
   const {
@@ -25,7 +24,7 @@ function AdminDashboardContent() {
 
 
   return (
-    <DashboardLayout>
+      <div>
       <div className="min-h-screen bg-gray-50">
         <NotificationBanner 
           notification={notification} 
@@ -50,7 +49,7 @@ function AdminDashboardContent() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   )
 }
 

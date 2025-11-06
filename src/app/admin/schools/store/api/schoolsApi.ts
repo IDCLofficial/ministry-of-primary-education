@@ -182,7 +182,7 @@ export const schoolsApi = createApi({
       },
       transformResponse: (response: { data?: Application[], meta?: { page?: string, totalPages?: string, total?: string, limit?: string, hasNextPage?: boolean, hasPrevPage?: boolean } }) => {
         // Return the full response with data and meta
-        console.log(response)
+        
         return {
           data: response.data || [],
           meta: {
