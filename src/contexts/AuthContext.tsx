@@ -27,7 +27,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (token) {
       setToken(token);
     }
-    setLoading(false);
   }, []);
 
   useEffect(()=>{
@@ -43,18 +42,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const success = await adminLogin({
         email, password
       });
-      
+
       if (!success.error) {
         setIsAuthenticated(true);
         console.log('Login successful, token received');
-        router.push('/school');
+        router.push('/schools');
         return true;
       } else {
         throw new Error('Login failed - no token received');
       }
     } catch (error) {
       console.error('Login error:', error);
-      
+
       // Handle specific error messages
       if (error instanceof Error) {
         if (error.message === 'Failed to login') {
@@ -63,8 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('Unexpected error:', error.message);
         }
       }
-      
+
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
