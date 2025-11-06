@@ -247,7 +247,7 @@ export default function DashboardPage() {
                     </div>
     
                     {/* Sidebar */}
-                    {school && school.status !== "completed" && (
+                    {school && (school.status !== "completed" || school.status !== "onboarded") && (
                         <div className="xl:col-span-1 order-1 xl:order-2 overflow-y-auto">
                             <div className="space-y-6">
                                 <OnboardingCompletionSummary
