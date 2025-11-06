@@ -34,15 +34,7 @@ export default function StudentsSection({
     error
   } = useGetStudentsBySchoolIdQuery(schoolId);
 
-  // Debug logging
-  console.log('StudentsSection Debug:', {
-    schoolId,
-    studentsResponse,
-    isLoading,
-    error,
-    responseType: typeof studentsResponse,
-    isArray: Array.isArray(studentsResponse)
-  });
+
 
   // Initialize export hook
   const { exportStudentList } = useStudentExport();
@@ -55,7 +47,7 @@ export default function StudentsSection({
 
   // Extract students array from response
   const students = useMemo(() => {
-    console.log('Processing studentsResponse:', studentsResponse);
+  
     
     // Handle different possible response structures
     if (Array.isArray(studentsResponse)) {
@@ -98,7 +90,7 @@ export default function StudentsSection({
   // Handle export functionality
   const handleExportStudents = () => {
     if (!students || students.length === 0) {
-      console.log('No students to export');
+   
       return;
     }
     exportStudentList(students, schoolName);

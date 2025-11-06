@@ -12,7 +12,7 @@ interface UseActivityTimeoutProps {
 export function useActivityTimeout({
   timeoutMinutes = 5,
   warningMinutes = 1,
-  redirectPath = '/admin/systemlogin'
+  redirectPath = '/admin'
 }: UseActivityTimeoutProps = {}) {
   const router = useRouter();
   const { logout, isAuthenticated } = useAuth();
