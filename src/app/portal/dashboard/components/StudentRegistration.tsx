@@ -320,7 +320,7 @@ export default function StudentRegistration({
                     {student.onboardingStatus.replace('_', ' ')}
                   </span>
                 </td>
-                {school?.status !== "completed" && <td className="py-3 px-4">
+                {school?.status === "approved" && <td className="py-3 px-4">
                   <button 
                     onClick={() => handleUpdateStudent(student)}
                     className="text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium transition-colors duration-200"
