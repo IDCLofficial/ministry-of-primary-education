@@ -40,7 +40,7 @@ export default function StudentLoginPage() {
                     alt="logo"
                     fill
                     className='object-cover hue-rotate-[0deg] saturate-200 brightness-[0.75] scale-x-[-1]'
-                    title='Imo State Ministry of Primary Education logo'
+                    title='Imo State Ministry of Primary and Secondary Education logo'
                 />
             </div>
             {/* Lottie Animation - Bottom Right */}

@@ -13,7 +13,7 @@ export default function BecePortalPage() {
                     alt="logo"
                     fill
                     className='object-cover hue-rotate-[0deg] saturate-200 brightness-[0.75]'
-                    title='Imo State Ministry of Primary Education logo'
+                    title='Imo State Ministry of Primary and Secondary Education logo'
                 />
             </div>
             <div className="flex max-md:flex-row flex-col justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
@@ -23,13 +23,13 @@ export default function BecePortalPage() {
                     width={40}
                     height={40}
                     className='object-contain'
-                    title='Imo State Ministry of Primary Education logo'
+                    title='Imo State Ministry of Primary and Secondary Education logo'
                 />
 
                 <span className='sm:text-2xl text-xl font-bold max-md:block hidden'>
                     <abbr title="Basic Education Certificate Examination">BECE</abbr> Portal
                 </span>
-                <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>BECE Portal - Imo State Ministry of Primary Education</span>
+                <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>BECE Portal - Imo State Ministry of Primary and Secondary Education</span>
             </div>
             <main className="py-8 gap-4 flex flex-col w-full relative z-10">
                 {/* Form Container */}

@@ -96,7 +96,7 @@ export const transformSchoolData = (apiSchool: SchoolApiData): School => {
 
 // Base URL for the API
 
-export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
+export const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 
 /**
  * Fetch all schools from the API
