@@ -26,7 +26,6 @@ export default function SchoolDetailsHeader({
   onSendConfirmation
 }: SchoolDetailsHeaderProps) {
   const router = useRouter();
-
   return (
     <div className="mb-6 flex items-center justify-between">
       <div>
@@ -61,15 +60,15 @@ export default function SchoolDetailsHeader({
             </>
           )}
           
-          {/* Show Send Confirmation button only for 'onboarded' status */}
-          {(applicationId ? school.applicationStatus === 'onboarded' : school.status === 'onboarded') && (
-            <button
-              onClick={onSendConfirmation}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-            >
-              Send Confirmation
-            </button>
-          )}
+            {/* Show Send Confirmation button only for 'onboarded' status */}
+            {school.status === 'onboarded' && (
+              <button
+                onClick={onSendConfirmation}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                Send Confirmation
+              </button>
+            )}
         </div>
       )}
     </div>

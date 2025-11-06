@@ -2,6 +2,7 @@
 
 export interface Student {
   _id: string;
+  studentId: string;
   studentName: string;
   gender: string;
   class: string;

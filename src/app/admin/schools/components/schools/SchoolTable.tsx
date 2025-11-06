@@ -249,11 +249,7 @@ export default function SchoolTableRTK() {
       />
 
 
-      {data.length === 0 && !isLoading && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No schools found for the current filter.</p>
-        </div>
-      )}
+    
     </div>
   );
 }
