@@ -223,7 +223,7 @@ export default function DashboardPage() {
             return (
                 <div className="flex-1 overflow-y-hidden mt-4 sm:mt-6 flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6">
                     {/* Main Content */}
-                    <div className={school?.status !== "completed" ? "xl:col-span-3 space-y-4 sm:space-y-6 order-2 xl:order-1" : "col-span-full"}>
+                    <div className={school?.status === "approved" ? "xl:col-span-3 space-y-4 sm:space-y-6 order-2 xl:order-1" : "col-span-full"}>
                         <ResponsiveFilterBar onFilterChange={handleFilterChange} />
                         
                         <StudentRegistration
