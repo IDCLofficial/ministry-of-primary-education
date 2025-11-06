@@ -80,6 +80,18 @@ export interface ApplicationsResponse {
   data: Application[]
 }
 
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  admin: {
+    email: string;
+  };
+}
+
 // RTK Query API slice
 export const schoolsApi = createApi({
   reducerPath: 'schoolsApi',
@@ -98,7 +110,7 @@ export const schoolsApi = createApi({
       return headers
     },
   }),
-  tagTypes: ['School', 'Application', 'Transaction', 'Student'],
+  tagTypes: ['School', 'Application', 'Transaction', 'Student', "Admin"],
   endpoints: (builder) => ({
     // Get all schools with pagination and filters
     getSchools: builder.query<PaginatedResponse<School>, {
@@ -210,12 +222,11 @@ export const schoolsApi = createApi({
     // Update application status
     updateApplicationStatus: builder.mutation<unknown, {
       appIds: string | string[]
-      status: 'approved' | 'rejected' | 'completed'
+      status: 'approved' | 'rejected' | 'completed',
+      token: string
     }>({
-      queryFn: async ({ appIds, status }) => {
+      queryFn: async ({ appIds, status, token }) => {
         const ids = Array.isArray(appIds) ? appIds : [appIds]
-        const adminToken = localStorage.getItem('admin_token')
-        
         try {
           const responses = await Promise.all(
             ids.map(async (appId) => {
@@ -223,7 +234,7 @@ export const schoolsApi = createApi({
                 method: 'PATCH',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${adminToken}`,
+                  'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({ status }),
               })
@@ -261,16 +272,13 @@ export const schoolsApi = createApi({
       invalidatesTags: ['Application', 'School'],
     }),
 
-    // Admin login
-    adminLogin: builder.mutation<{ accessToken: string; admin: { email: string } }, {
-      email: string
-      password: string
-    }>({
-      query: ({ email, password }) => ({
-        url: 'admin/login',
+    adminLogin: builder.mutation<LoginResponse, LoginRequest>({
+      query: (credentials) => ({
+        url: '/admin/login',
         method: 'POST',
-        body: { email, password },
+        body: credentials,
       }),
+      invalidatesTags: ['Admin'],
     }),
   }),
 })
@@ -287,4 +295,4 @@ export const {
   useUpdateApplicationStatusMutation,
   useReapproveApplicationMutation,
   useAdminLoginMutation,
-} = schoolsApi
+} = schoolsApi;

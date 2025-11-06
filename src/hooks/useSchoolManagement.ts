@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useUpdateApplicationStatusMutation } from '@/app/admin/schools/store/api/schoolsApi'
+import { useAuth } from '@/contexts/AuthContext'
 
 export function useSchoolManagement() {
+  const { token } = useAuth()
   const [selectedSchools, setSelectedSchools] = useState<string[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
@@ -36,7 +38,8 @@ export function useSchoolManagement() {
       
       const result = await updateApplicationStatus({
         appIds: selectedSchools,
-        status: 'approved'
+        status: 'approved',
+        token: token!
       }).unwrap()
       
       console.log('📥 API response received:', result)

@@ -38,10 +38,10 @@ export default function RegistrationPendingView() {
                     className='object-contain'
                     title='Imo State Ministry of Primary and Secondary Education logo'
                 />
-                <span className='sm:text-2xl text-xl font-bold max-md:block hidden'>
+                <span className='sm:text-2xl text-xl text-center font-bold max-md:block hidden'>
                     <abbr title="Imo State Ministry of Primary and Secondary Education">IMMoE</abbr>
                 </span>
-                <span className='sm:text-2xl text-xl font-bold max-md:hidden block'>Imo State Ministry of Primary and Secondary Education</span>
+                <span className='sm:text-2xl text-xl text-center font-bold max-md:hidden block'>Imo State Ministry of Primary and Secondary Education</span>
             </div>
 
             <div className="bg-white rounded-lg shadow-lg p-8 max-w-xl mx-4 text-center">

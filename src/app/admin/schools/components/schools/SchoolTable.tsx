@@ -13,9 +13,11 @@ import PaginationControls from './PaginationControls';
 import SchoolDataTable from './SchoolDataTable';
 import TabNavigation, { Tab } from './TabNavigation';
 import SchoolSearchBar from './SchoolSearchBar';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SchoolTableRTK() {
   const router = useRouter();
+  const { token } = useAuth();
   const [currentTab, setCurrentTab] = useState<Tab>("notApplied");
   const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
   const [page, setPage] = useState(1);
@@ -58,7 +60,8 @@ export default function SchoolTableRTK() {
     if (selectedApplications.length === 0) return;
     await updateApplicationStatus({
       appIds: selectedApplications,
-      status: 'approved'
+      status: 'approved',
+      token: token!
     }).unwrap();
     setSelectedApplications([]);
   };
@@ -67,7 +70,8 @@ export default function SchoolTableRTK() {
     if (selectedApplications.length === 0) return;
     await updateApplicationStatus({
       appIds: selectedApplications,
-      status: 'rejected'
+      status: 'rejected',
+      token: token!
     }).unwrap();
     setSelectedApplications([]);
   };
@@ -76,7 +80,8 @@ export default function SchoolTableRTK() {
     if (selectedApplications.length === 0) return;
     await updateApplicationStatus({
       appIds: selectedApplications,
-      status: 'completed'
+      status: 'completed', 
+      token: token!
     }).unwrap();
     setSelectedApplications([]);
   };

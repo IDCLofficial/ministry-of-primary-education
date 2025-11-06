@@ -1,11 +1,12 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { adminLogin } from '@/services/schoolService';
+import { useAdminLoginMutation } from '@/app/admin/schools/store/api/schoolsApi';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  token: string | null;
   loading: boolean;
 }
 
@@ -14,20 +15,35 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
+
+  const [adminLogin] = useAdminLoginMutation()
 
   useEffect(() => {
     // Check if user is already logged in (from localStorage)
-    const token = localStorage.getItem('admin_token');
+    const token = localStorage.getItem('admin_token') || "n/a";
     if (token) {
-      setIsAuthenticated(true);
+      setToken(token);
     }
     setLoading(false);
   }, []);
 
+  useEffect(()=>{
+    if (token === null) return;
+    if (token !== "n/a") {
+      setIsAuthenticated(true);
+    }
+  }, [token]);
+
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       // Use the adminLogin function from schoolService
-      const success = await adminLogin(email, password);
+      const success = await adminLogin({
+        email, password
+      });
+
+      console.log(success.error)
+      console.log(success.data)
       
       if (success) {
         setIsAuthenticated(true);
@@ -58,11 +74,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('admin_email');
     localStorage.removeItem('admin_user');
     setIsAuthenticated(false);
+    setToken(null);
     console.log('User logged out, all auth data cleared');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, loading }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, loading, token }}>
       {children}
     </AuthContext.Provider>
   );

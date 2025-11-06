@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import { useReapproveApplicationMutation, useUpdateApplicationStatusMutation } from '@/app/admin/schools/store/api/schoolsApi';
 
 import { Application } from '../../store/api/schoolsApi';
+import { useAuth } from '@/contexts/AuthContext';
 
 type MutateFunction<T> = (updater?: (data: T[]) => T[], revalidate?: boolean) => void;
 
@@ -23,6 +24,7 @@ export function useSchoolStatusActions({
   setSelectedApplications,
   setOpenDropdown
 }: SchoolStatusActionsProps = {}) {
+  const { token } = useAuth();
   // RTK Query mutations
   const [reapproveApplication] = useReapproveApplicationMutation();
   const [updateApplicationStatus] = useUpdateApplicationStatusMutation();
@@ -60,7 +62,7 @@ export function useSchoolStatusActions({
           mutate((apps: Application[]) => apps?.filter((a: Application) => a._id !== appId), false);
         }
 
-        await updateApplicationStatus({ appIds: appId, status: "approved" }).unwrap();
+        await updateApplicationStatus({ appIds: appId, status: "approved", token: token! }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -110,7 +112,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await updateApplicationStatus({ appIds: selectedApplications, status: "approved" }).unwrap();
+        await updateApplicationStatus({ appIds: selectedApplications, status: "approved", token: token! }).unwrap();
 
         Swal.fire({
           title: 'Success!',
@@ -170,7 +172,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await updateApplicationStatus({ appIds: selectedApplications, status: "rejected" }).unwrap();
+        await updateApplicationStatus({ appIds: selectedApplications, status: "rejected", token: token! }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -220,7 +222,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await updateApplicationStatus({ appIds: selectedApplications, status: "completed" }).unwrap();
+        await updateApplicationStatus({ appIds: selectedApplications, status: "completed", token: token! }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -270,7 +272,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await updateApplicationStatus({ appIds: appId, status: "completed" }).unwrap();
+        await updateApplicationStatus({ appIds: appId, status: "completed", token: token! }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -325,7 +327,7 @@ export function useSchoolStatusActions({
           mutate((apps: Application[]) => apps?.filter((a: Application) => a._id !== appId), false);
         }
 
-        await updateApplicationStatus({ appIds: appId, status: "rejected" }).unwrap();
+        await updateApplicationStatus({ appIds: appId, status: "rejected", token: token! }).unwrap();
         
         Swal.fire({
           title: 'Success!',

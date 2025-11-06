@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardHeaderProps {
   title?: string;
@@ -17,17 +17,9 @@ export default function DashboardHeader({
   showNotifications = true,
   className = ""
 }: DashboardHeaderProps) {
-  const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
-
-  const handleLogout = () => {
-    // Clear admin token
-    localStorage.removeItem('admin_token');
-    // Redirect to login
-    router.push('/admin/systemlogin');
-  };
-
+  const { logout } = useAuth();
   return (
     <header className={`bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50 ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -161,7 +153,7 @@ export default function DashboardHeader({
                     </Link>
                     <hr className="my-1" />
                     <button
-                      onClick={handleLogout}
+                      onClick={logout}
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                     >
                       Sign Out

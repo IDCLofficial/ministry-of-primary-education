@@ -271,13 +271,10 @@ export async function adminLogin(email: string, password: string) {
 // change status
 export async function changeApplicationStatus(
   appIds: string | string[],
-  status: "approved" | "rejected" | "completed"
+  status: "approved" | "rejected" | "completed",
+  token: string
 ) {
   const ids = Array.isArray(appIds) ? appIds : [appIds];
-
-  // Get login credentials from localStorage
-  const adminToken = localStorage.getItem('admin_token');
-
 
   const responses = await Promise.all(
     ids.map(async (appId) => {
@@ -287,7 +284,7 @@ export async function changeApplicationStatus(
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${adminToken}`
+            "Authorization": `Bearer ${token}`
           },
           body: JSON.stringify({ 
             status: status
