@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!success.error) {
         setIsAuthenticated(true);
         console.log('Login successful, token received');
-        router.push('/schools');
+        router.push('/admin/schools');
         return true;
       } else {
         throw new Error('Login failed - no token received');
