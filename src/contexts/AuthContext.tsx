@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAdminLoginMutation } from '@/app/admin/schools/store/api/schoolsApi';
+import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -16,6 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
+  const router = useRouter();
 
   const [adminLogin] = useAdminLoginMutation()
 
@@ -41,17 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const success = await adminLogin({
         email, password
       });
-
-      console.log(success.error)
-      console.log(success.data)
       
-      if (success) {
+      if (!success.error) {
         setIsAuthenticated(true);
         console.log('Login successful, token received');
+        router.push('/school');
         return true;
       } else {
-        console.error('Login failed - no token received');
-        return false;
+        throw new Error('Login failed - no token received');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -75,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('admin_user');
     setIsAuthenticated(false);
     setToken(null);
+    router.replace('/');
     console.log('User logged out, all auth data cleared');
   };
 
