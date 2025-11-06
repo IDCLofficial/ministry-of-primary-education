@@ -290,7 +290,7 @@ export default function StudentRegistration({
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
                 Onboarding Status
               </th>
-              {school?.status !== "completed" && <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Actions</th>}
+              {school?.status === "approved" && <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Actions</th>}
             </tr>
           </thead>
           <tbody>
