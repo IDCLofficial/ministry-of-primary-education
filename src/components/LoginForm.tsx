@@ -26,8 +26,14 @@ export default function LoginForm() {
 
   const [errors, setErrors] = useState<LoginErrors>({})
   const [loginMutation, { isLoading }] = useLoginMutation()
-  const { login, isAuthenticated} = useAuth()
-  const router = useRouter()
+  const { login } = useAuth();
+  const router = useRouter();
+
+  const isAuthenticated = React.useMemo(() => {
+    const storedToken = localStorage.getItem('access_token');
+    const storedSchool = localStorage.getItem('school');
+    return !!storedToken && !!storedSchool;
+  }, []);
 
   // Debounced values for validation
   const debouncedEmail = useDebounce(formData.email, 500)
@@ -142,7 +148,7 @@ export default function LoginForm() {
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg shadow-black/5 border border-black/5 p-6">
       <h2 className="sm:text-2xl text-lg font-semibold text-gray-800 text-center mb-6">
-        School Login
+        School Login {JSON.stringify(isAuthenticated)}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">

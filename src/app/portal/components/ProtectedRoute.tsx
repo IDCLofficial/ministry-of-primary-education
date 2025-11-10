@@ -11,17 +11,18 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requireAuth = true }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, school } = useAuth()
+  const { isAuthenticated, isLoading, school, loggingOut } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
+    if (loggingOut) return;
     if (!isLoading && requireAuth) {
       if (!isAuthenticated) {
         // Not authenticated, redirect to login
         router.replace('/portal')
       }
     }
-  }, [isAuthenticated, isLoading, requireAuth, router])
+  }, [isAuthenticated, isLoading, requireAuth, router, loggingOut])
 
   // Show loading spinner while checking authentication
   if (isLoading) {

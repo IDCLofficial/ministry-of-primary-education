@@ -24,6 +24,7 @@ interface AuthContextType {
   token: string | null
   login: (token: string, school: School) => void
   logout: () => void
+  loggingOut: boolean
   isLoading: boolean
   refreshProfile: () => void
 }
@@ -36,6 +37,7 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const path = usePathname();
+  const [loggingOut, setLoggingOut] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [school, setSchool] = useState<School | null>(null)
   const [token, setToken] = useState<string | null>(null)
@@ -81,15 +83,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = useCallback(() => {
     try {
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('school')
+      setLoggingOut(true)
       setToken(null)
       setSchool(null)
       setIsAuthenticated(false)
       setSkipProfileQuery(true) // Disable profile query
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('school');
 
-      console.log("logging out from AuthProvider->school")
-      router.push('/portal')
+      setTimeout(() => {
+        router.push('/portal')
+      }, 100);
     } catch (error) {
       console.error('Error during logout:', error)
     }
@@ -133,6 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value: AuthContextType = {
     isAuthenticated,
     school,
+    loggingOut,
     token,
     login,
     logout,
