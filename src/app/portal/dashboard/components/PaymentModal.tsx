@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, /** useEffect */ } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { useCreateStudentPaymentMutation } from '../../store/api/authApi'
 import toast from 'react-hot-toast'
@@ -12,50 +12,50 @@ interface PaymentModalProps {
   numberOfStudents: number
 }
 
-export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, numberOfStudents }: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, /** numberOfStudents */ }: PaymentModalProps) {
   const { school } = useAuth()
   const [createStudentPayment] = useCreateStudentPaymentMutation()
   const [isProcessing, setIsProcessing] = useState(false)
-  const [selectedStudentCount, setSelectedStudentCount] = useState(numberOfStudents)
-  const [customInput, setCustomInput] = useState('')
-  
-  const feePerStudent = 500 // Fee per student
-  const studentFees = selectedStudentCount * feePerStudent
-  const processingFee = Math.round(studentFees * 0.015) // 1.5% processing fee
-  const totalAmount = studentFees + processingFee
-
+  // const [selectedStudentCount, setSelectedStudentCount] = useState(numberOfStudents)
+  // const [customInput, setCustomInput] = useState('')
   // Maximum points allowed is the school's numberOfStudents minus already available points
   const maxPointsAllowed = school ? Math.max(0, school.numberOfStudents - school.totalPoints) : 0
   
+  const feePerStudent = 500 // Fee per student
+  const studentFees = maxPointsAllowed * feePerStudent
+  const processingFee = 2000 // 1.5% processing fee
+  const totalAmount = studentFees + processingFee
+
+  
   // Preset suggestions (filtered to not exceed max allowed)
-  const suggestions = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500].filter(count => count <= maxPointsAllowed)
+  // const suggestions = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500].filter(count => count <= maxPointsAllowed)
 
-  const handleSuggestionClick = (count: number) => {
-    if (count <= maxPointsAllowed) {
-      setSelectedStudentCount(count)
-      setCustomInput(count.toString())
-    }
-  }
+  // const handleSuggestionClick = (count: number) => {
+  //   if (count <= maxPointsAllowed) {
+  //     setSelectedStudentCount(count)
+  //     setCustomInput(count.toString())
+  //   }
+  // }
 
-  const handleCustomInputChange = (value: string) => {
-    const numValue = parseInt(value) || 0;
-    if (numValue <= maxPointsAllowed) {
-      setCustomInput(value)
-    }
-    if (!isNaN(numValue) && numValue > 0 && numValue <= maxPointsAllowed) {
-      setSelectedStudentCount(numValue)
-    }
-  }
+  // const handleCustomInputChange = (value: string) => {
+  //   const numValue = parseInt(value) || 0;
+  //   if (numValue <= maxPointsAllowed) {
+  //     setCustomInput(value)
+  //   }
+  //   if (!isNaN(numValue) && numValue > 0 && numValue <= maxPointsAllowed) {
+  //     setSelectedStudentCount(numValue)
+  //   }
+  // }
 
   // Reset selected count when modal opens with new data
-  useEffect(() => {
-    if (isOpen) {
-      // Set to the minimum of numberOfStudents or maxPointsAllowed
-      const initialCount = Math.min(numberOfStudents, maxPointsAllowed)
-      setSelectedStudentCount(initialCount)
-      setCustomInput(initialCount.toString())
-    }
-  }, [isOpen, numberOfStudents, maxPointsAllowed])
+  // useEffect(() => {
+  //   if (isOpen) {
+  //     // Set to the minimum of numberOfStudents or maxPointsAllowed
+  //     const initialCount = Math.min(numberOfStudents, maxPointsAllowed)
+  //     setSelectedStudentCount(initialCount)
+  //     // setCustomInput(initialCount.toString())
+  //   }
+  // }, [isOpen, numberOfStudents, maxPointsAllowed])
 
   const handlePayment = async () => {
     if (!school?.id) {
@@ -69,7 +69,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
       const response = await createStudentPayment({
         schoolId: school.id,
         paymentData: {
-          numberOfStudents: selectedStudentCount,
+          numberOfStudents: maxPointsAllowed,
           amountPerStudent: feePerStudent
         }
       }).unwrap()
@@ -146,7 +146,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
                 </div>
                 
                 {/* Preset Suggestions */}
-                <div className="mb-4">
+                {/* {!!(suggestions.length > 0) && <div className="mb-4">
                   <p className="text-sm text-gray-600 mb-2">Quick Select:</p>
                   <div className="flex flex-wrap gap-2">
                     {suggestions.map((count) => (
@@ -163,10 +163,10 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
                       </button>
                     ))}
                   </div>
-                </div>
+                </div>} */}
 
                 {/* Custom Input */}
-                <div>
+                {/* <div>
                   <label htmlFor="customStudentCount" className="block text-sm text-gray-600 mb-2">
                     Or enter custom number:
                   </label>
@@ -180,14 +180,14 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
                     placeholder={`Enter number of points (max: ${maxPointsAllowed})`}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                </div>
+                </div> */}
 
                 {/* Selected Count Display */}
-                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                {/* <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                   <p className="text-sm text-blue-800">
                     <span className="font-medium">Selected:</span> {selectedStudentCount.toLocaleString()} points
                   </p>
-                </div>
+                </div> */}
               </div>
 
               {/* Payment Summary */}
@@ -196,7 +196,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Number of Points</span>
-                    <span className="font-medium">{selectedStudentCount.toLocaleString()}</span>
+                    <span className="font-medium">{maxPointsAllowed.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Fee per Point</span>
