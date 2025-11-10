@@ -111,7 +111,6 @@ export default function LoginForm() {
         router.push('/portal/dashboard')
 
       } catch (error: unknown) {
-        alert("error")
         console.error('Login error:', error)
 
         // Handle different error types

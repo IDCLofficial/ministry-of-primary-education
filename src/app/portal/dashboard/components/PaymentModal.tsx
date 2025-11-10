@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { useCreateStudentPaymentMutation } from '../../store/api/authApi'
+import toast from 'react-hot-toast'
 
 interface PaymentModalProps {
   isOpen: boolean
@@ -58,7 +59,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
 
   const handlePayment = async () => {
     if (!school?.id) {
-      alert('School information not found. Please try logging in again.')
+      toast.error('School information not found. Please try logging in again.')
       return
     }
 
@@ -85,7 +86,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
       setIsProcessing(false);
       console.error('Payment initiation failed:', error)
       const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'Payment initiation failed. Please try again.'
-      alert(errorMessage)
+      toast.error(errorMessage)
     }
   }
 
