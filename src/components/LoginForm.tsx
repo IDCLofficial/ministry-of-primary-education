@@ -148,7 +148,7 @@ export default function LoginForm() {
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg shadow-black/5 border border-black/5 p-6">
       <h2 className="sm:text-2xl text-lg font-semibold text-gray-800 text-center mb-6">
-        School Login {JSON.stringify(isAuthenticated)}
+        School Login
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
