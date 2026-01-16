@@ -31,7 +31,7 @@ export function SearchAndFilters({ searchTerm, setSearchTerm, filters, setFilter
                         placeholder="Search by user, resource, or activity..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     />
                 </div>
 
@@ -52,7 +52,7 @@ export function SearchAndFilters({ searchTerm, setSearchTerm, filters, setFilter
                         <select
                             value={filters.user}
                             onChange={(e) => setFilters({ ...filters, user: e.target.value })}
-                            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500"
                         >
                             <option value="">All Users</option>
                             <option value="John Doe">John Doe</option>
@@ -65,7 +65,7 @@ export function SearchAndFilters({ searchTerm, setSearchTerm, filters, setFilter
                         <select
                             value={filters.action}
                             onChange={(e) => setFilters({ ...filters, action: e.target.value })}
-                            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500"
                         >
                             <option value="">All Actions</option>
                             <option value="upload">Upload</option>
@@ -81,7 +81,7 @@ export function SearchAndFilters({ searchTerm, setSearchTerm, filters, setFilter
                         <select
                             value={filters.resourceType}
                             onChange={(e) => setFilters({ ...filters, resourceType: e.target.value })}
-                            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500"
                         >
                             <option value="">All Resources</option>
                             <option value="file">Files</option>
@@ -94,7 +94,7 @@ export function SearchAndFilters({ searchTerm, setSearchTerm, filters, setFilter
                         <select
                             value={filters.status}
                             onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500"
                         >
                             <option value="">All Status</option>
                             <option value="success">Success</option>
@@ -105,7 +105,7 @@ export function SearchAndFilters({ searchTerm, setSearchTerm, filters, setFilter
                         <select
                             value={filters.dateRange}
                             onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
-                            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500"
                         >
                             <option value="">All Dates</option>
                             <option value="today">Today</option>

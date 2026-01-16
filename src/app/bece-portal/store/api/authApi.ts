@@ -1,4 +1,4 @@
-import { Student } from '../../dashboard/students/types/student.types'
+import { ResultsResponse, Student } from '../../dashboard/schools/types/student.types'
 import { apiSlice } from './apiSlice'
 
 interface Admin {
@@ -53,6 +53,14 @@ interface School {
   schoolName: string
   lga: string | { _id: string; name: string },
   students: number,
+}
+
+interface SchoolResponse {
+  totalSchools: number
+  schools: School[]
+  totalPages: number
+  page: number
+  limit: number
 }
 
 interface UpdateScoreSubject {
@@ -161,19 +169,39 @@ export const authApi = apiSlice.injectEndpoints({
     }),
     
     // Fetch Results 
-    getResults: builder.query<Student[], string>({
-      query: (schoolId: string) => {
-        return `/bece-result/results/${schoolId}`
+    getResults: builder.query<ResultsResponse, {
+      schoolId: string;
+      page?: number;
+      limit?: number;
+      search?: string;
+    }>({
+      query: (params) => {
+        const queryParams = new URLSearchParams()
+        if (params.page) queryParams.append('page', params.page.toString())
+        if (params.limit) queryParams.append('limit', params.limit.toString())
+        if (params.search) queryParams.append('search', params.search)
+        const queryString = queryParams.toString()
+        return `/bece-result/results/${params.schoolId}${queryString ? `?${queryString}` : ''}`
       },
-      providesTags: (result, error, schoolId) => [
+      providesTags: (_result, _error, params) => [
         { type: 'Admin', id: 'LIST' },
-        { type: 'Admin', id: schoolId }
+        { type: 'Admin', id: params.schoolId }
       ],
     }),
 
     // Fetch Schools
-    getSchools: builder.query<School[], void>({
-      query: () => '/bece-school',
+    getSchools: builder.query<SchoolResponse, {
+      page?: number;
+      limit?: number;
+      search?: string;
+    }>({
+      query: (params) => {
+        const queryParams = new URLSearchParams()
+        if (params && params.page) queryParams.append('page', params.page.toString())
+        if (params && params.limit) queryParams.append('limit', params.limit.toString())
+        if (params && params.search) queryParams.append('search', params.search)
+        return `/bece-school?${queryParams.toString()}`
+      },
       providesTags: [{ type: 'Admin', id: 'SCHOOLS' }],
     }),
 

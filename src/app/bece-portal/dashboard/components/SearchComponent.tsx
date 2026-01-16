@@ -50,7 +50,7 @@ export default function SearchComponent() {
             description: 'Manage student records',
             category: 'pages',
             icon: <IoPeopleOutline className="w-5 h-5" />,
-            action: () => router.push('/bece-portal/dashboard/students')
+            action: () => router.push('/bece-portal/dashboard/schools')
         },
         {
             id: 'view-uploads',
@@ -251,7 +251,7 @@ export default function SearchComponent() {
                     }}
                     onFocus={() => setIsOpen(true)}
                     onKeyDown={handleKeyDown}
-                    className="block w-full peer pl-10 pr-12 py-2 border border-black/5 rounded-lg leading-5 bg-[#f3f3f3] placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                    className="block w-full peer pl-10 pr-12 py-2 border border-black/5 rounded-lg leading-5 bg-[#f3f3f3] placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-green-500 focus:border-green-500 text-sm transition-all duration-200"
                 />
                 {searchQuery && (
                     <button
@@ -294,12 +294,12 @@ export default function SearchComponent() {
                                                     <button
                                                         key={item.id}
                                                         onClick={() => handleSelect(item)}
-                                                        className={`w-full px-3 py-2.5 flex items-center gap-3 hover:bg-blue-50 transition-all duration-150 group ${
-                                                            isSelected ? 'bg-blue-50 border-l-2 border-blue-500' : ''
+                                                        className={`w-full px-3 py-2.5 flex items-center gap-3 hover:bg-green-50 transition-all duration-150 group ${
+                                                            isSelected ? 'bg-green-50 border-l-2 border-green-500' : ''
                                                         }`}
                                                     >
-                                                        <div className={`text-gray-400 group-hover:text-blue-500 transition-colors ${
-                                                            isSelected ? 'text-blue-500' : ''
+                                                        <div className={`text-gray-400 group-hover:text-green-500 transition-colors ${
+                                                            isSelected ? 'text-green-500' : ''
                                                         }`}>
                                                             {item.icon}
                                                         </div>
@@ -360,9 +360,9 @@ export default function SearchComponent() {
                                             <button
                                                 key={item.id}
                                                 onClick={() => handleSelect(item)}
-                                                className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-blue-50 transition-all duration-150 group"
+                                                className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-green-50 transition-all duration-150 group"
                                             >
-                                                <div className="text-gray-400 group-hover:text-blue-500 transition-colors">
+                                                <div className="text-gray-400 group-hover:text-green-500 transition-colors">
                                                     {item.icon}
                                                 </div>
                                                 <div className="flex-1 text-left">
@@ -389,9 +389,9 @@ export default function SearchComponent() {
                                         <button
                                             key={item.id}
                                             onClick={() => handleSelect(item)}
-                                            className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-blue-50 transition-all duration-150 group"
+                                            className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-green-50 transition-all duration-150 group"
                                         >
-                                            <div className="text-gray-400 group-hover:text-blue-500 transition-colors">
+                                            <div className="text-gray-400 group-hover:text-green-500 transition-colors">
                                                 {item.icon}
                                             </div>
                                             <div className="flex-1 text-left">

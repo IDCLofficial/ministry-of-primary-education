@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Student } from '../types/student.types'
 import StudentRow from './StudentRow'
 import Pagination from './Pagination'
@@ -7,16 +7,17 @@ interface SchoolStudentsTableProps {
     students: Student[]
     onViewStudent: (student: Student) => void
     onGenerateCertificate: (student: Student) => void
+    pagination: {
+        currentPage: number
+        totalPages: number
+        onPageChange: (page: number) => void
+        itemsPerPage: number
+        totalItems: number
+        disabled: boolean
+    }
 }
 
-export default function SchoolStudentsTable({ students, onViewStudent, onGenerateCertificate }: SchoolStudentsTableProps) {
-    const [currentPage, setCurrentPage] = useState(1)
-    const itemsPerPage = 10
-
-    const totalPages = Math.ceil(students.length / itemsPerPage)
-    const startIndex = (currentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    const paginatedStudents = students.slice(startIndex, endIndex)
+export default function SchoolStudentsTable({ students, onViewStudent, onGenerateCertificate, pagination }: SchoolStudentsTableProps) {
 
     return (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -42,7 +43,7 @@ export default function SchoolStudentsTable({ students, onViewStudent, onGenerat
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {paginatedStudents.map((student, index) => (
+                        {students.map((student, index) => (
                             <StudentRow 
                                 key={`${student.examNo}-${index}`} 
                                 student={student} 
@@ -53,13 +54,14 @@ export default function SchoolStudentsTable({ students, onViewStudent, onGenerat
                     </tbody>
                 </table>
             </div>
-            {totalPages > 1 && (
+            {pagination.totalPages > 1 && (
                 <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    itemsPerPage={itemsPerPage}
-                    totalItems={students.length}
+                    disabled={pagination.disabled}
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    onPageChange={pagination.onPageChange}
+                    itemsPerPage={pagination.itemsPerPage}
+                    totalItems={pagination.totalItems}
                 />
             )}
         </div>

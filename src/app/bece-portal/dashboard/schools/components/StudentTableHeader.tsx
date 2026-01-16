@@ -10,7 +10,7 @@ export default function StudentTableHeader({ schoolCount, studentCount }: Studen
     return (
         <div className="flex items-center justify-between">
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">Student Management</h1>
+                <h1 className="text-2xl font-bold text-gray-900">All Schools</h1>
                 <p className="text-gray-600 mt-1">Manage BECE student records by school</p>
             </div>
             <div className="flex items-center gap-4 text-sm text-gray-600">

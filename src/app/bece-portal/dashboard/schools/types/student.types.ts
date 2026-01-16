@@ -17,6 +17,14 @@ export interface Student {
     __v: number
 }
 
+export interface ResultsResponse {
+    totalResults: number
+    results: Student[]
+    page: number
+    limit: number
+    totalPages: number
+}
+
 export interface School {
     _id: string
     schoolName: string

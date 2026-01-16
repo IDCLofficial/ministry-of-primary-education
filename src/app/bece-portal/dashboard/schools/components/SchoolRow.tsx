@@ -19,7 +19,7 @@ const getLgaName = (lga: string | { _id: string; name: string }): string => {
 export default function SchoolRow({ school, isExpanded, onToggle }: SchoolRowProps) {
     return (
         <tr 
-            className="bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors"
+            className="bg-green-50 hover:bg-green-100 cursor-pointer transition-colors"
             onClick={() => onToggle(school._id)}
         >
             <td className="px-6 py-4 whitespace-nowrap">
@@ -31,7 +31,7 @@ export default function SchoolRow({ school, isExpanded, onToggle }: SchoolRowPro
                             <IoChevronForward className="w-4 h-4 text-gray-500" />
                         )}
                     </div>
-                    <IoSchool className="w-5 h-5 text-blue-600 mr-3" />
+                    <IoSchool className="w-5 h-5 text-green-600 mr-3" />
                     <div>
                         <div className="text-sm font-medium text-gray-900 capitalize">
                             {school.schoolName.toLowerCase()}

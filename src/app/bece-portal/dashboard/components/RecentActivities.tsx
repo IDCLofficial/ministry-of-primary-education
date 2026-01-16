@@ -38,7 +38,7 @@ function StatusBadge({ status }: { status: Activity['status'] }) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800'
       case 'in_progress':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-green-100 text-green-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -104,7 +104,7 @@ export default function RecentActivities() {
     <div className="bg-white rounded-xl border border-gray-100 py-3">
       <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100">
         <h3 className="text-lg font-semibold text-gray-900">Recent Activities</h3>
-        <Link href="/bece-portal/dashboard/audit-trail" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+        <Link href="/bece-portal/dashboard/audit-trail" className="text-sm text-green-600 hover:text-green-700 font-medium">
           View all
         </Link>
       </div>

@@ -123,11 +123,11 @@ export const CustomModalProvider: React.FC<CustomModalProviderProps> = ({ childr
                   {/* Icon */}
                   <div className={`mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10 ${
                     modalState.options.type === 'alert' 
-                      ? 'bg-blue-100' 
+                      ? 'bg-green-100' 
                       : 'bg-yellow-100'
                   }`}>
                     {modalState.options.type === 'alert' ? (
-                      <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     ) : (
@@ -158,7 +158,7 @@ export const CustomModalProvider: React.FC<CustomModalProviderProps> = ({ childr
                   onClick={handleConfirm}
                   className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm cursor-pointer active:scale-95 active:rotate-1 transition-all duration-150 ${
                     modalState.options.type === 'alert'
-                      ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+                      ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
                       : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
                   }`}
                 >

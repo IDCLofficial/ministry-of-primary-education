@@ -7,7 +7,7 @@ interface ResourceTypeBadgeProps {
 export function ResourceTypeBadge({ type }: ResourceTypeBadgeProps) {
     switch (type) {
         case 'file':
-            return 'bg-blue-100 text-blue-800'
+            return 'bg-green-100 text-green-800'
         case 'student':
             return 'bg-purple-100 text-purple-800'
         case 'certificate':

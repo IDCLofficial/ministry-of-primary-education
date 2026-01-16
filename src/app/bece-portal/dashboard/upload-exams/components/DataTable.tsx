@@ -184,7 +184,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                 `Successfully saved ${data.length} CA records to database in ${elapsedTime}s`
             )
 
-            router.push('/bece-portal/dashboard/students')
+            router.push('/bece-portal/dashboard/schools')
 
         } catch (error) {
             const endTime = performance.now()
@@ -273,7 +273,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                     disabled={isSaving}
                                     className={`block w-full pl-10 pr-3 py-2 border rounded-md leading-5 placeholder-gray-500 focus:outline-none text-sm ${isSaving
                                             ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                                            : 'border-gray-300 bg-white focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
+                                            : 'border-gray-300 bg-white focus:placeholder-gray-400 focus:ring-1 focus:ring-green-500 focus:border-green-500'
                                         }`}
                                 />
                             </div>
@@ -301,7 +301,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                         checked={selectedRows.size === sortedData.length && sortedData.length > 0}
                                         onChange={(e) => handleSelectAll(e.target.checked)}
                                         disabled={isSaving}
-                                        className={`rounded text-blue-600 focus:ring-blue-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
+                                        className={`rounded text-green-600 focus:ring-green-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
                                             }`}
                                     />
                                 </th>
@@ -321,7 +321,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                         <div className="flex items-center space-x-1">
                                             <span>{label}</span>
                                             {sortConfig.key === key && (
-                                                <span className="text-blue-600">
+                                                <span className="text-green-600">
                                                     {sortConfig.direction === 'asc' ? '↑' : '↓'}
                                                 </span>
                                             )}
@@ -342,7 +342,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                             checked={selectedRows.has(index)}
                                             onChange={(e) => handleSelectRow(index, e.target.checked)}
                                             disabled={isSaving}
-                                            className={`rounded text-blue-600 focus:ring-blue-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
+                                            className={`rounded text-green-600 focus:ring-green-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
                                                 }`}
                                         />
                                     </td>
@@ -357,7 +357,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${record.sex === 'Male'
-                                            ? 'bg-blue-100 text-blue-800'
+                                            ? 'bg-green-100 text-green-800'
                                             : 'bg-pink-100 text-pink-800'
                                             }`}>
                                             {record.sex}
@@ -382,7 +382,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                             <div
                                                 className={`text-center p-1 transition-all duration-200 rounded border border-transparent ${isSaving
                                                     ? 'text-gray-400'
-                                                    : 'text-blue-600 hover:text-blue-800 active:scale-90 active:rotate-1 hover:bg-blue-50 hover:border-blue-100'
+                                                    : 'text-green-600 hover:text-green-800 active:scale-90 active:rotate-1 hover:bg-green-50 hover:border-green-100'
                                                     }`}
                                             >
                                                 <IoEye className="text-xl" />
@@ -441,7 +441,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum)}
                                         className={`px-3 py-1 text-sm border rounded active:scale-90 active:rotate-1 transition-all duration-200 cursor-pointer ${currentPage === pageNum
-                                            ? 'bg-blue-600 text-white border-blue-600'
+                                            ? 'bg-green-600 text-white border-green-600'
                                             : 'border-gray-300 hover:bg-gray-100'
                                             }`}
                                     >

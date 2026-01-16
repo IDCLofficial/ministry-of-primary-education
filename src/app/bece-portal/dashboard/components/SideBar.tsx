@@ -26,8 +26,8 @@ export default function SideBar() {
                                 href={item.href}
                                 className={`flex items-center px-4 py-4 text-sm font-medium rounded-xl transition-colors duration-200 ${
                                     item.active
-                                        ? 'text-white bg-blue-600'
-                                        : 'text-gray-700 hover:bg-gray-50 bg-gray-50/50 border-2 border-transparent hover:border-blue-600/20 hover:text-gray-900'
+                                        ? 'text-white bg-green-600'
+                                        : 'text-gray-700 hover:bg-gray-50 bg-gray-50/50 border-2 border-transparent hover:border-green-600/20 hover:text-gray-900'
                                 }`}
                             >
                                 <span className='mr-2 text-lg'>
@@ -44,10 +44,10 @@ export default function SideBar() {
             <div className='p-3 border-t border-gray-200'>
                 <div className='space-y-3'>
                     {/* User Email */}
-                    <div className='px-3 py-2 bg-gray-50 rounded-lg border border-blue-300'>
+                    <div className='px-3 py-2 bg-gray-50 rounded-lg border border-green-300'>
                         <div className='flex items-center space-x-3'>
-                            <div className='w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center border border-blue-600'>
-                                <span className='text-blue-600 font-medium text-sm'>
+                            <div className='w-8 h-8 bg-green-100 rounded-full flex items-center justify-center border border-green-600'>
+                                <span className='text-green-600 font-medium text-sm'>
                                     {admin?.email?.charAt(0).toUpperCase() || 'U'}
                                 </span>
                             </div>

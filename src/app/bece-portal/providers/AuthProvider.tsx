@@ -94,8 +94,6 @@ export function BeceAuthProvider({ children }: BeceAuthProviderProps) {
     if (profileData && token) {
       setAdmin(profileData.admin)
       setIsAuthenticated(true)
-
-      console.log('BECE Admin profile data updated:', profileData)
       // Update localStorage with fresh profile data
       localStorage.setItem('bece_admin', JSON.stringify(profileData.admin))
     } else if (profileError) {

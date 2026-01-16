@@ -1,12 +1,20 @@
 'use client'
 import { IoDocumentTextOutline, IoCalendarOutline, IoPersonOutline } from 'react-icons/io5'
 import { UploadLog } from '../../../store/api/authApi'
+import Pagination from '../../schools/components/Pagination'
 
 interface UploadsTableProps {
     uploads: UploadLog[]
+    pagination?: {
+        currentPage: number
+        totalPages: number
+        onPageChange: (page: number) => void
+        itemsPerPage: number
+        totalItems: number
+    }
 }
 
-export function UploadsTable({ uploads }: UploadsTableProps) {
+export function UploadsTable({ uploads, pagination }: UploadsTableProps) {
     if (uploads.length === 0) {
         return (
             <div className="text-center py-12">
@@ -33,8 +41,8 @@ export function UploadsTable({ uploads }: UploadsTableProps) {
                             <tr key={upload._id} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-6 py-4">
                                     <div className="flex items-start gap-3">
-                                        <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                            <IoDocumentTextOutline className="w-5 h-5 text-blue-600" />
+                                        <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                            <IoDocumentTextOutline className="w-5 h-5 text-green-600" />
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className="text-sm font-medium text-gray-900 truncate">
@@ -67,6 +75,18 @@ export function UploadsTable({ uploads }: UploadsTableProps) {
                     </tbody>
                 </table>
             </div>
+            {pagination && pagination.totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-100">
+                    <Pagination
+                        currentPage={pagination.currentPage}
+                        totalPages={pagination.totalPages}
+                        onPageChange={pagination.onPageChange}
+                        itemsPerPage={pagination.itemsPerPage}
+                        totalItems={pagination.totalItems}
+                        disabled={false}
+                    />
+                </div>
+            )}
         </div>
     )
 }

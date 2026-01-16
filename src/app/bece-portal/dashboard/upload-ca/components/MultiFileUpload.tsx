@@ -108,7 +108,7 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
           <h3 className="text-lg font-medium text-gray-900">Upload Additional Files</h3>
           <button
             onClick={handleClick}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all active:scale-90 active:rotate-1 duration-200"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all active:scale-90 active:rotate-1 duration-200"
           >
             <IoCloudUpload className="w-4 h-4 mr-2" />
             Upload CSV
@@ -129,7 +129,7 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
             {uploadedFiles.map((uploadedFile) => (
               <div key={uploadedFile.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <IoDocument className="w-5 h-5 text-blue-600" />
+                  <IoDocument className="w-5 h-5 text-green-600" />
                   <div>
                     <p className="text-sm font-medium text-gray-900">{uploadedFile.file.name}</p>
                     <p className="text-xs text-gray-500">{(uploadedFile.file.size / 1024).toFixed(1)} KB</p>
@@ -142,7 +142,7 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
                   {uploadedFile.status === 'uploading' && (
                     <div className="w-16 bg-gray-200 rounded-full h-2">
                       <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-green-600 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${uploadedFile.progress}%` }}
                       />
                     </div>
@@ -179,7 +179,7 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
           onClick={handleClick}
           className={`relative border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-200 ${
             isDragOver
-              ? 'border-blue-500 bg-blue-50'
+              ? 'border-green-500 bg-green-50'
               : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
           }`}
         >
@@ -207,7 +207,7 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
             {uploadedFiles.map((uploadedFile) => (
               <div key={uploadedFile.id} className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
                 <div className="flex items-center space-x-4">
-                  <IoDocument className="w-8 h-8 text-blue-600" />
+                  <IoDocument className="w-8 h-8 text-green-600" />
                   <div>
                     <p className="font-medium text-gray-900">{uploadedFile.file.name}</p>
                     <p className="text-sm text-gray-500">{(uploadedFile.file.size / 1024).toFixed(1)} KB</p>
@@ -218,7 +218,7 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
                     <div className="flex items-center space-x-2">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
                         <div 
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          className="bg-green-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${uploadedFile.progress}%` }}
                         />
                       </div>

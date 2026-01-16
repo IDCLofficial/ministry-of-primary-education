@@ -2,6 +2,7 @@ import React from 'react'
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5'
 
 interface PaginationProps {
+    disabled?: boolean
     currentPage: number
     totalPages: number
     onPageChange: (page: number) => void
@@ -12,9 +13,10 @@ interface PaginationProps {
 export default function Pagination({ 
     currentPage, 
     totalPages, 
-    onPageChange, 
     itemsPerPage, 
-    totalItems 
+    totalItems,
+    disabled,
+    onPageChange, 
 }: PaginationProps) {
     if (totalPages <= 1) return null
 
@@ -70,9 +72,9 @@ export default function Pagination({
                 {/* Previous button */}
                 <button
                     onClick={() => onPageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
+                    disabled={currentPage === 1 || disabled}
                     className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all active:scale-75 active:rotate-1 cursor-pointer ${
-                        currentPage === 1
+                        currentPage === 1 || disabled
                             ? 'text-gray-400 cursor-not-allowed'
                             : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                     }`}
@@ -89,10 +91,11 @@ export default function Pagination({
                                 <span className="px-3 py-2 text-sm text-gray-500">...</span>
                             ) : (
                                 <button
+                                    disabled={disabled}
                                     onClick={() => onPageChange(page as number)}
                                     className={`px-3 py-2 text-sm font-medium rounded-md transition-all active:scale-75 active:rotate-1 cursor-pointer ${
                                         currentPage === page
-                                            ? 'bg-blue-600 text-white'
+                                            ? 'bg-green-600 text-white'
                                             : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                                     }`}
                                 >
@@ -106,9 +109,9 @@ export default function Pagination({
                 {/* Next button */}
                 <button
                     onClick={() => onPageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
+                    disabled={currentPage === totalPages || disabled}
                     className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all active:scale-75 active:rotate-1 cursor-pointer ${
-                        currentPage === totalPages
+                        currentPage === totalPages || disabled
                             ? 'text-gray-400 cursor-not-allowed'
                             : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                     }`}

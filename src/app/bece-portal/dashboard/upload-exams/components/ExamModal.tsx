@@ -127,7 +127,7 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
                   </button>
                   <button
                     onClick={handleCancel}
-                    className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                   >
                     Cancel
                   </button>
@@ -135,7 +135,7 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
               ) : (
                 <button
                   onClick={handleEdit}
-                  className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 >
                   <IoPencil className="w-4 h-4 mr-2" />
                   Edit Exam Scores
@@ -143,7 +143,7 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
               )}
               <button
                 onClick={onClose}
-                className="p-2 text-gray-400 cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-md"
+                className="p-2 text-gray-400 cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 rounded-md"
               >
                 <IoClose className="w-6 h-6" />
               </button>
@@ -187,7 +187,7 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
               <h4 className="text-lg font-medium text-gray-900">Examination Scores</h4>
               <div className="text-right">
                 <p className="text-sm text-gray-500">Average Score</p>
-                <p className="text-2xl font-bold text-blue-600">{calculateAverage()}%</p>
+                <p className="text-2xl font-bold text-green-600">{calculateAverage()}%</p>
               </div>
             </div>
             
@@ -211,7 +211,7 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
                               max="70"
                               value={score}
                               onChange={(e) => handleScoreChange(key, e.target.value)}
-                              className="w-16 px-2 py-1 text-lg font-bold border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-16 px-2 py-1 text-lg font-bold border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             />
                           ) : (
                             <span className="text-2xl font-bold">{score}</span>
@@ -231,8 +231,8 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
           </div>
 
           {/* Upload Summary */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h4 className="text-lg font-medium text-blue-900 mb-3">Upload Summary</h4>
+          <div className="bg-green-50 rounded-lg p-4">
+            <h4 className="text-lg font-medium text-green-900 mb-3">Upload Summary</h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">

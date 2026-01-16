@@ -9,7 +9,7 @@ interface ResultsCardProps {
 export default function ResultsCard({ student }: ResultsCardProps) {
     const getGradeColor = (grade: string) => {
         if (grade.startsWith('A')) return 'bg-green-100 text-green-800 border-green-200'
-        if (grade.startsWith('B')) return 'bg-blue-100 text-blue-800 border-blue-200'
+        if (grade.startsWith('B')) return 'bg-green-100 text-green-800 border-green-200'
         if (grade.startsWith('C')) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
         if (grade.startsWith('D')) return 'bg-orange-100 text-orange-800 border-orange-200'
         return 'bg-red-100 text-red-800 border-red-200'
@@ -18,7 +18,7 @@ export default function ResultsCard({ student }: ResultsCardProps) {
     const getOverallGradeColor = (grade: string) => {
         switch (grade) {
             case 'Distinction': return 'text-green-600 bg-green-50'
-            case 'Credit': return 'text-blue-600 bg-blue-50'
+            case 'Credit': return 'text-green-600 bg-green-50'
             case 'Pass': return 'text-yellow-600 bg-yellow-50'
             default: return 'text-red-600 bg-red-50'
         }
@@ -27,17 +27,17 @@ export default function ResultsCard({ student }: ResultsCardProps) {
     return (
         <div className="space-y-6">
             {/* Overall Performance Summary */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center">
                     <IoRibbon className="w-5 h-5 mr-2" />
                     Overall Performance
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-white rounded-lg p-4 text-center">
-                        <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-2">
-                            <IoCheckmarkCircle className="w-6 h-6 text-blue-600" />
+                        <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-2">
+                            <IoCheckmarkCircle className="w-6 h-6 text-green-600" />
                         </div>
-                        <p className="text-3xl font-bold text-blue-600">
+                        <p className="text-3xl font-bold text-green-600">
                             {student.subjects.length}
                         </p>
                         <p className="text-sm text-gray-600">Subjects Taken</p>
@@ -57,7 +57,7 @@ export default function ResultsCard({ student }: ResultsCardProps) {
                         <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-2 ${getOverallGradeColor(student.overallGrade)}`}>
                             <IoRibbon className="w-6 h-6" />
                         </div>
-                        <p className={`text-3xl font-bold ${student.overallGrade === 'Distinction' ? 'text-green-600' : student.overallGrade === 'Credit' ? 'text-blue-600' : student.overallGrade === 'Pass' ? 'text-yellow-600' : 'text-red-600'}`}>
+                        <p className={`text-3xl font-bold ${student.overallGrade === 'Distinction' ? 'text-green-600' : student.overallGrade === 'Credit' ? 'text-green-600' : student.overallGrade === 'Pass' ? 'text-yellow-600' : 'text-red-600'}`}>
                             {student.overallGrade}
                         </p>
                         <p className="text-sm text-gray-600">Overall Grade</p>
@@ -99,7 +99,7 @@ export default function ResultsCard({ student }: ResultsCardProps) {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {student.subjects.map((subject, index) => (
-                                <tr key={index} className="hover:bg-blue-50 transition-all duration-200 group cursor-pointer">
+                                <tr key={index} className="hover:bg-green-50 transition-all duration-200 group cursor-pointer">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-gray-900">
                                             {subject.name}
@@ -140,7 +140,7 @@ export default function ResultsCard({ student }: ResultsCardProps) {
                             <span className="text-gray-700">A1-A3: Excellent (80-100)</span>
                         </div>
                         <div className="flex items-center">
-                            <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                            <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
                             <span className="text-gray-700">B2-B3: Very Good (65-79)</span>
                         </div>
                         <div className="flex items-center">

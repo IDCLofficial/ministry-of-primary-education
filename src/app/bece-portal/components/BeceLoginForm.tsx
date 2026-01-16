@@ -179,7 +179,7 @@ export default function BeceLoginForm() {
           className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all duration-200 active:scale-95 active:rotate-1 cursor-pointer ${
             isLoading
               ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+              : 'bg-green-600 hover:bg-green-700 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
           }`}
         >
           {isLoading ? (

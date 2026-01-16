@@ -7,29 +7,72 @@ import Lottie from 'lottie-react'
 import animationData from './assets/students.json'
 import Image from 'next/image'
 
+// Regex pattern for exam number validation (e.g., ok/977/2025/001)
+const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3}\/\d{4}\/\d{3}$/
+
 export default function StudentLoginPage() {
     const router = useRouter()
     const [examNo, setExamNo] = useState('')
     const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState('')
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
+        setError('')
         
         if (!examNo.trim()) {
-            toast.error('Please enter your exam number')
+            setError('Please enter your exam number')
+            return
+        }
+
+        // Validate exam number format
+        if (!EXAM_NO_REGEX.test(examNo)) {
+            setError('Invalid format. Use format: xx/xxx/xxxx/xxx (e.g., ok/977/2025/001)')
             return
         }
 
         setIsLoading(true)
 
-        // Simulate API call with demo data
-        setTimeout(() => {
-            // Store exam number in localStorage for demo
+        try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://moe-backend-production-3842.up.railway.app'
+            const response = await fetch(`${API_BASE_URL}/bece-student/check-result/${encodeURIComponent(examNo)}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+            })
+
+            if (response.status !== 200) {
+                if (response.status === 404) {
+                    setError('404: Student not found')
+                } else if (response.status === 400) {
+                    setError('400: Invalid exam number')
+                } else if (response.status === 500) {
+                    setError('500: Server error')
+                } else {
+                    setError('Something went wrong')
+                }
+                
+                console.error('Login failed:', { status: response.status })
+                setIsLoading(false)
+                return
+            }
+
+            const data = await response.json()
+            if (!data || !data.examNo) {
+                setError('Something went wrong')
+                setIsLoading(false)
+                return
+            }
+
             localStorage.setItem('student_exam_no', examNo)
             toast.success('Login successful!')
             router.push('/student-portal/dashboard')
+        } catch (error) {
+            console.error('Login error:', error)
+            setError('Something went wrong')
             setIsLoading(false)
-        }, 1000)
+        }
     }
 
     return (
@@ -72,33 +115,47 @@ export default function StudentLoginPage() {
                     <form onSubmit={handleLogin} className="space-y-6">
                         {/* Exam Number Input */}
                         <div className="group">
-                            <label htmlFor="examNo" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-blue-600 transition-colors duration-200">
+                            <label htmlFor="examNo" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
                                 Exam Number
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <IoPersonCircle className="h-5 w-5 text-gray-400 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-200" />
+                                    <IoPersonCircle className="h-5 w-5 text-gray-400 group-hover:text-green-500 group-hover:scale-110 transition-all duration-200" />
                                 </div>
                                 <input
                                     type="text"
                                     id="examNo"
                                     value={examNo}
-                                    onChange={(e) => setExamNo(e.target.value.toUpperCase())}
-                                    placeholder="Enter your exam number"
-                                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-blue-400 transition-all duration-200"
+                                    onChange={(e) => {
+                                        setExamNo(e.target.value.toLowerCase())
+                                        setError('')
+                                    }}
+                                    placeholder="e.g., ok/977/2025/001"
+                                    className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200 ${
+                                        error ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                                    }`}
                                     disabled={isLoading}
                                 />
                             </div>
-                            <p className="mt-2 text-xs text-gray-500">
-                                Demo: Use any exam number (e.g., BECE2024001)
-                            </p>
+                            {error ? (
+                                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                    {error}
+                                </p>
+                            ) : (
+                                <p className="mt-2 text-xs text-gray-500">
+                                    Enter your examination number (e.g., ok/977/2025/001)
+                                </p>
+                            )}
                         </div>
 
                         {/* Login Button */}
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer active:scale-95 active:opacity-90 group"
+                            className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer active:scale-95 active:opacity-90 group"
                         >
                             {isLoading ? (
                                 <>
@@ -126,7 +183,7 @@ export default function StudentLoginPage() {
                                         icon: 'ℹ️',
                                     })
                                 }}
-                                className="text-blue-600 hover:text-blue-700 font-medium transition-all duration-150 cursor-pointer active:scale-95 active:opacity-80"
+                                className="text-green-600 hover:text-green-700 font-medium transition-all duration-150 cursor-pointer active:scale-95 active:opacity-80"
                             >
                                 Contact Support
                             </a>
@@ -135,9 +192,9 @@ export default function StudentLoginPage() {
                 </div>
 
                 {/* Info Box */}
-                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 hover:bg-blue-100 hover:border-blue-300 transition-all duration-300 cursor-pointer group">
-                    <p className="text-sm text-blue-800">
-                        <strong>Note:</strong> This is a demo portal. In production, you would need your official exam number provided by your school.
+                <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4 hover:bg-green-100 hover:border-green-300 transition-all duration-300 group">
+                    <p className="text-sm text-green-800">
+                        <strong>Note:</strong> Enter your official BECE examination number provided by your school to view your results.
                     </p>
                 </div>
             </div>

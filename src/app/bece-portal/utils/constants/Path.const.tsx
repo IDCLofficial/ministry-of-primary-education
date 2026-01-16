@@ -20,26 +20,10 @@ export const menuItems: (pathname: string) => MenuItem[] = (pathname: string) =>
     {
         icon: <IoPeopleOutline />,
         iconActive: <IoPeople />,
-        label: 'Students',
-        abbr: 'Student Management',
-        href: '/bece-portal/dashboard/students',
-        active: pathname === '/bece-portal/dashboard/students'
-    },
-    {
-        icon: <IoFileTrayFullOutline />,
-        iconActive: <IoFileTrayFull />,
-        label: 'Upload CA',
-        abbr: 'Continuous Assessment',
-        href: '/bece-portal/dashboard/upload-ca',
-        active: pathname === '/bece-portal/dashboard/upload-ca'
-    },
-    {
-        icon: <IoFolderOpenOutline />,
-        iconActive: <IoFolderOpen />,
-        label: 'Upload Exams',
-        abbr: 'Examinations',
-        href: '/bece-portal/dashboard/upload-exams',
-        active: pathname === '/bece-portal/dashboard/upload-exams'
+        label: 'Schools',
+        abbr: 'Schools Management',
+        href: '/bece-portal/dashboard/schools',
+        active: pathname === '/bece-portal/dashboard/schools'
     },
     {
         icon: <IoCloudDoneOutline />,
@@ -48,13 +32,5 @@ export const menuItems: (pathname: string) => MenuItem[] = (pathname: string) =>
         abbr: 'View Uploads',
         href: '/bece-portal/dashboard/view-uploads',
         active: pathname === '/bece-portal/dashboard/view-uploads'
-    },
-    // {
-    //     icon: <IoLockOpenOutline />,
-    //     iconActive: <IoLockOpen />,
-    //     label: 'Audit Trail',
-    //     abbr: 'System Audit',
-    //     href: '/bece-portal/dashboard/audit-trail',
-    //     active: pathname === '/bece-portal/dashboard/audit-trail'
-    // }
+    }
 ]

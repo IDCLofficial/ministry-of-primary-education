@@ -136,7 +136,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
 
     const getGradeColor = (grade: string) => {
         if (grade.startsWith('A')) return 'bg-green-100 text-green-800 border-green-200'
-        if (grade.startsWith('B')) return 'bg-blue-100 text-blue-800 border-blue-200'
+        if (grade.startsWith('B')) return 'bg-green-100 text-green-800 border-green-200'
         if (grade.startsWith('C')) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
         if (grade.startsWith('D')) return 'bg-orange-100 text-orange-800 border-orange-200'
         return 'bg-red-100 text-red-800 border-red-200'
@@ -161,7 +161,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
     const getOverallGradeColor = (grade: string) => {
         switch (grade) {
             case 'Distinction': return 'text-green-600'
-            case 'Credit': return 'text-blue-600'
+            case 'Credit': return 'text-green-600'
             case 'Pass': return 'text-yellow-600'
             default: return 'text-red-600'
         }
@@ -210,7 +210,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                     </button>
                                     <button
                                         onClick={handleCancel}
-                                        className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                                     >
                                         Cancel
                                     </button>
@@ -219,7 +219,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                 <>
                                     <button
                                         onClick={handleEdit}
-                                        className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                                     >
                                         <IoPencil className="w-4 h-4 mr-2" />
                                         Edit Results
@@ -240,7 +240,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                             )}
                             <button
                                 onClick={onClose}
-                                className="p-2 text-gray-400 cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-md"
+                                className="p-2 text-gray-400 cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 rounded-md"
                             >
                                 <IoClose className="w-6 h-6" />
                             </button>
@@ -291,14 +291,14 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                     </div>
 
                     {/* Overall Performance */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-                        <h4 className="text-lg font-medium text-blue-900 mb-4 flex items-center">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                        <h4 className="text-lg font-medium text-green-900 mb-4 flex items-center">
                             <IoRibbon className="w-5 h-5 mr-2" />
                             Overall Performance
                         </h4>
                         <div className="grid grid-cols-3 gap-6 text-center">
                             <div>
-                                <p className="text-3xl font-bold text-blue-600">
+                                <p className="text-3xl font-bold text-green-600">
                                     {examResults.length}
                                 </p>
                                 <p className="text-sm text-gray-600">Subjects Taken</p>
@@ -357,7 +357,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                                         max="30"
                                                         value={result.caScore}
                                                         onChange={(e) => handleScoreChange(index, 'caScore', e.target.value)}
-                                                        className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                        className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                                     />
                                                 ) : (
                                                     result.caScore
@@ -371,7 +371,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                                         max="70"
                                                         value={result.examScore}
                                                         onChange={(e) => handleScoreChange(index, 'examScore', e.target.value)}
-                                                        className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                        className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                                     />
                                                 ) : (
                                                     result.examScore
@@ -401,7 +401,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                 <span>A1-A3: Excellent</span>
                             </div>
                             <div className="flex items-center">
-                                <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                                <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
                                 <span>B2-B3: Very Good</span>
                             </div>
                             <div className="flex items-center">

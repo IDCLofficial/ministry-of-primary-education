@@ -64,9 +64,9 @@ export default function UploadDropdown({ onSelect, className = "" }: UploadDropd
       {/* Upload Button */}
       <button
         onClick={handleDropdownToggle}
-        className="cursor-pointer active:scale-90 active:rotate-1 flex items-stretch border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+        className="cursor-pointer active:scale-90 active:rotate-1 flex items-stretch border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
       >
-        <div className="py-2 px-5">Upload</div>
+        <div className="py-2 px-5">Make an Upload</div>
         <div className='w-[1px] bg-white' />
         <div className="px-2 flex items-center">
           <IoChevronDown className={`transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''
@@ -86,7 +86,7 @@ export default function UploadDropdown({ onSelect, className = "" }: UploadDropd
                 className="w-full cursor-pointer active:scale-95 px-4 py-3 text-left hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-all duration-150 border-b border-gray-100 last:border-b-0"
               >
                 <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 mt-0.5 text-blue-600">
+                  <div className="flex-shrink-0 mt-0.5 text-green-600">
                     {option.icon}
                   </div>
                   <div className="flex-1 min-w-0">

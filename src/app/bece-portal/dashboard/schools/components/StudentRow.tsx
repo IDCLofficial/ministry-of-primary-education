@@ -31,7 +31,7 @@ export default function StudentRow({ student, onViewStudent, onGenerateCertifica
             <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border border-black/10 ${
                     student.sex === 'M' 
-                        ? 'bg-blue-100 text-blue-800' 
+                        ? 'bg-green-100 text-green-800' 
                         : 'bg-pink-100 text-pink-800'
                 }`}>
                     {student.sex}
@@ -44,7 +44,7 @@ export default function StudentRow({ student, onViewStudent, onGenerateCertifica
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => onViewStudent(student)}
-                        className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all cursor-pointer active:scale-95"
+                        className="inline-flex items-center px-3 py-1 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 hover:text-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 transition-all cursor-pointer active:scale-95"
                     >
                         <IoEye className="w-3 h-3 mr-1" />
                         View

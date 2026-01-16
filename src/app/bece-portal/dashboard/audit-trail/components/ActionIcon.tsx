@@ -18,7 +18,7 @@ export function ActionIcon({ action }: ActionIconProps) {
     const iconClass = "w-5 h-5"
     switch (action) {
         case 'upload':
-            return <IoCloudUploadOutline className={`${iconClass} text-blue-600`} />
+            return <IoCloudUploadOutline className={`${iconClass} text-green-600`} />
         case 'download':
             return <IoDownloadOutline className={`${iconClass} text-green-600`} />
         case 'delete':
