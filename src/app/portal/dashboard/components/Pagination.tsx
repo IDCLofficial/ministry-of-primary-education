@@ -66,7 +66,7 @@ export default function Pagination({
           <select
             value={itemsPerPage}
             onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
-            className="appearance-none bg-blue-600 text-white border border-blue-600 rounded-lg px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="appearance-none bg-green-600 text-white border border-green-600 rounded-lg px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             <option value={10}>10</option>
             <option value={12}>12</option>
@@ -107,7 +107,7 @@ export default function Pagination({
               disabled={page === '...'}
               className={`px-3 py-2 text-sm cursor-pointer font-medium rounded-lg transition-colors duration-200 ${
                 page === currentPage
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-green-600 text-white'
                   : page === '...'
                   ? 'text-gray-400 cursor-default'
                   : 'text-gray-700 hover:bg-gray-100'

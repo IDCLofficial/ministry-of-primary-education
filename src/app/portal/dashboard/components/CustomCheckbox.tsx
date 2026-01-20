@@ -62,12 +62,12 @@ export default function CustomCheckbox({
         ease-in-out
         focus:outline-none
         focus:ring-2
-        focus:ring-blue-500
+        focus:ring-green-500
         focus:ring-offset-1
         ${checked 
-          ? 'bg-blue-600 border-blue-600 text-white'
+          ? 'bg-green-600 border-green-600 text-white'
           : indeterminate
-          ? 'border-blue-600 text-white'
+          ? 'border-green-600 text-white'
           : 'bg-white border-gray-300 hover:border-gray-400'
         }
         ${disabled
@@ -97,7 +97,7 @@ export default function CustomCheckbox({
         {indeterminate ? (
           /* Minus/Dash Icon for indeterminate state */
           <svg
-            className={`${iconSizes[size]} text-blue-600`}
+            className={`${iconSizes[size]} text-green-600`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

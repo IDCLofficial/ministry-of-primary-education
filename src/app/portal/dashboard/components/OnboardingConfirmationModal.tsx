@@ -83,7 +83,7 @@ export default function OnboardingConfirmationModal({
               value={confirmationText}
               onChange={(e) => setConfirmationText(e.target.value)}
               placeholder="Type confirmation text here..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
             {confirmationText && !isValid && (
               <p className="mt-1 text-sm text-red-600">
@@ -114,7 +114,7 @@ export default function OnboardingConfirmationModal({
             disabled={!isValid}
             className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 active:scale-95 active:rotate-2 cursor-pointer ${
               isValid
-                ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500'
+                ? 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >

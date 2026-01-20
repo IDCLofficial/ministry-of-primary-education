@@ -10,7 +10,7 @@ export default function CostSummarySkeleton() {
       
       <div className="space-y-4">
         {/* Points Information Card Skeleton */}
-        <div className="bg-blue-50 rounded-lg p-4">
+        <div className="bg-green-50 rounded-lg p-4">
           {/* Available Points Row */}
           <div className="flex justify-between items-center mb-2">
             <div className="w-28 h-4 bg-gray-200 rounded animate-pulse"></div>

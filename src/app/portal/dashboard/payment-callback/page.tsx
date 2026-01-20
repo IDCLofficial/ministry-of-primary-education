@@ -114,7 +114,7 @@ export default function PaymentCallbackPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-6"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mx-auto mb-6"></div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Processing Payment</h2>
           <p className="text-gray-600 mb-4">Please wait while we verify your payment...</p>
           <div className="bg-gray-50 rounded-lg p-4">
@@ -140,8 +140,8 @@ export default function PaymentCallbackPage() {
           <p className="text-gray-600 mb-4">Your student payment has been processed successfully.</p>
 
           {countdown !== null && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
-              <p className="text-sm text-blue-800">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
+              <p className="text-sm text-green-800">
                 Redirecting to dashboard in <span className="font-semibold">{countdown}</span> seconds...
               </p>
             </div>
@@ -179,7 +179,7 @@ export default function PaymentCallbackPage() {
 
           <button
             onClick={handleContinue}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200"
+            className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors duration-200"
           >
             Continue to Dashboard
           </button>
@@ -204,8 +204,8 @@ export default function PaymentCallbackPage() {
         </p>
 
         {countdown !== null && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-            <p className="text-sm text-blue-800">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-green-800">
               Redirecting to dashboard in <span className="font-semibold">{countdown}</span> seconds...
             </p>
           </div>
@@ -220,7 +220,7 @@ export default function PaymentCallbackPage() {
         <div className="space-y-3">
           <button
             onClick={handleRetry}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200"
+            className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors duration-200"
           >
             Try Again
           </button>

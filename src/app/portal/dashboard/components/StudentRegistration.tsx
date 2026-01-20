@@ -8,6 +8,7 @@ import StudentOnboardingModal from './StudentOnboardingModal'
 import StudentRegistrationSkeleton from './StudentRegistrationSkeleton'
 import { useAuth } from '../../providers/AuthProvider'
 import { useGetProfileQuery } from '../../store/api/authApi'
+import toast from 'react-hot-toast'
 
 interface Student {
   id: string
@@ -150,6 +151,52 @@ export default function StudentRegistration({
     setShowOnboardingModal(true)
   }
 
+  const handleDownloadCertificate = async (student: Student) => {
+    if (student.onboardingStatus !== 'onboarded') {
+      toast.error('Certificate can only be downloaded for onboarded students')
+      return
+    }
+
+    try {
+      toast.loading('Generating certificate...', { id: 'cert-gen' })
+
+      // Load the certificate generation script
+      const script = document.createElement('script')
+      script.src = '/generate-certificate-pdf.js'
+      script.type = 'module'
+      
+      await new Promise((resolve, reject) => {
+        script.onload = resolve
+        script.onerror = reject
+        document.head.appendChild(script)
+      })
+
+      // Wait a bit for the script to initialize
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // @ts-expect-error - Dynamic import from public folder
+      if (typeof window.generateCertificatePDF !== 'function') {
+        throw new Error('Certificate generation function not loaded')
+      }
+
+      // @ts-expect-error - Function loaded dynamically
+      await window.generateCertificatePDF({
+        schoolName: school?.schoolName || 'School',
+        studentsApproved: 1,
+        examSession: `${student.examYear}`,
+        approvalId: `WAEC-${school?.id?.slice(-6)?.toUpperCase()}-${student.studentId}`
+      })
+
+      toast.success('Certificate downloaded successfully!', { id: 'cert-gen' })
+      
+      // Clean up
+      document.head.removeChild(script)
+    } catch (error) {
+      console.error('Error generating certificate:', error)
+      toast.error('Failed to generate certificate. Please try again.', { id: 'cert-gen' })
+    }
+  }
+
   const getSortIcon = (field: SortableField) => {
     if (sortState.field !== field) {
       // Default state - both arrows gray
@@ -164,7 +211,7 @@ export default function StudentRegistration({
       // Ascending - up arrow blue, down arrow gray
       return (
         <svg className="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} className="text-blue-600" d="M8 9l4-4 4 4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} className="text-green-600" d="M8 9l4-4 4 4" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} className="text-gray-400" d="M8 15l4 4 4-4" />
         </svg>
       )
@@ -175,7 +222,7 @@ export default function StudentRegistration({
       return (
         <svg className="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} className="text-gray-400" d="M8 9l4-4 4 4" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} className="text-blue-600" d="M8 15l4 4 4-4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} className="text-green-600" d="M8 15l4 4 4-4" />
         </svg>
       )
     }
@@ -219,7 +266,7 @@ export default function StudentRegistration({
               placeholder="Search by Name or ID..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -321,12 +368,26 @@ export default function StudentRegistration({
                   </span>
                 </td>
                 {school?.status === "approved" && <td className="py-3 px-4">
-                  <button 
-                    onClick={() => handleUpdateStudent(student)}
-                    className="text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium transition-colors duration-200"
-                  >
-                    Update
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => handleUpdateStudent(student)}
+                      className="text-green-600 cursor-pointer hover:text-green-800 text-sm font-medium transition-colors duration-200"
+                    >
+                      Update
+                    </button>
+                    {student.onboardingStatus === 'onboarded' && (
+                      <button
+                        onClick={() => handleDownloadCertificate(student)}
+                        className="inline-flex items-center gap-1 text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium transition-colors duration-200"
+                        title="Download Certificate"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Certificate
+                      </button>
+                    )}
+                  </div>
                 </td>}
               </tr>
             ))}
@@ -441,12 +502,25 @@ export default function StudentRegistration({
                 
                 {/* Update Action */}
                 {school?.status !== "completed" && <div className="mt-3 pt-3 border-t border-gray-100">
-                  <button 
-                    onClick={() => handleUpdateStudent(student)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200"
-                  >
-                    Update Student
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => handleUpdateStudent(student)}
+                      className="text-green-600 hover:text-green-800 text-sm font-medium transition-colors duration-200"
+                    >
+                      Update Student
+                    </button>
+                    {student.onboardingStatus === 'onboarded' && (
+                      <button
+                        onClick={() => handleDownloadCertificate(student)}
+                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download Certificate
+                      </button>
+                    )}
+                  </div>
                 </div>}
               </div>
             </div>

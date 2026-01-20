@@ -107,7 +107,7 @@ export default function CustomDropdown({
       <button
         type="button"
         onClick={handleDropdownToggle}
-        className="w-full bg-gray-100 border cursor-pointer border-gray-300 rounded-lg px-3 py-2 text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:bg-gray-50 transition-colors duration-200"
+        className="w-full bg-gray-100 border cursor-pointer border-gray-300 rounded-lg px-3 py-2 text-sm text-left focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent hover:bg-gray-50 transition-colors duration-200"
       >
         <div className="flex items-center justify-between capitalize">
           <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
@@ -138,7 +138,7 @@ export default function CustomDropdown({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
@@ -157,7 +157,7 @@ export default function CustomDropdown({
               onClick={() => handleOptionClick(option.value)}
               className={`w-full px-3 py-2 text-sm text-left cursor-pointer hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors duration-150 ${
                 option.value === value
-                  ? 'bg-blue-50 text-blue-700 font-medium'
+                  ? 'bg-green-50 text-green-700 font-medium'
                   : 'text-gray-900'
               } ${
                 option === filteredOptions[filteredOptions.length - 1] ? '' : 'border-b border-gray-100'
@@ -166,7 +166,7 @@ export default function CustomDropdown({
               <div className="flex items-center justify-between">
                 <span className='capitalize'>{(option.label).toLowerCase()}</span>
                 {option.value === value && (
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 )}

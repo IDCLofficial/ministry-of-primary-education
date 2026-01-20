@@ -32,10 +32,10 @@ export default function CostSummary({
         {school && (
           <div className="space-y-4">
             {/* Available Points */}
-            <div className="bg-blue-50 rounded-lg p-4">
+            <div className="bg-green-50 rounded-lg p-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-blue-800">Available Points</span>
-                <span className="text-2xl font-bold text-blue-900">{school.availablePoints}</span>
+                <span className="text-sm font-medium text-green-800">Available Points</span>
+                <span className="text-2xl font-bold text-green-900">{school.availablePoints}</span>
               </div>
               <div className="flex justify-between items-center opacity-75">
                 <span className="text-sm font-medium text-gray-600">Used Points</span>
@@ -87,7 +87,7 @@ export default function CostSummary({
             onPurchaseMorePoints()
           }}
           disabled={!canPurchaseMorePoints || isAdminProfileFetching}
-          className="w-full inline-flex active:scale-95 disabled:opacity-50 active:rotate-1 cursor-pointer items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+          className="w-full inline-flex active:scale-95 disabled:opacity-50 active:rotate-1 cursor-pointer items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />

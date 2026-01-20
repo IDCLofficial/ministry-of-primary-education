@@ -41,7 +41,7 @@ export default async function Page({ searchParams }: PageProps) {
                 <SchoolRegistrationForm />
             </div>
             <div className="w-full text-center px-4 text-sm text-black/80 relative z-20">
-                Already registered your school? <Link href="/portal" className="text-blue-600 hover:text-blue-800 transition-colors duration-200 underline underline-offset-2">Login here</Link>
+                Already registered your school? <Link href="/portal" className="text-green-600 hover:text-green-800 transition-colors duration-200 underline underline-offset-2">Login here</Link>
             </div>
         </main>
     )

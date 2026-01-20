@@ -32,7 +32,7 @@ export default function PortalPage() {
                     <LoginForm />
                 </div>
                 {<div className="w-full text-center px-4 text-sm text-black/80">
-                    Haven&apos;t registered your school? <Link href="/portal/application" className="text-blue-600 hover:text-blue-800 transition-colors duration-200 underline underline-offset-2">Apply here</Link>
+                    Haven&apos;t registered your school? <Link href="/portal/application" className="text-green-600 hover:text-green-800 transition-colors duration-200 underline underline-offset-2">Apply here</Link>
                 </div>}
             </main>
         </div>

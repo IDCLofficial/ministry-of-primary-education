@@ -129,7 +129,7 @@ export default function FilterBar({ onFilterChange, isMobile = false }: FilterBa
             disabled={!hasPendingChanges}
             className={`w-full py-3 text-base font-medium rounded-lg transition-colors duration-200 ${
               hasPendingChanges
-                ? 'text-white bg-blue-600 hover:bg-blue-700'
+                ? 'text-white bg-green-600 hover:bg-green-700'
                 : 'text-gray-400 bg-gray-200 cursor-not-allowed'
             }`}
           >
@@ -221,7 +221,7 @@ export default function FilterBar({ onFilterChange, isMobile = false }: FilterBa
             disabled={!hasPendingChanges}
             className={`px-4 py-2 text-sm cursor-pointer font-medium rounded-lg transition-colors duration-200 ${
               hasPendingChanges
-                ? 'text-white bg-blue-600 hover:bg-blue-700'
+                ? 'text-white bg-green-600 hover:bg-green-700'
                 : 'text-gray-400 bg-gray-200 cursor-not-allowed'
             }`}
           >

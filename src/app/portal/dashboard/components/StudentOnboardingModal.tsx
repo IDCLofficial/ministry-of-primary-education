@@ -246,7 +246,7 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
                 type="text"
                 value={formData.studentName}
                 onChange={(e) => handleInputChange('studentName', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${
                   errors.studentName ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter student full name"
@@ -314,7 +314,7 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
                 min="2020"
                 max="2030"
                 value={formData.examYear}
-                className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${
                   errors.examYear ? 'border-red-500' : 'border-gray-300'
                 }`}
                 disabled={true}
@@ -327,11 +327,11 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
 
           {/* Points Info - Only show for new student onboarding */}
           {school && !isUpdateMode && (
-            <div className="mt-6 p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="mt-6 p-3 bg-green-50 rounded-lg">
+              <p className="text-sm text-green-800">
                 <span className="font-medium">Available Points:</span> {school.availablePoints}
               </p>
-              <p className="text-xs text-blue-600 mt-1">
+              <p className="text-xs text-green-600 mt-1">
                 1 point will be deducted for onboarding this student
               </p>
             </div>
@@ -352,15 +352,15 @@ export default function StudentOnboardingModal({ isOpen, onClose, onStudentAdded
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2 active:scale-95 active:rotate-2 cursor-pointer border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50"
+              className="flex-1 px-4 py-2 active:scale-95 active:rotate-2 cursor-pointer border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               className={(
-                `flex-1 text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-medium text-sm flex items-center justify-center active:scale-95 active:rotate-2` +
-                (!canProceed ? ' bg-gray-400 opacity-50 cursor-not-allowed' : ' bg-blue-600 hover:bg-blue-700 cursor-pointer')
+                `flex-1 text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 font-medium text-sm flex items-center justify-center active:scale-95 active:rotate-2` +
+                (!canProceed ? ' bg-gray-400 opacity-50 cursor-not-allowed' : ' bg-green-600 hover:bg-green-700 cursor-pointer')
               )}
               disabled={!canProceed}
             >

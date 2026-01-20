@@ -126,7 +126,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, /** nu
               </p>
               <button
                 onClick={onClose}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
               >
                 Close
               </button>
@@ -155,7 +155,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, /** nu
                         onClick={() => handleSuggestionClick(count)}
                         className={`px-3 active:scale-95 active:rotate-1 cursor-pointer py-2 text-sm font-medium rounded-md border transition-all duration-200 ${
                           selectedStudentCount === count && !customInput
-                            ? 'bg-blue-600 text-white border-blue-600'
+                            ? 'bg-green-600 text-white border-green-600'
                             : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                         }`}
                       >
@@ -178,13 +178,13 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, /** nu
                     value={customInput}
                     onChange={(e) => handleCustomInputChange(e.target.value)}
                     placeholder={`Enter number of points (max: ${maxPointsAllowed})`}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div> */}
 
                 {/* Selected Count Display */}
-                {/* <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">
+                {/* <div className="mt-3 p-3 bg-green-50 rounded-lg">
+                  <p className="text-sm text-green-800">
                     <span className="font-medium">Selected:</span> {selectedStudentCount.toLocaleString()} points
                   </p>
                 </div> */}
@@ -213,7 +213,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, /** nu
                   <div className="border-t border-gray-200 pt-2 mt-2">
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-900">Total Amount</span>
-                      <span className="font-bold text-lg text-blue-600">₦{totalAmount.toLocaleString()}</span>
+                      <span className="font-bold text-lg text-green-600">₦{totalAmount.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -225,7 +225,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, /** nu
                 <div className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
-                      <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                       </svg>
                     </div>
@@ -242,14 +242,14 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, /** nu
                 <button
                   onClick={onClose}
                   disabled={isProcessing}
-                  className="flex-1 px-4 py-2 active:scale-95 active:rotate-1 cursor-pointer border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 active:scale-95 active:rotate-1 cursor-pointer border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handlePayment}
                   disabled={isProcessing}
-                  className="flex-1 px-4 py-2 active:scale-95 active:rotate-1 cursor-pointer border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="flex-1 px-4 py-2 active:scale-95 active:rotate-1 cursor-pointer border border-transparent rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 >
                   {isProcessing ? (
                     <>

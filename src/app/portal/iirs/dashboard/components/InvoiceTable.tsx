@@ -197,7 +197,7 @@ export default function InvoiceTable() {
               placeholder="Search transactions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
           {/* <button className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
@@ -254,7 +254,7 @@ export default function InvoiceTable() {
                     {searchTerm && (
                       <button
                         onClick={() => setSearchTerm('')}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        className="text-green-600 hover:text-green-700 text-sm font-medium"
                       >
                         Clear search
                       </button>
@@ -273,7 +273,7 @@ export default function InvoiceTable() {
           <div className="text-sm text-gray-600">
             Showing {startIndex + 1} to {Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} results
             {searchTerm && (
-              <span className="text-blue-600 ml-1">
+              <span className="text-green-600 ml-1">
                 (filtered from {transactions.length} total)
               </span>
             )}
@@ -309,7 +309,7 @@ export default function InvoiceTable() {
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum as number)}
                     className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${currentPage === pageNum
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-green-600 text-white'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                   >

@@ -58,8 +58,8 @@ export default function InvoiceDetails({ transaction, onClose }: InvoiceDetailsP
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b sticky top-0 z-10 bg-white border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FaReceipt className="w-6 h-6 text-blue-600" />
+            <div className="p-2 bg-green-100 rounded-lg">
+              <FaReceipt className="w-6 h-6 text-green-600" />
             </div>
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Transaction Details</h2>
@@ -77,9 +77,9 @@ export default function InvoiceDetails({ transaction, onClose }: InvoiceDetailsP
         {/* Content */}
         <div className="p-6 space-y-6">
           {/* School Information */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+          <div className="bg-gradient-to-r from-green-50 to-indigo-50 rounded-xl p-4 border border-green-100">
             <div className="flex items-center space-x-3 mb-3">
-              <IoSchoolOutline className="w-5 h-5 text-blue-600" />
+              <IoSchoolOutline className="w-5 h-5 text-green-600" />
               <h3 className="text-lg font-semibold text-gray-900">School Information</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -90,7 +90,7 @@ export default function InvoiceDetails({ transaction, onClose }: InvoiceDetailsP
               <div>
                 <p className="text-sm text-gray-600 mb-1">Number of Students</p>
                 <div className="flex items-center space-x-2">
-                  <FaUsers className="w-4 h-4 text-blue-600" />
+                  <FaUsers className="w-4 h-4 text-green-600" />
                   <p className="font-medium text-gray-900">{transaction.numberOfStudents} students</p>
                 </div>
               </div>
@@ -183,7 +183,7 @@ export default function InvoiceDetails({ transaction, onClose }: InvoiceDetailsP
             </button>
             <button 
               onClick={handlePrint}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
             >
               <IoPrintOutline className="w-4 h-4" />
               Print Receipt

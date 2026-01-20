@@ -180,8 +180,8 @@ export default function ProfileModal({ isOpen, onClose, userProfile }: ProfileMo
                             {/* Email */}
                             <div className="group p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors border border-gray-200">
                                 <div className="flex items-start gap-3">
-                                    <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                                        <IoMailOutline className="text-blue-600" size={20} />
+                                    <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
+                                        <IoMailOutline className="text-green-600" size={20} />
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Email Address</p>

@@ -62,13 +62,13 @@ export default function RegistrationPendingView() {
                     Your registration is under review. You will be notified by email once approved.
                 </p>
 
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                        Redirecting back to application page in <span className="font-bold text-blue-600">{countdown}</span> second{countdown !== 1 ? 's' : ''}...
+                <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                    <p className="text-sm text-green-800">
+                        Redirecting back to application page in <span className="font-bold text-green-600">{countdown}</span> second{countdown !== 1 ? 's' : ''}...
                     </p>
                     <button
                         onClick={() => router.push('/portal/application')}
-                        className="mt-2 text-blue-600 hover:text-blue-800 underline text-sm transition-colors duration-200"
+                        className="mt-2 text-green-600 hover:text-green-800 underline text-sm transition-colors duration-200"
                     >
                         Go back now
                     </button>
