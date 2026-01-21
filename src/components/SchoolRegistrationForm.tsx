@@ -7,6 +7,7 @@ import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
 import { useGetSchoolNamesQuery, useSubmitSchoolApplicationMutation } from '@/app/portal/store/api/authApi'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
+import { updateSearchParam } from '@/app/bece-portal/dashboard/upload-ca/utils'
 
 interface SchoolRegistrationData {
   schoolId: string
@@ -29,13 +30,13 @@ interface FormErrors {
 export default function SchoolRegistrationForm() {
   // Fetch school names from API
   const { data: schoolNames, isLoading: isLoadingSchoolNames } = useGetSchoolNamesQuery()
-  
+
   // Submit school application mutation
   const [submitApplication, { isLoading: isSubmitting }] = useSubmitSchoolApplicationMutation()
-  
+
   // Router for navigation
   const router = useRouter()
-  
+
   const [formData, setFormData] = useState<SchoolRegistrationData>({
     schoolId: '',
     schoolAddress: '',
@@ -55,11 +56,11 @@ export default function SchoolRegistrationForm() {
   const canProceed = useMemo(() => {
     const hasErrors = Object.values(errors).some(error => error !== undefined && error !== '')
     const hasEmptyFields = Object.values(formData).some(value => value.trim() === '')
-    
+
     // Check if selected school is eligible (only "not applied" schools can proceed)
     const selectedSchool = schoolNames?.find(school => school._id === formData.schoolId)
     const isSchoolEligible = selectedSchool?.status === 'not applied'
-    
+
     return !hasErrors && !hasEmptyFields && isSchoolEligible && !isSubmitting
   }, [errors, formData, schoolNames, isSubmitting])
 
@@ -74,28 +75,28 @@ export default function SchoolRegistrationForm() {
   // Validation functions
   const validateField = (field: keyof SchoolRegistrationData, value: string): string | undefined => {
     const sanitizedValue = value.trim()
-    
+
     switch (field) {
       case 'schoolId':
         if (!sanitizedValue) return 'School selection is required'
         break
-        
+
       case 'schoolAddress':
         if (!sanitizedValue) return 'School location is required'
         break
-        
+
       case 'principalName':
         if (!sanitizedValue) return 'Principal name is required'
         if (sanitizedValue.length < 2) return 'Principal name must be at least 2 characters'
         if (!/^[a-zA-Z\s.'-]+$/.test(sanitizedValue)) return 'Please enter a valid name'
         break
-        
+
       case 'contactEmail':
         if (!sanitizedValue) return 'Contact email is required'
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!emailRegex.test(sanitizedValue)) return 'Please enter a valid email address'
         break
-        
+
       case 'contactPhone':
         if (!sanitizedValue) return 'Contact phone is required'
         const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,15}$/
@@ -103,7 +104,7 @@ export default function SchoolRegistrationForm() {
           return 'Please enter a valid phone number'
         }
         break
-        
+
       case 'numberOfStudents':
         if (!sanitizedValue) return 'Number of students is required'
         const num = parseInt(sanitizedValue)
@@ -111,7 +112,7 @@ export default function SchoolRegistrationForm() {
         if (num > 10000) return 'Number seems too large, please verify'
         break
     }
-    
+
     return undefined
   }
 
@@ -123,15 +124,15 @@ export default function SchoolRegistrationForm() {
       if (findExistingSchool && findExistingSchool.status === 'approved') {
         return setErrors(prev => ({ ...prev, schoolId: 'This school has already been approved and cannot apply again' }))
       }
-      
+
       if (findExistingSchool && findExistingSchool.status === 'applied') {
         return setErrors(prev => ({ ...prev, schoolId: 'This school has already applied and cannot apply again' }))
       }
-      
+
       if (findExistingSchool && findExistingSchool.status === 'pending') {
         return setErrors(prev => ({ ...prev, schoolId: 'This school already has a pending application. Please wait for the current application to be processed' }))
       }
-      
+
       if (findExistingSchool && findExistingSchool.status === 'rejected') {
         return setErrors(prev => ({ ...prev, schoolId: 'This school\'s previous application was rejected. Please contact our support team for assistance' }))
       }
@@ -194,24 +195,24 @@ export default function SchoolRegistrationForm() {
       const timer = setTimeout(() => {
         setServerError('')
       }, 10000)
-      
+
       return () => clearTimeout(timer)
     }
   }, [serverError])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Check if form can proceed
     if (!canProceed) {
       toast.error('Please fix all errors before submitting')
       return
     }
-    
+
     // Validate all fields before submission
     const newErrors: FormErrors = {}
     let hasErrors = false
-    
+
     Object.keys(formData).forEach((key) => {
       const field = key as keyof SchoolRegistrationData
       const error = validateField(field, formData[field])
@@ -220,9 +221,9 @@ export default function SchoolRegistrationForm() {
         hasErrors = true
       }
     })
-    
+
     setErrors(newErrors)
-    
+
     if (!hasErrors) {
       // Sanitize all data before submission
       const sanitizedData = Object.keys(formData).reduce((acc, key) => {
@@ -230,7 +231,7 @@ export default function SchoolRegistrationForm() {
         acc[field] = formData[field].trim()
         return acc
       }, {} as SchoolRegistrationData)
-      
+
       try {
         // Transform data to match API schema
         const applicationData = {
@@ -241,32 +242,39 @@ export default function SchoolRegistrationForm() {
           phone: parseInt(sanitizedData.contactPhone.replace(/\D/g, '')), // Remove non-digits
           numberOfStudents: parseInt(sanitizedData.numberOfStudents)
         }
-        
-        console.log('Submitting application:', applicationData)
-        
+
         const result = await submitApplication(applicationData).unwrap()
-        
+
         // Success notification with server message
         const successMessage = result?.message || 'Application submitted successfully!'
         toast.success(successMessage)
-        console.log('Application submitted successfully:', result)
-        
+
+        console.log('Application submitted successfully:');
+        setFormData({
+          schoolId: '',
+          schoolAddress: '',
+          principalName: '',
+          contactEmail: '',
+          contactPhone: '',
+          numberOfStudents: ''
+        })
+
+        console.log('Form data reset successfully');
         // Redirect to success page with URL parameter
         router.push('/portal/application?submitted=true')
-        
       } catch (error: unknown) {
         console.error('Application submission failed:', error)
-        
+
         // Handle different error types with server messages
-        const apiError = error as { 
-          status?: number; 
-          data?: { 
-            message?: string; 
-            error?: string; 
-            statusCode?: number 
-          } 
+        const apiError = error as {
+          status?: number;
+          data?: {
+            message?: string;
+            error?: string;
+            statusCode?: number
+          }
         }
-        
+
         if (apiError?.status === 404) {
           const message = apiError.data?.message || 'School code not found in our system'
           setServerError(message)
@@ -301,7 +309,7 @@ export default function SchoolRegistrationForm() {
       <h2 className="sm:text-2xl text-lg font-semibold text-gray-800 text-center mb-6">
         School Registration Request
       </h2>
-      
+
       <form onSubmit={handleSubmit} className="gap-y-3">
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -332,7 +340,7 @@ export default function SchoolRegistrationForm() {
             <p className="mt-1 text-sm text-red-600">{errors.schoolId}</p>
           )}
         </div>
-        
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             School <abbr title="Local Government Area">LGA</abbr>. <span className="text-red-500">*</span>
@@ -380,7 +388,7 @@ export default function SchoolRegistrationForm() {
             <p className="mt-1 text-sm text-red-600">{errors.schoolAddress}</p>
           )}
         </div>
-        
+
         <FormInput
           label="Principal's Name"
           placeholder="Enter principal's name"
@@ -390,7 +398,7 @@ export default function SchoolRegistrationForm() {
           error={errors.principalName}
           required
         />
-        
+
         <FormInput
           label="Contact Email"
           placeholder="Enter contact email"
@@ -401,7 +409,7 @@ export default function SchoolRegistrationForm() {
           error={errors.contactEmail}
           required
         />
-        
+
         <FormInput
           label="Contact Phone"
           placeholder="Enter contact phone"
@@ -412,7 +420,7 @@ export default function SchoolRegistrationForm() {
           error={errors.contactPhone}
           required
         />
-        
+
         <FormInput
           label="Number of Students"
           placeholder="Enter number of students"
@@ -431,7 +439,7 @@ export default function SchoolRegistrationForm() {
             </p>
           </div>
         )}
-        
+
         <button
           type="submit"
           className={(

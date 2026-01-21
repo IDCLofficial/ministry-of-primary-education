@@ -6,9 +6,10 @@ import CustomCheckbox from './CustomCheckbox'
 import CustomDropdown from './CustomDropdown'
 import StudentOnboardingModal from './StudentOnboardingModal'
 import StudentRegistrationSkeleton from './StudentRegistrationSkeleton'
+import CertificatePreviewModal from './CertificatePreviewModal'
 import { useAuth } from '../../providers/AuthProvider'
 import { useGetProfileQuery } from '../../store/api/authApi'
-import toast from 'react-hot-toast'
+import { FaFileAlt } from 'react-icons/fa'
 
 interface Student {
   id: string
@@ -76,6 +77,7 @@ export default function StudentRegistration({
   const { isFetching: isAdminProfileFetching } = useGetProfileQuery()
   const [showOnboardingModal, setShowOnboardingModal] = useState(false)
   const [updateStudent, setUpdateStudent] = useState<Student | null>(null)
+  const [showCertificateModal, setShowCertificateModal] = useState(false)
   
   // Check if selection should be disabled
   const isSelectionDisabled = process.env.NEXT_PUBLIC_ENV === 'temp'
@@ -151,50 +153,8 @@ export default function StudentRegistration({
     setShowOnboardingModal(true)
   }
 
-  const handleDownloadCertificate = async (student: Student) => {
-    if (student.onboardingStatus !== 'onboarded') {
-      toast.error('Certificate can only be downloaded for onboarded students')
-      return
-    }
-
-    try {
-      toast.loading('Generating certificate...', { id: 'cert-gen' })
-
-      // Load the certificate generation script
-      const script = document.createElement('script')
-      script.src = '/generate-certificate-pdf.js'
-      script.type = 'module'
-      
-      await new Promise((resolve, reject) => {
-        script.onload = resolve
-        script.onerror = reject
-        document.head.appendChild(script)
-      })
-
-      // Wait a bit for the script to initialize
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      // @ts-expect-error - Dynamic import from public folder
-      if (typeof window.generateCertificatePDF !== 'function') {
-        throw new Error('Certificate generation function not loaded')
-      }
-
-      // @ts-expect-error - Function loaded dynamically
-      await window.generateCertificatePDF({
-        schoolName: school?.schoolName || 'School',
-        studentsApproved: 1,
-        examSession: `${student.examYear}`,
-        approvalId: `WAEC-${school?.id?.slice(-6)?.toUpperCase()}-${student.studentId}`
-      })
-
-      toast.success('Certificate downloaded successfully!', { id: 'cert-gen' })
-      
-      // Clean up
-      document.head.removeChild(script)
-    } catch (error) {
-      console.error('Error generating certificate:', error)
-      toast.error('Failed to generate certificate. Please try again.', { id: 'cert-gen' })
-    }
+  const handlePreviewCertificate = () => {
+    setShowCertificateModal(true)
   }
 
   const getSortIcon = (field: SortableField) => {
@@ -256,6 +216,16 @@ export default function StudentRegistration({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Onboard Student
+            </button>
+          )}
+          {school && school.status === "onboarded" &&  (
+            <button
+              onClick={handlePreviewCertificate}
+              disabled={isAdminProfileFetching}
+              className="inline-flex cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 active:rotate-2 items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
+            >
+              <FaFileAlt className="w-4 h-4 mr-2" />
+              Preview Certificate
             </button>
           )}
           
@@ -368,26 +338,12 @@ export default function StudentRegistration({
                   </span>
                 </td>
                 {school?.status === "approved" && <td className="py-3 px-4">
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={() => handleUpdateStudent(student)}
-                      className="text-green-600 cursor-pointer hover:text-green-800 text-sm font-medium transition-colors duration-200"
-                    >
-                      Update
-                    </button>
-                    {student.onboardingStatus === 'onboarded' && (
-                      <button
-                        onClick={() => handleDownloadCertificate(student)}
-                        className="inline-flex items-center gap-1 text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium transition-colors duration-200"
-                        title="Download Certificate"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Certificate
-                      </button>
-                    )}
-                  </div>
+                  <button 
+                    onClick={() => handleUpdateStudent(student)}
+                    className="text-green-600 cursor-pointer hover:text-green-800 text-sm font-medium transition-colors duration-200"
+                  >
+                    Update
+                  </button>
                 </td>}
               </tr>
             ))}
@@ -502,25 +458,12 @@ export default function StudentRegistration({
                 
                 {/* Update Action */}
                 {school?.status !== "completed" && <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="flex items-center gap-4">
-                    <button 
-                      onClick={() => handleUpdateStudent(student)}
-                      className="text-green-600 hover:text-green-800 text-sm font-medium transition-colors duration-200"
-                    >
-                      Update Student
-                    </button>
-                    {student.onboardingStatus === 'onboarded' && (
-                      <button
-                        onClick={() => handleDownloadCertificate(student)}
-                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Download Certificate
-                      </button>
-                    )}
-                  </div>
+                  <button 
+                    onClick={() => handleUpdateStudent(student)}
+                    className="text-green-600 hover:text-green-800 text-sm font-medium transition-colors duration-200"
+                  >
+                    Update Student
+                  </button>
                 </div>}
               </div>
             </div>
@@ -548,6 +491,19 @@ export default function StudentRegistration({
         onStudentAdded={handleStudentAdded}
         studentToUpdate={updateStudent}
       />
+
+      {/* Certificate Preview Modal */}
+      {school && (
+        <CertificatePreviewModal
+          isOpen={showCertificateModal}
+          onClose={() => setShowCertificateModal(false)}
+          schoolName={school.schoolName}
+          studentsApproved={school.numberOfStudents || 0}
+          examSession={new Date().getFullYear().toString()}
+          approvalId={`WAEC-IMO-${school.applicationId?.slice(-6)?.toUpperCase() || 'XXXXX'}`}
+          issueDate={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+        />
+      )}
     </div>
   )
 }

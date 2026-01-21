@@ -267,8 +267,8 @@ export default function DashboardPage() {
         return (
             <div className="flex-1 mt-4 sm:mt-6 flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6">
                 <div className="xl:col-span-4 text-center py-12">
-                    <h2 className="text-xl font-semibold text-gray-600 mb-4">School Payment Portal</h2>
-                    <p className="text-gray-500 mb-8">Click the button below to proceed with school payment</p>
+                    <h2 className="text-xl font-semibold text-gray-600 mb-1">School Payment Portal</h2>
+                    <p className="text-gray-500 mb-4">Click the button below to proceed with school payment</p>
                     <button
                         onClick={() => setShowPaymentModal(true)}
                         className="inline-flex active:scale-95 active:rotate-1 cursor-pointer items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
