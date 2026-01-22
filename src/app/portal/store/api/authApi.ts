@@ -155,7 +155,7 @@ interface StudentUpdateResponse {
 
 // Application Status Update interfaces
 interface ApplicationStatusUpdateRequest {
-  status: 'onboarded'
+  status: 'completed'
   reviewNotes?: string
 }
 

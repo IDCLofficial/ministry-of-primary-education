@@ -41,7 +41,7 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
       await updateApplicationStatus({
         applicationId: school.applicationId,
         data: {
-          status: 'complete',
+          status: 'completed',
           reviewNotes: `Onboarding completed for ${totalStudents} students`
         }
       }).unwrap()
