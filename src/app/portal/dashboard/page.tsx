@@ -254,9 +254,9 @@ export default function DashboardPage() {
                                     totalStudents={studentsData?.totalItems || 0}
                                     handleRefresh={handleRefresh}
                                 />
-                                <CostSummary
+                                {(school.numberOfStudents - school.totalPoints) > 0 &&<CostSummary
                                     onPurchaseMorePoints={() => setShowPaymentModal(true)}
-                                />
+                                />}
                             </div>
                         </div>
                     )}
@@ -294,7 +294,7 @@ export default function DashboardPage() {
                 isOpen={showPaymentModal}
                 onClose={() => setShowPaymentModal(false)}
                 onPaymentSuccess={handlePaymentSuccess}
-                numberOfStudents={studentsData?.data?.length || 10} // Default to 10 if no students data
+                numberOfStudents={10} // Default to 10 if no students data
             />
 
             {/* Payment Status Modal */}

@@ -203,7 +203,7 @@ export default function StudentRegistration({
         
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           {/* Onboard Student Button */}
-          {school && school.status !== "completed" && school.availablePoints > 0 && (
+          {school && school.status === "approved" && school.availablePoints > 0 && (
             <button
               onClick={() => {
                 if (isAdminProfileFetching) return
@@ -218,7 +218,7 @@ export default function StudentRegistration({
               Onboard Student
             </button>
           )}
-          {school && school.status === "onboarded" &&  (
+          {school && school.status === "completed" &&  (
             <button
               onClick={handlePreviewCertificate}
               disabled={isAdminProfileFetching}

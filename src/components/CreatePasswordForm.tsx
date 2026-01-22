@@ -26,7 +26,7 @@ export default function CreatePasswordForm({ school }: CreatePasswordFormProps) 
     confirmPassword: ''
   })
 
-  const [ createPasswordMutation, { isLoading: isCreatingPassword } ] = useCreatePasswordMutation();
+  const [ createPasswordMutation, { isLoading: isCreatingPassword, isSuccess } ] = useCreatePasswordMutation();
   const { refetch: refetchProfile } = useGetProfileQuery()
  
   const [errors, setErrors] = useState<PasswordErrors>({})
@@ -158,7 +158,6 @@ export default function CreatePasswordForm({ school }: CreatePasswordFormProps) 
             required
           />
         </div>
-        
         <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg border border-black/5">
           <p className="font-medium mb-2">Password requirements:</p>
           <ul className="space-y-1">
@@ -166,16 +165,16 @@ export default function CreatePasswordForm({ school }: CreatePasswordFormProps) 
             <li>• One uppercase letter (A-Z)</li>
             <li>• One lowercase letter (a-z)</li>
             <li>• One number (0-9)</li>
-            <li>• One special character (@$!%*?&) {JSON.stringify({errors, canProceed})}</li>
+            <li>• One special character (@$!%*?&)</li>
           </ul>
         </div>
         
         <button
           type="submit"
-          disabled={isCreatingPassword || !canProceed}
+          disabled={isCreatingPassword || !canProceed || isSuccess}
           className="w-full bg-blue-600 cursor-pointer active:scale-95 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isCreatingPassword ? 'Creating Password...' : 'Create Password'}
+          {isCreatingPassword ? 'Creating Password...' : isSuccess ? 'Password created successfully' : 'Create Password'}
         </button>
       </form>
     </div>
