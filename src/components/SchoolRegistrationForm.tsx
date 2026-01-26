@@ -7,7 +7,6 @@ import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
 import { useGetSchoolNamesQuery, useSubmitSchoolApplicationMutation } from '@/app/portal/store/api/authApi'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
-import { updateSearchParam } from '@/app/bece-portal/dashboard/upload-ca/utils'
 
 interface SchoolRegistrationData {
   schoolId: string
@@ -347,21 +346,21 @@ export default function SchoolRegistrationForm() {
           </label>
           <CustomDropdown
             options={[
-              "Aboh-Mbaise",
-              "Ahiazu-Mbaise",
-              "Ehime-Mbano",
+              "Aboh Mbaise",
+              "Ahiazu Mbaise",
+              "Ehime Mbano",
               "Ezinihitte",
               "Ideato North",
               "Ideato South",
               "Ihitte/Uboma",
               "Ikeduru",
               "Isiala Mbano",
-              "Isu",
               "Mbaitoli",
-              "Ngor-Okpala",
+              "Isu",
+              "Ngor Okpala",
               "Njaba",
-              "Nwangele",
               "Nkwerre",
+              "Nwangele",
               "Obowo",
               "Oguta",
               "Ohaji/Egbema",
@@ -370,8 +369,9 @@ export default function SchoolRegistrationForm() {
               "Orsu",
               "Oru East",
               "Oru West",
-              "Owerri-Municipal",
+              "Owerri Municipal",
               "Owerri North",
+              "Unuimo",
               "Owerri West"
             ].map(location => ({
               value: location,

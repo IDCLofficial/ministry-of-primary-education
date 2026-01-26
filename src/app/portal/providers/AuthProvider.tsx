@@ -119,6 +119,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       localStorage.setItem('access_token', newToken)
       localStorage.setItem('school', JSON.stringify(newSchool))
+      refetchProfile();
       setToken(newToken)
       setSchool(newSchool)
       setIsAuthenticated(true)
