@@ -1,6 +1,7 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 
 export const endpoints = {
+    REGISTER: '/schools/register',
     GET_SCHOOL_NAMES: '/schools/names',
     SUBMIT_SCHOOL_APPLICATION: '/applications',
     LOGIN: '/auth/login',

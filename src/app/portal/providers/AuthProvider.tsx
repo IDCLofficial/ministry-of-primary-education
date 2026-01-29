@@ -4,18 +4,28 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { usePathname, useRouter } from 'next/navigation'
 import { useGetProfileQuery } from '../store/api/authApi'
 
+interface ExamData {
+  name: string;
+  status: 'not applied' | 'pending' | 'approved' | 'rejected';
+  totalPoints: number;
+  availablePoints: number;
+  usedPoints: number;
+  numberOfStudents: number;
+}
+
 interface School {
-  applicationId: string;
+  applicationId?: string;
   id: string
   schoolName: string
   email: string
   isFirstLogin: boolean
-  status: string
+  status?: string
   address: string
-  totalPoints: number
-  availablePoints: number
-  usedPoints: number
-  numberOfStudents: number
+  totalPoints?: number
+  availablePoints?: number
+  usedPoints?: number
+  numberOfStudents?: number
+  exams: ExamData[]
 }
 
 interface AuthContextType {

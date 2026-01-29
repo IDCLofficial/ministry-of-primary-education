@@ -4,7 +4,7 @@ import { IoEye, IoEyeOff } from 'react-icons/io5'
 interface FormInputProps {
   label: string
   placeholder: string
-  type?: string
+  type?: React.HTMLInputTypeAttribute
   value: string
   onChange: (value: string) => void
   required?: boolean

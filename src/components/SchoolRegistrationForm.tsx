@@ -27,12 +27,6 @@ interface FormErrors {
 }
 
 export default function SchoolRegistrationForm() {
-  // Fetch school names from API
-  const { data: schoolNames, isLoading: isLoadingSchoolNames } = useGetSchoolNamesQuery()
-
-  // Submit school application mutation
-  const [submitApplication, { isLoading: isSubmitting }] = useSubmitSchoolApplicationMutation()
-
   // Router for navigation
   const router = useRouter()
 
@@ -44,6 +38,15 @@ export default function SchoolRegistrationForm() {
     contactPhone: '',
     numberOfStudents: ''
   })
+
+  // Fetch school names from API based on selected LGA (schoolAddress)
+  const { data: schoolNames, isLoading: isLoadingSchoolNames } = useGetSchoolNamesQuery(
+    { lga: formData.schoolAddress },
+    { skip: !formData.schoolAddress }
+  )
+
+  // Submit school application mutation
+  const [submitApplication, { isLoading: isSubmitting }] = useSubmitSchoolApplicationMutation()
 
   const [errors, setErrors] = useState<FormErrors>({})
   const [serverError, setServerError] = useState<string>('')
