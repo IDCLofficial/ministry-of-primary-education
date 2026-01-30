@@ -1,27 +1,42 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { ExamTypeEnum } from '../../store/api/authApi'
 
 interface OnboardingConfirmationModalProps {
   isOpen: boolean
   onClose: () => void
   onConfirm: () => void
   totalStudents: number
+  examType: ExamTypeEnum
 }
 
 export default function OnboardingConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
-  totalStudents
+  totalStudents,
+  examType
 }: OnboardingConfirmationModalProps) {
-  const [confirmationText, setConfirmationText] = useState('')
-  const [isValid, setIsValid] = useState(false)
-  const requiredText = 'yes i am done'
+  const [confirmationText, setConfirmationText] = useState('');
+  const [isValid, setIsValid] = useState(false);
+  
+  const examTypeToName: Record<ExamTypeEnum, string> = {
+    [ExamTypeEnum.WAEC]: 'WAEC',
+    [ExamTypeEnum.UBEGPT]: 'UBEGPT',
+    [ExamTypeEnum.UBETMS]: 'UBETMS',
+    [ExamTypeEnum.COMMON_ENTRANCE]: 'CESS',
+    [ExamTypeEnum.BECE]: 'BECE',
+    [ExamTypeEnum.BECE_RESIT]: 'BECE Resit',
+    [ExamTypeEnum.UBEAT]: 'UBEAT',
+    [ExamTypeEnum.JSCBE]: 'JSCBE'
+  }
 
+  const requiredText = `yes i am done ${examTypeToName[examType].toLowerCase()}`;
+  
   useEffect(() => {
-    setIsValid(confirmationText.toLowerCase().trim() === requiredText)
-  }, [confirmationText])
+    setIsValid(confirmationText.toLowerCase().trim() === requiredText);
+  }, [confirmationText, requiredText]);
 
   useEffect(() => {
     if (isOpen) {
@@ -60,15 +75,15 @@ export default function OnboardingConfirmationModal({
         <div className="p-6">
           <div className="text-center mb-6">
             <p className="text-gray-600 mb-4">
-              You are about to complete the onboarding process for <span className="font-semibold text-gray-900">{totalStudents} students</span>.
+              You are about to complete the <span className="font-semibold text-gray-900">{examType}</span> onboarding process for <span className="font-semibold text-gray-900">{totalStudents} students</span>.
             </p>
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
               <p className="text-orange-800 text-sm font-medium">
-                ⚠️ Important: This action means you are done and have no plans to make any more onboarding.
+                ⚠️ Important: This action means you are done and have no plans to add more {examType} students.
               </p>
             </div>
             <p className="text-gray-600 text-sm">
-              Once submitted, your application will be sent to the Ministry of Primary & Secondary Education for final approval and you won&apos;t be able to add more students.
+              Once submitted, your <span className="font-medium">{examType}</span> student list will be sent to the Ministry of Primary & Secondary Education for final approval and you won&apos;t be able to add more students.
             </p>
           </div>
 
@@ -80,6 +95,8 @@ export default function OnboardingConfirmationModal({
             <input
               id="confirmation"
               type="text"
+              required
+              autoComplete='off'
               value={confirmationText}
               onChange={(e) => setConfirmationText(e.target.value)}
               placeholder="Type confirmation text here..."
@@ -118,7 +135,7 @@ export default function OnboardingConfirmationModal({
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            Complete Onboarding
+            Submit {examTypeToName[examType]} List
           </button>
         </div>
       </div>

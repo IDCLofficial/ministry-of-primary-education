@@ -6,28 +6,37 @@ import CustomDropdown from './CustomDropdown'
 interface FilterBarProps {
   onFilterChange: (filters: FilterState) => void
   isMobile?: boolean
+  currentFilters?: FilterState
 }
 
 interface FilterState {
-  class: string
-  year: string
-  gender: string
+  class?: string
+  year?: string
+  gender?: string
+  sort?: string
 }
 
-export default function FilterBar({ onFilterChange, isMobile = false }: FilterBarProps) {
-  // Local state for filter inputs (not applied yet)
-  const [filters, setFilters] = useState<FilterState>({
+export default function FilterBar({ onFilterChange, isMobile = false, currentFilters }: FilterBarProps) {
+  // Initialize from currentFilters (URL search params) or defaults
+  const initialFilters = currentFilters || {
     class: 'All',
     year: 'All',
-    gender: 'All'
-  })
+    gender: 'All',
+  }
+
+  // Local state for filter inputs (not applied yet)
+  const [filters, setFilters] = useState<FilterState>(initialFilters)
 
   // Applied filters state (what's actually being used for filtering)
-  const [appliedFilters, setAppliedFilters] = useState<FilterState>({
-    class: 'All',
-    year: 'All',
-    gender: 'All'
-  })
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialFilters)
+
+  // Update local state when currentFilters changes (URL changes)
+  React.useEffect(() => {
+    if (currentFilters) {
+      setFilters(currentFilters)
+      setAppliedFilters(currentFilters)
+    }
+  }, [currentFilters])
 
   // Dropdown options
   const classOptions = [
@@ -93,7 +102,7 @@ export default function FilterBar({ onFilterChange, isMobile = false }: FilterBa
             <label className="block text-sm font-medium text-gray-700">Class</label>
             <CustomDropdown
               options={classOptions}
-              value={filters.class}
+              value={filters.class || ''}
               onChange={(value) => handleFilterChange('class', value)}
               className="w-full"
             />
@@ -104,7 +113,7 @@ export default function FilterBar({ onFilterChange, isMobile = false }: FilterBa
             <label className="block text-sm font-medium text-gray-700">Exam Year</label>
             <CustomDropdown
               options={yearOptions}
-              value={filters.year}
+              value={filters.year || ''}
               onChange={(value) => handleFilterChange('year', value)}
               className="w-full"
             />
@@ -115,7 +124,7 @@ export default function FilterBar({ onFilterChange, isMobile = false }: FilterBa
             <label className="block text-sm font-medium text-gray-700">Gender</label>
             <CustomDropdown
               options={genderOptions}
-              value={filters.gender}
+              value={filters.gender || ''}
               onChange={(value) => handleFilterChange('gender', value)}
               className="w-full"
             />
@@ -163,7 +172,7 @@ export default function FilterBar({ onFilterChange, isMobile = false }: FilterBa
           <label className="text-sm font-medium text-gray-600">Class</label>
           <CustomDropdown
             options={classOptions}
-            value={filters.class}
+            value={filters.class || ''}
             onChange={(value) => handleFilterChange('class', value)}
             className="flex-1"
           />
@@ -193,7 +202,7 @@ export default function FilterBar({ onFilterChange, isMobile = false }: FilterBa
           <label className="text-sm font-medium text-gray-600">Gender</label>
           <CustomDropdown
             options={genderOptions}
-            value={filters.gender}
+            value={filters.gender || ''}
             onChange={(value) => handleFilterChange('gender', value)}
             className="flex-1"
           />

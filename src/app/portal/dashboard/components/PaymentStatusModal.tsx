@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 interface PaymentStatusModalProps {
   status: 'success' | 'failed' | null
@@ -8,16 +9,27 @@ interface PaymentStatusModalProps {
 }
 
 export default function PaymentStatusModal({ status, onClose }: PaymentStatusModalProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
   if (!status) return null
 
   const isSuccess = status === 'success'
+
+  const handleClose = () => {
+    // Remove payment param from URL
+    const params = new URLSearchParams(searchParams?.toString() || '')
+    params.delete('payment')
+    router.replace(`?${params.toString()}`, { scroll: false })
+    onClose()
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
+        onClick={handleClose}
       />
       
       {/* Modal */}
@@ -40,7 +52,7 @@ export default function PaymentStatusModal({ status, onClose }: PaymentStatusMod
             </div>
             
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 cursor-pointer active:scale-95 active:rotate-1"
             >
               Continue to Onboarding
@@ -67,7 +79,7 @@ export default function PaymentStatusModal({ status, onClose }: PaymentStatusMod
             
             <div className="space-y-3">
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 cursor-pointer active:scale-95 active:rotate-1"
               >
                 Try Again

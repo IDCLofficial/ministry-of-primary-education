@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useAuth } from '../../providers/AuthProvider'
 import { useVerifyPaymentQuery } from '../../store/api/authApi'
+import { useGetProfileQuery } from '../../store/api/authApi' 
 
 export default function PaymentCallbackPage() {
   const searchParams = useSearchParams()
@@ -22,14 +23,27 @@ export default function PaymentCallbackPage() {
   const trxref = searchParams.get('trxref')
   const reference = searchParams.get('reference')
 
+  const paymentReturnUrl = useMemo(()=>localStorage.getItem('payment-return-url'), [])
+
   // Use query hook to verify payment
   const {
     data: verificationResponse,
     isLoading,
+    isSuccess,
     error
   } = useVerifyPaymentQuery(reference || '', {
     skip: !reference // Skip query if no reference
-  })
+  });
+
+  const {
+    refetch
+  } = useGetProfileQuery();
+
+  useEffect(()=>{
+    if(isSuccess){
+      refetch();
+    }
+  }, [isSuccess, refetch]);
 
   useEffect(() => {
     if (!trxref || !reference) {
@@ -69,7 +83,7 @@ export default function PaymentCallbackPage() {
   // Auto-redirect after 5 seconds when result is obtained
   useEffect(() => {
     if (status === 'success' || status === 'failed') {
-      setCountdown(5)
+      setCountdown(3)
 
       const timer = setInterval(() => {
         setCountdown(prev => {
@@ -88,21 +102,17 @@ export default function PaymentCallbackPage() {
   // Separate effect for handling redirect when countdown reaches 0
   useEffect(() => {
     if (countdown === 0) {
-      console.log("status",{
-        status,
-        countdown
-      })
       if (status === 'success') {
-        router.replace('/portal/dashboard?payment=success')
+         router.replace(`${paymentReturnUrl ? paymentReturnUrl : "/portal/dashboard"}?payment=success`);
       } else {
         router.replace('/portal/dashboard?payment=failed')
       }
     }
-  }, [countdown, status, router])
+  }, [countdown, status, router, paymentReturnUrl])
 
   const handleContinue = () => {
     // Redirect to dashboard with success status
-    router.replace('/portal/dashboard?payment=success')
+    router.replace(`${paymentReturnUrl ? paymentReturnUrl : "/portal/dashboard"}?payment=success`)
   }
 
   const handleRetry = () => {

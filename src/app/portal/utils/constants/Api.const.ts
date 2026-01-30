@@ -1,3 +1,5 @@
+import { ExamTypeEnum } from "../../store/api/authApi"
+
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 
 export const endpoints = {
@@ -7,7 +9,7 @@ export const endpoints = {
     LOGIN: '/auth/login',
     CREATE_PASSWORD: '/auth/createPassword',
     PROFILE: '/auth/profile',
-    GET_STUDENTS_BY_SCHOOL: '/students/school',
+    GET_STUDENTS_BY_SCHOOL: (examType: ExamTypeEnum, schoolId: string)=>`/students/${examType}/${schoolId}`,
     CREATE_STUDENT_PAYMENT: '/student-payments/school',
     VERIFY_PAYMENT: '/student-payments/verify',
     ONBOARD_STUDENT: '/onboarding',

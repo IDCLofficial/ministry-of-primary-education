@@ -93,14 +93,21 @@ interface LoginRequest {
   password: string
 }
 
-interface ExamData {
+export interface ExamDataMain {
   name: string;
-  status: 'not applied' | 'pending' | 'approved' | 'rejected';
+  status: 'not applied' | 'pending' | 'approved' | 'rejected' | 'completed' | "onboarded";
   totalPoints: number;
   availablePoints: number;
   usedPoints: number;
   numberOfStudents: number;
 }
+
+interface RejectedExamData extends ExamDataMain {
+  status: 'rejected';
+  reviewNotes: string;
+}
+
+type ExamData = ExamDataMain | RejectedExamData;
 
 interface LoginResponse {
   access_token: string
@@ -109,12 +116,9 @@ interface LoginResponse {
     id: string;
     schoolName: string;
     email: string;
+    phone: string;
     isFirstLogin: boolean;
-    status?: string;
     address: string;
-    totalPoints?: number;
-    availablePoints?: number;
-    usedPoints?: number;
     numberOfStudents?: number;
     exams: ExamData[];
   }
@@ -122,8 +126,8 @@ interface LoginResponse {
 
 // Student Payment interfaces
 interface StudentPaymentRequest {
+  examType: string
   numberOfStudents: number
-  amountPerStudent: number
 }
 
 interface StudentPaymentResponse {
@@ -323,8 +327,8 @@ export const authApi = apiSlice.injectEndpoints({
     }),
 
     // Get students by school ID
-    getStudentsBySchool: builder.query<StudentsResponse, { schoolId: string; page?: number; limit?: number; sort?: string; class?: string; year?: number; gender?: string, searchTerm?: string }>({
-      query: ({ schoolId, page = 1, limit = 12, sort, class: className, year, gender, searchTerm }) => {
+    getStudentsBySchool: builder.query<StudentsResponse, { examType: ExamTypeEnum; schoolId: string; page?: number; limit?: number; sort?: string; class?: string; year?: number; gender?: string, searchTerm?: string }>({
+      query: ({ examType, schoolId, page = 1, limit = 12, sort, class: className, year, gender, searchTerm }) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
@@ -337,7 +341,7 @@ export const authApi = apiSlice.injectEndpoints({
         if (searchTerm) params.append('searchTerm', searchTerm);
 
         return {
-          url: `${API_BASE_URL}${endpoints.GET_STUDENTS_BY_SCHOOL}/${schoolId}?${params.toString()}`,
+          url: `${API_BASE_URL}${endpoints.GET_STUDENTS_BY_SCHOOL(examType, schoolId)}/?${params.toString()}`,
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
@@ -376,11 +380,11 @@ export const authApi = apiSlice.injectEndpoints({
     }),
 
     // Onboard student
-    onboardStudent: builder.mutation<StudentOnboardingResponse, StudentOnboardingRequest>({
-      query: (studentData) => ({
-        url: `${API_BASE_URL}${endpoints.ONBOARD_STUDENT}`,
+    onboardStudent: builder.mutation<StudentOnboardingResponse, { examType: string; studentData: StudentOnboardingRequest }>({
+      query: ({ examType, studentData }) => ({
+        url: `${API_BASE_URL}${endpoints.ONBOARD_STUDENT}?examType=${examType}`,
         method: 'POST',
-        body: studentData,
+        body: { ...studentData },
         headers: {
           'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
           'Content-Type': 'application/json',
@@ -390,9 +394,9 @@ export const authApi = apiSlice.injectEndpoints({
     }),
 
     // Update student
-    updateStudent: builder.mutation<StudentUpdateResponse, { id: string; data: StudentUpdateRequest }>({
-      query: ({ id, data }) => ({
-        url: `${API_BASE_URL}/students/${id}`,
+    updateStudent: builder.mutation<StudentUpdateResponse, { id: string; examType: ExamTypeEnum; data: StudentUpdateRequest }>({
+      query: ({ id, examType, data }) => ({
+        url: `${API_BASE_URL}/students/${id}?examType=${examType}`,
         method: 'PATCH',
         body: data,
         headers: {
@@ -437,4 +441,4 @@ export const {
 } = authApi
 
 // Export types for use in components
-export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentUpdateRequest, StudentUpdateResponse, StudentsResponse, ApplicationStatusUpdateRequest, ApplicationStatusUpdateResponse, ExamData }
+export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentUpdateRequest, StudentUpdateResponse, StudentsResponse, ApplicationStatusUpdateRequest, ApplicationStatusUpdateResponse, ExamDataMain as ExamData }

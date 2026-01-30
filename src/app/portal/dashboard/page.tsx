@@ -1,19 +1,14 @@
 'use client'
 
-import React, { useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useMemo } from 'react'
 import Image from 'next/image'
 import { useAuth } from '../providers/AuthProvider'
 import Header from './components/Header'
 import { EXAM_TYPES, formatCurrency } from './exams/types'
+import Link from 'next/link'
 
 export default function DashboardPage() {
-  const router = useRouter()
   const { school } = useAuth()
-
-  const handleExamClick = (examId: string) => {
-    router.push(`/portal/dashboard/${examId}`)
-  }
 
   // Map exam names from API to frontend exam IDs
   const examNameToId: Record<string, string> = useMemo(() => ({
@@ -33,7 +28,8 @@ export default function DashboardPage() {
     
     // Find the exam in school.exams by matching the exam ID
     const exam = school.exams.find((e) => examNameToId[e.name] === examId)
-    const status = exam?.status || 'not applied'
+
+    const status = exam?.status || 'not-applied'
     // Convert API format to frontend format
     return status === 'not applied' ? 'not-applied' : status
   }
@@ -58,7 +54,7 @@ export default function DashboardPage() {
       <div className="flex-1 mt-4 sm:mt-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Examination Portals</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900">Examination Portals</h1>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -66,9 +62,9 @@ export default function DashboardPage() {
               const status = getExamStatus(exam.id)
               
               return (
-                <div
+                <Link
+                  href={`/portal/dashboard/${exam.id}`}
                   key={exam.id}
-                  onClick={() => handleExamClick(exam.id)}
                   className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-green-500 hover:shadow-md transition-all"
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -107,7 +103,7 @@ export default function DashboardPage() {
                       </div>
                     )}
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>
