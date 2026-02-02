@@ -18,7 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function SchoolTableRTK() {
   const router = useRouter();
   const { token } = useAuth();
-  const [currentTab, setCurrentTab] = useState<Tab>("notApplied");
+  const [currentTab, setCurrentTab] = useState<Tab>("applied");
   const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
   const [page, setPage] = useState(1);
 

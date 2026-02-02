@@ -6,12 +6,13 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 // Application interface
 export interface Application {
   _id: string;
-  school: {
+  school?: {
     _id: string;
     schoolName: string;
     address: string;
     principal: string;
     email: string;
+    lga?: string;
     students: Student[];
     status: string;
     isFirstLogin: boolean;
@@ -29,9 +30,20 @@ export interface Application {
   email: string;
   phone: number;
   numberOfStudents: number;
+  examType: string;
+  amountPerStudent: number;
+  totalAmount: number;
+  pointsAwarded: number;
+  paymentStatus: string;
+  reference: string;
   applicationStatus: string;
   createdAt: string;
   updatedAt: string;
+  paidAt?: string;
+  authorizationUrl?: string;
+  paymentMethod?: string;
+  paymentNotes?: string;
+  paystackTransactionId?: string;
   __v: number;
   reviewNotes?: string;
   reviewedAt?: string;
@@ -171,8 +183,9 @@ export const schoolsApi = createApi({
       limit?: number
       status?: 'not_applied' | 'all' | 'pending' | 'approved' | 'rejected' | 'onboarded' | 'completed'
       searchTerm?: string
+      examType?: 'UBEGPT' | 'UBETMS' | 'Common-entrance' | 'BECE' | 'BECE-resit' | 'UBEAT' | 'JSCBE' | 'WAEC'
     }>({
-      query: ({ page = 1, limit = 20, status, searchTerm } = {}) => {
+      query: ({ page = 1, limit = 20, status, searchTerm, examType } = {}) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
@@ -186,6 +199,11 @@ export const schoolsApi = createApi({
         // Add search term to server-side query
         if (searchTerm?.trim()) {
           params.append('search', searchTerm.trim())
+        }
+        
+        // Add exam type filter to server-side query
+        if (examType) {
+          params.append('examType', examType)
         }
         
         return `applications?${params.toString()}`

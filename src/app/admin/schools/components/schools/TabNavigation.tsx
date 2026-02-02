@@ -19,11 +19,7 @@ export default function TabNavigation({ currentTab, onTabChange }: TabNavigation
       label: "All",
       description: "All applications regardless of status"
     },
-    { 
-      key: "notApplied", 
-      label: "Not Applied",
-      description: "Schools that haven't applied yet"
-    },
+
     { 
       key: "applied", 
       label: "Applied",
