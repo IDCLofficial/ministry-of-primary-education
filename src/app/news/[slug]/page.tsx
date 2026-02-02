@@ -188,7 +188,7 @@ export default function NewsDetailPage() {
                 <Link
                   key={idx}
                   href={`/news/${slugify(item.title)}`}
-                  className="bg-[#232323] rounded-xl bg-white overflow-hidden hover:bg-[#2a2a2a] transition-colors cursor-pointer"
+                  className="rounded-xl bg-white overflow-hidden hover:bg-[#2a2a2a] transition-colors cursor-pointer"
                 >
                   <div className="relative w-full h-32">
                     <Image 

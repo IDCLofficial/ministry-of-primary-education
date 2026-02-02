@@ -6,6 +6,7 @@ interface SchoolName {
   _id: string
   schoolName: string
   hasAccount: boolean
+  status?: 'not applied' | 'applied' | 'pending' | 'approved' | 'rejected'
 }
 
 // Student response type
