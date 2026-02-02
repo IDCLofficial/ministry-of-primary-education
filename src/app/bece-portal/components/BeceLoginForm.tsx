@@ -124,10 +124,8 @@ export default function BeceLoginForm() {
         }
 
         if (apiError?.status === 400) {
-          const message = apiError.data?.message || 'New password required for first-time login'
+          const message = apiError.data?.message || 'Invalid admin credentials'
           toast.error(message)
-          // If it's a first-time login requiring new password, redirect to create password
-          router.push('/bece-portal/create-password')
         } else if (apiError?.status === 401) {
           const message = apiError.data?.message || 'Invalid admin credentials'
           toast.error(message)

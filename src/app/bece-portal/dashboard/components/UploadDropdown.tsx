@@ -1,6 +1,7 @@
 'use client'
 
-import { usePathname, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import React, { useState, useRef, useEffect } from 'react'
 import { IoChevronDown, IoCloudUpload, IoDocument } from 'react-icons/io5'
 
@@ -12,14 +13,12 @@ interface UploadOption {
 }
 
 interface UploadDropdownProps {
-  onSelect: (value: string) => void
   className?: string
 }
 
-export default function UploadDropdown({ onSelect, className = "" }: UploadDropdownProps) {
+export default function UploadDropdown({ className = "" }: UploadDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const router = useRouter()
 
   const pathname = usePathname();
 
@@ -47,13 +46,7 @@ export default function UploadDropdown({ onSelect, className = "" }: UploadDropd
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const handleOptionClick = (optionValue: string) => {
-    onSelect(optionValue)
-    router.push(`/bece-portal/dashboard/${optionValue}`)
-    setIsOpen(false)
-  }
+  }, []);
 
   const handleDropdownToggle = () => {
     setIsOpen(!isOpen)
@@ -79,12 +72,13 @@ export default function UploadDropdown({ onSelect, className = "" }: UploadDropd
         <div className="absolute right-0 z-50 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
           <div className="py-1">
             {uploadOptions.filter((option) => option.value !== pathname.split('/').pop()).map((option) => (
+
               <button
                 key={option.value}
-                type="button"
-                onClick={() => handleOptionClick(option.value)}
-                className="w-full cursor-pointer active:scale-95 px-4 py-3 text-left hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-all duration-150 border-b border-gray-100 last:border-b-0"
+                onClick={() => handleDropdownToggle()}
+                className="w-full cursor-pointer active:scale-95 px-4 py-3 text-left hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-all duration-150 border-b border-gray-100 last:border-b-0 relative"
               >
+                <Link href={`/bece-portal/dashboard/${option.value}`} className='absolute inset-0 h-full w-full' />
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0 mt-0.5 text-green-600">
                     {option.icon}
