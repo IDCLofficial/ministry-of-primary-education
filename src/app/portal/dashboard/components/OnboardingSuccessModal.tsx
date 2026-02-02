@@ -7,9 +7,10 @@ interface OnboardingSuccessModalProps {
   isOpen: boolean
   onClose: () => void
   totalStudents: number
+  examType: string
 }
 
-export default function OnboardingSuccessModal({ isOpen, onClose, totalStudents }: OnboardingSuccessModalProps) {
+export default function OnboardingSuccessModal({ isOpen, onClose, totalStudents, examType }: OnboardingSuccessModalProps) {
   if (!isOpen) return null
 
   return (
@@ -35,12 +36,12 @@ export default function OnboardingSuccessModal({ isOpen, onClose, totalStudents 
 
           {/* Title */}
           <h3 className="text-xl font-semibold text-gray-800 mb-2 text-center">
-            Onboarding Successfully Submitted!
+            {examType} Onboarding Submitted!
           </h3>
           
           {/* Description */}
           <p className="text-gray-600 mb-6 text-center">
-            Your onboarding for {totalStudents} students has been successfully submitted to the Ministry of Primary & Secondary Education.
+            Your <span className="font-semibold text-gray-800">{examType}</span> onboarding for <span className="font-semibold text-gray-800">{totalStudents} students</span> has been successfully submitted to the Ministry of Primary & Secondary Education.
           </p>
 
           {/* What happens next section */}
@@ -62,7 +63,7 @@ export default function OnboardingSuccessModal({ isOpen, onClose, totalStudents 
                 <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span>The email will also contain the <strong>complete list of all {totalStudents} students</strong> you&apos;ve onboarded</span>
+                <span>The email will also contain the <strong>complete list of all {totalStudents} {examType} students</strong> you&apos;ve onboarded</span>
               </li>
             </ul>
           </div>

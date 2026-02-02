@@ -5,15 +5,17 @@ import FilterBar from './FilterBar'
 
 interface ResponsiveFilterBarProps {
   onFilterChange: (filters: FilterState) => void
+  currentFilters?: FilterState
 }
 
 interface FilterState {
-  class: string
-  year: string
-  gender: string
+  class?: string
+  year?: string
+  gender?: string
+  sort?: string
 }
 
-export default function ResponsiveFilterBar({ onFilterChange }: ResponsiveFilterBarProps) {
+export default function ResponsiveFilterBar({ onFilterChange, currentFilters }: ResponsiveFilterBarProps) {
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false)
 
   const openBottomSheet = () => setIsBottomSheetOpen(true)
@@ -23,7 +25,7 @@ export default function ResponsiveFilterBar({ onFilterChange }: ResponsiveFilter
     <>
       {/* Desktop Version - Always visible on xl+ screens */}
       <div className="hidden xl:block">
-        <FilterBar onFilterChange={onFilterChange} />
+        <FilterBar onFilterChange={onFilterChange} currentFilters={currentFilters} />
       </div>
 
       {/* Mobile/Tablet Version - Filter Button */}
@@ -83,6 +85,7 @@ export default function ResponsiveFilterBar({ onFilterChange }: ResponsiveFilter
                   closeBottomSheet()
                 }} 
                 isMobile={true}
+                currentFilters={currentFilters}
               />
             </div>
           </div>

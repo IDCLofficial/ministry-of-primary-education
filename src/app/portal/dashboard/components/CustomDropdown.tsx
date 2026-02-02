@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 interface DropdownOption {
   value: string
@@ -30,11 +31,30 @@ export default function CustomDropdown({
 }: CustomDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const [mounted, setMounted] = useState(false)
 
   const selectedOption = options.find(option => option.value === value)
+
+  // Set mounted state
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Calculate position when dropdown opens
+  useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect()
+      setPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      })
+    }
+  }, [isOpen])
 
   // Filter options based on search term
   const filteredOptions = searchable && searchTerm
@@ -79,14 +99,18 @@ export default function CustomDropdown({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-        setSearchTerm('')
+        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+          setIsOpen(false)
+          setSearchTerm('')
+        }
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
 
   const handleOptionClick = (optionValue: string) => {
     onChange(optionValue)
@@ -126,9 +150,18 @@ export default function CustomDropdown({
         </div>
       </button>
 
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <div ref={menuRef} className="absolute z-50 w-full mt-1 cursor-pointer bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+      {/* Dropdown Menu - Rendered via Portal */}
+      {isOpen && mounted && createPortal(
+        <div 
+          ref={menuRef} 
+          className="fixed z-[9999] cursor-pointer bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+          style={{
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            width: `${position.width}px`,
+            marginTop: '4px'
+          }}
+        >
           {/* Search Input */}
           {searchable && (
             <div className="p-2 border-b border-gray-100 sticky top-0 bg-white/75 backdrop-blur-sm">
@@ -174,7 +207,8 @@ export default function CustomDropdown({
             </button>
             ))
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

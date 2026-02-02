@@ -1,10 +1,10 @@
 import React from 'react'
 import Image from 'next/image'
-import LoginForm from '@/components/LoginForm'
+import RegistrationForm from '@/components/RegistrationForm'
 import Link from 'next/link'
-import HangingTree from './components/HangingTree'
+import HangingTree from '../components/HangingTree'
 
-export default function PortalPage() {
+export default function RegisterPage() {
     return (
         <div className="min-h-screen flex flex-col bg-[#F3F3F3] relative">
             <HangingTree type='left' />
@@ -27,11 +27,11 @@ export default function PortalPage() {
             </header>
 
             <main className="flex-1 flex flex-col justify-center gap-6 w-full px-4 sm:px-6 lg:px-8 pb-8 relative z-10">
-                <div className="max-w-md w-full mx-auto">
-                    <LoginForm />
+                <div className="max-w-2xl w-full mx-auto">
+                    <RegistrationForm />
                 </div>
                 <div className="w-full text-center text-sm text-black/80">
-                    Haven&apos;t registered your school? <Link href="/portal/register" className="text-green-600 hover:text-green-800 transition-colors duration-200 underline underline-offset-2 font-medium">Register here</Link>
+                    Already registered? <Link href="/portal" className="text-green-600 hover:text-green-800 transition-colors duration-200 underline underline-offset-2 font-medium">Login here</Link>
                 </div>
             </main>
         </div>

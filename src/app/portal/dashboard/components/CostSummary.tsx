@@ -7,24 +7,44 @@ import { useGetProfileQuery } from '../../store/api/authApi'
 
 interface CostSummaryProps {
   onPurchaseMorePoints: () => void
+  examPoints: number
+  examTotalPoints: number
+  examNumberOfStudents: number
 }
 
 export default function CostSummary({ 
-  onPurchaseMorePoints
+  onPurchaseMorePoints,
+  examPoints,
+  examTotalPoints,
+  examNumberOfStudents
 }: CostSummaryProps) {
   const { school, isLoading } = useAuth()
   const { isFetching: isAdminProfileFetching } = useGetProfileQuery()
+  const isUpdating = isAdminProfileFetching && !isLoading
   
   // Show skeleton while loading
   if (isLoading || !school) {
     return <CostSummarySkeleton />
   }
   
-  // Only allow purchase if available points is less than number of students
-  const canPurchaseMorePoints = school.availablePoints < school.numberOfStudents
+  // Calculate exam-specific values
+  const examAvailablePoints = examPoints
+  const examUsedPoints = examTotalPoints - examPoints
+  
+  // Only allow purchase if available points is less than number of students for this exam
+  const canPurchaseMorePoints = examAvailablePoints < examNumberOfStudents
 
   return (
-    <div className="bg-white rounded-xl shadow-lg shadow-black/2 border border-black/10 p-6">
+    <div className="bg-white rounded-xl shadow-lg shadow-black/2 border border-black/10 p-6 relative">
+      {/* Loading Overlay */}
+      {isUpdating && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <p className="text-xs font-medium text-gray-600">Updating...</p>
+          </div>
+        </div>
+      )}
       <h3 className="text-lg font-semibold text-gray-800 mb-6">Points Summary</h3>
       
       <div className="space-y-4">
@@ -35,15 +55,15 @@ export default function CostSummary({
             <div className="bg-green-50 rounded-lg p-4">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-green-800">Available Points</span>
-                <span className="text-2xl font-bold text-green-900">{school.availablePoints}</span>
+                <span className="text-2xl font-bold text-green-900">{examAvailablePoints}</span>
               </div>
               <div className="flex justify-between items-center opacity-75">
                 <span className="text-sm font-medium text-gray-600">Used Points</span>
-                <span className="text-sm text-gray-700">{school.usedPoints}</span>
+                <span className="text-sm text-gray-700">{examUsedPoints}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-600">Total Students</span>
-                <span className="text-sm text-gray-700">{school.numberOfStudents}</span>
+                <span className="text-sm text-gray-700">{examNumberOfStudents}</span>
               </div>
             </div>
 
@@ -56,7 +76,7 @@ export default function CostSummary({
             </div>
 
             {/* Status Message */}
-            {school.availablePoints >= school.numberOfStudents ? (
+            {examAvailablePoints >= examNumberOfStudents ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <div className="flex items-center">
                   <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,7 +92,7 @@ export default function CostSummary({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                   <span className="text-sm text-orange-700">
-                    You need {school.numberOfStudents - school.totalPoints} more points
+                    You need {examNumberOfStudents - examTotalPoints} more points
                   </span>
                 </div>
               </div>

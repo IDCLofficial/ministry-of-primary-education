@@ -2,20 +2,19 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { useGetProfileQuery } from '../store/api/authApi'
+import { ExamData, useGetProfileQuery } from '../store/api/authApi'
 
 interface School {
-  applicationId: string;
+  applicationId?: string;
   id: string
   schoolName: string
   email: string
   isFirstLogin: boolean
-  status: string
   address: string
-  totalPoints: number
-  availablePoints: number
-  usedPoints: number
-  numberOfStudents: number
+  phone: string
+  numberOfStudents?: number
+  status?: string
+  exams: ExamData[]
 }
 
 interface AuthContextType {
@@ -27,6 +26,7 @@ interface AuthContextType {
   loggingOut: boolean
   isLoading: boolean
   refreshProfile: () => void
+  isFetchingProfile: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter()
 
   // Profile query - only runs when we have a token
-  const { data: profileData, error: profileError, refetch: refetchProfile } = useGetProfileQuery(undefined, {
+  const { data: profileData, error: profileError, refetch: refetchProfile, isFetching: isFetchingProfile } = useGetProfileQuery(undefined, {
     skip: skipProfileQuery || !token,
   })
 
@@ -119,6 +119,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       localStorage.setItem('access_token', newToken)
       localStorage.setItem('school', JSON.stringify(newSchool))
+      refetchProfile();
       setToken(newToken)
       setSchool(newSchool)
       setIsAuthenticated(true)
@@ -142,7 +143,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     isLoading,
-    refreshProfile
+    refreshProfile,
+    isFetchingProfile
   }
 
   return (

@@ -4,7 +4,7 @@ import { IoEye, IoEyeOff } from 'react-icons/io5'
 interface FormInputProps {
   label: string
   placeholder: string
-  type?: string
+  type?: React.HTMLInputTypeAttribute
   value: string
   onChange: (value: string) => void
   required?: boolean
@@ -139,7 +139,7 @@ export default function FormInput({
           name={name}
           onFocus={handleInputFocus}
           onKeyDown={handleKeyDown}
-          className={`w-full text-sm px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-[#F5F5F5] disabled:bg-gray-200 disabled:text-gray-400 ${
+          className={`w-full text-sm px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-[#F5F5F5] disabled:bg-gray-100 disabled:text-gray-700 ${
             error 
               ? 'border-red-500 focus:ring-red-500' 
               : 'border-gray-300 focus:ring-blue-500'

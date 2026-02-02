@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
-import { useCreateStudentPaymentMutation } from '../../store/api/authApi'
+import { useCreateStudentPaymentMutation, ExamTypeEnum } from '../../store/api/authApi'
 import toast from 'react-hot-toast'
 
 interface PaymentModalProps {
@@ -10,18 +10,24 @@ interface PaymentModalProps {
   onClose: () => void
   onPaymentSuccess: () => void
   numberOfStudents: number
+  examType: ExamTypeEnum
+  feePerStudent: number
 }
 
-export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, numberOfStudents }: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, numberOfStudents, examType, feePerStudent }: PaymentModalProps) {
   const { school } = useAuth()
-  const [createStudentPayment] = useCreateStudentPaymentMutation()
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [selectedStudentCount, setSelectedStudentCount] = useState(numberOfStudents)
-  const [customInput, setCustomInput] = useState('')
-  const maxPointsAllowed = school ? Math.max(0, school.numberOfStudents - school.totalPoints) : 0
+  const [createStudentPayment] = useCreateStudentPaymentMutation();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedStudentCount, setSelectedStudentCount] = useState(numberOfStudents);
+  const [customInput, setCustomInput] = useState('');
+
+  const currentExamData = school?.exams.find(e => e.name === examType);
+  const examPoints = currentExamData?.availablePoints || 0;
+  const examTotalPoints = currentExamData?.totalPoints || 0;
+  const examNumberOfStudents = currentExamData?.numberOfStudents || 0;
+  const maxPointsAllowed = examNumberOfStudents > 0 ? Math.max(0, examNumberOfStudents - examTotalPoints) : 0;
   
   const minStudentsForCustom = 1 // Minimum students to allow custom input
-  const feePerStudent = 500 // Fee per student
   const studentFees = selectedStudentCount * feePerStudent
   const processingFee = Math.round(studentFees * 0.015) // 1.5% processing fee
   const totalAmount = studentFees + processingFee
@@ -85,13 +91,15 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
       const response = await createStudentPayment({
         schoolId: school.id,
         paymentData: {
-          numberOfStudents: selectedStudentCount,
-          amountPerStudent: feePerStudent
+          examType: examType,
+          numberOfStudents: selectedStudentCount
         }
       }).unwrap()
 
       // If successful, redirect to Paystack authorization URL
       if (response.data.authorizationUrl) {
+        // Save current URL to localStorage for payment callback to return to
+        localStorage.setItem('payment-return-url', window.location.href)
         window.location.href = response.data.authorizationUrl
       } else {
         // Fallback: show success and close modal
@@ -138,7 +146,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Points Sufficient</h3>
               <p className="text-gray-600 mb-4">
-                You already have enough points ({school?.availablePoints || 0}) for all your students ({school?.numberOfStudents || 0}).
+                You already have enough points ({examPoints}) for all your students ({examNumberOfStudents}).
               </p>
               <button
                 onClick={onClose}
@@ -157,7 +165,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
                     <span className="font-medium">Available:</span> {maxPointsAllowed.toLocaleString()} points
                   </p>
                   <p className="text-xs text-yellow-700 mt-1">
-                    {maxPointsAllowed >= minStudentsForCustom ? `Minimum for custom input: ${minStudentsForCustom} points | ` : ''}({school?.numberOfStudents || 0} students - {school?.totalPoints || 0} available = {maxPointsAllowed} needed)
+                    {maxPointsAllowed >= minStudentsForCustom ? `Minimum for custom input: ${minStudentsForCustom} points | ` : ''}({examNumberOfStudents} students - {examTotalPoints} available = {maxPointsAllowed} needed)
                   </p>
                 </div>
                 

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
-import { useUpdateApplicationStatusMutation } from '../../store/api/authApi'
+import { ExamTypeEnum, useUpdateApplicationStatusMutation } from '../../store/api/authApi'
 import OnboardingConfirmationModal from './OnboardingConfirmationModal'
 import OnboardingSuccessModal from './OnboardingSuccessModal'
 import toast from 'react-hot-toast'
@@ -11,17 +11,31 @@ import Image from 'next/image'
 interface OnboardingCompletionSummaryProps {
   totalStudents: number
   handleRefresh: () => void
+  examType: ExamTypeEnum
+  examTotalPoints: number
+  examNumberOfStudents: number
 }
 
-export default function OnboardingCompletionSummary({ totalStudents, handleRefresh }: OnboardingCompletionSummaryProps) {
+export default function OnboardingCompletionSummary({ totalStudents, handleRefresh, examType, examTotalPoints }: OnboardingCompletionSummaryProps) {
   const { school } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [updateApplicationStatus] = useUpdateApplicationStatusMutation()
 
-  // Only show if school has students and total students equals total points (all students onboarded)
-  const shouldShow = school && totalStudents > 0 && totalStudents === school.totalPoints
+  const examTypeToName: Record<ExamTypeEnum, string> = {
+      [ExamTypeEnum.WAEC]: 'WAEC',
+      [ExamTypeEnum.UBEGPT]: 'UBEGPT',
+      [ExamTypeEnum.UBETMS]: 'UBETMS',
+      [ExamTypeEnum.COMMON_ENTRANCE]: 'CESS',
+      [ExamTypeEnum.BECE]: 'BECE',
+      [ExamTypeEnum.BECE_RESIT]: 'BECE Resit',
+      [ExamTypeEnum.UBEAT]: 'UBEAT',
+      [ExamTypeEnum.JSCBE]: 'JSCBE'
+    }
+
+  // Only show if school has students and total students equals exam total points (all students onboarded for this exam)
+  const shouldShow = school && totalStudents > 0 && totalStudents === examTotalPoints
 
   const handleShowConfirmationModal = () => {
     setShowConfirmationModal(true)
@@ -29,6 +43,10 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
 
   const handleCompleteOnboarding = async () => {
     if (!school?.id) {
+      toast.error('School information not available. Please try again.')
+      return
+    }
+    if (!school?.applicationId) {
       toast.error('School information not available. Please try again.')
       return
     }
@@ -42,7 +60,7 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
         applicationId: school.applicationId,
         data: {
           status: 'onboarded',
-          reviewNotes: `Onboarding completed for ${totalStudents} students`
+          reviewNotes: `Onboarding completed for ${totalStudents} students for ${examType} exam`
         }
       }).unwrap()
       
@@ -93,25 +111,29 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
 
         {/* Title */}
         <h3 className="text-xl font-semibold text-gray-800 mb-2">
-          Onboarding Complete!
+          {examType} Onboarding Complete!
         </h3>
         
         {/* Description */}
         <p className="text-gray-600 mb-6">
-          Congratulations! You have successfully onboarded all {totalStudents} students. 
+          Congratulations! You have successfully onboarded all {totalStudents} students for the <span className="font-semibold text-gray-800">{examType}</span> examination. 
           You can now submit your student list to the Ministry of Primary & Secondary Education for approval.
         </p>
 
         {/* Review Summary */}
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-3 gap-4 text-sm">
             <div className="text-center">
-              <div className="font-semibold text-green-800">{totalStudents}</div>
-              <div className="text-green-600">Students Onboarded</div>
+              <div className="font-semibold text-green-800">{examTypeToName[examType]}</div>
+              <div className="text-green-600 text-xs">Examination</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-green-800">{school?.totalPoints}</div>
-              <div className="text-green-600">Points Used</div>
+              <div className="font-semibold text-green-800">{totalStudents}</div>
+              <div className="text-green-600 text-xs">Students</div>
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-green-800">{examTotalPoints}</div>
+              <div className="text-green-600 text-xs">Points Used</div>
             </div>
           </div>
         </div>
@@ -132,14 +154,14 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Complete Onboarding
+              Submit {examTypeToName[examType]} Students
             </>
           )}
         </button>
 
         {/* Info Text */}
         <p className="text-xs text-gray-500 mt-3">
-          This will submit your student list to the Ministry of Primary & Secondary Education for final approval.
+          This will submit your <span className="font-medium">{examType}</span> student list to the Ministry of Primary & Secondary Education for final approval.
         </p>
       </div>
 
@@ -149,6 +171,7 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
         onClose={() => setShowConfirmationModal(false)}
         onConfirm={handleCompleteOnboarding}
         totalStudents={totalStudents}
+        examType={examType}
       />
 
       {/* Success Modal */}
@@ -156,6 +179,7 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
         isOpen={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
         totalStudents={totalStudents}
+        examType={examType}
       />
     </div>
   )

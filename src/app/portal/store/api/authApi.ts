@@ -5,7 +5,7 @@ import { apiSlice } from './apiSlice'
 interface SchoolName {
   _id: string
   schoolName: string
-  status: 'approved' | 'not applied' | 'pending' | 'applied' | 'rejected'
+  hasAccount: boolean
 }
 
 // Student response type
@@ -32,8 +32,31 @@ interface StudentsResponse {
   totalItems: number
 }
 
-// School application types
-interface SchoolApplicationRequest {
+// Exam Type Enum
+export enum ExamTypeEnum {
+  UBEGPT = 'UBEGPT',
+  UBETMS = 'UBETMS',
+  COMMON_ENTRANCE = 'Common-entrance',
+  BECE = 'BECE',
+  BECE_RESIT = 'BECE-resit',
+  UBEAT = 'UBEAT',
+  JSCBE = 'JSCBE',
+  WAEC = 'WAEC'
+}
+
+// Initial school application (no exam type)
+interface InitialSchoolApplicationRequest {
+  schoolId: string
+  address: string
+  principal: string
+  email: string
+  phone: number
+  numberOfStudents: number
+}
+
+// Exam-specific application (with exam type)
+interface ExamApplicationRequest {
+  examType: ExamTypeEnum
   schoolId: string
   address: string
   principal: string
@@ -48,33 +71,63 @@ interface SchoolApplicationResponse {
   statusCode?: number
 }
 
+// Registration types
+export interface RegistrationRequest {
+  lga: string
+  schoolName: string
+  schoolAddress: string
+  principalName: string
+  contactEmail: string
+  contactPhone: string
+}
+
+interface RegistrationResponse {
+  message: string
+  error?: string
+  statusCode?: number
+}
+
 // Login types
 interface LoginRequest {
   email: string
   password: string
 }
 
+export interface ExamDataMain {
+  name: string;
+  status: 'not applied' | 'pending' | 'approved' | 'rejected' | 'completed' | "onboarded";
+  totalPoints: number;
+  availablePoints: number;
+  usedPoints: number;
+  numberOfStudents: number;
+}
+
+interface RejectedExamData extends ExamDataMain {
+  status: 'rejected';
+  reviewNotes: string;
+}
+
+type ExamData = ExamDataMain | RejectedExamData;
+
 interface LoginResponse {
   access_token: string
   school: {
-    applicationId: string;
+    applicationId?: string;
     id: string;
     schoolName: string;
     email: string;
+    phone: string;
     isFirstLogin: boolean;
-    status: string;
     address: string;
-    totalPoints: number;
-    availablePoints: number;
-    usedPoints: number;
-    numberOfStudents: number;
+    numberOfStudents?: number;
+    exams: ExamData[];
   }
 }
 
 // Student Payment interfaces
 interface StudentPaymentRequest {
+  examType: string
   numberOfStudents: number
-  amountPerStudent: number
 }
 
 interface StudentPaymentResponse {
@@ -177,8 +230,8 @@ interface CreatePasswordResponse {
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get school names
-    getSchoolNames: builder.query<SchoolName[], void>({
-      query: () => `${API_BASE_URL}${endpoints.GET_SCHOOL_NAMES}`,
+    getSchoolNames: builder.query<SchoolName[], { lga: string }>({
+      query: ({ lga }) => `${API_BASE_URL}${endpoints.GET_SCHOOL_NAMES}?lga=${lga.toLowerCase()}`,
       transformResponse: (response: SchoolName[]) => {
         const uniqueSchools = Array.from(
           new Set(response.map(school => school.schoolName))
@@ -187,7 +240,7 @@ export const authApi = apiSlice.injectEndpoints({
           return {
             _id: originalSchool?._id || '',
             schoolName,
-            status: originalSchool?.status || 'not applied' as const
+            hasAccount: originalSchool?.hasAccount || false
           }
         })
 
@@ -198,12 +251,38 @@ export const authApi = apiSlice.injectEndpoints({
       providesTags: ['School'],
     }),
 
-    // Submit school application
-    submitSchoolApplication: builder.mutation<SchoolApplicationResponse, SchoolApplicationRequest>({
+    // Submit initial school application (no exam type)
+    submitSchoolApplication: builder.mutation<SchoolApplicationResponse, InitialSchoolApplicationRequest>({
       query: (applicationData) => ({
         url: `${API_BASE_URL}${endpoints.SUBMIT_SCHOOL_APPLICATION}`,
         method: 'POST',
         body: applicationData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['School'],
+    }),
+
+    // Submit exam-specific application (with exam type)
+    submitExamApplication: builder.mutation<SchoolApplicationResponse, ExamApplicationRequest>({
+      query: (applicationData) => ({
+        url: `${API_BASE_URL}${endpoints.SUBMIT_SCHOOL_APPLICATION}`,
+        method: 'POST',
+        body: applicationData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['School'],
+    }),
+
+    // Register school
+    registerSchool: builder.mutation<RegistrationResponse, RegistrationRequest>({
+      query: (registrationData) => ({
+        url: `${API_BASE_URL}${endpoints.REGISTER}`,
+        method: 'POST',
+        body: registrationData,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -248,8 +327,8 @@ export const authApi = apiSlice.injectEndpoints({
     }),
 
     // Get students by school ID
-    getStudentsBySchool: builder.query<StudentsResponse, { schoolId: string; page?: number; limit?: number; sort?: string; class?: string; year?: number; gender?: string, searchTerm?: string }>({
-      query: ({ schoolId, page = 1, limit = 12, sort, class: className, year, gender, searchTerm }) => {
+    getStudentsBySchool: builder.query<StudentsResponse, { examType: ExamTypeEnum; schoolId: string; page?: number; limit?: number; sort?: string; class?: string; year?: number; gender?: string, searchTerm?: string }>({
+      query: ({ examType, schoolId, page = 1, limit = 12, sort, class: className, year, gender, searchTerm }) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
@@ -262,7 +341,7 @@ export const authApi = apiSlice.injectEndpoints({
         if (searchTerm) params.append('searchTerm', searchTerm);
 
         return {
-          url: `${API_BASE_URL}${endpoints.GET_STUDENTS_BY_SCHOOL}/${schoolId}?${params.toString()}`,
+          url: `${API_BASE_URL}${endpoints.GET_STUDENTS_BY_SCHOOL(examType, schoolId)}/?${params.toString()}`,
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
@@ -301,11 +380,11 @@ export const authApi = apiSlice.injectEndpoints({
     }),
 
     // Onboard student
-    onboardStudent: builder.mutation<StudentOnboardingResponse, StudentOnboardingRequest>({
-      query: (studentData) => ({
-        url: `${API_BASE_URL}${endpoints.ONBOARD_STUDENT}`,
+    onboardStudent: builder.mutation<StudentOnboardingResponse, { examType: string; studentData: StudentOnboardingRequest }>({
+      query: ({ examType, studentData }) => ({
+        url: `${API_BASE_URL}${endpoints.ONBOARD_STUDENT}?examType=${examType}`,
         method: 'POST',
-        body: studentData,
+        body: { ...studentData },
         headers: {
           'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
           'Content-Type': 'application/json',
@@ -315,9 +394,9 @@ export const authApi = apiSlice.injectEndpoints({
     }),
 
     // Update student
-    updateStudent: builder.mutation<StudentUpdateResponse, { id: string; data: StudentUpdateRequest }>({
-      query: ({ id, data }) => ({
-        url: `${API_BASE_URL}/students/${id}`,
+    updateStudent: builder.mutation<StudentUpdateResponse, { id: string; examType: ExamTypeEnum; data: StudentUpdateRequest }>({
+      query: ({ id, examType, data }) => ({
+        url: `${API_BASE_URL}/students/${id}?examType=${examType}`,
         method: 'PATCH',
         body: data,
         headers: {
@@ -348,6 +427,8 @@ export const authApi = apiSlice.injectEndpoints({
 export const {
   useGetSchoolNamesQuery,
   useSubmitSchoolApplicationMutation,
+  useSubmitExamApplicationMutation,
+  useRegisterSchoolMutation,
   useLoginMutation,
   useCreatePasswordMutation,
   useGetProfileQuery,
@@ -360,4 +441,4 @@ export const {
 } = authApi
 
 // Export types for use in components
-export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentUpdateRequest, StudentUpdateResponse, StudentsResponse, ApplicationStatusUpdateRequest, ApplicationStatusUpdateResponse }
+export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentUpdateRequest, StudentUpdateResponse, StudentsResponse, ApplicationStatusUpdateRequest, ApplicationStatusUpdateResponse, ExamDataMain as ExamData }
