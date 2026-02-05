@@ -38,7 +38,7 @@ export default function StudentLoginPage() {
             return
         }
 
-        setIsLoading(true)
+        setIsLoading(true);
 
         try {
             const response = await fetch(`${API_BASE_URL}/bece-student/check-result/${encodeURIComponent(examNo)}`, {
@@ -46,9 +46,12 @@ export default function StudentLoginPage() {
                 headers: {
                     'Accept': 'application/json',
                 },
+                mode: 'cors',
+                credentials: 'omit'
             })
 
-            if (response.status !== 200) {
+            // Check if response is ok
+            if (!response.ok) {
                 if (response.status === 404) {
                     setError('We couldn\'t find your results. Please check your exam number and try again.')
                 } else if (response.status === 400) {
@@ -56,18 +59,50 @@ export default function StudentLoginPage() {
                 } else if (response.status === 500) {
                     setError('Our system is having a moment. Please try again in a few minutes.')
                 } else {
-                    setError('Something unexpected happened. Please try again.')
+                    setError(`Something unexpected happened (Error ${response.status}). Please try again.`)
                 }
 
-                console.error('Login failed:', { status: response.status })
+                console.error('Login failed:', { 
+                    status: response.status, 
+                    statusText: response.statusText,
+                    url: response.url 
+                })
                 setIsLoading(false)
                 return
             }
 
-            const data = await response.json()
+            // Check if response has content
+            const contentType = response.headers.get('content-type')
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('Invalid response type:', contentType)
+                setError('Received invalid response from server. Please try again.')
+                setIsLoading(false)
+                return
+            }
+
+            // Parse response
+            const text = await response.text()
+            if (!text || text.trim() === '') {
+                console.error('Empty response received')
+                setError('Server returned empty response. Please try again or contact support.')
+                setIsLoading(false)
+                return
+            }
+
+            let data
+            try {
+                data = JSON.parse(text)
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError, 'Response text:', text)
+                setError('Received malformed response from server. Please try again.')
+                setIsLoading(false)
+                return
+            }
+
+            // Validate data
             if (!data || !data.examNo) {
-                console.error('Login failed:', { data })
-                setError('We couldn\'t load your results. Please try again.')
+                console.error('Invalid data structure:', data)
+                setError('We couldn\'t load your results. Please try again or contact support.')
                 setIsLoading(false)
                 return
             }
@@ -77,7 +112,16 @@ export default function StudentLoginPage() {
             router.push('/student-portal/dashboard')
         } catch (error) {
             console.error('Login error:', error)
-            setError('We\'re having trouble connecting. Please check your internet and try again.')
+            
+            // Check for specific error types
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                setError('Network error: Unable to connect to server. Please check your internet connection.')
+            } else if (error instanceof SyntaxError) {
+                setError('Server returned invalid data. Please try again.')
+            } else {
+                setError('We\'re having trouble connecting. Please check your internet and try again.')
+            }
+            
             setIsLoading(false)
         }
     }
