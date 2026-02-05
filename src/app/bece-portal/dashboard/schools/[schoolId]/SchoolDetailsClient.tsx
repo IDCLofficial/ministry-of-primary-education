@@ -8,7 +8,7 @@ import CertificateModal from '@/components/CertificateModal'
 import SearchBar from '../components/SearchBar'
 import EmptyState from '../components/EmptyState'
 import { Student } from '../types/student.types'
-import { updateSearchParam } from '../../upload-ca/utils'
+import { updateSearchParam } from '@/app/bece-portal/utils'
 import { useDebounce } from '../hooks/useDebounce'
 
 interface School {

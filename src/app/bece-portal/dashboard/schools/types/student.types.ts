@@ -1,15 +1,12 @@
 export interface Subject {
     name: string
     exam: number
-    ca: number
 }
 
 export interface Student {
     _id: string
     name: string
     examNo: string
-    sex: string
-    age: number
     school: string
     subjects: Subject[]
     createdAt: string

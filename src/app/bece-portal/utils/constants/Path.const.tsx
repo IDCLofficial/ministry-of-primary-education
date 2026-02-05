@@ -1,4 +1,4 @@
-import { IoCloudDone, IoCloudDoneOutline, IoFileTrayFull, IoFileTrayFullOutline, IoFolderOpen, IoFolderOpenOutline, IoGrid, IoGridOutline, IoPeople, IoPeopleOutline} from "react-icons/io5"
+import { IoCloudDone, IoCloudDoneOutline, IoGrid, IoGridOutline, IoPeople, IoPeopleOutline } from "react-icons/io5"
 
 interface MenuItem {
     icon: React.ReactNode,
@@ -23,7 +23,7 @@ export const menuItems: (pathname: string) => MenuItem[] = (pathname: string) =>
         label: 'Schools',
         abbr: 'Schools Management',
         href: '/bece-portal/dashboard/schools',
-        active: pathname === '/bece-portal/dashboard/schools'
+        active: pathname.includes('/bece-portal/dashboard/schools')
     },
     {
         icon: <IoCloudDoneOutline />,

@@ -6,14 +6,12 @@ import Image from 'next/image';
 
 interface Subject {
     name: string
-    ca: number
     exam: number
 }
 
 interface StudentData {
     name: string
     examNo: string
-    sex: string
     school?: string
     schoolName?: string
     subjects: Subject[]
@@ -39,16 +37,13 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
         if (!student.examNo || student.examNo.trim() === '') {
             errors.push('Exam number is missing')
         }
-        if (!student.sex || (student.sex !== 'M' && student.sex !== 'F')) {
-            errors.push('Student gender is missing or invalid')
-        }
         if (!student.subjects || student.subjects.length === 0) {
             errors.push('No subjects found')
         }
         if (student.subjects && student.subjects.some(s => !s.name || s.name.trim() === '')) {
             errors.push('Some subjects are missing names')
         }
-        if (student.subjects && student.subjects.some(s => typeof s.ca !== 'number' || typeof s.exam !== 'number')) {
+        if (student.subjects && student.subjects.some(s => typeof s.exam !== 'number')) {
             errors.push('Some subjects have invalid scores')
         }
 
@@ -57,7 +52,7 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
 
     const calculateAggregate = () => {
         const grades = student.subjects.map(subject => {
-            const total = subject.ca + subject.exam
+            const total = subject.exam
             if (total >= 80) return 1
             if (total >= 75) return 2
             if (total >= 70) return 3

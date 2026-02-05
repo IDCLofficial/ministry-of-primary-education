@@ -476,8 +476,9 @@ export default function ExamPage() {
   const hasPointsOrStudents = school && (currentExamData?.usedPoints || examPoints)
   
   // Check if sidebar should be visible
-  const showCostSummary = examNumberOfStudents - examTotalPoints > 0
-  const showSidebar = showCostSummary
+  const showCostSummary = (examNumberOfStudents - examTotalPoints) > 0;
+  const showOnboardingSummary = (examNumberOfStudents - examTotalPoints) === 0;
+  const showSidebar = showCostSummary || showOnboardingSummary
 
   return (
     <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>

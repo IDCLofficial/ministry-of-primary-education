@@ -5,7 +5,7 @@ import SearchBar from './components/SearchBar'
 import SchoolsGrid from './components/SchoolsGrid'
 import EmptyState from './components/EmptyState'
 import { useGetSchoolsQuery } from '../../store/api/authApi'
-import { updateSearchParam } from '../upload-ca/utils'
+import { updateSearchParam } from '@/app/bece-portal/utils'
 import { useSearchParams } from 'next/navigation'
 import { useDebounce } from './hooks/useDebounce'
 

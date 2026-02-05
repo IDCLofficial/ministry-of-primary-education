@@ -3,22 +3,22 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react'
 import { StudentRecord } from '../utils/csvParser'
 
-interface CAModalContextType {
+interface ExamModalContextType {
   isModalOpen: boolean
-  selectedStudent: StudentRecord | null
+  selectedStudent: StudentRecord   | null
   openModal: (student: StudentRecord) => void
   closeModal: () => void
   updateStudent: (updatedStudent: StudentRecord) => void
 }
 
-const CAModalContext = createContext<CAModalContextType | undefined>(undefined)
+const ExamModalContext = createContext<ExamModalContextType | undefined>(undefined)
 
-interface CAModalProviderProps {
+interface ExamModalProviderProps {
   children: ReactNode
   onStudentUpdate: (updatedStudent: StudentRecord) => void
 }
 
-export function CAModalProvider({ children, onStudentUpdate }: CAModalProviderProps) {
+export function ExamModalProvider({ children, onStudentUpdate }: ExamModalProviderProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState<StudentRecord | null>(null)
 
@@ -38,7 +38,7 @@ export function CAModalProvider({ children, onStudentUpdate }: CAModalProviderPr
   }
 
   return (
-    <CAModalContext.Provider value={{
+    <ExamModalContext.Provider value={{
       isModalOpen,
       selectedStudent,
       openModal,
@@ -46,14 +46,14 @@ export function CAModalProvider({ children, onStudentUpdate }: CAModalProviderPr
       updateStudent
     }}>
       {children}
-    </CAModalContext.Provider>
+    </ExamModalContext.Provider>
   )
 }
 
-export function useCAModal() {
-  const context = useContext(CAModalContext)
+export function useExamModal() {
+  const context = useContext(ExamModalContext)
   if (context === undefined) {
-    throw new Error('useCAModal must be used within a CAModalProvider')
+    throw new Error('useExamModal must be used within a ExamModalProvider')
   }
   return context
 }

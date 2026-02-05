@@ -4,17 +4,20 @@ import React, { useState } from 'react'
 import { IoClose, IoSave, IoPencil } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import { StudentRecord } from '../utils/csvParser'
+import useShortcuts, { KeyboardKey } from '@useverse/useshortcuts'
 
-interface CAModalProps {
+interface ExamModalProps {
   isOpen: boolean
   onClose: () => void
   student: StudentRecord | null
   onUpdate: (updatedStudent: StudentRecord) => void
 }
 
-export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalProps) {
+export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamModalProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedStudent, setEditedStudent] = useState<StudentRecord | null>(null)
+  const [focusedField, setFocusedField] = useState<string | null>(null)
+  const inputRefs = React.useRef<{ [key: string]: HTMLInputElement | null }>({})
 
   // Initialize edited student when modal opens or student changes
   React.useEffect(() => {
@@ -31,7 +34,6 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
     }
   }, [student, isEditing])
 
-  if (!isOpen || !student) return null
 
   const subjects = [
     { key: 'englishStudies', label: 'English Studies' },
@@ -41,23 +43,19 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
     { key: 'nationalValues', label: 'National Values' },
     { key: 'culturalAndCreativeArts', label: 'Cultural and Creative Arts' },
     { key: 'businessStudies', label: 'Business Studies' },
-    { key: 'history', label: 'History' },
     { key: 'igbo', label: 'Igbo Language' },
-    { key: 'hausa', label: 'Hausa Language' },
-    { key: 'yoruba', label: 'Yoruba Language' },
-    { key: 'preVocationalStudies', label: 'Pre-Vocational Studies' },
-    { key: 'frenchLanguage', label: 'French Language' }
+    { key: 'preVocationalStudies', label: 'Pre-Vocational Studies' }
   ]
 
   const getScoreColor = (score: number) => {
-    // CA scores are out of 30, so 21/30 (70%) is excellent, 15/30 (50%) is good
-    if (score >= 21) return 'bg-green-100 text-green-800 border-green-200'
-    if (score >= 15) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+    // Scores are out of 100, so 70% is excellent, 50% is good
+    if (score >= 70) return 'bg-green-100 text-green-800 border-green-200'
+    if (score >= 50) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
     return 'bg-red-100 text-red-800 border-red-200'
   }
 
   const getPercentage = (score: number) => {
-    return ((score / 30) * 100).toFixed(1)
+    return score.toFixed(1)
   }
 
   const calculateAverage = () => {
@@ -72,13 +70,51 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
     setIsEditing(true)
   }
 
+  const handleDoubleClick = (subjectKey: string) => {
+    setIsEditing(true)
+    setFocusedField(subjectKey)
+  }
+
+  // Focus the input when editing is enabled via double-click
+  React.useEffect(() => {
+    if (isEditing && focusedField && inputRefs.current[focusedField]) {
+      inputRefs.current[focusedField]?.focus()
+      inputRefs.current[focusedField]?.select()
+      setFocusedField(null)
+    }
+  }, [isEditing, focusedField])
+
   const handleSave = () => {
     if (editedStudent) {
       onUpdate(editedStudent)
       setIsEditing(false)
-      toast.success(`Successfully updated CA scores for ${editedStudent.name}`)
+      toast.success(`Successfully updated Exam scores for ${editedStudent.name}`)
     }
   }
+
+
+  useShortcuts({
+    shortcuts: [
+      { key: "Escape", enabled: isOpen },
+      { key: "Enter", enabled: isEditing && isOpen }
+    ],
+    onTrigger: (shortcut) => {
+      switch (shortcut.key) {
+        case KeyboardKey.Escape:
+          if (isEditing) {
+            setIsEditing(false);
+            return;
+          }
+          onClose();
+          break;
+        case KeyboardKey.Enter:
+          handleSave();
+          break;
+      }
+    }
+  }, [isOpen, isEditing, handleSave]);
+
+  if (!isOpen || !student) return null
 
   const handleCancel = () => {
     setEditedStudent({ ...student })
@@ -90,7 +126,7 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
     const numValue = parseFloat(value) || 0
     setEditedStudent({
       ...editedStudent,
-      [subjectKey]: Math.min(Math.max(numValue, 0), 30) // Clamp between 0 and 30
+      [subjectKey]: Math.min(Math.max(numValue, 0), 100) // Clamp between 0 and 100
     })
   }
 
@@ -98,7 +134,7 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
-        <div 
+        <div
           className="fixed inset-0 transition-opacity bg-black/50"
           onClick={onClose}
         />
@@ -109,7 +145,7 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-2xl font-bold text-gray-900">
-                Continuous Assessment Report
+                Examination Report
               </h3>
               <p className="text-sm text-gray-600 mt-1">
                 {student.name} - {student.examNo}
@@ -138,7 +174,7 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
                   className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 >
                   <IoPencil className="w-4 h-4 mr-2" />
-                  Edit CA Scores
+                  Edit Exam Scores
                 </button>
               )}
               <button
@@ -153,7 +189,7 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
           {/* Student Info */}
           <div className="bg-gray-50 border border-black/5 rounded-lg p-4 mb-6">
             <h4 className="text-lg font-medium text-gray-900 mb-3">Student Information</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">School Name</label>
                 <p className="text-sm text-gray-900 mt-1">{student.schoolName}</p>
@@ -170,27 +206,19 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
                 <label className="text-sm font-medium text-gray-500">Exam Number</label>
                 <p className="text-sm text-gray-900 mt-1">{student.examNo}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Gender</label>
-                <p className="text-sm text-gray-900 mt-1">{student.sex}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Age</label>
-                <p className="text-sm text-gray-900 mt-1">{student.age} years</p>
-              </div>
             </div>
           </div>
 
-          {/* CA Scores */}
+          {/* Scores */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-medium text-gray-900">Continuous Assessment Scores</h4>
+              <h4 className="text-lg font-medium text-gray-900">Subject Exam Scores</h4>
               <div className="text-right">
                 <p className="text-sm text-gray-500">Average Score</p>
                 <p className="text-2xl font-bold text-green-600">{calculateAverage()}%</p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {subjects.map(({ key, label }) => {
                 const currentStudent = isEditing ? editedStudent : student
@@ -206,15 +234,22 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
                         <div className="flex items-center space-x-2 mt-1">
                           {isEditing ? (
                             <input
+                              ref={(el) => { inputRefs.current[key] = el }}
                               type="number"
                               min="0"
-                              max="30"
+                              max="100"
                               value={score}
                               onChange={(e) => handleScoreChange(key, e.target.value)}
                               className="w-16 px-2 py-1 text-lg font-bold border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             />
                           ) : (
-                            <span className="text-2xl font-bold">{score}</span>
+                            <span 
+                              className="text-2xl font-bold hover:text-green-600 transition-colors"
+                              onDoubleClick={() => handleDoubleClick(key)}
+                              title="Double-click to edit"
+                            >
+                              {score}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -247,7 +282,7 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
                 <p className="text-sm text-gray-600">Missing Scores</p>
               </div>
             </div>
-            
+
             {/* Missing Subjects List */}
             {subjects.filter(s => (student[s.key as keyof StudentRecord] as number) === 0).length > 0 && (
               <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
@@ -256,7 +291,7 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
                   {subjects
                     .filter(s => (student[s.key as keyof StudentRecord] as number) === 0)
                     .map(subject => (
-                      <span 
+                      <span
                         key={subject.key}
                         className="inline-flex px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full"
                       >
@@ -267,7 +302,7 @@ export default function CAModal({ isOpen, onClose, student, onUpdate }: CAModalP
                 </div>
               </div>
             )}
-            
+
             {/* Complete Upload Message */}
             {subjects.filter(s => (student[s.key as keyof StudentRecord] as number) === 0).length === 0 && (
               <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">

@@ -1,15 +1,14 @@
 'use client'
-import React, { useState, useEffect, useMemo } from 'react'
-import { IoClose, IoSchool, IoPerson, IoCalendar, IoMale, IoFemale, IoRibbon, IoPencil, IoSave, IoDocumentText } from 'react-icons/io5'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
+import { IoClose, IoSchool, IoPerson, IoCalendar, IoRibbon, IoPencil, IoSave, IoDocumentText } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import { Student } from '../types/student.types'
 import { useUpdateStudentScoreMutation } from '../../../store/api/authApi'
+import useShortcuts, { KeyboardKey } from '@useverse/useshortcuts'
 
 interface ExamResult {
     subject: string
-    caScore: number
-    examScore: number
-    total: number
+    exam: number
     grade: string
 }
 
@@ -25,6 +24,8 @@ interface StudentModalProps {
 export default function StudentModal({ isOpen, onClose, student, schoolName, onUpdate, onGenerateCertificate }: StudentModalProps) {
     const [isEditing, setIsEditing] = useState(false)
     const [editedResults, setEditedResults] = useState<ExamResult[]>([])
+    const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
+    const inputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({})
     const [updateStudentScore, { isLoading: isUpdating }] = useUpdateStudentScoreMutation()
 
     // Grade calculation function
@@ -43,15 +44,12 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
     // Convert student subjects to exam results format
     const initialExamResults: ExamResult[] = useMemo(() => {
         if (!student?.subjects) return []
-        
+
         return student.subjects.map(subject => {
-            const total = subject.ca + subject.exam
             return {
                 subject: subject.name,
-                caScore: subject.ca,
-                examScore: subject.exam,
-                total,
-                grade: calculateGrade(total)
+                exam: subject.exam,
+                grade: calculateGrade(subject.exam)
             }
         })
     }, [student?.subjects])
@@ -71,13 +69,26 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
         }
     }, [isEditing, initialExamResults])
 
-    if (!isOpen || !student) return null
 
     const examResults = isEditing ? editedResults : initialExamResults
 
     const handleEdit = () => {
         setIsEditing(true)
     }
+
+    const handleDoubleClick = (index: number) => {
+        setIsEditing(true)
+        setFocusedIndex(index)
+    }
+
+    // Focus the input when editing is enabled via double-click
+    useEffect(() => {
+        if (isEditing && focusedIndex !== null && inputRefs.current[focusedIndex]) {
+            inputRefs.current[focusedIndex]?.focus()
+            inputRefs.current[focusedIndex]?.select()
+            setFocusedIndex(null)
+        }
+    }, [isEditing, focusedIndex])
 
     const handleSave = async () => {
         if (!student) return
@@ -86,8 +97,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
             // Transform edited results to API format
             const subjects = editedResults.map(result => ({
                 subjectName: result.subject,
-                ca: result.caScore,
-                exam: result.examScore
+                exam: result.exam
             }))
 
             // Call the API
@@ -103,33 +113,52 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
 
             setIsEditing(false)
             onClose()
-            toast.success(`Successfully updated exam results for ${student.name}`)
+            toast.success(`Successfully updated Exam scores for ${student.name}`)
         } catch (error) {
-            console.error('Failed to update scores:', error)
-            toast.error('Failed to update exam results. Please try again.')
+            console.error('Failed to update Exam scores:', error)
+            toast.error('Failed to update Exam scores. Please try again.')
         }
     }
+
+    useShortcuts({
+        shortcuts: [
+            { key: "Escape", enabled: isOpen },
+            { key: "Enter", enabled: isEditing && isOpen }
+        ],
+        onTrigger: (shortcut) => {
+            switch (shortcut.key) {
+                case KeyboardKey.Escape:
+                    if (isEditing) {
+                        setIsEditing(false);
+                        return;
+                    }
+                    onClose();
+                    break;
+                case KeyboardKey.Enter:
+                    handleSave();
+                    break;
+            }
+        }
+    }, [isOpen, isEditing, handleSave]);
+
+    if (!isOpen || !student) return null;
 
     const handleCancel = () => {
         setEditedResults([...initialExamResults])
         setIsEditing(false)
     }
 
-    const handleScoreChange = (index: number, field: 'caScore' | 'examScore', value: string) => {
+    const handleScoreChange = (index: number, value: string) => {
         const numValue = parseFloat(value) || 0
-        const maxValue = field === 'caScore' ? 30 : 70
-        const clampedValue = Math.min(Math.max(numValue, 0), maxValue)
-        
+        const clampedValue = Math.min(Math.max(numValue, 0), 100)
+
         setEditedResults(prev => {
             const updated = [...prev]
             updated[index] = {
                 ...updated[index],
-                [field]: clampedValue,
-                total: field === 'caScore' 
-                    ? clampedValue + updated[index].examScore
-                    : updated[index].caScore + clampedValue
+                exam: clampedValue
             }
-            updated[index].grade = calculateGrade(updated[index].total)
+            updated[index].grade = calculateGrade(updated[index].exam)
             return updated
         })
     }
@@ -150,7 +179,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
             }
             return sum + (gradePoints[result.grade as keyof typeof gradePoints] || 9)
         }, 0)
-        
+
         const average = totalPoints / examResults.length
         if (average <= 1.5) return 'Distinction'
         if (average <= 2.5) return 'Credit'
@@ -171,7 +200,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
         <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0 relative">
                 {/* Background overlay */}
-                <div 
+                <div
                     className="fixed inset-0 transition-opacity bg-black/50"
                     onClick={onClose}
                 />
@@ -271,13 +300,6 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-gray-500 flex items-center">
-                                    {student.sex === 'M' ? <IoMale className="w-4 h-4 mr-1" /> : <IoFemale className="w-4 h-4 mr-1" />}
-                                    Gender
-                                </label>
-                                <p className="text-sm text-gray-900 mt-1">{student.sex === 'M' ? 'Male' : 'Female'}</p>
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-500 flex items-center">
                                     <IoCalendar className="w-4 h-4 mr-1" />
                                     Updated At
                                 </label>
@@ -321,7 +343,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                     {/* Exam Results */}
                     <div className="mb-6">
                         <h4 className="text-lg font-medium text-gray-900 mb-4">BECE Examination Results</h4>
-                        
+
                         <div className="overflow-x-auto">
                             <table className="min-w-full bg-white border border-gray-200 rounded-lg">
                                 <thead className="bg-gray-50">
@@ -330,13 +352,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                             Subject
                                         </th>
                                         <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            CA Score (30)
-                                        </th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Exam Score (70)
-                                        </th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Total (100)
+                                            Exam (100)
                                         </th>
                                         <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Grade
@@ -352,33 +368,23 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                             <td className="px-4 py-3 text-sm text-center text-gray-900">
                                                 {isEditing ? (
                                                     <input
+                                                        ref={(el) => { inputRefs.current[index] = el }}
                                                         type="number"
                                                         min="0"
-                                                        max="30"
-                                                        value={result.caScore}
-                                                        onChange={(e) => handleScoreChange(index, 'caScore', e.target.value)}
+                                                        max="100"
+                                                        value={result.exam}
+                                                        onChange={(e) => handleScoreChange(index, e.target.value)}
                                                         className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                                     />
                                                 ) : (
-                                                    result.caScore
+                                                    <span
+                                                        className="hover:text-green-600 transition-colors"
+                                                        onDoubleClick={() => handleDoubleClick(index)}
+                                                        title="Double-click to edit"
+                                                    >
+                                                        {result.exam}
+                                                    </span>
                                                 )}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-center text-gray-900">
-                                                {isEditing ? (
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max="70"
-                                                        value={result.examScore}
-                                                        onChange={(e) => handleScoreChange(index, 'examScore', e.target.value)}
-                                                        className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                                    />
-                                                ) : (
-                                                    result.examScore
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-center font-semibold text-gray-900">
-                                                {result.total}
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full border ${getGradeColor(result.grade)}`}>

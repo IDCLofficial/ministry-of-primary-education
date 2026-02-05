@@ -84,13 +84,7 @@ export default function ResultsCard({ student }: ResultsCardProps) {
                                     Subject
                                 </th>
                                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    CA (30)
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Exam (70)
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Total (100)
+                                    Score (100)
                                 </th>
                                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Grade
@@ -104,16 +98,6 @@ export default function ResultsCard({ student }: ResultsCardProps) {
                                         <div className="text-sm font-medium text-gray-900">
                                             {subject.name}
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        <span className="text-sm text-gray-900 font-medium">
-                                            {subject.ca}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        <span className="text-sm text-gray-900 font-medium">
-                                            {subject.exam}
-                                        </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
                                         <span className="text-sm font-bold text-gray-900">

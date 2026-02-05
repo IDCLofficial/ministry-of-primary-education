@@ -31,21 +31,11 @@ export default function QuickActions() {
   const actions: QuickAction[] = [
     {
       id: '1',
-      title: 'Upload CA',
-      description: 'Upload Continuous Assessment results',
-      icon: <IoFileTrayFullOutline className="w-6 h-6" />,
-      activeIcon: <IoFileTrayFull className="w-6 h-6" />,
-      href: '/bece-portal/dashboard/upload-ca',
-      color: 'text-gray-700',
-      bgColor: 'bg-gray-50 hover:bg-gray-100'
-    },
-    {
-      id: '2',
-      title: 'Upload Exams',
+      title: 'Upload Results',
       description: 'Upload examination results',
       icon: <IoFolderOpenOutline className="w-6 h-6" />,
       activeIcon: <IoFolderOpen className="w-6 h-6" />,
-      href: '/bece-portal/dashboard/upload-exams',
+      href: '/bece-portal/dashboard/upload',
       color: 'text-gray-700',
       bgColor: 'bg-gray-50 hover:bg-gray-100'
     },
