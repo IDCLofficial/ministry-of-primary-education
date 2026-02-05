@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 interface PaymentStatusModalProps {
@@ -12,10 +12,6 @@ export default function PaymentStatusModal({ status, onClose }: PaymentStatusMod
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  if (!status) return null
-
-  const isSuccess = status === 'success'
-
   const handleClose = () => {
     // Remove payment param from URL
     const params = new URLSearchParams(searchParams?.toString() || '')
@@ -23,6 +19,22 @@ export default function PaymentStatusModal({ status, onClose }: PaymentStatusMod
     router.replace(`?${params.toString()}`, { scroll: false })
     onClose()
   }
+
+  // Auto-close after 3 seconds
+  useEffect(() => {
+    if (!status) return
+
+    const timer = setTimeout(() => {
+      handleClose()
+    }, 3000)
+
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status])
+
+  if (!status) return null
+
+  const isSuccess = status === 'success'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

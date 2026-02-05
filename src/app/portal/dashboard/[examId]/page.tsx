@@ -474,6 +474,10 @@ export default function ExamPage() {
 
   // Show exam dashboard if approved - use exam-specific points
   const hasPointsOrStudents = school && (currentExamData?.usedPoints || examPoints)
+  
+  // Check if sidebar should be visible
+  const showCostSummary = examNumberOfStudents - examTotalPoints > 0
+  const showSidebar = showCostSummary
 
   return (
     <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
@@ -481,8 +485,8 @@ export default function ExamPage() {
       
       <div className="flex-1 mt-4 sm:mt-6">
         {hasPointsOrStudents ? (
-          <div className="flex-1 overflow-y-hidden flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6">
-            <div className="xl:col-span-3 space-y-4 sm:space-y-6 order-2 xl:order-1">
+          <div className={`flex-1 overflow-y-hidden flex flex-col ${showSidebar ? 'xl:grid xl:grid-cols-4' : ''} gap-4 sm:gap-6`}>
+            <div className={`${showSidebar ? 'xl:col-span-3' : ''} space-y-4 sm:space-y-6 ${showSidebar ? 'order-2 xl:order-1' : ''}`}>
               <ResponsiveFilterBar onFilterChange={handleFilterChange} currentFilters={filters} />
               
               <StudentRegistrationExcel
@@ -505,25 +509,27 @@ export default function ExamPage() {
               />
             </div>
 
-            <div className="xl:col-span-1 order-1 xl:order-2 overflow-y-auto">
-              <div className="space-y-6">
-                <OnboardingCompletionSummary
-                  totalStudents={studentsData?.totalItems || 0}
-                  handleRefresh={handleRefresh}
-                  examType={examName}
-                  examTotalPoints={examTotalPoints}
-                  examNumberOfStudents={examNumberOfStudents}
-                />
-                {examNumberOfStudents - examTotalPoints > 0 && (
-                  <CostSummary
-                    onPurchaseMorePoints={() => setShowPaymentModal(true)}
-                    examPoints={examPoints}
+            {showSidebar && (
+              <div className="xl:col-span-1 order-1 xl:order-2 overflow-y-auto">
+                <div className="space-y-6">
+                  <OnboardingCompletionSummary
+                    totalStudents={studentsData?.totalItems || 0}
+                    handleRefresh={handleRefresh}
+                    examType={examName}
                     examTotalPoints={examTotalPoints}
                     examNumberOfStudents={examNumberOfStudents}
                   />
-                )}
+                  {showCostSummary && (
+                    <CostSummary
+                      onPurchaseMorePoints={() => setShowPaymentModal(true)}
+                      examPoints={examPoints}
+                      examTotalPoints={examTotalPoints}
+                      examNumberOfStudents={examNumberOfStudents}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <div className="flex-1 flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6">

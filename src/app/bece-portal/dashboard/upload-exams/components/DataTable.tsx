@@ -118,7 +118,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
         setIsSaving(true)
 
         try {
-            toast.loading('Saving CA data to database...')
+            toast.loading('Saving Exams data to database...')
 
             // Group students by school
             const schoolGroups = data.reduce((groups, student) => {
@@ -181,7 +181,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             onDataChange([])
             setFailedSchools([])
             toast.success(
-                `Successfully saved ${data.length} CA records to database in ${elapsedTime}s`
+                `Successfully saved ${data.length} Exam records to database in ${elapsedTime}s`
             )
 
             router.push('/bece-portal/dashboard/schools')
@@ -190,10 +190,10 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             const endTime = performance.now()
             const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
 
-            console.error('Error saving CA data:', error)
+            console.error('Error saving Exam data:', error)
 
             toast.dismiss()
-            toast.error(`Failed to save CA data to database (${elapsedTime}s)`)
+            toast.error(`Failed to save Exam data to database (${elapsedTime}s)`)
             toast.error('Please check your connection and try again.')
         } finally {
             setIsSaving(false)

@@ -84,14 +84,12 @@ export default function StudentRegistrationExcel({
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showCertificateModal, setShowCertificateModal] = useState(false)
   const [originalStudents, setOriginalStudents] = useState<Map<string, Student>>(new Map())
-
-  // Cancel all edit/new record states when profile is being refetched
-  useEffect(() => {
-    if (isFetchingProfile) {
-      setEditableStudents(prev => prev.map(s => ({ ...s, isEditing: false })))
-      setShowNewRow(false)
-    }
-  }, [isFetchingProfile])
+  const [quickAddMode, setQuickAddMode] = useState(false)
+  const [lastStudentDefaults, setLastStudentDefaults] = useState<{ class: string; examYear: number; gender: 'Male' | 'Female' }>({ 
+    class: 'SS3', 
+    examYear: new Date().getFullYear(),
+    gender: 'Male'
+  })
 
   const examTypeToName: Record<ExamTypeEnum, string> = {
     [ExamTypeEnum.WAEC]: 'WAEC',
@@ -110,8 +108,11 @@ export default function StudentRegistrationExcel({
 
   // Initialize editable students from props and track original data
   useEffect(() => {
-    const editableList = students.map(s => ({ ...s, isEditing: false, isNew: false }))
-    setEditableStudents(editableList)
+    let editableList = students;
+    if (examPoints === 0) {
+      editableList = editableList.map(s => ({ ...s, isEditing: false, isNew: false }));
+    }
+    setEditableStudents(editableList);
     
     // Store original student data for change detection
     const originalMap = new Map<string, Student>()
@@ -121,7 +122,7 @@ export default function StudentRegistrationExcel({
     setOriginalStudents(originalMap)
     
     setIsRefreshing(false)
-  }, [students])
+  }, [students, examPoints]);
 
   const classOptions = [
     { value: 'SS3', label: 'SS3' },
@@ -151,9 +152,9 @@ export default function StudentRegistrationExcel({
     const newStudent: EditableStudent = {
       id: `new-${Date.now()}`,
       fullName: '',
-      gender: 'Male',
-      class: 'SS3', // Default class
-      examYear: new Date().getFullYear(),
+      gender: lastStudentDefaults.gender,
+      class: lastStudentDefaults.class,
+      examYear: lastStudentDefaults.examYear,
       isEditing: true,
       isNew: true
     }
@@ -169,8 +170,9 @@ export default function StudentRegistrationExcel({
   }
 
   const handleCancelEdit = (id: string) => {
+    const student = editableStudents.find(s => s.id === id)
+    
     setEditableStudents(prev => {
-      const student = prev.find(s => s.id === id)
       if (student?.isNew) {
         // Remove new unsaved row
         return prev.filter(s => s.id !== id)
@@ -179,7 +181,11 @@ export default function StudentRegistrationExcel({
       const original = originalStudents.get(id)
       return prev.map(s => (s.id === id && original ? { ...original, isEditing: false } : s))
     })
-    setShowNewRow(false)
+    
+    // Only hide the add button if we're canceling a new row
+    if (student?.isNew) {
+      setShowNewRow(false)
+    }
   }
 
   const handleFieldChange = (id: string, field: keyof Student, value: string | number) => {
@@ -204,6 +210,12 @@ export default function StudentRegistrationExcel({
   const handleSaveRow = async (id: string) => {
     const student = editableStudents.find(s => s.id === id)
     if (!student || !school?.id) return
+
+    // Prevent save operations when profile is being refetched (points updating)
+    if (isFetchingProfile) {
+      toast.error('Please wait, points are being updated...')
+      return
+    }
 
     const validationError = validateStudent(student)
     if (validationError) {
@@ -234,8 +246,8 @@ export default function StudentRegistrationExcel({
           isLoadingId: true
         }
         
-        // Add new student at the top of the table and cancel all edit states
-        setEditableStudents(prev => [optimisticStudent, ...prev.filter(s => s.id !== id).map(s => ({ ...s, isEditing: false }))])
+        // Replace the new row with optimistic student, keep other rows unchanged
+        setEditableStudents(prev => [optimisticStudent, ...prev.filter(s => s.id !== id)])
         setShowNewRow(false)
 
         const response = await onboardStudent({
@@ -245,7 +257,14 @@ export default function StudentRegistrationExcel({
         
         toast.success(`Student ${response.studentName} onboarded successfully!`)
         
-        // Update the optimistic student with actual data from response and ensure all edits are cancelled
+        // Save the student's class, year, and gender as defaults for next entry
+        setLastStudentDefaults({
+          class: student.class,
+          examYear: student.examYear,
+          gender: student.gender
+        })
+        
+        // Update the optimistic student with actual data from response
         setEditableStudents(prev => prev.map(s => 
           s.id === tempId ? {
             ...s,
@@ -253,12 +272,19 @@ export default function StudentRegistrationExcel({
             studentId: response.studentId?.toString(),
             isLoadingId: false,
             isEditing: false
-          } : { ...s, isEditing: false }
+          } : s
         ))
         
         // Refresh in background without showing loader
         if (onRefreshStudents) {
           onRefreshStudents()
+        }
+        
+        // Auto-add new row if in quick-add mode
+        if (quickAddMode && examPoints > 1) {
+          setTimeout(() => {
+            handleAddNewRow()
+          }, 100)
         }
       } else {
         // Update existing student - check if anything changed
@@ -272,11 +298,10 @@ export default function StudentRegistrationExcel({
             original.examYear !== student.examYear
           
           if (!hasChanges) {
-            // No changes detected, just cancel edit mode
+            // No changes detected, just cancel edit mode for this row only
             setEditableStudents(prev =>
-              prev.map(s => ({ ...s, isEditing: false }))
+              prev.map(s => s.id === id ? { ...s, isEditing: false } : s)
             )
-            setShowNewRow(false)
             toast.success('No changes to save')
             setSavingRows(prev => {
               const newSet = new Set(prev)
@@ -302,16 +327,16 @@ export default function StudentRegistrationExcel({
         
         toast.success(`Student ${response.studentName} updated successfully!`)
         
-        // Update local state and cancel all edit states
+        // Update local state and cancel edit mode for this row only
         setEditableStudents(prev =>
-          prev.map(s => ({ ...s, isEditing: false }))
+          prev.map(s => s.id === id ? { ...s, isEditing: false } : s)
         )
-        setShowNewRow(false)
         
         // Update original data with new values
         setOriginalStudents(prev => {
           const newMap = new Map(prev)
           const { isEditing: _isEditing, isNew: _isNew, isLoadingId: _isLoadingId, ...studentData } = student
+          
           newMap.set(student.id, studentData as Student)
           return newMap
         })
@@ -489,6 +514,12 @@ export default function StudentRegistrationExcel({
                       type="text"
                       value={newStudent.fullName}
                       onChange={(e) => handleFieldChange(newStudent.id, 'fullName', e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          handleSaveRow(newStudent.id)
+                        }
+                      }}
                       placeholder="Enter full name"
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                       autoFocus
@@ -660,30 +691,45 @@ export default function StudentRegistrationExcel({
 
       {/* Add New Row Button - Only show when no new row is active */}
       {currentExamData && examStatus === "approved" && examPoints > 0 && !showNewRow && (
-        <div className="mb-4">
-          <button
-            onClick={handleAddNewRow}
-            disabled={isFetchingProfile}
-            className={`w-full py-3 border-2 border-dashed rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium ${
-              isFetchingProfile
-                ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
-                : 'border-gray-300 text-gray-600 hover:border-green-500 hover:text-green-600 hover:bg-green-50 cursor-pointer'
-            }`}
-          >
-            {isFetchingProfile ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
-                Updating Points...
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add New Student (Available Points: {examPoints})
-              </>
-            )}
-          </button>
+        <div className="mb-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleAddNewRow}
+              className="flex-1 py-3 border-2 border-dashed rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium border-gray-300 text-gray-600 hover:border-green-500 hover:text-green-600 hover:bg-green-50 cursor-pointer"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add New Student (Available Points: {examPoints})
+              {isFetchingProfile && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 ml-2"></div>
+              )}
+            </button>
+            
+            <button
+              onClick={() => setQuickAddMode(!quickAddMode)}
+              className={`px-4 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap ${
+                quickAddMode
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+              title="Quick-add mode: Auto-create new row after saving"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Quick Add
+            </button>
+          </div>
+          
+          {quickAddMode && (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-4 py-2 rounded-lg">
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <span>Quick-add mode active: New row will auto-create after saving. Press <kbd className="px-1.5 py-0.5 bg-white border border-green-300 rounded text-xs font-mono">Enter</kbd> to save.</span>
+            </div>
+          )}
         </div>
       )}
 
