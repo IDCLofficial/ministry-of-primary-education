@@ -2,9 +2,9 @@ import React from "react";
 import { FaMapMarkerAlt, FaPhone, FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 
 const contactInfo = {
-  address: "Block 7, New Owerri Secretariat 460281",
+  address: "Block 3, Second Floor, Imo State Secretariat, Port Harcourt Road, Owerri",
   email: "",
-  phone: "+2348037766373",
+  phone: "+234 9547 6304, +234 8037 766 373",
   socials: [
     { icon: <FaFacebookF />, href: "#" },
     { icon: <FaTwitter />, href: "#" },

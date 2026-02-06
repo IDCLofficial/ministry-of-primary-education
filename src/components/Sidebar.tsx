@@ -13,6 +13,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     { href: '/', label: 'Home' },
     { href: '/about', label: 'About' },
     { href: '/services', label: 'Services' },
+    { href: '/registration-portal', label: 'Portal' },
     { href: '/projects', label: 'Projects' },
     { href: '/news', label: 'News' },
     { href: '/departments', label: 'Departments' },

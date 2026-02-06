@@ -8,11 +8,13 @@ import Stats from "@/components/Stats";
 import FeaturedPartners from "@/components/FeaturedPartners";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
+import PortalAccessModal from "@/components/PortalAccessModal";
 
 export default function Home() {
   return (
     <>
-
+      {/* Portal Access Modal */}
+      <PortalAccessModal />
      
       {/* hero section */}
       <HeroSection
@@ -38,9 +40,9 @@ export default function Home() {
       {/* Commissioner Section */}
       <CommissionerSection
   imageSrc="/images/commisioner.png"
-  imageAlt="Professor Bernard Thompson Onyemechukwu Ikegwuoha, Commissioner for Primary and Secondary Education in Imo State"
+  imageAlt="Professor Bernard Thompson Onyemauchechukwu Ikegwuoha, Commissioner for Primary and Secondary Education in Imo State"
   title="About The Commissioner"
-  bio="Professor Bernard Thompson Onyemechukwu Ikegwuoha is an accomplished academic, seasoned administrator, and transformational leader serving as the Honourable Commissioner for Primary and Secondary Education in Imo State. A scholar of national repute, Professor Ikegwuoha brings decades of experience in educational reform, institutional leadership, and policy implementation. His tenure is marked by a visionary commitment to repositioning the educational sector for excellence, innovation, and inclusivity."
+  bio="Professor Bernard-Thompson Onyemauchechukwu Ikegwuoha is an accomplished academic, seasoned administrator, and transformational leader serving as the Honourable Commissioner for Primary and Secondary Education in Imo State. A scholar of national repute, Professor Ikegwuoha brings decades of experience in educational reform, institutional leadership, and policy implementation. His tenure is marked by a visionary commitment to repositioning the educational sector for excellence, innovation, and inclusivity."
   details="As Commissioner, Professor Ikegwuoha has overseen critical reforms including the enforcement of academic standards, revitalization of infrastructure, and introduction of digital tools in schools. He has championed the closure of substandard institutions and spearheaded the rehabilitation of public schools across the state. With a deep understanding of the challenges facing education in Nigeria, he collaborates actively with educators, communities, and development partners to ensure that every child in Imo State receives quality, equitable, and future-ready education. His leadership reflects a rare blend of intellectual depth, integrity, and hands-on governance, earning him admiration within and beyond Imo State."
 />
 
