@@ -11,6 +11,23 @@ import { useDebounce } from '../portal/utils/hooks/useDebounce'
 // Regex pattern for exam number validation (e.g., ok/977/2025 or ok/977/2025(1))
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3}\/\d{3,4}(\(\d\))?$/
 
+// TypeScript interface for API response
+interface StudentResult {
+    _id: string
+    name: string
+    examNo: string
+    age: number
+    sex: string
+    school: string
+    subjects: Array<{
+        name: string
+        exam: number
+        ca: number
+    }>
+    createdAt: string
+    updatedAt: string
+}
+
 export default function StudentLoginPage() {
     const router = useRouter();
     const [examNo, setExamNo] = useState('');
@@ -45,9 +62,7 @@ export default function StudentLoginPage() {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
-                },
-                mode: 'cors',
-                credentials: 'omit'
+                }
             })
 
             // Check if response is ok
@@ -89,9 +104,9 @@ export default function StudentLoginPage() {
                 return
             }
 
-            let data
+            let data: StudentResult
             try {
-                data = JSON.parse(text)
+                data = JSON.parse(text) as StudentResult
             } catch (parseError) {
                 console.error('JSON parse error:', parseError, 'Response text:', text)
                 setError('Received malformed response from server. Please try again.')
@@ -99,16 +114,27 @@ export default function StudentLoginPage() {
                 return
             }
 
-            // Validate data
-            if (!data || !data.examNo) {
+            // Validate data structure according to API response
+            if (!data || !data.examNo || !data.name || !data.school) {
                 console.error('Invalid data structure:', data)
                 setError('We couldn\'t load your results. Please try again or contact support.')
                 setIsLoading(false)
                 return
             }
 
-            localStorage.setItem('student_exam_no', examNo)
-            toast.success('Welcome! Loading your results... 🎉')
+            // Validate subjects array exists
+            if (!data.subjects || !Array.isArray(data.subjects) || data.subjects.length === 0) {
+                console.error('Invalid subjects data:', data.subjects)
+                setError('Your results data is incomplete. Please contact support.')
+                setIsLoading(false)
+                return
+            }
+
+            // Store the complete student data in localStorage
+            localStorage.setItem('student_data', JSON.stringify(data))
+            localStorage.setItem('student_exam_no', data.examNo) // Keep for backward compatibility
+            
+            toast.success(`Welcome ${data.name}! Loading your results... 🎉`)
             router.push('/student-portal/dashboard')
         } catch (error) {
             console.error('Login error:', error)

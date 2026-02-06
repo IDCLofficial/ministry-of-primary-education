@@ -150,8 +150,6 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                 students: students.map(student => ({
                     name: student.name,
                     examNo: student.examNo,
-                    sex: 'N/A',
-                    age: 0,
                     subjects: [
                         { name: 'English Studies', exam: student.englishStudies },
                         { name: 'Mathematics', exam: student.mathematics },
