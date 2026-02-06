@@ -10,6 +10,7 @@ import { checkStudentResult, StudentData } from '../utils/api'
 
 // Regex pattern for exam number validation (e.g., ok/977/2025/001)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3}\/\d{4}\/\d{3}$/
+const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3}\/\d{3,4}(\(\d\))?$/
 
 export default function StudentDashboardPage() {
     const router = useRouter()
@@ -26,9 +27,12 @@ export default function StudentDashboardPage() {
                 router.push('/student-portal')
                 return
             }
+            const examNoClean = examNo.replace(/\s/g, '').replace(/\//g, '-');
+
+            console.log({examNoClean, examNo, test01: EXAM_NO_REGEX.test(examNo), test02: EXAM_NO_REGEX_02.test(examNo)});
 
             // Validate exam number format
-            if (!EXAM_NO_REGEX.test(examNo)) {
+            if (!EXAM_NO_REGEX.test(examNo) && !EXAM_NO_REGEX_02.test(examNo)) {
                 setError('Invalid exam number format')
                 setTimeout(() => {
                     localStorage.removeItem('student_exam_no')
@@ -39,7 +43,8 @@ export default function StudentDashboardPage() {
             }
 
             try {
-                const studentData = await checkStudentResult(examNo.replace(/\s/g, '').replace(/\//g, '-'));
+                console.log(examNoClean)
+                const studentData = await checkStudentResult(examNoClean);
                 setStudent(studentData)
                 setError(null)
             } catch (err) {
@@ -60,8 +65,8 @@ export default function StudentDashboardPage() {
                 
                 // Auto logout after showing error
                 setTimeout(() => {
-                    localStorage.removeItem('student_exam_no')
-                    router.push('/student-portal')
+                    // localStorage.removeItem('student_exam_no')
+                    // router.push('/student-portal')
                 }, 3000)
             } finally {
                 setIsLoading(false)

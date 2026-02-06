@@ -10,6 +10,7 @@ import { useDebounce } from '../portal/utils/hooks/useDebounce'
 
 // Regex pattern for exam number validation (e.g., ok/977/2025 or ok/977/2025(1))
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3}\/\d{3,4}(\(\d\))?$/
+const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3}\/\d{4}\/\d{3}$/
 
 // TypeScript interface for API response
 interface StudentResult {
@@ -36,7 +37,7 @@ export default function StudentLoginPage() {
 
     const debouncedExamNo = useDebounce(examNo, 500);
 
-    const canProceed = debouncedExamNo.length >= 10 && EXAM_NO_REGEX.test(debouncedExamNo);
+    const canProceed = debouncedExamNo.length >= 10 && (EXAM_NO_REGEX.test(debouncedExamNo) || EXAM_NO_REGEX_02.test(debouncedExamNo));
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
     const isMaintenanceMode = !API_BASE_URL;
 
@@ -50,7 +51,7 @@ export default function StudentLoginPage() {
         }
 
         // Validate exam number format
-        if (!EXAM_NO_REGEX.test(examNo)) {
+        if (!EXAM_NO_REGEX.test(examNo) && !EXAM_NO_REGEX_02.test(examNo)) {
             setError('Hmm, that doesn\'t look right. Please use format: xx/000/000 or xx/000/000(0) (e.g., ok/977/2025 or ok/977/2025(1))')
             return
         }
