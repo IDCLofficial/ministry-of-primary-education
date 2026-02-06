@@ -20,7 +20,7 @@ export default function StudentDashboardPage() {
 
     useEffect(() => {
         const fetchStudentData = async () => {
-            const examNo = localStorage.getItem('student_exam_no')
+            const examNo = localStorage.getItem('student_exam_no');
 
             if (!examNo) {
                 router.push('/student-portal')
@@ -39,7 +39,7 @@ export default function StudentDashboardPage() {
             }
 
             try {
-                const studentData = await checkStudentResult(examNo)
+                const studentData = await checkStudentResult(examNo.replace(/\s/g, '').replace(/\//g, '-'));
                 setStudent(studentData)
                 setError(null)
             } catch (err) {
