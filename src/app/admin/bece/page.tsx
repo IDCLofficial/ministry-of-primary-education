@@ -12,8 +12,8 @@ export default function BecePage() {
 
   const applications = applicationsResponse?.data || []
   const totalStudents = applications.reduce((sum, app) => sum + app.numberOfStudents, 0)
-  const totalAmount = applications.reduce((sum, app) => sum + app.totalAmount, 0)
-  const successfulPayments = applications.filter(app => app.paymentStatus === 'successful').length
+  const approvedApplications = applications.filter(app => app.applicationStatus === 'approved').length
+  const pendingApplications = applications.filter(app => app.applicationStatus === 'pending').length
 
   return (
     <div className="p-6">
@@ -51,22 +51,20 @@ export default function BecePage() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Successful Payments</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{successfulPayments}</p>
+              <p className="text-sm text-gray-600">Approved Applications</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{approvedApplications}</p>
             </div>
-            <FaChartLine className="text-3xl text-yellow-500" />
+            <FaChartLine className="text-3xl text-green-500" />
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                ₦{totalAmount.toLocaleString()}
-              </p>
+              <p className="text-sm text-gray-600">Pending Applications</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{pendingApplications}</p>
             </div>
-            <FaClipboardList className="text-3xl text-purple-500" />
+            <FaClipboardList className="text-3xl text-yellow-500" />
           </div>
         </div>
       </div>

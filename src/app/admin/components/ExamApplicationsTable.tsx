@@ -37,30 +37,17 @@ export default function ExamApplicationsTable({ examType }: ExamApplicationsTabl
     hasPrevPage: false
   }
 
-  const handleViewDetails = (schoolId: string) => {
-    router.push(`/admin/schools/${schoolId}`)
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN'
-    }).format(amount)
+  const handleViewDetails = (schoolId: string, applicationId: string, examType: string) => {
+    router.push(`/admin/schools/${schoolId}?examType=${examType}&appId=${applicationId}`)
   }
 
   const getStatusBadge = (status: string) => {
     const statusColors: Record<string, string> = {
-      successful: 'bg-green-100 text-green-800',
+      approved: 'bg-green-100 text-green-800',
       pending: 'bg-yellow-100 text-yellow-800',
-      failed: 'bg-red-100 text-red-800'
+      rejected: 'bg-red-100 text-red-800',
+      completed: 'bg-blue-100 text-blue-800',
+      onboarded: 'bg-purple-100 text-purple-800'
     }
     return statusColors[status] || 'bg-gray-100 text-gray-800'
   }
@@ -115,19 +102,13 @@ export default function ExamApplicationsTable({ examType }: ExamApplicationsTabl
                       Principal
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Contact
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Students
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Points
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -139,40 +120,40 @@ export default function ExamApplicationsTable({ examType }: ExamApplicationsTabl
                     <tr key={application._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {application.school?.schoolName || 'N/A'}
+                          {application.schoolName || application.school?.schoolName || 'N/A'}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {application.school?.lga || 'N/A'}
+                          {application.address || application.school?.address || 'N/A'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {application.school?.principal || 'N/A'}
+                          {application.principal || application.school?.principal || 'N/A'}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {application.school?.email || 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {application.numberOfStudents}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(application.totalAmount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {application.pointsAwarded}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(application.paymentStatus)}`}>
-                          {application.paymentStatus}
-                        </span>
+                        <div className="text-sm text-gray-900">
+                          {application.email || application.school?.email || 'N/A'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {application.phone || application.school?.phone || 'N/A'}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(application.createdAt)}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {application.numberOfStudents || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(application.applicationStatus)}`}>
+                          {application.applicationStatus}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
-                          onClick={() => handleViewDetails(application.school?._id || '')}
+                          onClick={() => handleViewDetails(
+                            application.school?._id || '', 
+                            application._id, 
+                            application.examType
+                          )}
                           className="text-green-600 hover:text-green-900 flex items-center gap-1"
                         >
                           <FaEye /> View

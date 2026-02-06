@@ -13,15 +13,30 @@ export interface Application {
     principal: string;
     email: string;
     lga?: string;
+    phone?: string;
     students: Student[];
-    status: string;
+    status?: string;
     isFirstLogin: boolean;
-    totalPoints: number;
-    availablePoints: number;
-    usedPoints: number;
+    hasAccount: boolean;
+    exams?: Array<{
+      name: string;
+      status: string;
+      totalPoints: number;
+      availablePoints: number;
+      usedPoints: number;
+      numberOfStudents: number;
+      reviewNotes?: string;
+      applicationId?: string;
+    }>;
+    totalPoints?: number;
+    availablePoints?: number;
+    usedPoints?: number;
     __v: number;
     createdAt: string;
     updatedAt: string;
+    tempPassword?: string;
+    tempPasswordExpiry?: string;
+    password?: string;
   };
   schoolName: string;
   address: string;
@@ -31,19 +46,7 @@ export interface Application {
   phone: number;
   numberOfStudents: number;
   examType: string;
-  amountPerStudent: number;
-  totalAmount: number;
-  pointsAwarded: number;
-  paymentStatus: string;
-  reference: string;
   applicationStatus: string;
-  createdAt: string;
-  updatedAt: string;
-  paidAt?: string;
-  authorizationUrl?: string;
-  paymentMethod?: string;
-  paymentNotes?: string;
-  paystackTransactionId?: string;
   __v: number;
   reviewNotes?: string;
   reviewedAt?: string;
@@ -252,13 +255,14 @@ export const schoolsApi = createApi({
       appIds: string | string[]
       status: 'approved' | 'rejected' | 'completed',
       token: string
+      examType?: string
     }>({
-      queryFn: async ({ appIds, status, token }) => {
+      queryFn: async ({ appIds, status, token, examType }) => {
         const ids = Array.isArray(appIds) ? appIds : [appIds]
         try {
           const responses = await Promise.all(
             ids.map(async (appId) => {
-              const response = await fetch(`${BASE_URL}/applications/${appId}/status`, {
+              const response = await fetch(`${BASE_URL}/applications/${appId}/status?examType=${examType}`, {
                 method: 'PATCH',
                 headers: {
                   'Content-Type': 'application/json',

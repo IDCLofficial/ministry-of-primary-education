@@ -30,7 +30,7 @@ export function useSchoolStatusActions({
   const [updateApplicationStatus] = useUpdateApplicationStatusMutation();
 
   // --- Approve One ---
-  const handleApproveOne = async (appId: string) => {
+  const handleApproveOne = async (appId: string, examType?: string) => {
   
     const result = await Swal.fire({
       title: 'Confirm Approval',
@@ -62,7 +62,7 @@ export function useSchoolStatusActions({
           mutate((apps: Application[]) => apps?.filter((a: Application) => a._id !== appId), false);
         }
 
-        await updateApplicationStatus({ appIds: appId, status: "approved", token: token! }).unwrap();
+        await updateApplicationStatus({ appIds: appId, status: "approved", token: token!, examType }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -246,7 +246,7 @@ export function useSchoolStatusActions({
   };
 
   // --- Send Confirmation Single ---
-  const handleSendConfirmationSingle = async (appId: string) => {
+  const handleSendConfirmationSingle = async (appId: string, examType?: string) => {
     const result = await Swal.fire({
       title: 'Send Confirmation',
       text: 'Are you sure you want to mark this school as completed?',
@@ -272,7 +272,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await updateApplicationStatus({ appIds: appId, status: "completed", token: token! }).unwrap();
+        await updateApplicationStatus({ appIds: appId, status: "completed", token: token!, examType }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -296,7 +296,7 @@ export function useSchoolStatusActions({
   };
 
   // --- Reject One ---
-  const handleRejectOne = async (appId: string) => {
+  const handleRejectOne = async (appId: string, examType?: string) => {
     const result = await Swal.fire({
       title: 'Confirm Rejection',
       text: 'Are you sure you want to reject this school application?',
@@ -327,7 +327,7 @@ export function useSchoolStatusActions({
           mutate((apps: Application[]) => apps?.filter((a: Application) => a._id !== appId), false);
         }
 
-        await updateApplicationStatus({ appIds: appId, status: "rejected", token: token! }).unwrap();
+        await updateApplicationStatus({ appIds: appId, status: "rejected", token: token!, examType }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -352,7 +352,7 @@ export function useSchoolStatusActions({
   };
 
   // --- Reapprove Rejected Application ---
-  const handleReapproveOne = async (appId: string) => {
+  const handleReapproveOne = async (appId: string, examType?: string) => {
     const result = await Swal.fire({
       title: 'Reapprove Application',
       text: 'Are you sure you want to reapprove this rejected application?',
