@@ -1,15 +1,11 @@
 export interface StudentData {
     examNo: string
     name: string
-    sex: 'M' | 'F'
-    age: number
     schoolName: string
     lga: string
     subjects: {
         name: string
-        ca: number
         exam: number
-        total: number
         grade: string
     }[]
     overallGrade: string
@@ -79,8 +75,6 @@ export const generateDemoStudent = (examNo: string): StudentData => {
     return {
         examNo: examNo || 'BECE2024001',
         name: 'Chukwuemeka Okafor',
-        sex: 'M',
-        age: 14,
         schoolName: 'Government Secondary School Owerri',
         lga: 'Owerri Municipal',
         subjects,

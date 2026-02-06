@@ -101,7 +101,7 @@ export default function ResultsCard({ student }: ResultsCardProps) {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
                                         <span className="text-sm font-bold text-gray-900">
-                                            {subject.total}
+                                            {subject.exam}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">

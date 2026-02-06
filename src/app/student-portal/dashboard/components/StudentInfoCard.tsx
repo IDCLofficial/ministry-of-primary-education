@@ -1,5 +1,4 @@
-import React from 'react'
-import { IoPersonCircle, IoSchool, IoLocationOutline, IoMale, IoFemale, IoCalendar } from 'react-icons/io5'
+import { IoPersonCircle, IoSchool, IoLocationOutline } from 'react-icons/io5'
 import { StudentData } from '../../utils/demoData'
 
 interface StudentInfoCardProps {
@@ -54,23 +53,6 @@ export default function StudentInfoCard({ student }: StudentInfoCardProps) {
                             <p className="text-xs text-gray-500 font-medium">Address</p>
                             <p className="text-sm text-gray-900 font-medium capitalize">
                                 {student.lga.toLowerCase()}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Gender */}
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-green-50 transition-all duration-200 cursor-pointer group">
-                        <div className={`w-10 h-10 ${student.sex === 'M' ? 'bg-green-100' : 'bg-pink-100'} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-200`}>
-                            {student.sex === 'M' ? (
-                                <IoMale className="w-5 h-5 text-green-600" />
-                            ) : (
-                                <IoFemale className="w-5 h-5 text-pink-600" />
-                            )}
-                        </div>
-                        <div>
-                            <p className="text-xs text-gray-500 font-medium">Gender</p>
-                            <p className="text-sm text-gray-900 font-medium">
-                                {student.sex === 'M' ? 'Male' : 'Female'}
                             </p>
                         </div>
                     </div>

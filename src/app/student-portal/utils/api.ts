@@ -10,8 +10,6 @@ export interface StudentResult {
     _id: string
     examNo: string
     name: string
-    age: number
-    sex: string
     school: string
     subjects: Subject[]
     createdAt: string
@@ -21,13 +19,10 @@ export interface StudentResult {
 export interface StudentData {
     examNo: string
     name: string
-    sex: 'M' | 'F'
-    age: number
     schoolName: string
     lga: string
     subjects: {
         name: string
-        ca: number
         exam: number
         total: number
         grade: string
@@ -103,10 +98,9 @@ export async function checkStudentResult(examNo: string): Promise<StudentData> {
     }
 
     const subjects = data.subjects.map(subject => {
-        const total = subject.ca + subject.exam
+        const total = subject.exam
         return {
             name: subject.name,
-            ca: subject.ca,
             exam: subject.exam,
             total,
             grade: calculateGrade(total)
@@ -122,8 +116,6 @@ export async function checkStudentResult(examNo: string): Promise<StudentData> {
     return {
         examNo: data.examNo,
         name: data.name,
-        sex: data.sex as 'M' | 'F',
-        age: data.age,
         schoolName: 'School Information Not Available',
         lga: 'LGA Information Not Available',
         subjects,
