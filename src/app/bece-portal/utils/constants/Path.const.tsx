@@ -15,7 +15,7 @@ export const menuItems: (pathname: string) => MenuItem[] = (pathname: string) =>
         iconActive: <IoGrid />, 
         label: 'Dashboard',
         href: '/bece-portal/dashboard',
-        active: pathname === '/bece-portal/dashboard' || pathname === '/bece-portal/dashboard/schools' || (pathname !== '/bece-portal/dashboard/view-uploads' && pathname !== '/bece-portal/dashboard/schools')
+        active: pathname === '/bece-portal/dashboard' || (pathname !== '/bece-portal/dashboard/view-uploads' && !pathname.includes('/bece-portal/dashboard/schools'))
     },
     {
         icon: <IoPeopleOutline />,

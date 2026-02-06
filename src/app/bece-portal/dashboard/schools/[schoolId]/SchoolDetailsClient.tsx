@@ -6,7 +6,6 @@ import SchoolStudentsTable from '../components/SchoolStudentsTable'
 import StudentModal from '../components/StudentModal'
 import CertificateModal from '@/components/CertificateModal'
 import SearchBar from '../components/SearchBar'
-import EmptyState from '../components/EmptyState'
 import { Student } from '../types/student.types'
 import { updateSearchParam } from '@/app/bece-portal/utils'
 import { useDebounce } from '../hooks/useDebounce'
@@ -28,6 +27,8 @@ interface SchoolDetailsClientProps {
         totalItems: number
     }
     isSearching?: boolean
+    isLoading?: boolean
+    error?: string | null
 }
 
 const getLgaName = (lga: string | { _id: string; name: string } | undefined): string => {
@@ -38,7 +39,7 @@ const getLgaName = (lga: string | { _id: string; name: string } | undefined): st
     return lga?.name || 'Unknown LGA'
 }
 
-export default function SchoolDetailsClient({ school, students, pagination, isSearching = false }: SchoolDetailsClientProps) {
+export default function SchoolDetailsClient({ school, students, pagination, isSearching = false, isLoading = false, error = null }: SchoolDetailsClientProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const searchQuery = searchParams.get("search") || ""
@@ -135,26 +136,20 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
                     isSearching={isSearching}
                 />
 
-                {students.length === 0 && debouncedSearch ? (
-                    <EmptyState searchQuery={debouncedSearch} />
-                ) : students.length === 0 ? (
-                    <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                        <IoPeopleOutline className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Students Found</h3>
-                        <p className="text-gray-600">This school has no registered students yet.</p>
-                    </div>
-                ) : (
-                    <SchoolStudentsTable
-                        students={students}
-                        onViewStudent={handleViewStudent}
-                        onGenerateCertificate={handleGenerateCertificate}
-                        pagination={{
-                            ...pagination,
-                            onPageChange: (page: number) => updateSearchParam("page", String(page)),
-                            disabled: false
-                        }}
-                    />
-                )}
+                <SchoolStudentsTable
+                    students={students}
+                    onViewStudent={handleViewStudent}
+                    onGenerateCertificate={handleGenerateCertificate}
+                    pagination={{
+                        ...pagination,
+                        onPageChange: (page: number) => updateSearchParam("page", String(page)),
+                        disabled: isLoading
+                    }}
+                    isLoading={isLoading}
+                    error={error}
+                    onRetry={() => window.location.reload()}
+                    searchQuery={debouncedSearch}
+                />
             </div>
 
             <StudentModal

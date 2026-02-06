@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { IoMenu, IoClose } from 'react-icons/io5'
+import { IoMenu, IoClose, IoChevronBack, IoChevronForward } from 'react-icons/io5'
 import { menuItems } from '../../utils/constants/Path.const'
 import { useBeceAuth } from '../../providers/AuthProvider'
 import Image from 'next/image'
@@ -71,10 +71,10 @@ export default function SideBar() {
                     {!isMobile && (
                         <button
                             onClick={() => setIsCollapsed(!isCollapsed)}
-                            className="p-1 hover:bg-gray-100 rounded transition-colors duration-200 absolute top-1/2 -translate-y-1/2 -right-4 bg-green-600 text-white z-40"
+                            className="p-1 hover:bg-gray-100 rounded transition-colors duration-200 absolute top-1/2 -translate-y-1/2 -right-4 bg-green-600 text-white hover:text-green-700 z-40 cursor-pointer"
                             aria-label="Toggle sidebar"
                         >
-                            <IoMenu className="w-5 h-5 text-gray-600" />
+                            {isCollapsed ? <IoChevronForward className="w-5 h-5" /> : <IoChevronBack className="w-5 h-5" />}
                         </button>
                     )}
                 </div>

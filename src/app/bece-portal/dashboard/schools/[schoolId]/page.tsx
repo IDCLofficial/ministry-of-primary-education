@@ -1,13 +1,17 @@
 'use client'
 import React, { useMemo, use } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { IoArrowBack } from 'react-icons/io5'
 import Link from 'next/link'
 import { useGetResultsQuery, useGetSchoolsQuery } from '../../../store/api/authApi'
 import SchoolDetailsClient from './SchoolDetailsClient'
+import SchoolHeaderSkeleton from '../components/SchoolHeaderSkeleton'
+import SearchBar from '../components/SearchBar'
+import SchoolStudentsTable from '../components/SchoolStudentsTable'
 
 export default function SchoolDetailsPage({ params }: { params: Promise<{ schoolId: string }> }) {
     const { schoolId } = use(params)
+    const router = useRouter()
     const searchParams = useSearchParams()
     const page = searchParams.get("page") || "1"
     const search = searchParams.get("search") || ""
@@ -35,6 +39,13 @@ export default function SchoolDetailsPage({ params }: { params: Promise<{ school
     const hasError = !!schoolsError || !!studentsError
     const error = schoolsError || studentsError
     const isSearching = studentsFetching && !studentsLoading
+    
+    // Get student error message if exists
+    const studentErrorMessage = studentsError 
+        ? (typeof studentsError === 'object' && 'message' in studentsError 
+            ? (studentsError as unknown as Error).message 
+            : 'Failed to load students')
+        : null
 
     const pagination = useMemo(() => {
         if (!studentsData) return {
@@ -51,19 +62,45 @@ export default function SchoolDetailsPage({ params }: { params: Promise<{ school
         }
     }, [studentsData, page])
 
+    // Show skeleton loaders during initial loading
     if (isLoading) {
         return (
             <div className='p-6 bg-white/50 backdrop-blur-[2px] h-full overflow-y-auto border border-black/10 m-1 mb-0 space-y-6'>
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600">Loading school details...</p>
-                    </div>
-                </div>
+                <button
+                    onClick={() => router.push('/bece-portal/dashboard/schools')}
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-300 active:scale-95 cursor-pointer"
+                >
+                    <IoArrowBack className="w-4 h-4 mr-2" />
+                    Back to Schools
+                </button>
+
+                <SchoolHeaderSkeleton />
+
+                <SearchBar
+                    searchQuery=""
+                    onSearchChange={() => {}}
+                    isSearching={false}
+                />
+
+                <SchoolStudentsTable
+                    students={[]}
+                    onViewStudent={() => {}}
+                    onGenerateCertificate={() => {}}
+                    pagination={{
+                        currentPage: 1,
+                        totalPages: 1,
+                        itemsPerPage: 10,
+                        totalItems: 0,
+                        onPageChange: () => {},
+                        disabled: true
+                    }}
+                    isLoading={true}
+                />
             </div>
         )
     }
 
+    // Show error state for school loading errors
     if (hasError || !school) {
         const errorMessage = error 
             ? (typeof error === 'object' && 'message' in error ? (error as unknown as Error).message : 'Failed to load school details')
@@ -94,6 +131,8 @@ export default function SchoolDetailsPage({ params }: { params: Promise<{ school
             students={students}
             pagination={pagination}
             isSearching={isSearching}
+            isLoading={studentsLoading}
+            error={studentErrorMessage}
         />
     )
 }
