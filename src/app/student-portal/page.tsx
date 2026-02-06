@@ -58,7 +58,7 @@ export default function StudentLoginPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/bece-student/check-result/${encodeURIComponent(examNo)}`, {
+            const response = await fetch(`${API_BASE_URL}/bece-student/check-result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
