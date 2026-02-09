@@ -60,6 +60,89 @@ const calculateOverallGrade = (subjects: StudentData['subjects']): string => {
     return 'Fail'
 }
 
+// Payment related interfaces
+export interface PaymentStatus {
+    paid: boolean
+    studentName: string
+    school: string
+}
+
+export interface CreatePaymentResponse {
+    success: boolean
+    data: {
+        authorization_url: string
+        access_code: string
+        reference: string
+    }
+}
+
+export interface VerifyPaymentResponse {
+    success: boolean
+    data: {
+        reference: string
+        paymentStatus: 'successful' | 'failed' | 'pending'
+        studentName: string
+        school: string
+    }
+}
+
+// Check payment status
+export async function checkPaymentStatus(examNo: string): Promise<PaymentStatus> {
+    const response = await fetch(`${API_BASE_URL}/result-payment/status?examNo=${encodeURIComponent(examNo)}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+        },
+    })
+
+    if (!response.ok) {
+        const errorMessage = response.status === 404 
+            ? 'Payment status not found'
+            : 'Failed to check payment status'
+        throw new Error(errorMessage)
+    }
+
+    const data: PaymentStatus = await response.json()
+    return data
+}
+
+// Create payment
+export async function createPayment(examNo: string, examType: string): Promise<CreatePaymentResponse> {
+    console.log({ examNo, url: `${API_BASE_URL}/result-payment/create` })
+    const response = await fetch(`${API_BASE_URL}/result-payment/create`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({ examNo, examType }),
+    })
+
+    if (!response.ok) {
+        throw new Error('Failed to create payment')
+    }
+
+    const data: CreatePaymentResponse = await response.json()
+    return data
+}
+
+// Verify payment
+export async function verifyPayment(reference: string): Promise<VerifyPaymentResponse> {
+    const response = await fetch(`${API_BASE_URL}/result-payment/verify/${reference}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+        },
+    })
+
+    if (!response.ok) {
+        throw new Error('Failed to verify payment')
+    }
+
+    const data: VerifyPaymentResponse = await response.json()
+    return data
+}
+
 export async function checkStudentResult(examNo: string): Promise<StudentData> {
     const response = await fetch(`${API_BASE_URL}/bece-student/check-result/${encodeURIComponent(examNo)}`, {
         method: 'GET',

@@ -1,5 +1,6 @@
-import { IoPersonCircle, IoSchool, IoLocationOutline } from 'react-icons/io5'
-import { StudentData } from '../../utils/demoData'
+import React from 'react'
+import { IoPersonCircle, IoSchool, IoLocationOutline, IoCard } from 'react-icons/io5'
+import { StudentData } from '../../utils/api'
 
 interface StudentInfoCardProps {
     student: StudentData
@@ -7,54 +8,66 @@ interface StudentInfoCardProps {
 
 export default function StudentInfoCard({ student }: StudentInfoCardProps) {
     return (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden animate-fadeIn-y hover:shadow-lg transition-all duration-300">
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-8">
-                <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-4 border-white/30 group-hover:scale-110 transition-transform duration-300">
-                        <IoPersonCircle className="w-12 h-12 text-white animate-pulse-slow" />
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+            <div className="p-6 sm:p-8">
+                <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                        <IoPersonCircle className="w-5 h-5 text-white" />
                     </div>
-                    <div className="flex-1">
-                        <h2 className="text-2xl font-bold text-white capitalize mb-1">
+                    Student Information
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Full Name */}
+                    <div className="group">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-gradient-to-br from-green-50 to-green-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                                <IoPersonCircle className="w-5 h-5 text-green-600" />
+                            </div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</p>
+                        </div>
+                        <p className="text-base font-semibold text-gray-900 capitalize pl-[52px]">
                             {student.name.toLowerCase()}
-                        </h2>
-                        <p className="text-green-100 font-mono text-sm">
-                            Exam No: {student.examNo}
                         </p>
                     </div>
-                </div>
-            </div>
 
-            {/* Student Details */}
-            <div className="p-6">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-                    Personal Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* School */}
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-green-50 transition-all duration-200 cursor-pointer group">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-200">
-                            <IoSchool className="w-5 h-5 text-green-600" />
+                    {/* Exam Number */}
+                    <div className="group">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                                <IoCard className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Exam Number</p>
                         </div>
-                        <div>
-                            <p className="text-xs text-gray-500 font-medium">School</p>
-                            <p className="text-sm text-gray-900 font-medium capitalize">
-                                {student.schoolName.toLowerCase()}
-                            </p>
-                        </div>
+                        <p className="text-base font-mono font-semibold text-gray-900 uppercase pl-[52px]">
+                            {student.examNo}
+                        </p>
                     </div>
 
-                    {/* Location */}
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-green-50 transition-all duration-200 cursor-pointer group">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-200">
-                            <IoLocationOutline className="w-5 h-5 text-green-600" />
+                    {/* School */}
+                    <div className="group">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                                <IoSchool className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">School</p>
                         </div>
-                        <div>
-                            <p className="text-xs text-gray-500 font-medium">Address</p>
-                            <p className="text-sm text-gray-900 font-medium capitalize">
-                                {student.lga.toLowerCase()}
-                            </p>
+                        <p className="text-base font-semibold text-gray-900 capitalize pl-[52px]">
+                            {student.schoolName.toLowerCase()}
+                        </p>
+                    </div>
+
+                    {/* LGA */}
+                    <div className="group">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                                <IoLocationOutline className="w-5 h-5 text-orange-600" />
+                            </div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">LGA</p>
                         </div>
+                        <p className="text-base font-semibold text-gray-900 capitalize pl-[52px]">
+                            {student.lga.toLowerCase()}
+                        </p>
                     </div>
                 </div>
             </div>
