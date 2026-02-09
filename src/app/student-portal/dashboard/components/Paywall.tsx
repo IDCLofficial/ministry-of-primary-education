@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { IoLockClosedOutline, IoShieldCheckmarkOutline } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import { createPayment } from '../../utils/api'
+import { ExamTypeEnum } from '@/app/portal/store/api/authApi'
 
 interface PaywallProps {
     examNo: string
@@ -20,7 +21,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
             // Store return URL for redirect after payment
             localStorage.setItem('student-payment-return-url', '/student-portal/dashboard')
             
-            const response = await createPayment(examNo, 'bece');
+            const response = await createPayment(examNo, ExamTypeEnum.BECE);
             
             if (response.success && response.data.authorization_url) {
                 toast.success('Redirecting to payment gateway...')
