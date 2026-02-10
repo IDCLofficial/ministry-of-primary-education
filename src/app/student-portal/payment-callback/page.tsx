@@ -37,13 +37,13 @@ export default function StudentPaymentCallbackPage() {
       try {
         const response = await verifyPayment(reference)
         
-        if (response.success && response.data.paymentStatus === 'successful') {
+        if (response.paymentStatus === 'successful') {
           setVerificationStatus('success')
           setPaymentDetails({
             reference,
             trxref: trxref || '',
-            studentName: response.data.studentName,
-            school: response.data.school
+            studentName: response.studentName,
+            school: response.school
           })
         } else {
           setVerificationStatus('failed')

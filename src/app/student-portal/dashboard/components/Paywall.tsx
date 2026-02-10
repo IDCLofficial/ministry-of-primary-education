@@ -22,11 +22,13 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
             localStorage.setItem('student-payment-return-url', '/student-portal/dashboard')
             
             const response = await createPayment(examNo, ExamTypeEnum.BECE);
+
+            console.log({ response, authorizationUrl: response.authorizationUrl });
             
-            if (response.success && response.data.authorization_url) {
+            if (response.authorizationUrl) {
                 toast.success('Redirecting to payment gateway...')
                 // Redirect to Paystack payment page
-                window.location.href = response.data.authorization_url
+                window.location.href = response.authorizationUrl
             } else {
                 throw new Error('Invalid payment response')
             }

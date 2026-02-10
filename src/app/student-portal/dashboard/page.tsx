@@ -68,6 +68,7 @@ export default function StudentDashboardPage() {
                 if (paymentData.paid) {
                     const examNoClean = examNo.replace(/\s/g, '').replace(/\//g, '-');
                     const studentData = await checkStudentResult(examNoClean);
+                    console.log({ studentData })
                     setStudent(studentData)
                     setError(null)
                 }
@@ -199,18 +200,20 @@ export default function StudentDashboardPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50 print:bg-white">
+        <div className="min-h-screen bg-gray-50 print:bg-white">
             {/* Header */}
-            <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-50 print:hidden">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-50 print:hidden">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     {/* Logo */}
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30 transition-transform hover:scale-105">
-                            <IoSchool className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-base font-bold text-gray-900">BECE Results</h1>
-                            <p className="text-xs text-gray-500">Student Portal</p>
+                        <img 
+                            src="/images/ministry-logo.png" 
+                            alt="Ministry Logo" 
+                            className="h-10 w-auto object-contain"
+                        />
+                        <div className="border-l border-gray-300 pl-3">
+                            <h1 className="text-sm font-semibold text-gray-900">BECE Results Portal</h1>
+                            <p className="text-xs text-gray-500">Ministry of Primary Education</p>
                         </div>
                     </div>
 
@@ -218,21 +221,21 @@ export default function StudentDashboardPage() {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={handlePrint}
-                            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-xl transition-all duration-200 hover:shadow-md active:scale-95"
+                            className="hidden sm:inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors cursor-pointer"
                         >
                             <IoPrint className="w-4 h-4" />
                             <span className="hidden md:inline">Print</span>
                         </button>
                         <button
                             onClick={handleDownload}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-all duration-200 hover:shadow-md active:scale-95"
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors cursor-pointer"
                         >
                             <IoDownload className="w-4 h-4" />
                             <span className="hidden md:inline">Download</span>
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-red-500/30 active:scale-95"
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                         >
                             <IoLogOut className="w-4 h-4" />
                             <span className="hidden md:inline">Logout</span>
@@ -242,20 +245,20 @@ export default function StudentDashboardPage() {
             </header>
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:py-0">
+            <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:py-0">
                 {/* Welcome Banner */}
-                <div className="mb-8 print:hidden">
-                    <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-8 text-white shadow-xl shadow-green-500/20">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                                <IoSparkles className="w-6 h-6" />
+                <div className="mb-6 print:hidden">
+                    <div className="bg-white border border-gray-200 rounded-lg p-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <IoSparkles className="w-5 h-5 text-green-600" />
                             </div>
                             <div>
-                                <h2 className="text-2xl md:text-3xl font-bold">
-                                    Welcome back, <span className="capitalize">{student.name.toLowerCase()}</span>!
+                                <h2 className="text-lg font-semibold text-gray-900">
+                                    Welcome, <span className="capitalize">{student.name.toLowerCase()}</span>
                                 </h2>
-                                <p className="text-green-100 text-sm mt-1">
-                                    Your BECE examination results are ready
+                                <p className="text-sm text-gray-600 mt-0.5">
+                                    Your BECE examination results are displayed below
                                 </p>
                             </div>
                         </div>
@@ -276,7 +279,7 @@ export default function StudentDashboardPage() {
                 </div>
 
                 {/* Content Grid */}
-                <div className="space-y-6 mb-8">
+                <div className="space-y-4 mb-6">
                     {/* Student Info */}
                     <StudentInfoCard student={student} />
 
@@ -285,16 +288,15 @@ export default function StudentDashboardPage() {
                 </div>
 
                 {/* Info Footer */}
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8 print:hidden">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 print:hidden">
                     <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-sm font-semibold text-blue-900 mb-1">Keep your results safe</h3>
-                            <p className="text-sm text-blue-700">
+                            <p className="text-sm text-gray-700">
                                 Download or print this page for your records. You can access your results anytime by logging in with your exam number.
                             </p>
                         </div>

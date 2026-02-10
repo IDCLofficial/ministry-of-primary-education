@@ -1,3 +1,5 @@
+import { ExamTypeEnum } from "@/app/portal/store/api/authApi"
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://moe-backend-production-3842.up.railway.app'
 
 export interface Subject {
@@ -11,6 +13,7 @@ export interface StudentResult {
     examNo: string
     name: string
     school: string
+    lga: string
     subjects: Subject[]
     createdAt: string
     updatedAt: string
@@ -48,11 +51,11 @@ const calculateOverallGrade = (subjects: StudentData['subjects']): string => {
         'A1': 1, 'B2': 2, 'B3': 3, 'C4': 4, 'C5': 5, 'C6': 6,
         'D7': 7, 'E8': 8, 'F9': 9
     }
-    
+
     const totalPoints = subjects.reduce((sum, subject) => {
         return sum + (gradePoints[subject.grade] || 9)
     }, 0)
-    
+
     const average = totalPoints / subjects.length
     if (average <= 1.5) return 'Distinction'
     if (average <= 2.5) return 'Credit'
@@ -68,22 +71,19 @@ export interface PaymentStatus {
 }
 
 export interface CreatePaymentResponse {
-    success: boolean
-    data: {
-        authorization_url: string
-        access_code: string
-        reference: string
-    }
+    authorizationUrl: string
 }
 
 export interface VerifyPaymentResponse {
-    success: boolean
-    data: {
-        reference: string
-        paymentStatus: 'successful' | 'failed' | 'pending'
-        studentName: string
-        school: string
-    }
+    reference: string
+    paymentStatus: 'successful' | 'failed' | 'pending'
+    studentName: string
+    school: string
+    paidAt: string
+    paymentMethod: string
+    paymentNotes: string
+    paystackResponse: any
+    paystackTransactionId: string
 }
 
 // Check payment status
@@ -96,7 +96,7 @@ export async function checkPaymentStatus(examNo: string): Promise<PaymentStatus>
     })
 
     if (!response.ok) {
-        const errorMessage = response.status === 404 
+        const errorMessage = response.status === 404
             ? 'Payment status not found'
             : 'Failed to check payment status'
         throw new Error(errorMessage)
@@ -107,8 +107,8 @@ export async function checkPaymentStatus(examNo: string): Promise<PaymentStatus>
 }
 
 // Create payment
-export async function createPayment(examNo: string, examType: string): Promise<CreatePaymentResponse> {
-    console.log({ examNo, url: `${API_BASE_URL}/result-payment/create` })
+export async function createPayment(examNo: string, examType: ExamTypeEnum): Promise<CreatePaymentResponse> {
+    console.log({ examNo, examType, url: `${API_BASE_URL}/result-payment/create` })
     const response = await fetch(`${API_BASE_URL}/result-payment/create`, {
         method: 'POST',
         headers: {
@@ -153,7 +153,7 @@ export async function checkStudentResult(examNo: string): Promise<StudentData> {
 
     if (response.status !== 200) {
         let errorMessage = 'Failed to fetch student results'
-        
+
         try {
             const errorData = await response.json()
             errorMessage = errorData.message || errorMessage
@@ -169,7 +169,7 @@ export async function checkStudentResult(examNo: string): Promise<StudentData> {
                 errorMessage = `Error ${response.status}: ${response.statusText || 'Failed to fetch student results'}`
             }
         }
-        
+
         console.error('API Error:', { status: response.status, message: errorMessage })
         throw new Error(errorMessage)
     }
@@ -190,17 +190,17 @@ export async function checkStudentResult(examNo: string): Promise<StudentData> {
         }
     })
 
-    const totalCredits = subjects.filter(s => 
-        s.grade.startsWith('A') || 
-        s.grade.startsWith('B') || 
+    const totalCredits = subjects.filter(s =>
+        s.grade.startsWith('A') ||
+        s.grade.startsWith('B') ||
         s.grade.startsWith('C')
     ).length
 
     return {
         examNo: data.examNo,
         name: data.name,
-        schoolName: 'School Information Not Available',
-        lga: 'LGA Information Not Available',
+        schoolName: data.school || 'School Information Not Available',
+        lga: data.lga || 'LGA Information Not Available',
         subjects,
         overallGrade: calculateOverallGrade(subjects),
         totalCredits

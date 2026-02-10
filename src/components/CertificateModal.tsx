@@ -1,12 +1,15 @@
 'use client'
-import { useRef } from 'react';
-import { IoClose, IoDownload } from 'react-icons/io5';
+import { useRef, useState, useCallback } from 'react';
+import { IoClose, IoDownload, IoPrint } from 'react-icons/io5';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { toPng } from 'html-to-image';
+import jsPDF from 'jspdf';
 
 interface Subject {
     name: string
     exam: number
+    grade: string
 }
 
 interface StudentData {
@@ -15,6 +18,7 @@ interface StudentData {
     school?: string
     schoolName?: string
     subjects: Subject[]
+    overallGrade: string
 }
 
 interface CertificateModalProps {
@@ -26,6 +30,100 @@ interface CertificateModalProps {
 
 export default function CertificateModal({ isOpen, onClose, student, schoolName }: CertificateModalProps) {
     const certificateRef = useRef<HTMLDivElement>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    const downloadAsImage = useCallback(async () => {
+        if (!certificateRef.current || !student) {
+            toast.error('Certificate not ready')
+            return
+        }
+
+        const errors: string[] = []
+        if (!student.name || student.name.trim() === '') errors.push('Student name is missing')
+        if (!student.examNo || student.examNo.trim() === '') errors.push('Exam number is missing')
+        if (!student.subjects || student.subjects.length === 0) errors.push('No subjects found')
+        
+        if (errors.length > 0) {
+            toast.error(`Cannot download certificate: ${errors.join(', ')}`)
+            return
+        }
+
+        try {
+            setIsDownloading(true)
+            toast.loading('Generating image...', { id: 'download-image' })
+            
+            await new Promise(resolve => setTimeout(resolve, 100))
+            
+            const dataUrl = await toPng(certificateRef.current, {
+                cacheBust: true,
+                pixelRatio: 2,
+                backgroundColor: '#ffffff'
+            })
+
+            const link = document.createElement('a')
+            link.download = `BECE-Certificate-${student.examNo}.png`
+            link.href = dataUrl
+            link.click()
+            
+            toast.success('Image downloaded successfully!', { id: 'download-image' })
+        } catch (error) {
+            console.error('Error generating image:', error)
+            toast.error('Failed to generate image', { id: 'download-image' })
+        } finally {
+            setIsDownloading(false)
+        }
+    }, [student])
+
+    const downloadAsPDF = useCallback(async () => {
+        if (!certificateRef.current || !student) {
+            toast.error('Certificate not ready')
+            return
+        }
+
+        const errors: string[] = []
+        if (!student.name || student.name.trim() === '') errors.push('Student name is missing')
+        if (!student.examNo || student.examNo.trim() === '') errors.push('Exam number is missing')
+        if (!student.subjects || student.subjects.length === 0) errors.push('No subjects found')
+        
+        if (errors.length > 0) {
+            toast.error(`Cannot download certificate: ${errors.join(', ')}`)
+            return
+        }
+
+        try {
+            setIsDownloading(true)
+            toast.loading('Generating PDF...', { id: 'download-pdf' })
+            
+            await new Promise(resolve => setTimeout(resolve, 100))
+            
+            const dataUrl = await toPng(certificateRef.current, {
+                cacheBust: true,
+                pixelRatio: 2,
+                backgroundColor: '#ffffff'
+            })
+
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4',
+            })
+
+            const imgProps = pdf.getImageProperties(dataUrl)
+            const pdfWidth = pdf.internal.pageSize.getWidth()
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
+
+            pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight)
+            pdf.save(`BECE-Certificate-${student.examNo}.pdf`)
+            
+            toast.success('PDF downloaded successfully!', { id: 'download-pdf' })
+        } catch (error) {
+            console.error('Error generating PDF:', error)
+            toast.error('Failed to generate PDF', { id: 'download-pdf' })
+        } finally {
+            setIsDownloading(false)
+        }
+    }, [student])
+
     if (!isOpen || !student) return null
 
     const validateStudentData = (): { valid: boolean; errors: string[] } => {
@@ -51,26 +149,16 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
     }
 
     const calculateAggregate = () => {
-        const grades = student.subjects.map(subject => {
-            const total = subject.exam
-            if (total >= 80) return 1
-            if (total >= 75) return 2
-            if (total >= 70) return 3
-            if (total >= 65) return 4
-            if (total >= 60) return 5
-            if (total >= 55) return 6
-            if (total >= 50) return 7
-            if (total >= 45) return 8
-            return 9
-        })
-        return grades.reduce((sum, grade) => sum + grade, 0)
-    }
-
-    const getOverallGrade = (aggregate: number) => {
-        if (aggregate <= 6) return 'Distinction'
-        if (aggregate <= 12) return 'Credit'
-        if (aggregate <= 18) return 'Pass'
-        return 'Fail'
+        const gradePoints: { [key: string]: number } = {
+            'A1': 1, 'B2': 2, 'B3': 3, 'C4': 4, 'C5': 5, 'C6': 6,
+            'D7': 7, 'E8': 8, 'F9': 9
+        }
+        
+        const totalPoints = student.subjects.reduce((sum, subject) => {
+            return sum + (gradePoints[subject.grade] || 9)
+        }, 0)
+        
+        return totalPoints
     }
 
     const overallGradeColor = (overallGrade: string) => {
@@ -81,7 +169,7 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
     }
 
     const aggregate = calculateAggregate()
-    const overallGrade = getOverallGrade(aggregate)
+    const overallGrade = student.overallGrade // Use the overallGrade from API
     const school = schoolName || student.schoolName || student.school || 'N/A'
 
     const handlePrint = () => {
@@ -109,15 +197,35 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
 
                 <div className="inline-block w-full max-w-5xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl relative z-10">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 print:hidden">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                            BECE Certificate
-                        </h3>
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                BECE Certificate
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-0.5">{student.examNo}</p>
+                        </div>
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={handlePrint}
-                                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer active:scale-95"
+                                onClick={downloadAsImage}
+                                disabled={isDownloading}
+                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer active:scale-95"
                             >
                                 <IoDownload className="w-4 h-4 mr-2" />
+                                Image
+                            </button>
+                            <button
+                                onClick={downloadAsPDF}
+                                disabled={isDownloading}
+                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer active:scale-95"
+                            >
+                                <IoDownload className="w-4 h-4 mr-2" />
+                                PDF
+                            </button>
+                            <button
+                                onClick={handlePrint}
+                                disabled={isDownloading}
+                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer active:scale-95"
+                            >
+                                <IoPrint className="w-4 h-4 mr-2" />
                                 Print
                             </button>
                             <button
