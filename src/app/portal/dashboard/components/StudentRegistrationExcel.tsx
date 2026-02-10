@@ -357,7 +357,7 @@ export default function StudentRegistrationExcel({
         // Update original data with new values
         setOriginalStudents(prev => {
           const newMap = new Map(prev)
-          const { isEditing: _isEditing, isNew: _isNew, isLoadingId: _isLoadingId, ...studentData } = student
+          const { ...studentData } = student
           
           newMap.set(student.id, studentData as Student)
           return newMap

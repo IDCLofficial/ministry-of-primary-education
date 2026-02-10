@@ -2,13 +2,11 @@
 import React from 'react'
 import Link from 'next/link'
 import { 
-  IoFileTrayFull, 
   IoFolderOpen, 
   IoEye, 
   IoPersonAdd, 
   IoLockOpen,
   IoCloudUploadOutline,
-  IoFileTrayFullOutline,
   IoFolderOpenOutline,
   IoEyeOutline,
   IoPersonAddOutline,

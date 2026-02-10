@@ -1,6 +1,7 @@
 export interface Subject {
     name: string
     exam: number
+    grade: string
 }
 
 export interface Student {
@@ -8,7 +9,10 @@ export interface Student {
     name: string
     examNo: string
     school: string
+    schoolName?: string
     subjects: Subject[]
+    overallGrade: string
+    totalCredits?: number
     createdAt: string
     updatedAt: string
     __v: number

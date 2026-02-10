@@ -82,7 +82,7 @@ export interface VerifyPaymentResponse {
     paidAt: string
     paymentMethod: string
     paymentNotes: string
-    paystackResponse: any
+    paystackResponse: Record<string, unknown>
     paystackTransactionId: string
 }
 

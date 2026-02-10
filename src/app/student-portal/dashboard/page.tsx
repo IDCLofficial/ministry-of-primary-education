@@ -8,6 +8,7 @@ import ResultsCard from './components/ResultsCard'
 import CertificateModal from '@/components/CertificateModal'
 import Paywall from './components/Paywall'
 import { checkStudentResult, StudentData, checkPaymentStatus, PaymentStatus } from '../utils/api'
+import Image from 'next/image'
 
 // Regex pattern for exam number validation (e.g., ok/977/2025/001)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3}\/\d{4}\/\d{3}$/
@@ -206,8 +207,10 @@ export default function StudentDashboardPage() {
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     {/* Logo */}
                     <div className="flex items-center gap-3">
-                        <img 
+                        <Image 
                             src="/images/ministry-logo.png" 
+                            width={40}
+                            height={40}
                             alt="Ministry Logo" 
                             className="h-10 w-auto object-contain"
                         />
