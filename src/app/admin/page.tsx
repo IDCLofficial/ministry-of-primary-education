@@ -1,13 +1,11 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth, AuthProvider } from '@/contexts/AuthContext';
 import Swal from 'sweetalert2';
 import { FaBookOpen, FaPencilAlt, FaUniversity } from "react-icons/fa";
 
 function AdminSystemLoginContent() {
-  const router = useRouter();
   const { login, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',

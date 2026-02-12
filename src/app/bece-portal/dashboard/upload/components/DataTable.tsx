@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react'
 import { IoSearch, IoEye, IoTrash, IoCloudUpload, IoRefresh } from 'react-icons/io5'
 import { useExamModal } from '../contexts/ExamModalContext'
 import toast from 'react-hot-toast'
-import { StudentRecord } from '../../upload-ca/utils/csvParser'
+import { StudentRecord } from '../utils/csvParser'
 import { useRouter } from 'next/navigation'
 import { BeceResultUpload, useUploadBeceExamResultsMutation } from '../../../store/api/authApi'
 
@@ -146,31 +146,25 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             // Transform data according to API structure
             const results = Object.entries(schoolGroups).map(([schoolName, students]) => ({
                 schoolName,
-                lga: students[0]?.lga, // Extract LGA from first student or use default
+                lga: students[0]?.lga,
                 students: students.map(student => ({
                     name: student.name,
                     examNo: student.examNo,
-                    sex: student.sex === 'Male' ? 'M' : 'F',
-                    age: student.age,
                     subjects: [
-                        { name: 'English Studies', exam: student.englishStudies, ca: 0 },
-                        { name: 'Mathematics', exam: student.mathematics, ca: 0 },
-                        { name: 'Basic Science', exam: student.basicScience, ca: 0 },
-                        { name: 'Christian Religious Studies', exam: student.christianReligiousStudies, ca: 0 },
-                        { name: 'National Values', exam: student.nationalValues, ca: 0 },
-                        { name: 'Cultural and Creative Arts', exam: student.culturalAndCreativeArts, ca: 0 },
-                        { name: 'Business Studies', exam: student.businessStudies, ca: 0 },
-                        { name: 'History', exam: student.history, ca: 0 },
-                        { name: 'Igbo Language', exam: student.igbo, ca: 0 },
-                        { name: 'Hausa Language', exam: student.hausa, ca: 0 },
-                        { name: 'Yoruba Language', exam: student.yoruba, ca: 0 },
-                        { name: 'Pre-Vocational Studies', exam: student.preVocationalStudies, ca: 0 },
-                        { name: 'French Language', exam: student.frenchLanguage, ca: 0 }
-                    ].filter(subject => subject.exam > 0) // Only include subjects with CA scores
+                        { name: 'English Studies', exam: student.englishStudies },
+                        { name: 'Mathematics', exam: student.mathematics },
+                        { name: 'Basic Science', exam: student.basicScience },
+                        { name: 'Christian Religious Studies', exam: student.christianReligiousStudies },
+                        { name: 'National Values', exam: student.nationalValues },
+                        { name: 'Cultural and Creative Arts', exam: student.culturalAndCreativeArts },
+                        { name: 'Business Studies', exam: student.businessStudies },
+                        { name: 'Igbo Language', exam: student.igbo },
+                        { name: 'Pre-Vocational Studies', exam: student.preVocationalStudies }
+                    ].filter(subject => subject.exam > 0)
                 }))
             }));
 
-            await uploadBeceExamResults({ result: results as BeceResultUpload[], type: 'exam', file: filesWithStudentsCount }).unwrap()
+            await uploadBeceExamResults({ result: results as BeceResultUpload[], file: filesWithStudentsCount }).unwrap()
 
             const endTime = performance.now()
             const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
@@ -181,7 +175,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             onDataChange([])
             setFailedSchools([])
             toast.success(
-                `Successfully saved ${data.length} Exam records to database in ${elapsedTime}s`
+                `Successfully saved ${data.length} score records to database in ${elapsedTime}s`
             )
 
             router.push('/bece-portal/dashboard/schools')
@@ -190,10 +184,10 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             const endTime = performance.now()
             const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
 
-            console.error('Error saving Exam data:', error)
+            console.error('Error saving score data:', error);
 
             toast.dismiss()
-            toast.error(`Failed to save Exam data to database (${elapsedTime}s)`)
+            toast.error(`Failed to save score data to database (${elapsedTime}s)`);
             toast.error('Please check your connection and try again.')
         } finally {
             setIsSaving(false)
@@ -309,8 +303,6 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                     { key: 'serialNo', label: 'S/NO' },
                                     { key: 'name', label: 'Name' },
                                     { key: 'examNo', label: 'Exam No.' },
-                                    { key: 'sex', label: 'Sex' },
-                                    { key: 'age', label: 'Age' },
                                     { key: 'schoolName', label: 'School' }
                                 ].map(({ key, label }) => (
                                     <th
@@ -354,17 +346,6 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {record.examNo}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${record.sex === 'Male'
-                                            ? 'bg-green-100 text-green-800'
-                                            : 'bg-pink-100 text-pink-800'
-                                            }`}>
-                                            {record.sex}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {record.age}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         <div className="max-w-32 truncate" title={record.schoolName}>

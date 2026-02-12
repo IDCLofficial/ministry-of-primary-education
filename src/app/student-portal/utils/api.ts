@@ -1,3 +1,5 @@
+import { ExamTypeEnum } from "@/app/portal/store/api/authApi"
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://moe-backend-production-3842.up.railway.app'
 
 export interface Subject {
@@ -10,9 +12,8 @@ export interface StudentResult {
     _id: string
     examNo: string
     name: string
-    age: number
-    sex: string
     school: string
+    lga: string
     subjects: Subject[]
     createdAt: string
     updatedAt: string
@@ -21,13 +22,10 @@ export interface StudentResult {
 export interface StudentData {
     examNo: string
     name: string
-    sex: 'M' | 'F'
-    age: number
     schoolName: string
     lga: string
     subjects: {
         name: string
-        ca: number
         exam: number
         total: number
         grade: string
@@ -53,16 +51,96 @@ const calculateOverallGrade = (subjects: StudentData['subjects']): string => {
         'A1': 1, 'B2': 2, 'B3': 3, 'C4': 4, 'C5': 5, 'C6': 6,
         'D7': 7, 'E8': 8, 'F9': 9
     }
-    
+
     const totalPoints = subjects.reduce((sum, subject) => {
         return sum + (gradePoints[subject.grade] || 9)
     }, 0)
-    
+
     const average = totalPoints / subjects.length
     if (average <= 1.5) return 'Distinction'
     if (average <= 2.5) return 'Credit'
     if (average <= 4.5) return 'Pass'
     return 'Fail'
+}
+
+// Payment related interfaces
+export interface PaymentStatus {
+    paid: boolean
+    studentName: string
+    school: string
+}
+
+export interface CreatePaymentResponse {
+    authorizationUrl: string
+}
+
+export interface VerifyPaymentResponse {
+    reference: string
+    paymentStatus: 'successful' | 'failed' | 'pending'
+    studentName: string
+    school: string
+    paidAt: string
+    paymentMethod: string
+    paymentNotes: string
+    paystackResponse: Record<string, unknown>
+    paystackTransactionId: string
+}
+
+// Check payment status
+export async function checkPaymentStatus(examNo: string): Promise<PaymentStatus> {
+    const response = await fetch(`${API_BASE_URL}/result-payment/status?examNo=${encodeURIComponent(examNo)}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+        },
+    })
+
+    if (!response.ok) {
+        const errorMessage = response.status === 404
+            ? 'Payment status not found'
+            : 'Failed to check payment status'
+        throw new Error(errorMessage)
+    }
+
+    const data: PaymentStatus = await response.json()
+    return data
+}
+
+// Create payment
+export async function createPayment(examNo: string, examType: ExamTypeEnum): Promise<CreatePaymentResponse> {
+    console.log({ examNo, examType, url: `${API_BASE_URL}/result-payment/create` })
+    const response = await fetch(`${API_BASE_URL}/result-payment/create`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({ examNo, examType }),
+    })
+
+    if (!response.ok) {
+        throw new Error('Failed to create payment')
+    }
+
+    const data: CreatePaymentResponse = await response.json()
+    return data
+}
+
+// Verify payment
+export async function verifyPayment(reference: string): Promise<VerifyPaymentResponse> {
+    const response = await fetch(`${API_BASE_URL}/result-payment/verify/${reference}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+        },
+    })
+
+    if (!response.ok) {
+        throw new Error('Failed to verify payment')
+    }
+
+    const data: VerifyPaymentResponse = await response.json()
+    return data
 }
 
 export async function checkStudentResult(examNo: string): Promise<StudentData> {
@@ -75,7 +153,7 @@ export async function checkStudentResult(examNo: string): Promise<StudentData> {
 
     if (response.status !== 200) {
         let errorMessage = 'Failed to fetch student results'
-        
+
         try {
             const errorData = await response.json()
             errorMessage = errorData.message || errorMessage
@@ -91,7 +169,7 @@ export async function checkStudentResult(examNo: string): Promise<StudentData> {
                 errorMessage = `Error ${response.status}: ${response.statusText || 'Failed to fetch student results'}`
             }
         }
-        
+
         console.error('API Error:', { status: response.status, message: errorMessage })
         throw new Error(errorMessage)
     }
@@ -103,29 +181,26 @@ export async function checkStudentResult(examNo: string): Promise<StudentData> {
     }
 
     const subjects = data.subjects.map(subject => {
-        const total = subject.ca + subject.exam
+        const total = subject.exam
         return {
             name: subject.name,
-            ca: subject.ca,
             exam: subject.exam,
             total,
             grade: calculateGrade(total)
         }
     })
 
-    const totalCredits = subjects.filter(s => 
-        s.grade.startsWith('A') || 
-        s.grade.startsWith('B') || 
+    const totalCredits = subjects.filter(s =>
+        s.grade.startsWith('A') ||
+        s.grade.startsWith('B') ||
         s.grade.startsWith('C')
     ).length
 
     return {
         examNo: data.examNo,
         name: data.name,
-        sex: data.sex as 'M' | 'F',
-        age: data.age,
-        schoolName: 'School Information Not Available',
-        lga: 'LGA Information Not Available',
+        schoolName: data.school || 'School Information Not Available',
+        lga: data.lga || 'LGA Information Not Available',
         subjects,
         overallGrade: calculateOverallGrade(subjects),
         totalCredits

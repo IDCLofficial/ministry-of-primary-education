@@ -53,11 +53,15 @@ const info = {
     ],
     contact: [
         {
-            label: "Block 7, New Owerri Secretariat 460281",
+            label: "Block 3, Second Floor, Imo State Secretariat, Port Harcourt Road, Owerri",
             href: "/"
         },
         {
-            label: "+2348037766373",
+           label: "+234 809 547 6304",
+           href: "tel:+2348095476304"
+       }, 
+        {
+            label: "+234 8037 766 373",
             href: "tel:+2348037766373"
         },  
         

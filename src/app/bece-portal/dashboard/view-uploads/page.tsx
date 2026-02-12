@@ -4,7 +4,7 @@ import { SearchAndFilters } from './components/SearchAndFilters'
 import { UploadsTable } from './components/UploadsTable'
 import { useGetUploadLogsQuery } from '../../store/api/authApi'
 import { useSearchParams } from 'next/navigation'
-import { updateSearchParam } from '../upload-ca/utils'
+import { updateSearchParam } from '@/app/bece-portal/utils'
 import { useDebounce } from '../schools/hooks/useDebounce'
 
 export default function ViewUploadsPage() {

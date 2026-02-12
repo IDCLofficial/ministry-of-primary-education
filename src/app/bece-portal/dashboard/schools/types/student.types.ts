@@ -1,17 +1,18 @@
 export interface Subject {
     name: string
     exam: number
-    ca: number
+    grade: string
 }
 
 export interface Student {
     _id: string
     name: string
     examNo: string
-    sex: string
-    age: number
     school: string
+    schoolName?: string
     subjects: Subject[]
+    overallGrade: string
+    totalCredits?: number
     createdAt: string
     updatedAt: string
     __v: number

@@ -10,6 +10,7 @@ import OfficeHours from './OfficeHours';
 const navLinks = [
   { label: 'Home', href: '/' },
   { label: 'About Us', href: '/about' },
+  { label: 'Portal', href: '/registration-portal' },
   { label: 'Services', href: '/services' },
   { label: 'Projects', href: '/projects' },
   { label: 'News', href: '/news' },
@@ -36,7 +37,7 @@ export default function Navbar() {
             <Image src="/images/IMSG-Logo.svg" alt="logo" width={40} height={20} className='object-contain' />
           </Link>
         </div>
-        <div className="font-satoshi space-x-6 gap-2 xl:gap-10 text-[16px] md:text-[12px] xl:text-[16px] font-bold hidden lg:flex">
+        <div className="font-satoshi space-x-4 gap-2 xl:gap-10 text-[16px] md:text-[12px] xl:text-[16px] font-bold hidden lg:flex">
           {navLinks.map((link) => {
             const isActive =
               link.href === '/'

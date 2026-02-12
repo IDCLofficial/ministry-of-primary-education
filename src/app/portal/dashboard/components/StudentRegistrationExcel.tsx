@@ -108,11 +108,33 @@ export default function StudentRegistrationExcel({
 
   // Initialize editable students from props and track original data
   useEffect(() => {
-    let editableList = students;
+    // Only interrupt operations when examPoints reaches 0
     if (examPoints === 0) {
-      editableList = editableList.map(s => ({ ...s, isEditing: false, isNew: false }));
+      // Preserve the current state of editable students to avoid interrupting ongoing operations
+      setEditableStudents(prev => {
+        // Remove any new rows that haven't been saved yet
+        const withoutNewRows = prev.filter(s => !s.isNew);
+        // Disable editing on all existing rows
+        return withoutNewRows.map(s => ({ ...s, isEditing: false }));
+      });
+      setShowNewRow(false);
+    } else {
+      // Normal update: preserve new rows and editing state
+      setEditableStudents(prev => {
+        // Keep any new rows that are being actively worked on
+        const newRows = prev.filter(s => s.isNew);
+        
+        // Merge incoming students with existing new rows
+        const updatedStudents = students.map(student => {
+          const existing = prev.find(s => s.id === student.id);
+          // Preserve editing state if it exists
+          return existing ? { ...student, isEditing: existing.isEditing } : student;
+        });
+        
+        // Add new rows at the beginning
+        return [...newRows, ...updatedStudents];
+      });
     }
-    setEditableStudents(editableList);
     
     // Store original student data for change detection
     const originalMap = new Map<string, Student>()
@@ -335,7 +357,7 @@ export default function StudentRegistrationExcel({
         // Update original data with new values
         setOriginalStudents(prev => {
           const newMap = new Map(prev)
-          const { isEditing: _isEditing, isNew: _isNew, isLoadingId: _isLoadingId, ...studentData } = student
+          const { ...studentData } = student
           
           newMap.set(student.id, studentData as Student)
           return newMap

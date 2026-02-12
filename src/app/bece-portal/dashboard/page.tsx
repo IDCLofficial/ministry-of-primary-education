@@ -1,5 +1,5 @@
 import React from 'react'
-import WelcomeText from './upload-ca/components/WelcomeText'
+import WelcomeText from './components/WelcomeText'
 import StatsCards from './components/StatsCards'
 import RecentActivities from './components/RecentActivities'
 import QuickActions from './components/QuickActions'

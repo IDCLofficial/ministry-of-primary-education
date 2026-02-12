@@ -12,7 +12,7 @@ interface ExamHeaderProps {
 
 export default function ExamHeader({ currentExam }: ExamHeaderProps) {
   const { school, logout } = useAuth()
-  const [showExamDropdown, setShowExamDropdown] = useState(false)
+  const [showExamDropdown, setShowExamDropdown] = useState(false);
 
   return (
     <header className='sm:p-4 sticky sm:top-4 top-2 z-50 p-2 bg-white/50 backdrop-blur-lg rounded-xl shadow-lg shadow-black/5 border border-black/10'>
@@ -37,7 +37,7 @@ export default function ExamHeader({ currentExam }: ExamHeaderProps) {
               <div className="relative">
                 <button
                   onClick={() => setShowExamDropdown(!showExamDropdown)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer border border-green-900/25"
+                  className="flex items-center gap-2 px-3 py-2 rounded-3xl hover:bg-gray-100 transition-colors cursor-pointer border border-green-900/25"
                 >
                   <div className="bg-gray-50 border border-gray-200 shadow-[inset_0px_0px_10px_2px_#E5E7EB] p-2 rounded-full">
                     <Image

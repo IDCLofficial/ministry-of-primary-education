@@ -21,7 +21,7 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
     // Calculate aggregate and grade
     const calculateAggregate = () => {
         const grades = student.subjects.map(subject => {
-            const total = subject.ca + subject.exam
+            const total = subject.exam
             if (total >= 80) return 1
             if (total >= 75) return 2
             if (total >= 70) return 3

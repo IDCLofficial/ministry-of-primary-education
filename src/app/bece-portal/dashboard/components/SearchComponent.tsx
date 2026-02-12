@@ -2,7 +2,7 @@
 import useShortcuts from '@useverse/useshortcuts';
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { IoSchoolOutline, IoPeopleOutline, IoDocumentTextOutline, IoTimeOutline, IoTrendingUpOutline, IoStatsChartOutline, IoCloseCircle } from 'react-icons/io5';
+import { IoSchoolOutline, IoPeopleOutline, IoDocumentTextOutline, IoTimeOutline, IoStatsChartOutline, IoCloseCircle } from 'react-icons/io5';
 
 type SearchCategory = 'pages' | 'actions' | 'schools' | 'students';
 
@@ -78,20 +78,12 @@ export default function SearchComponent() {
         },
         // Actions
         {
-            id: 'upload-ca',
-            title: 'Upload CA',
-            description: 'Upload Continuous Assessment results',
-            category: 'actions',
-            icon: <IoTrendingUpOutline className="w-5 h-5" />,
-            action: () => router.push('/bece-portal/dashboard/upload-ca')
-        },
-        {
-            id: 'upload-exams',
-            title: 'Upload Exams',
+            id: 'upload',
+            title: 'Upload Results',
             description: 'Upload examination results',
             category: 'actions',
             icon: <IoSchoolOutline className="w-5 h-5" />,
-            action: () => router.push('/bece-portal/dashboard/upload-exams')
+            action: () => router.push('/bece-portal/dashboard/upload')
         },
     ], [router]);
 
@@ -213,8 +205,8 @@ export default function SearchComponent() {
 
     useShortcuts({
         shortcuts: [
-            { key: '/', ctrlKey: true },
-            (isMac ? { key: 'F', metaKey: true } : { key: 'F', ctrlKey: true })
+            { key: 'Slash', ctrlKey: true, enabled: true },
+            { key: 'F', ctrlKey: true, platformAware: true, enabled: true },
         ],
         onTrigger: () => {
             searchRef.current?.focus();

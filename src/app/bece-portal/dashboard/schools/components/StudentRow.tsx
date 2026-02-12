@@ -28,7 +28,7 @@ export default function StudentRow({ student, onViewStudent, onGenerateCertifica
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono uppercase">
                 {student.examNo}
             </td>
-            <td className="px-6 py-4 whitespace-nowrap">
+            {/* <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border border-black/10 ${
                     student.sex === 'M' 
                         ? 'bg-green-100 text-green-800' 
@@ -36,7 +36,7 @@ export default function StudentRow({ student, onViewStudent, onGenerateCertifica
                 }`}>
                     {student.sex}
                 </span>
-            </td>
+            </td> */}
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {student.subjects.length} subjects
             </td>

@@ -1,6 +1,5 @@
 import React from 'react'
-import { IoRibbon, IoTrophy, IoCheckmarkCircle } from 'react-icons/io5'
-import { StudentData } from '../../utils/demoData'
+import { StudentData } from '../../utils/api'
 
 interface ResultsCardProps {
     student: StudentData
@@ -8,120 +7,91 @@ interface ResultsCardProps {
 
 export default function ResultsCard({ student }: ResultsCardProps) {
     const getGradeColor = (grade: string) => {
-        if (grade.startsWith('A')) return 'bg-green-100 text-green-800 border-green-200'
-        if (grade.startsWith('B')) return 'bg-green-100 text-green-800 border-green-200'
-        if (grade.startsWith('C')) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-        if (grade.startsWith('D')) return 'bg-orange-100 text-orange-800 border-orange-200'
-        return 'bg-red-100 text-red-800 border-red-200'
-    }
-
-    const getOverallGradeColor = (grade: string) => {
-        switch (grade) {
-            case 'Distinction': return 'text-green-600 bg-green-50'
-            case 'Credit': return 'text-green-600 bg-green-50'
-            case 'Pass': return 'text-yellow-600 bg-yellow-50'
-            default: return 'text-red-600 bg-red-50'
-        }
+        if (grade.startsWith('A')) return 'bg-green-50 text-green-700 border-green-200'
+        if (grade.startsWith('B')) return 'bg-green-50 text-green-700 border-green-200'
+        if (grade.startsWith('C')) return 'bg-yellow-50 text-yellow-700 border-yellow-200'
+        if (grade.startsWith('D')) return 'bg-orange-50 text-orange-700 border-orange-200'
+        return 'bg-red-50 text-red-700 border-red-200'
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {/* Overall Performance Summary */}
-            <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center">
-                    <IoRibbon className="w-5 h-5 mr-2" />
-                    Overall Performance
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white rounded-lg p-4 text-center">
-                        <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-2">
-                            <IoCheckmarkCircle className="w-6 h-6 text-green-600" />
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-b border-gray-100 px-6 py-4">
+                    <h3 className="text-sm font-semibold text-gray-900">
+                        Overall Performance
+                    </h3>
+                </div>
+                <div className="p-6">
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center">
+                            <p className="text-2xl font-semibold text-gray-900 mb-1">
+                                {student.subjects.length}
+                            </p>
+                            <p className="text-xs text-gray-500">Subjects</p>
                         </div>
-                        <p className="text-3xl font-bold text-green-600">
-                            {student.subjects.length}
-                        </p>
-                        <p className="text-sm text-gray-600">Subjects Taken</p>
-                    </div>
 
-                    <div className="bg-white rounded-lg p-4 text-center">
-                        <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-2">
-                            <IoTrophy className="w-6 h-6 text-green-600" />
+                        <div className="text-center border-l border-r border-gray-200">
+                            <p className="text-2xl font-semibold text-gray-900 mb-1">
+                                {student.totalCredits}
+                            </p>
+                            <p className="text-xs text-gray-500">Credits</p>
                         </div>
-                        <p className="text-3xl font-bold text-green-600">
-                            {student.totalCredits}
-                        </p>
-                        <p className="text-sm text-gray-600">Credits (A-C)</p>
-                    </div>
 
-                    <div className="bg-white rounded-lg p-4 text-center">
-                        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-2 ${getOverallGradeColor(student.overallGrade)}`}>
-                            <IoRibbon className="w-6 h-6" />
+                        <div className="text-center">
+                            <p className="text-2xl font-semibold text-green-600 mb-1">
+                                {student.overallGrade}
+                            </p>
+                            <p className="text-xs text-gray-500">Grade</p>
                         </div>
-                        <p className={`text-3xl font-bold ${student.overallGrade === 'Distinction' ? 'text-green-600' : student.overallGrade === 'Credit' ? 'text-green-600' : student.overallGrade === 'Pass' ? 'text-yellow-600' : 'text-red-600'}`}>
-                            {student.overallGrade}
-                        </p>
-                        <p className="text-sm text-gray-600">Overall Grade</p>
                     </div>
                 </div>
             </div>
 
             {/* Detailed Results Table */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden animate-fadeIn-y hover:shadow-lg transition-all duration-300">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                        BECE Examination Results
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-b border-gray-100 px-6 py-4">
+                    <h3 className="text-sm font-semibold text-gray-900">
+                        Subject Results
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                        Detailed breakdown of your performance
-                    </p>
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <table className="min-w-full">
+                        <thead>
+                            <tr className="border-b border-gray-100 bg-gray-50">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
                                     Subject
                                 </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    CA (30)
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500">
+                                    Score
                                 </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Exam (70)
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Total (100)
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500">
                                     Grade
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="divide-y divide-gray-100">
                             {student.subjects.map((subject, index) => (
-                                <tr key={index} className="hover:bg-green-50 transition-all duration-200 group cursor-pointer">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">
-                                            {subject.name}
+                                <tr key={index} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-3">
+                                        <div className="flex items-center gap-3">
+                                            <span className="w-6 h-6 flex items-center justify-center text-xs font-medium text-gray-400">
+                                                {index + 1}
+                                            </span>
+                                            <span className="text-sm text-gray-900">
+                                                {subject.name}
+                                            </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        <span className="text-sm text-gray-900 font-medium">
-                                            {subject.ca}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        <span className="text-sm text-gray-900 font-medium">
+                                    <td className="px-6 py-3 text-center">
+                                        <span className="text-sm font-medium text-gray-900">
                                             {subject.exam}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        <span className="text-sm font-bold text-gray-900">
-                                            {subject.total}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border group-hover:scale-110 transition-transform duration-200 ${getGradeColor(subject.grade)}`}>
+                                    <td className="px-6 py-3 text-center">
+                                        <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded border ${getGradeColor(subject.grade)}`}>
                                             {subject.grade}
                                         </span>
                                     </td>
@@ -132,24 +102,24 @@ export default function ResultsCard({ student }: ResultsCardProps) {
                 </div>
 
                 {/* Grade Legend */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">BECE Grading System</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                        <div className="flex items-center">
-                            <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                            <span className="text-gray-700">A1-A3: Excellent (80-100)</span>
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                    <p className="text-xs font-medium text-gray-500 mb-2">Grading Scale</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span>A1-B3: Excellent</span>
                         </div>
-                        <div className="flex items-center">
-                            <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                            <span className="text-gray-700">B2-B3: Very Good (65-79)</span>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                            <span>C4-C6: Good</span>
                         </div>
-                        <div className="flex items-center">
-                            <span className="inline-block w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
-                            <span className="text-gray-700">C4-C6: Good (45-64)</span>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                            <span>D7: Fair</span>
                         </div>
-                        <div className="flex items-center">
-                            <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
-                            <span className="text-gray-700">D7-F9: Poor (0-44)</span>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <span>E8-F9: Poor</span>
                         </div>
                     </div>
                 </div>

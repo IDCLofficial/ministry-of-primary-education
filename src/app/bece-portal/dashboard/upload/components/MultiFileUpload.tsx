@@ -167,8 +167,8 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
     <div className={`flex flex-col items-center justify-center h-full ${className}`}>
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Exam Files</h2>
-          <p className="text-gray-600">Upload CSV files containing Examination data</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Results</h2>
+          <p className="text-gray-600">Upload CSV files containing student examination results</p>
         </div>
 
         <div

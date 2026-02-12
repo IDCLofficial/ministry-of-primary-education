@@ -6,9 +6,9 @@ import DataTable from './components/DataTable'
 import ExamModal from './components/ExamModal'
 import { ExamModalProvider, useExamModal } from './contexts/ExamModalContext'
 import toast from 'react-hot-toast'
-import { parseCSVFile, StudentRecord } from '../upload-ca/utils/csvParser'
+import { parseCSVFile, StudentRecord } from './utils/csvParser'
 
-function UploadExamsContent() {
+function UploadContent() {
     const [studentData, setStudentData] = useState<StudentRecord[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const { isModalOpen, selectedStudent, closeModal, updateStudent } = useExamModal()
@@ -170,10 +170,10 @@ function UploadExamsContent() {
     )
 }
 
-export default function UploadExams() {
+export default function Upload() {
     return (
         <ExamModalProvider onStudentUpdate={() => {}}>
-            <UploadExamsContent />
+            <UploadContent />
         </ExamModalProvider>
     )
 }

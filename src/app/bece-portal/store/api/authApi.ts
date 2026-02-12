@@ -39,7 +39,6 @@ export interface BeceResultUpload{
 
 interface BeceResultUploadRequest {
   result: BeceResultUpload[]
-  type: "ca" | "exam",
   file: {fileName: string, fileSize: number, students: number}[]
 }
 
@@ -65,8 +64,7 @@ interface SchoolResponse {
 
 interface UpdateScoreSubject {
   subjectName: string
-  ca?: number
-  exam?: number
+  exam: number
 }
 
 interface UpdateScoreRequest {
