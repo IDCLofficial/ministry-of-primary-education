@@ -32,7 +32,7 @@ export default function StudentsPage() {
         }
     }, [debouncedSearch, search])
 
-    const schools = useMemo(() => data?.schools || [], [data])
+    const schools = useMemo(() => data?.data || [], [data])
 
     const pagination = useMemo(() => {
         if (!data) return {
@@ -43,19 +43,13 @@ export default function StudentsPage() {
             totalItems: 0,
         }
         return {
-            currentPage: parseInt(page),
-            totalPages: data.totalPages || 1,
+            currentPage: parseInt(data.pagination.currentPage),
+            totalPages: data.pagination.totalPages || 1,
             onPageChange: (page: number) => updateSearchParam("page", String(page)),
-            itemsPerPage: data.limit || 10,
-            totalItems: data.totalSchools || 0,
+            itemsPerPage: parseInt(data.pagination.itemsPerPage) || 10,
+            totalItems: data.pagination.totalItems || 0,
         }
-    }, [data, page])
-
-    // Calculate total students from all schools
-    const totalStudents = useMemo(() => {
-        if (!schools || schools.length === 0) return 0
-        return schools.reduce((sum, school) => sum + (school.students || 0), 0)
-    }, [schools])
+    }, [data, page]);
 
     // Reset to page 1 when debounced search changes
     useEffect(() => {
@@ -77,7 +71,6 @@ export default function StudentsPage() {
         <div className='p-6 bg-white/50 backdrop-blur-[2px] h-full overflow-y-auto border border-black/10 m-1 mb-0 space-y-6'>
             <StudentTableHeader
                 schoolCount={schools.length || 0}
-                studentCount={totalStudents}
             />
             <SearchBar
                 searchQuery={localSearch}

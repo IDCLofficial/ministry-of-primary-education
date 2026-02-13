@@ -16,9 +16,9 @@
     "framer-motion": "^12.23.12",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.2",
+    "jspdf": "^4.1.0",
     "lottie-react": "^2.4.1",
-    "next": "15.4.10",
+    "next": "^15.5.12",
     "nextjs-toploader": "^3.9.17",
     "react": "19.1.0",
     "react-countup": "^6.5.3",
@@ -33,7 +33,8 @@
     "recharts": "^3.3.0",
     "sweetalert2": "^11.23.0",
     "swr": "^2.3.6",
-    "wcs-chart-lib": "^0.0.8"
+    "wcs-chart-lib": "^0.0.8",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

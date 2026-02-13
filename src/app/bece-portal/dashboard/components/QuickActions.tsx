@@ -33,7 +33,7 @@ export default function QuickActions() {
       description: 'Upload examination results',
       icon: <IoFolderOpenOutline className="w-6 h-6" />,
       activeIcon: <IoFolderOpen className="w-6 h-6" />,
-      href: '/bece-portal/dashboard/upload',
+      href: '/bece-portal/dashboard/uploads',
       color: 'text-gray-700',
       bgColor: 'bg-gray-50 hover:bg-gray-100'
     },

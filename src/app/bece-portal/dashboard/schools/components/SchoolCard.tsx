@@ -19,7 +19,7 @@ export default function SchoolCard({ school }: SchoolCardProps) {
 
     return (
         <Link
-            href={`/bece-portal/dashboard/schools/${school._id}`} 
+            href={`/bece-portal/dashboard/schools/${school.schoolCode.replace(/\//g, "-")}`} 
             className="bg-white rounded-xl border border-gray-200 hover:border-green-400 hover:shadow-lg transition-all duration-200 cursor-pointer group overflow-hidden active:scale-95 hover:scale-[1.01] hover:-translate-y-1 active:translate-y-0 active:opacity-75"
         >
             <div className="p-6">
@@ -45,16 +45,6 @@ export default function SchoolCard({ school }: SchoolCardProps) {
                         <IoLocationOutline className="w-4 h-4 text-gray-400" />
                         <span className="capitalize">{getLgaName(school.lga).toLowerCase()}</span>
                     </div>
-
-                    {/* Student Count */}
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <IoPeopleOutline className="w-4 h-4 text-gray-400" />
-                        <span>
-                            {school.students} 
-                            {' '}
-                            {school.students === 1 ? 'Student' : 'Students'}
-                        </span>
-                    </div>
                 </div>
 
                 {/* Footer Badge */}
@@ -64,7 +54,7 @@ export default function SchoolCard({ school }: SchoolCardProps) {
                             View Details
                         </span>
                         <span className="text-xs text-gray-500">
-                            ID: {school._id.slice(-6)}
+                            School Code: <div className="text-black font-medium">{school.schoolCode}</div>
                         </span>
                     </div>
                 </div>
