@@ -1,12 +1,13 @@
 'use client'
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { IoPersonCircle, IoLockClosed } from 'react-icons/io5'
+import { IoPersonCircle, IoLockClosed, IoArrowBack } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
-import animationData from './assets/students.json'
+import animationData from '../assets/students.json'
 import Image from 'next/image'
-import { useDebounce } from '../portal/utils/hooks/useDebounce'
+import { useDebounce } from '../../portal/utils/hooks/useDebounce'
+import Link from 'next/link'
 
 // Regex pattern for exam number validation (e.g., ok/977/2025 or ok/977/2025(1))
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3}\/\d{3,4}(\(\d\))?$/
@@ -78,10 +79,10 @@ export default function StudentLoginPage() {
                     setError(`Something unexpected happened (Error ${response.status}). Please try again.`)
                 }
 
-                console.error('Login failed:', { 
-                    status: response.status, 
+                console.error('Login failed:', {
+                    status: response.status,
                     statusText: response.statusText,
-                    url: response.url 
+                    url: response.url
                 })
                 setIsLoading(false)
                 return
@@ -133,13 +134,14 @@ export default function StudentLoginPage() {
 
             // Store the complete student data in localStorage
             localStorage.setItem('student_data', JSON.stringify(data))
-            localStorage.setItem('student_exam_no', data.examNo) // Keep for backward compatibility
-            
+            localStorage.setItem('student_exam_no', data.examNo)
+            localStorage.setItem('selected_exam_type', 'bece') // Store exam type
+
             toast.success(`Welcome ${data.name}! Loading your results... 🎉`)
             router.push('/student-portal/dashboard')
         } catch (error) {
             console.error('Login error:', error)
-            
+
             // Check for specific error types
             if (error instanceof TypeError && error.message.includes('fetch')) {
                 setError('Network error: Unable to connect to server. Please check your internet connection.')
@@ -148,7 +150,7 @@ export default function StudentLoginPage() {
             } else {
                 setError('We\'re having trouble connecting. Please check your internet and try again.')
             }
-            
+
             setIsLoading(false)
         }
     }
@@ -179,7 +181,7 @@ export default function StudentLoginPage() {
 
             {/* Ministry Header */}
             {isMaintenanceMode ? null : <header className="w-full pt-8 pb-6 px-4 relative z-20">
-                <div className="flex max-md:flex-row flex-col justify-center gap-2 items-center">
+                <div className="flex flex-col justify-center gap-3 items-center">
                     <Image
                         src="/images/ministry-logo.png"
                         alt="logo"
@@ -188,16 +190,24 @@ export default function StudentLoginPage() {
                         className='object-contain'
                         title='Imo State Ministry of Primary and Secondary Education logo'
                     />
-                    <span className='sm:text-2xl text-xl text-center font-bold max-sm:block hidden'>
-                        <abbr title="Imo State Ministry of Primary and Secondary Education">MOPSE</abbr>
-                    </span>
-                    <span className='sm:text-2xl text-xl text-center max-w-md font-bold max-md:hidden block'>Basic Education Certificate Examination</span>
+                    <div className="text-center">
+                        <div className="flex items-center justify-center gap-2 mb-1">
+                            <span className='text-2xl md:text-3xl font-bold'>
+                                <abbr title="Basic Education Certificate Examination" className="no-underline">BECE</abbr>
+                            </span>
+                            <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full border border-green-200">
+                                Active
+                            </span>
+                        </div>
+                        <p className='text-sm md:text-base text-gray-600 max-w-md'>
+                            Basic Education Certificate Examination
+                        </p>
+                    </div>
                 </div>
             </header>}
 
             <div className="flex-1 flex items-center justify-center p-4">
                 <div className="w-full max-w-md relative z-10">
-
                     {isMaintenanceMode ? (
                         /* Maintenance Mode Card */
                         <div className="bg-white rounded-2xl shadow-xl border border-orange-200 p-8 animate-fadeIn-y">
@@ -328,23 +338,13 @@ export default function StudentLoginPage() {
                             </form>
 
                             {/* Footer */}
-                            <div className="mt-6 pt-6 border-t border-gray-200">
-                                <p className="text-xs text-center text-gray-500">
-                                    Need help?{' '}
-                                    <a
-                                        href="#"
-                                        onClick={(e) => {
-                                            e.preventDefault()
-                                            toast('Support coming soon! 😊', {
-                                                icon: '💬',
-                                            })
-                                        }}
-                                        className="text-green-600 hover:text-green-700 font-medium transition-all duration-150 cursor-pointer active:scale-95 active:opacity-80"
-                                    >
-                                        Contact Support
-                                    </a>
-                                </p>
-                            </div>
+                            {!isMaintenanceMode && (
+                                <div className="mt-6 pt-6 border-t border-gray-200">
+                                    <p className="text-xs text-center text-gray-500">
+                                        Go back to the <Link href="/student-portal" className="text-green-600 hover:text-green-700 font-medium transition-all duration-150 cursor-pointer active:scale-95 active:opacity-80">exam selection</Link> page.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
 
