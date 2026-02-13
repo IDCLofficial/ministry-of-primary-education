@@ -4,34 +4,41 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 export default function GlobalLoader() {
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRouteChanging, setIsRouteChanging] = useState(false);
   const pathname = usePathname();
 
-  if(pathname.startsWith('/portal')){
-    return;
-  }
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // Initial load
   useEffect(() => {
     const timeout = setTimeout(() => {
       setLoading(false);
-    }, 1000); // Adjust the delay if needed
+    }, 1000);
 
     return () => clearTimeout(timeout);
   }, []);
 
-  // Navigation change
   useEffect(() => {
+    if (!mounted) return;
+
     setIsRouteChanging(true);
     const timeout = setTimeout(() => {
       setIsRouteChanging(false);
-    }, 500); // Delay after route change to hide loader
+    }, 500);
 
     return () => clearTimeout(timeout);
-  }, [pathname]);
+  }, [pathname, mounted]);
 
-  if (pathname.startsWith('/portal') || pathname.startsWith('/bece-portal') || pathname.startsWith('/student-portal')) {
+  if (!mounted) return null;
+
+  if (
+    pathname.startsWith('/portal') ||
+    pathname.startsWith('/bece-portal') ||
+    pathname.startsWith('/student-portal')
+  ) {
     return null;
   }
 

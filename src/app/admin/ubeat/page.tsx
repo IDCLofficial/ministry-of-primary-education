@@ -1,7 +1,7 @@
 'use client'
 
 import { FaChartBar, FaChartLine, FaUsers, FaTrophy } from 'react-icons/fa'
-import ExamApplicationsTable from '../components/ExamApplicationsTable'
+import ExamSchoolTable from '../schools/components/schools/ExamSchoolTable'
 import { useGetApplicationsQuery } from '@/app/admin/schools/store/api/schoolsApi'
 
 export default function UbeatPage() {
@@ -68,7 +68,7 @@ export default function UbeatPage() {
         </div>
       </div>
 
-      <ExamApplicationsTable examType="UBEAT" />
+      <ExamSchoolTable examType="UBEAT" />
     </div>
   )
 }

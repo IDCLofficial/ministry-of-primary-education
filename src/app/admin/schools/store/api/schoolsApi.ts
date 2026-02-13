@@ -159,9 +159,12 @@ export const schoolsApi = createApi({
     }),
 
     // Get school by ID
-    getSchoolById: builder.query<School, string>({
-      query: (id) => `schools/${id}`,
-      providesTags: (result, error, id) => [{ type: 'School', id }],
+    getSchoolById: builder.query<School, { id: string; examType?: string }>({
+      query: ({ id, examType }) => ({
+        url: `/applications/${id}?examType=${examType}`,
+        method: 'GET',
+      }),
+      providesTags: (result, error, { id }) => [{ type: 'School', id }],
     }),
 
     // Get school transactions
@@ -229,6 +232,16 @@ export const schoolsApi = createApi({
       providesTags: ['Application'],
     }),
 
+    // Get applications by school ID
+    getApplicationsBySchoolId: builder.query<Application[], { schoolId: string; examType: string }>({
+      query: ({ schoolId, examType }) => `applications/${schoolId}?examType=${examType}`,
+      transformResponse: (response: Application[] | { data?: Application[] }) => {
+        if (Array.isArray(response)) return response
+        return response?.data || []
+      },
+      providesTags: ['Application'],
+    }),
+
     // Get all students
     getAllStudents: builder.query<Student[], void>({
       query: () => 'students',
@@ -256,19 +269,25 @@ export const schoolsApi = createApi({
       status: 'approved' | 'rejected' | 'completed',
       token: string
       examType?: string
+      reviewNotes?: string
     }>({
-      queryFn: async ({ appIds, status, token, examType }) => {
+      queryFn: async ({ appIds, status, token, examType, reviewNotes }) => {
         const ids = Array.isArray(appIds) ? appIds : [appIds]
         try {
           const responses = await Promise.all(
             ids.map(async (appId) => {
+              const body: { status: string; reviewNotes?: string } = { status };
+              if (reviewNotes) {
+                body.reviewNotes = reviewNotes;
+              }
+              
               const response = await fetch(`${BASE_URL}/applications/${appId}/status?examType=${examType}`, {
                 method: 'PATCH',
                 headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ status }),
+                body: JSON.stringify(body),
               })
               
               if (!response.ok) {
@@ -321,6 +340,7 @@ export const {
   useGetSchoolByIdQuery,
   useGetSchoolTransactionsQuery,
   useGetApplicationsQuery,
+  useGetApplicationsBySchoolIdQuery,
   useGetAllStudentsQuery,
   useGetStudentsBySchoolIdQuery,
   useGetSchoolNamesQuery,

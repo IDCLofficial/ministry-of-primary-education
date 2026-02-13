@@ -1,7 +1,7 @@
 'use client'
 
 import { FaBook, FaChartLine, FaUsers, FaSchool } from 'react-icons/fa'
-import ExamApplicationsTable from '../components/ExamApplicationsTable'
+import ExamSchoolTable from '../schools/components/schools/ExamSchoolTable'
 import { useGetApplicationsQuery } from '@/app/admin/schools/store/api/schoolsApi'
 
 export default function CommonEntrancePage() {
@@ -68,7 +68,7 @@ export default function CommonEntrancePage() {
         </div>
       </div>
 
-      <ExamApplicationsTable examType="Common-entrance" />
+      <ExamSchoolTable examType="Common-entrance" />
     </div>
   )
 }

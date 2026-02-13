@@ -1,7 +1,7 @@
 'use client'
 
 import { FaClipboardList, FaChartLine, FaUsers, FaChalkboardTeacher } from 'react-icons/fa'
-import ExamApplicationsTable from '../components/ExamApplicationsTable'
+import ExamSchoolTable from '../schools/components/schools/ExamSchoolTable'
 import { useGetApplicationsQuery } from '@/app/admin/schools/store/api/schoolsApi'
 
 export default function UbetmsPage() {
@@ -68,7 +68,7 @@ export default function UbetmsPage() {
         </div>
       </div>
 
-      <ExamApplicationsTable examType="UBETMS" />
+      <ExamSchoolTable examType="UBETMS" />
     </div>
   )
 }

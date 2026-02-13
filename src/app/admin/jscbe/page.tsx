@@ -1,7 +1,7 @@
 'use client'
 
 import { FaPencilAlt, FaChartLine, FaUsers, FaCertificate } from 'react-icons/fa'
-import ExamApplicationsTable from '../components/ExamApplicationsTable'
+import ExamSchoolTable from '../schools/components/schools/ExamSchoolTable'
 import { useGetApplicationsQuery } from '@/app/admin/schools/store/api/schoolsApi'
 
 export default function JscbePage() {
@@ -68,7 +68,7 @@ export default function JscbePage() {
         </div>
       </div>
 
-      <ExamApplicationsTable examType="JSCBE" />
+      <ExamSchoolTable examType="JSCBE" />
     </div>
   )
 }

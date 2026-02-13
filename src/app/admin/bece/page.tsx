@@ -1,13 +1,13 @@
 'use client'
 
 import { FaClipboardList, FaChartLine, FaUsers, FaFileAlt } from 'react-icons/fa'
-import ExamApplicationsTable from '../components/ExamApplicationsTable'
+import ExamSchoolTable from '../schools/components/schools/ExamSchoolTable'
 import { useGetApplicationsQuery } from '@/app/admin/schools/store/api/schoolsApi'
 
 export default function BecePage() {
   const { data: applicationsResponse } = useGetApplicationsQuery({
     examType: 'BECE',
-    limit: 100
+    limit: 20
   })
 
   const applications = applicationsResponse?.data || []
@@ -69,7 +69,7 @@ export default function BecePage() {
         </div>
       </div>
 
-      <ExamApplicationsTable examType="BECE" />
+      <ExamSchoolTable examType="BECE" />
     </div>
   )
 }

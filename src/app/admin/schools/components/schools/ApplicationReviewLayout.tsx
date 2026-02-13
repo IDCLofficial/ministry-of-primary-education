@@ -27,7 +27,7 @@ export default function ApplicationReviewLayout({
     }
     return `+234 ${phoneStr}`;
   };
-
+console.log('application', application)
   return (
     <div className="bg-white">
       {/* Back button */}

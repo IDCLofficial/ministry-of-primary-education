@@ -96,10 +96,10 @@ const [loading, setLoading] = useState(true)
   // --- Calculate stats ---
  
   const stats = [
-    {
-      title: "Total Schools Registered",
-      value: schoolsLength,
-    },
+    // {
+    //   title: "Total Schools Registered",
+    //   value: schoolsLength,
+    // },
     {
       title: "Total Approved",
       value: approvedSchools,

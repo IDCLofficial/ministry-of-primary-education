@@ -1,13 +1,13 @@
 'use client'
 
 import { FaFileAlt, FaChartLine, FaUsers, FaRedo } from 'react-icons/fa'
-import ExamApplicationsTable from '../components/ExamApplicationsTable'
+import ExamSchoolTable from '../schools/components/schools/ExamSchoolTable'
 import { useGetApplicationsQuery } from '@/app/admin/schools/store/api/schoolsApi'
 
 export default function BeceResitPage() {
   const { data: applicationsResponse } = useGetApplicationsQuery({
     examType: 'BECE-resit',
-    limit: 100
+    limit: 20
   })
 
   const applications = applicationsResponse?.data || []
@@ -68,7 +68,7 @@ export default function BeceResitPage() {
         </div>
       </div>
 
-      <ExamApplicationsTable examType="BECE-resit" />
+      <ExamSchoolTable examType="BECE-resit" />
     </div>
   )
 }

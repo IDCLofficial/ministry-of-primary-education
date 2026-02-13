@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import GlobalLoader from '@/components/GlobalLoader'
-import { ReduxProvider } from '@/app/admin/schools/store/provider'
 
 
 
@@ -21,11 +20,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ReduxProvider>
-          <GlobalLoader />
-          <Navbar/>
-          {children}
-        </ReduxProvider>
+        <GlobalLoader />
+        <Navbar/>
+        {children}
       </body>
     </html>
   );

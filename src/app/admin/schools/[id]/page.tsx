@@ -2,7 +2,8 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { 
   useGetSchoolByIdQuery, 
-  useGetSchoolTransactionsQuery
+  useGetSchoolTransactionsQuery,
+  useGetApplicationsBySchoolIdQuery
 } from "@/app/admin/schools/store/api/schoolsApi";
 import { useSchoolStatusActions } from '@/app/admin/schools/components/schools/SchoolStatusActions';
 import { Application } from '@/app/admin/schools/store/api/schoolsApi';
@@ -28,7 +29,10 @@ function SchoolDetailsPageContent() {
     data: school, 
     isLoading: schoolLoading, 
     error: schoolError 
-  } = useGetSchoolByIdQuery(schoolId, {
+  } = useGetSchoolByIdQuery({
+    id: schoolId,
+    examType: examTypeParam || undefined
+  }, {
     skip: !schoolId
   });
 
@@ -55,45 +59,25 @@ function SchoolDetailsPageContent() {
 
   const transactions = transactionsData?.data || [];
 
-  // Get the specific pending exam based on examType from URL, or find any pending exam
-  const pendingExam = examTypeParam 
-    ? school?.exams?.find(exam => exam.name === examTypeParam && exam.status === 'pending')
-    : school?.exams?.find(exam => exam.status === 'pending');
+  // The school object from useGetSchoolByIdQuery is actually the full application object
+  // It contains _id, applicationStatus, reviewNotes, etc.
+  const applicationId = school?._id || null;
+  const applicationStatus = (school as any)?.applicationStatus;
   
-  const hasPendingExam = !!pendingExam;
+  // Check if this is an application (has applicationStatus) vs just a school
+  const hasApplication = !!applicationStatus;
   
-  // Get applicationId from URL param first, then fall back to exam object
-  const applicationId = appIdParam || pendingExam?.applicationId || null;
-  console.log('Application ID:', applicationId);
-
   // Debug logging
   console.log('=== DEBUG INFO ===');
-  console.log('School:', school);
+  console.log('School/Application:', school);
   console.log('Exam Type Param:', examTypeParam);
-  console.log('App ID Param:', appIdParam);
-  console.log('Has Pending Exam:', hasPendingExam);
-  console.log('Pending Exam:', pendingExam);
   console.log('Application ID:', applicationId);
+  console.log('Application Status:', applicationStatus);
+  console.log('Has Application:', hasApplication);
   console.log('==================');
 
-  // Determine the effective status from school's exams array
-  const effectiveStatus = hasPendingExam ? 'pending' : school?.status;
-
-  // Create application object from school data when there's a pending exam
-  const applicationForReview: Application | null = (hasPendingExam && school && pendingExam) ? {
-    _id: pendingExam.applicationId || schoolId,
-    school: school,
-    schoolName: school.schoolName,
-    address: school.address,
-    schoolCode: school.schoolCode || 'TBD',
-    principal: school.principal,
-    email: school.email,
-    phone: school.phone ? Number(school.phone) : 0,
-    numberOfStudents: pendingExam.numberOfStudents || school.numberOfStudents || 0,
-    examType: pendingExam.name,
-    applicationStatus: 'pending',
-    __v: 0
-  } : null;
+  // The school object IS the application, so we can use it directly
+  const applicationForReview: Application | null = hasApplication ? (school as any) : null;
 
   // Use school data directly
   const enhancedSchool = school!;
@@ -117,38 +101,38 @@ function SchoolDetailsPageContent() {
   // Handle status actions using the SchoolStatusActions hook
   const handleApproveSchool = async () => {
     if (!applicationId) {
-      console.error('No application ID available. The pending exam does not have an applicationId.');
+      console.error('No application ID available.');
       return;
     }
     
-    await handleApproveOne(applicationId, pendingExam?.name);
+    await handleApproveOne(applicationId, examTypeParam || undefined);
   };
 
   const handleRejectSchool = async () => {
     if (!applicationId) {
-      console.error('No application ID available. The pending exam does not have an applicationId.');
+      console.error('No application ID available.');
       return;
     }
     
-    await handleRejectOne(applicationId, pendingExam?.name);
+    await handleRejectOne(applicationId, examTypeParam || undefined);
   };
 
   const handleSendConfirmation = async () => {
     if (!applicationId) {
-      console.error('No application ID available. The pending exam does not have an applicationId.');
+      console.error('No application ID available.');
       return;
     }
     
-    await handleSendConfirmationSingle(applicationId, pendingExam?.name);
+    await handleSendConfirmationSingle(applicationId, examTypeParam || undefined);
   };
 
   const handleReapproveSchool = async () => {
     if (!applicationId) {
-      console.error('No application ID available. The pending exam does not have an applicationId.');
+      console.error('No application ID available.');
       return;
     }
     
-    await handleReapproveOne(applicationId, pendingExam?.name);
+    await handleReapproveOne(applicationId);
   };
 
   if (schoolLoading) {
@@ -177,11 +161,12 @@ function SchoolDetailsPageContent() {
     );
   }
 
-  // Check if this is an applied school with pending status
-  const isAppliedSchool = (applicationForReview?.applicationStatus === 'pending') || hasPendingExam;
+  // Check if this is an applied school with pending or rejected status
+  const isAppliedSchool = (applicationForReview?.applicationStatus === 'pending' || applicationForReview?.applicationStatus === 'rejected') || hasApplication;
   console.log('Is Applied School:', isAppliedSchool);
+  console.log('Application For Review:', applicationForReview);
   console.log('Application Status:', applicationForReview?.applicationStatus);
-  console.log('Has Pending Exam:', hasPendingExam);
+  console.log('Has Application:', hasApplication);
 
   return (
     

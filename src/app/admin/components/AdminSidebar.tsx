@@ -108,39 +108,34 @@ export default function AdminSidebar() {
             const Icon = item.icon
 
             return (
-              <>
-              
-              
-               <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center px-3 py-3 rounded-lg transition-all duration-200 group ${
-                    isActive
-                      ? 'bg-white text-green-700 font-semibold shadow-sm'
-                      : 'text-white hover:bg-green-600 hover:text-white'
-                  }`}
-                  title={isCollapsed ? item.name : ''}
-                >
-                  <Icon 
-                    className={`flex-shrink-0 ${isCollapsed ? 'w-6 h-6' : 'w-5 h-5'} ${
-                      isActive ? 'text-green-700' : 'text-green-100 group-hover:text-white'
-                    }`} 
-                  />
-                  {!isCollapsed && (
-                    <div className="ml-3 flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.name}</p>
-                      {item.description && (
-                        <p className={`text-xs truncate mt-0.5 ${
-                          isActive ? 'text-green-600' : 'text-green-200'
-                        }`}>
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </Link>
-              </>
-               
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center px-3 py-3 rounded-lg transition-all duration-200 group ${
+                  isActive
+                    ? 'bg-white text-green-700 font-semibold shadow-sm'
+                    : 'text-white hover:bg-green-600 hover:text-white'
+                }`}
+                title={isCollapsed ? item.name : ''}
+              >
+                <Icon 
+                  className={`flex-shrink-0 ${isCollapsed ? 'w-6 h-6' : 'w-5 h-5'} ${
+                    isActive ? 'text-green-700' : 'text-green-100 group-hover:text-white'
+                  }`} 
+                />
+                {!isCollapsed && (
+                  <div className="ml-3 flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{item.name}</p>
+                    {item.description && (
+                      <p className={`text-xs truncate mt-0.5 ${
+                        isActive ? 'text-green-600' : 'text-green-200'
+                      }`}>
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </Link>
             )
           })}
         </div>

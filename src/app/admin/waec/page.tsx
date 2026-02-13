@@ -1,7 +1,7 @@
 'use client'
 
 import { FaGraduationCap, FaChartLine, FaUsers, FaClipboardCheck } from 'react-icons/fa'
-import ExamApplicationsTable from '../components/ExamApplicationsTable'
+import ExamSchoolTable from '../schools/components/schools/ExamSchoolTable'
 import { useGetApplicationsQuery } from '@/app/admin/schools/store/api/schoolsApi'
 
 export default function WaecPage() {
@@ -69,7 +69,7 @@ export default function WaecPage() {
         </div>
       </div>
 
-      <ExamApplicationsTable examType="WAEC" />
+      <ExamSchoolTable examType="WAEC" />
     </div>
   )
 }

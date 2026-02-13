@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import "../globals.css";
 import ConditionalLayout from './components/ConditionalLayout'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { ReduxProvider } from '@/app/admin/schools/store/provider'
 
 export const metadata: Metadata = {
   title: "MOPSE Admin Dashboard - Ministry of Primary and Secondary Education",
@@ -16,14 +17,14 @@ export default function AdminLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="admin-layout">
+    <div className="admin-layout">
+      <ReduxProvider>
         <AuthProvider>
           <ConditionalLayout>
             {children}
           </ConditionalLayout>
         </AuthProvider>
-      </body>
-    </html>
+      </ReduxProvider>
+    </div>
   );
 }

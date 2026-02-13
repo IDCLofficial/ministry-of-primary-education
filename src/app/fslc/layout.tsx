@@ -16,7 +16,7 @@ export default function AdminLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="admin-layout">
+      <body>
         {children}
       </body>
     </html>

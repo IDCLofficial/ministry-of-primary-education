@@ -15,13 +15,16 @@ import TabNavigation, { Tab } from './TabNavigation';
 import SchoolSearchBar from './SchoolSearchBar';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function SchoolTableRTK() {
+interface ExamSchoolTableProps {
+  examType: 'UBEGPT' | 'UBETMS' | 'Common-entrance' | 'BECE' | 'BECE-resit' | 'UBEAT' | 'JSCBE' | 'WAEC';
+}
+
+export default function ExamSchoolTable({ examType }: ExamSchoolTableProps) {
   const router = useRouter();
   const { token } = useAuth();
   const [currentTab, setCurrentTab] = useState<Tab>("applied");
   const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
   const [page, setPage] = useState(1);
-
 
   // RTK Query hooks - using only useGetApplicationsQuery for all tabs
   const { 
@@ -31,15 +34,15 @@ export default function SchoolTableRTK() {
     error: applicationsError 
   } = useGetApplicationsQuery({
     page,
-    limit: 20, // Use the limit from state
+    limit: 20,
     status: currentTab === "notApplied" ? "not_applied" :
             currentTab === "applied" ? "pending" : 
             currentTab === "approved" ? "approved" : 
             currentTab === "rejected" ? "rejected" : 
             currentTab === "onboarded" ? "onboarded" : 
             currentTab === "completed" ? "completed" : 
-            "all", // For "all" tab, fetch all statuses
-    examType: 'WAEC'
+            "all",
+    examType
   });
 
   // Extract data and meta from response
@@ -54,9 +57,6 @@ export default function SchoolTableRTK() {
   };
 
   const [updateApplicationStatus] = useUpdateApplicationStatusMutation();
-
- 
- 
 
   const handleApproveSelectedWithUpdate = async () => {
     if (selectedApplications.length === 0) return;
@@ -90,7 +90,6 @@ export default function SchoolTableRTK() {
 
   // Initialize SchoolStatusActions hook for SweetAlert dialogs
   const {
-   
     handleApproveSelected,
     handleRejectSelected,
     handleSendConfirmation
@@ -112,7 +111,6 @@ export default function SchoolTableRTK() {
     setSelectedApplications([]);
   };
 
-
   // Handle selection
   const handleSelectApplication = (id: string) => {
     setSelectedApplications(prev => 
@@ -130,27 +128,23 @@ export default function SchoolTableRTK() {
     }
   };
 
-
   const handleViewFullDetails = (item: School | Application) => {
     const isApplication = 'applicationStatus' in item;
     if (isApplication) {
       // Navigate to school details with application ID
-      if (item.school?._id) {
+      if (item?._id) {
         // If school object exists and has ID, use it
-        router.push(`/admin/schools/${item.school._id}?appId=${item._id}&examType=${item.examType}`);
+        router.push(`/admin/schools/${item._id}?appId=${item._id}&examType=${item.examType}`);
       } else {
         // If school is null, navigate directly with application ID
         // The detail page will need to handle viewing application data
-        router.push(`/admin/schools/application/${item._id}?examType=${item.examType}`);
+        router.push(`/admin/schools/${item._id}?examType=${item.examType}`);
       }
     } else {
       // Navigate to school details
       router.push(`/admin/schools/${item._id}`);
     }
   };
-
-  
-  
 
   if (applicationsError) {
     return (
@@ -176,21 +170,19 @@ export default function SchoolTableRTK() {
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 bg-gray-50 p-4">
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">School Applications</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{examType} Applications</h2>
         </div>
-          <SchoolSearchBar placeholder="Search schools by name, principal, or address..." />
+        <SchoolSearchBar placeholder="Search schools by name, principal, or address..." />
 
         <TabNavigation 
           currentTab={currentTab} 
           onTabChange={handleTabChange} 
         />
-        
       </div>
 
       {/* Search and Actions */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex justify-between items-center">
-          
           {selectedApplications.length > 0 && (
             <div className="flex space-x-2 ml-4">
               {currentTab === "applied" && (
@@ -251,9 +243,6 @@ export default function SchoolTableRTK() {
         isLoading={isLoading}
         onPageChange={setPage}
       />
-
-
-    
     </div>
   );
 }
