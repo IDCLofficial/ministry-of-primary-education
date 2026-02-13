@@ -38,6 +38,7 @@ export function BeceAuthProvider({ children }: BeceAuthProviderProps) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [skipProfileQuery, setSkipProfileQuery] = useState(true);
+  const [hasHandledProfileError, setHasHandledProfileError] = useState(false);
   const router = useRouter();
 
   // Profile query - only runs when we have a token
@@ -83,6 +84,7 @@ export function BeceAuthProvider({ children }: BeceAuthProviderProps) {
       setAdmin(null)
       setIsAuthenticated(false)
       setSkipProfileQuery(true) // Disable profile query
+      setHasHandledProfileError(false) // Reset error flag
       router.replace('/bece-portal')
     } catch (error) {
       console.error('Error during BECE logout:', error)
@@ -94,14 +96,26 @@ export function BeceAuthProvider({ children }: BeceAuthProviderProps) {
     if (profileData && token) {
       setAdmin(profileData.admin)
       setIsAuthenticated(true)
+      setHasHandledProfileError(false) // Reset error flag on success
       // Update localStorage with fresh profile data
       localStorage.setItem('bece_admin', JSON.stringify(profileData.admin))
-    } else if (profileError) {
-      console.error('BECE Profile fetch error:', profileError)
-      // If profile fetch fails, clear auth data
-      logout()
+    } else if (profileError && token && !hasHandledProfileError) {
+      // Only handle profile errors once and if we actually have a token
+      setHasHandledProfileError(true)
+      
+      // Check if it's an authentication error (401/403)
+      const isAuthError = 'status' in profileError && 
+        (profileError.status === 401 || profileError.status === 403)
+      
+      if (isAuthError) {
+        console.warn('BECE: Authentication token invalid or expired, logging out...')
+        logout()
+      } else {
+        // For non-auth errors (network issues, etc.), just log but don't logout
+        console.warn('BECE: Profile fetch failed (non-auth error), using cached data')
+      }
     }
-  }, [profileData, profileError, token, logout])
+  }, [profileData, profileError, token, logout, hasHandledProfileError])
 
   const login = (newToken: string, newAdmin: Admin) => {
     try {
@@ -111,6 +125,7 @@ export function BeceAuthProvider({ children }: BeceAuthProviderProps) {
       setAdmin(newAdmin)
       setIsAuthenticated(true)
       setSkipProfileQuery(false) // Enable profile query for future updates
+      setHasHandledProfileError(false) // Reset error flag
     } catch (error) {
       console.error('Error storing BECE authentication data:', error)
     }

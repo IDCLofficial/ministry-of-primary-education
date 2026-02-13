@@ -1,3 +1,5 @@
+import * as XLSX from 'xlsx'
+
 interface StudentRecord {
   schoolName: string
   serialNo: number
@@ -20,6 +22,13 @@ interface StudentRecord {
 }
 
 export const parseCSVFile = (file: File): Promise<StudentRecord[]> => {
+  // Check if file is XLSX
+  const isXLSX = file.name.toLowerCase().endsWith('.xlsx')
+  
+  if (isXLSX) {
+    return parseXLSXFile(file)
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
 
@@ -44,6 +53,67 @@ export const parseCSVFile = (file: File): Promise<StudentRecord[]> => {
     }
 
     reader.readAsText(file)
+  })
+}
+
+export const parseXLSXFile = (file: File): Promise<StudentRecord[]> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result
+        if (!data) {
+          reject(new Error('Failed to read file'))
+          return
+        }
+
+        const workbook = XLSX.read(data, { type: 'array' })
+        const allRecords: StudentRecord[] = []
+
+        // Extract LGA from filename
+        // Format: "ABOH MBAISE 2025 BECE - EXCELLENCE ACADEMY.xlsx" or similar
+        const fileNameParts = file.name.replace(/\.(xlsx|xls)$/i, '').split(' - ')
+        const lga = fileNameParts[0]?.replace(' 2025 BECE', '').trim() || 'Unknown LGA'
+
+        // Process each sheet
+        workbook.SheetNames.forEach((sheetName) => {
+          const worksheet = workbook.Sheets[sheetName]
+          
+          // Convert sheet to CSV format
+          const csvText = XLSX.utils.sheet_to_csv(worksheet)
+          
+          // Use sheet name as school name if it's not empty
+          // Otherwise, try to extract from filename
+          const schoolName = sheetName.trim() || fileNameParts[1]?.trim() || 'Unknown School'
+          
+          try {
+            const records = parseCSVText(csvText, lga, schoolName, {
+              name: `${file.name} - ${sheetName}`,
+              size: file.size
+            })
+            allRecords.push(...records)
+          } catch (error) {
+            console.warn(`Error parsing sheet "${sheetName}":`, error)
+          }
+        })
+
+        if (allRecords.length === 0) {
+          reject(new Error('No valid data found in any sheet'))
+          return
+        }
+
+        resolve(allRecords)
+      } catch (error) {
+        reject(error)
+      }
+    }
+
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'))
+    }
+
+    reader.readAsArrayBuffer(file)
   })
 }
 

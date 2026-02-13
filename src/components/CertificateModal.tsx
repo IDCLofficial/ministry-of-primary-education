@@ -41,7 +41,7 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
         const errors: string[] = []
         if (!student.name || student.name.trim() === '') errors.push('Student name is missing')
         if (!student.examNo || student.examNo.trim() === '') errors.push('Exam number is missing')
-        if (!student.subjects || student.subjects.length === 0) errors.push('No subjects found')
+        if (!student.subjects || !Array.isArray(student.subjects) || student.subjects.length === 0) errors.push('No subjects found')
         
         if (errors.length > 0) {
             toast.error(`Cannot download certificate: ${errors.join(', ')}`)
@@ -83,7 +83,7 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
         const errors: string[] = []
         if (!student.name || student.name.trim() === '') errors.push('Student name is missing')
         if (!student.examNo || student.examNo.trim() === '') errors.push('Exam number is missing')
-        if (!student.subjects || student.subjects.length === 0) errors.push('No subjects found')
+        if (!student.subjects || !Array.isArray(student.subjects) || student.subjects.length === 0) errors.push('No subjects found')
         
         if (errors.length > 0) {
             toast.error(`Cannot download certificate: ${errors.join(', ')}`)
@@ -138,10 +138,10 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
         if (!student.subjects || student.subjects.length === 0) {
             errors.push('No subjects found')
         }
-        if (student.subjects && student.subjects.some(s => !s.name || s.name.trim() === '')) {
+        if (student.subjects && Array.isArray(student.subjects) && student.subjects.some(s => !s.name || s.name.trim() === '')) {
             errors.push('Some subjects are missing names')
         }
-        if (student.subjects && student.subjects.some(s => typeof s.exam !== 'number')) {
+        if (student.subjects && Array.isArray(student.subjects) && student.subjects.some(s => typeof s.exam !== 'number')) {
             errors.push('Some subjects have invalid scores')
         }
 
@@ -152,6 +152,12 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
         const gradePoints: { [key: string]: number } = {
             'A1': 1, 'B2': 2, 'B3': 3, 'C4': 4, 'C5': 5, 'C6': 6,
             'D7': 7, 'E8': 8, 'F9': 9
+        }
+        
+        // Safety check: ensure subjects is an array
+        if (!student.subjects || !Array.isArray(student.subjects)) {
+            console.warn('CertificateModal: subjects is not an array', student.subjects)
+            return 0
         }
         
         const totalPoints = student.subjects.reduce((sum, subject) => {

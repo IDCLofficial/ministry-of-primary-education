@@ -4,13 +4,13 @@ import React, { useState, useMemo } from 'react'
 import { IoSearch, IoEye, IoTrash, IoCloudUpload, IoRefresh } from 'react-icons/io5'
 import { useExamModal } from '../contexts/ExamModalContext'
 import toast from 'react-hot-toast'
-import { StudentRecord } from '../utils/csvParser'
+import { UBEATStudentRecord } from '../utils/csvParser'
 import { useRouter } from 'next/navigation'
-import { BeceResultUpload, useUploadBeceExamResultsMutation } from '../../../store/api/authApi'
+import { useUploadUBEATResultsMutation } from '../../../../store/api/authApi'
 
 interface DataTableProps {
-    data: StudentRecord[]
-    onDataChange: (data: StudentRecord[]) => void
+    data: UBEATStudentRecord[]
+    onDataChange: (data: UBEATStudentRecord[]) => void
     className?: string
 }
 
@@ -18,7 +18,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
     const [sortConfig, setSortConfig] = useState<{
-        key: keyof StudentRecord | null
+        key: keyof UBEATStudentRecord | null
         direction: 'asc' | 'desc'
     }>({ key: null, direction: 'asc' })
     const [currentPage, setCurrentPage] = useState(1)
@@ -27,12 +27,12 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
     const [failedSchools, setFailedSchools] = useState<string[]>([])
     const { openModal } = useExamModal()
     const router = useRouter()
-    const [uploadBeceExamResults] = useUploadBeceExamResultsMutation()
+    const [uploadUBEATResults] = useUploadUBEATResultsMutation()
 
     const filteredData = useMemo(() => {
         return data.filter(record =>
-            record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            record.examNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            record.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            record.examNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
             record.schoolName.toLowerCase().includes(searchTerm.toLowerCase())
         )
     }, [data, searchTerm])
@@ -65,7 +65,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
         setCurrentPage(1)
     }, [searchTerm])
 
-    const handleSort = (key: keyof StudentRecord) => {
+    const handleSort = (key: keyof UBEATStudentRecord) => {
         setSortConfig(prev => ({
             key,
             direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
@@ -102,14 +102,14 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
         setSelectedRows(new Set())
     }
 
-    const handleViewExam = (student: StudentRecord) => {
+    const handleViewExam = (student: UBEATStudentRecord) => {
         openModal(student)
     }
 
     const handleClearData = () => {
-        if (window.confirm('Are you sure you want to clear all Exam data? This action cannot be undone.')) {
+        if (window.confirm('Are you sure you want to clear all UBEAT data? This action cannot be undone.')) {
             onDataChange([])
-            toast.success('All Exam data cleared successfully')
+            toast.success('All UBEAT data cleared successfully')
         }
     }
 
@@ -118,7 +118,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
         setIsSaving(true)
 
         try {
-            toast.loading('Saving Exams data to database...')
+            toast.loading('Saving UBEAT data to database...')
 
             // Group students by school
             const schoolGroups = data.reduce((groups, student) => {
@@ -128,43 +128,40 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                 }
                 groups[schoolName].push(student)
                 return groups
-            }, {} as Record<string, StudentRecord[]>)
-
-            const filesWithStudentsCount: { fileName: string, fileSize: number, students: number }[] = data.reduce((files, student) => {
-                const filename = student.file.name
-                const existingFile = files.find(file => file.fileName === filename)
-
-                if (existingFile) {
-                    existingFile.students++
-                } else {
-                    files.push({ fileName: filename, fileSize: student.file.size, students: 1 })
-                }
-
-                return files
-            }, [] as { fileName: string, fileSize: number, students: number }[])
+            }, {} as Record<string, UBEATStudentRecord[]>);
 
             // Transform data according to API structure
             const results = Object.entries(schoolGroups).map(([schoolName, students]) => ({
-                schoolName,
                 lga: students[0]?.lga,
+                schoolName,
                 students: students.map(student => ({
-                    name: student.name,
-                    examNo: student.examNo,
-                    subjects: [
-                        { name: 'English Studies', exam: student.englishStudies },
-                        { name: 'Mathematics', exam: student.mathematics },
-                        { name: 'Basic Science', exam: student.basicScience },
-                        { name: 'Christian Religious Studies', exam: student.christianReligiousStudies },
-                        { name: 'National Values', exam: student.nationalValues },
-                        { name: 'Cultural and Creative Arts', exam: student.culturalAndCreativeArts },
-                        { name: 'Business Studies', exam: student.businessStudies },
-                        { name: 'Igbo Language', exam: student.igbo },
-                        { name: 'Pre-Vocational Studies', exam: student.preVocationalStudies }
-                    ].filter(subject => subject.exam > 0)
+                    serialNumber: student.serialNumber,
+                    examNumber: student.examNumber,
+                    studentName: student.studentName,
+                    age: student.age,
+                    sex: student.sex,
+                    subjects: {
+                        mathematics: {
+                            ca: parseFloat(student.subjects.mathematics.ca) || 0,
+                            exam: student.subjects.mathematics.exam
+                        },
+                        english: {
+                            ca: parseFloat(student.subjects.english.ca) || 0,
+                            exam: student.subjects.english.exam
+                        },
+                        generalKnowledge: {
+                            ca: parseFloat(student.subjects.generalKnowledge.ca) || 0,
+                            exam: student.subjects.generalKnowledge.exam
+                        },
+                        igbo: {
+                            ca: parseFloat(student.subjects.igbo.ca) || 0,
+                            exam: student.subjects.igbo.exam
+                        }
+                    }
                 }))
-            }));
+            }))
 
-            await uploadBeceExamResults({ result: results as BeceResultUpload[], file: filesWithStudentsCount }).unwrap()
+            await uploadUBEATResults({ result: results }).unwrap()
 
             const endTime = performance.now()
             const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
@@ -175,7 +172,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             onDataChange([])
             setFailedSchools([])
             toast.success(
-                `Successfully saved ${data.length} score records to database in ${elapsedTime}s`
+                `Successfully saved ${data.length} UBEAT records to database in ${elapsedTime}s`
             )
 
             router.push('/bece-portal/dashboard/schools')
@@ -184,10 +181,10 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             const endTime = performance.now()
             const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
 
-            console.error('Error saving score data:', error);
+            console.error('Error saving UBEAT data:', error)
 
             toast.dismiss()
-            toast.error(`Failed to save score data to database (${elapsedTime}s)`);
+            toast.error(`Failed to save UBEAT data to database (${elapsedTime}s)`)
             toast.error('Please check your connection and try again.')
         } finally {
             setIsSaving(false)
@@ -201,9 +198,9 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                 <div className="px-6 py-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-medium text-gray-900">Exam Data</h3>
+                            <h3 className="text-lg font-medium text-gray-900">UBEAT Exam Data</h3>
                             <p className="text-sm text-gray-500">
-                                {data.length} total records, {filteredData.length} showing
+                                {data.length.toLocaleString()} total records, {filteredData.length.toLocaleString()} showing
                             </p>
                         </div>
                         <div className="flex items-center space-x-3">
@@ -231,7 +228,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                             <button
                                 onClick={handleClearData}
                                 disabled={isSaving}
-                                title='Clear Exams Data'
+                                title='Clear UBEAT Data'
                                 className={`inline-flex items-center transition-all duration-200 px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSaving
                                         ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
                                         : 'border-red-300 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500 cursor-pointer active:scale-90 active:rotate-1'
@@ -300,14 +297,15 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                     />
                                 </th>
                                 {[
-                                    { key: 'serialNo', label: 'S/NO' },
-                                    { key: 'name', label: 'Name' },
-                                    { key: 'examNo', label: 'Exam No.' },
-                                    { key: 'schoolName', label: 'School' }
+                                    { key: 'serialNumber', label: 'S/NO' },
+                                    { key: 'studentName', label: 'Name' },
+                                    { key: 'examNumber', label: 'Exam No.' },
+                                    { key: 'schoolName', label: 'School' },
+                                    { key: 'lga', label: 'LGA' }
                                 ].map(({ key, label }) => (
                                     <th
                                         key={key}
-                                        onClick={() => handleSort(key as keyof StudentRecord)}
+                                        onClick={() => handleSort(key as keyof UBEATStudentRecord)}
                                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                                     >
                                         <div className="flex items-center space-x-1">
@@ -327,7 +325,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {paginatedData.map((record, index) => (
-                                <tr key={`${record.examNo}-${index}`} className="hover:bg-gray-50">
+                                <tr key={`${record.examNumber}-${index}`} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <input
                                             type="checkbox"
@@ -339,18 +337,21 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                         />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {record.serialNo}
+                                        {record.serialNumber}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {record.name}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {record.examNo}
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">
+                                        {record.studentName.toLowerCase()}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        <div className="max-w-32 truncate" title={record.schoolName}>
-                                            {record.schoolName}
+                                        {record.examNumber}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div className="max-w-32 truncate capitalize" title={record.schoolName}>
+                                            {record.schoolName.toLowerCase()}
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                                        {record.lga.toLowerCase()}
                                     </td>
                                     <td className=" py-4 whitespace-nowrap text-sm text-gray-500">
                                         <button
@@ -358,7 +359,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                                             disabled={isSaving}
                                             className={`px-6 flex items-center justify-center w-full ${isSaving ? 'cursor-not-allowed' : 'cursor-pointer'
                                                 }`}
-                                            title={isSaving ? 'Saving in progress...' : 'View CA Details'}
+                                            title={isSaving ? 'Saving in progress...' : 'View Exam Details'}
                                         >
                                             <div
                                                 className={`text-center p-1 transition-all duration-200 rounded border border-transparent ${isSaving
@@ -464,7 +465,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                             </svg>
                             <div>
                                 <p className="text-lg font-medium text-gray-900">Saving to Database</p>
-                                <p className="text-sm text-gray-500">Please wait while we save your CA data...</p>
+                                <p className="text-sm text-gray-500">Please wait while we save your UBEAT data...</p>
                             </div>
                         </div>
                     </div>

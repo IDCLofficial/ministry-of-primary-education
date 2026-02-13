@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { IoClose, IoSchool, IoPerson, IoCalendar, IoRibbon, IoPencil, IoSave, IoDocumentText } from 'react-icons/io5'
 import toast from 'react-hot-toast'
-import { Student } from '../types/student.types'
+import { Student, DisplayStudent } from '../types/student.types'
 import { useUpdateStudentScoreMutation } from '../../../store/api/authApi'
 import useShortcuts, { KeyboardKey } from '@useverse/useshortcuts'
 
@@ -15,10 +15,10 @@ interface ExamResult {
 interface StudentModalProps {
     isOpen: boolean
     onClose: () => void
-    student: Student | null
+    student: Student | DisplayStudent | null
     schoolName?: string
-    onUpdate?: (student: Student, examResults: ExamResult[]) => void
-    onGenerateCertificate?: (student: Student) => void
+    onUpdate?: (student: Student | DisplayStudent, examResults: ExamResult[]) => void
+    onGenerateCertificate?: (student: Student | DisplayStudent) => void
 }
 
 export default function StudentModal({ isOpen, onClose, student, schoolName, onUpdate, onGenerateCertificate }: StudentModalProps) {

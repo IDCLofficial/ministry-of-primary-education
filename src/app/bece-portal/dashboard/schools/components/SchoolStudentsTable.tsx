@@ -1,5 +1,5 @@
 import React from 'react'
-import { Student } from '../types/student.types'
+import { Student, DisplayStudent } from '../types/student.types'
 import StudentRow from './StudentRow'
 import StudentRowSkeleton from './StudentRowSkeleton'
 import StudentsEmptyState from './StudentsEmptyState'
@@ -7,9 +7,9 @@ import ErrorState from './ErrorState'
 import Pagination from './Pagination'
 
 interface SchoolStudentsTableProps {
-    students: Student[]
-    onViewStudent: (student: Student) => void
-    onGenerateCertificate: (student: Student) => void
+    students: (Student | DisplayStudent)[]
+    onViewStudent: (student: Student | DisplayStudent) => void
+    onGenerateCertificate: (student: Student | DisplayStudent) => void
     pagination: {
         currentPage: number
         totalPages: number

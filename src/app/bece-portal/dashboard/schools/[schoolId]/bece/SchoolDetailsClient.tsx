@@ -1,20 +1,29 @@
 'use client'
+
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { IoArrowBack, IoSchool, IoLocationOutline, IoPeopleOutline } from 'react-icons/io5'
-import SchoolStudentsTable from '../components/SchoolStudentsTable'
-import StudentModal from '../components/StudentModal'
+import SchoolStudentsTable from '../../components/SchoolStudentsTable'
+import StudentModal from '../../components/StudentModal'
 import CertificateModal from '@/components/CertificateModal'
-import SearchBar from '../components/SearchBar'
-import { Student } from '../types/student.types'
+import SearchBar from '../../components/SearchBar'
+import { Student } from '../../types/student.types'
 import { updateSearchParam } from '@/app/bece-portal/utils'
-import { useDebounce } from '../hooks/useDebounce'
+import { useDebounce } from '../../hooks/useDebounce'
 
 interface School {
     _id: string
     schoolName: string
-    lga: string | { _id: string; name: string }
-    students: number
+    lga: string
+    schoolCode?: string
+    students: any[]
+    isFirstLogin: boolean
+    hasAccount: boolean
+    isVerified: boolean
+    exams: any[]
+    __v: number
+    createdAt: string
+    updatedAt: string
 }
 
 interface SchoolDetailsClientProps {
@@ -29,17 +38,15 @@ interface SchoolDetailsClientProps {
     isSearching?: boolean
     isLoading?: boolean
     error?: string | null
+    schoolId: string
 }
 
-const getLgaName = (lga: string | { _id: string; name: string } | undefined): string => {
+const getLgaName = (lga: string | undefined): string => {
     if (!lga) return 'Unknown LGA'
-    if (typeof lga === 'string') {
-        return lga
-    }
-    return lga?.name || 'Unknown LGA'
+    return lga
 }
 
-export default function SchoolDetailsClient({ school, students, pagination, isSearching = false, isLoading = false, error = null }: SchoolDetailsClientProps) {
+export default function SchoolDetailsClient({ school, students, pagination, isSearching = false, isLoading = false, error = null, schoolId }: SchoolDetailsClientProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const searchQuery = searchParams.get("search") || ""
@@ -81,7 +88,7 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
     }
 
     const handleBack = () => {
-        router.push('/bece-portal/dashboard/schools')
+        router.push(`/bece-portal/dashboard/schools/${schoolId}`)
     }
 
     const handleGenerateCertificate = (student: Student) => {
@@ -102,7 +109,7 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
                     className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-300 active:scale-95 cursor-pointer"
                 >
                     <IoArrowBack className="w-4 h-4 mr-2" />
-                    Back to Schools
+                    Back to Exams Selection
                 </button>
 
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -122,7 +129,7 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
                                 <div className="flex items-center gap-2">
                                     <IoPeopleOutline className="w-4 h-4 text-gray-400" />
                                     <span>
-                                        {school.students} {school.students === 1 ? 'Student' : 'Students'}
+                                        {pagination.totalItems} {pagination.totalItems === 1 ? 'Student' : 'Students'}
                                     </span>
                                 </div>
                             </div>

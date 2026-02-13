@@ -23,14 +23,47 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFiles = useCallback((files: File[]) => {
-    const csvFiles = files.filter(file => file.type === 'text/csv' || file.name.endsWith('.csv'))
+    const validFiles: File[] = []
+    const invalidFiles: string[] = []
+    const oversizedFiles: string[] = []
+    const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
     
-    if (csvFiles.length === 0) {
-      toast.error('Please upload only CSV files')
+    files.forEach(file => {
+      const fileName = file.name.toLowerCase()
+      const isCSV = file.type === 'text/csv' || fileName.endsWith('.csv')
+      const isXLSX = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+                     file.type === 'application/vnd.ms-excel' ||
+                     fileName.endsWith('.xlsx') || 
+                     fileName.endsWith('.xls')
+      
+      if (!isCSV && !isXLSX) {
+        invalidFiles.push(file.name)
+      } else if (file.size > MAX_FILE_SIZE) {
+        oversizedFiles.push(`${file.name} (${(file.size / (1024 * 1024)).toFixed(1)}MB)`)
+      } else {
+        validFiles.push(file)
+      }
+    })
+    
+    if (invalidFiles.length > 0) {
+      toast.error(
+        `❌ Invalid file type${invalidFiles.length > 1 ? 's' : ''}: ${invalidFiles.join(', ')}. Only CSV and XLSX files are allowed.`,
+        { duration: 5000 }
+      )
+    }
+    
+    if (oversizedFiles.length > 0) {
+      toast.error(
+        `❌ File${oversizedFiles.length > 1 ? 's' : ''} too large: ${oversizedFiles.join(', ')}. Maximum size is 50MB.`,
+        { duration: 5000 }
+      )
+    }
+    
+    if (validFiles.length === 0) {
       return
     }
 
-    const newFiles: UploadedFile[] = csvFiles.map(file => ({
+    const newFiles: UploadedFile[] = validFiles.map(file => ({
       file,
       id: Math.random().toString(36).substr(2, 9),
       status: 'uploading',
@@ -58,7 +91,7 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
       }, 200)
     })
 
-    onFilesUploaded(csvFiles)
+    onFilesUploaded(validFiles)
   }, [onFilesUploaded])
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -111,7 +144,7 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all active:scale-90 active:rotate-1 duration-200"
           >
             <IoCloudUpload className="w-4 h-4 mr-2" />
-            Upload CSV
+            Upload Files
           </button>
         </div>
 
@@ -119,7 +152,7 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
           ref={fileInputRef}
           type="file"
           multiple
-          accept=".csv"
+          accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
           onChange={handleFileInput}
           className="hidden"
         />
@@ -187,15 +220,18 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Click to upload or drag and drop
           </h3>
-          <p className="text-sm text-gray-500 mb-4">
-            CSV files only (max 800x400px)
-          </p>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg mb-2">
+            <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm font-medium text-blue-800">CSV or XLSX only • Max 50MB</span>
+          </div>
           
           <input
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".csv"
+            accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
             onChange={handleFileInput}
             className="hidden"
           />

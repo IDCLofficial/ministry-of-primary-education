@@ -1,4 +1,4 @@
-import { ResultsResponse, Student } from '../../dashboard/schools/types/student.types'
+import { ResultsResponse, Student, UBEATResultsResponse } from '../../dashboard/schools/types/student.types'
 import { apiSlice } from './apiSlice'
 
 interface Admin {
@@ -47,19 +47,71 @@ interface BeceResultUploadResponse {
   uploadedCount: number
 }
 
+// UBEAT Interfaces
+export interface UBEATResultUpload {
+  lga: string
+  schoolName: string
+  students: {
+    serialNumber: number
+    examNumber: string
+    studentName: string
+    age: number
+    sex: 'male' | 'female'
+    subjects: {
+      mathematics: {
+        ca: number;
+        exam: number;
+      }
+      english: {
+        ca: number;
+        exam: number;
+      }
+      generalKnowledge: {
+        ca: number;
+        exam: number;
+      }
+      igbo: {
+        ca: number;
+        exam: number;
+      }
+    }
+  }[]
+}
+
+interface UBEATResultUploadRequest {
+  result: UBEATResultUpload[]
+}
+
+interface UBEATResultUploadResponse {
+  message: string
+  uploadedCount: number
+}
+
 interface School {
   _id: string
   schoolName: string
-  lga: string | { _id: string; name: string },
-  students: number,
+  lga: string
+  schoolCode: string
+  students: any[]
+  isFirstLogin: boolean
+  hasAccount: boolean
+  isVerified: boolean
+  exams: any[]
+  __v: number
+  createdAt: string
+  updatedAt: string
 }
 
 interface SchoolResponse {
-  totalSchools: number
-  schools: School[]
-  totalPages: number
-  page: number
-  limit: number
+  data: School[]
+  pagination: {
+    currentPage: string
+    totalPages: number
+    totalItems: number
+    itemsPerPage: string
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+  }
 }
 
 interface UpdateScoreSubject {
@@ -75,6 +127,23 @@ interface UpdateScoreRequest {
 interface UpdateScoreResponse {
   message: string
   student: Student
+}
+
+// UBEAT Update Score Interfaces
+interface UBEATUpdateScoreSubject {
+  subjectName: string
+  ca: number
+  exam: number
+}
+
+interface UBEATUpdateScoreRequest {
+  examNo: string
+  subjects: UBEATUpdateScoreSubject[]
+}
+
+interface UBEATUpdateScoreResponse {
+  message: string
+  student: any
 }
 
 export interface UploadLog {
@@ -165,6 +234,16 @@ export const authApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Admin', { type: 'Admin', id: 'UPLOAD_LOGS' }, { type: 'Admin', id: 'SUMMARY' }],
     }),
+
+    // Upload UBEAT Results
+    uploadUBEATResults: builder.mutation<UBEATResultUploadResponse, UBEATResultUploadRequest>({
+      query: (data) => ({
+        url: '/ubeat/upload',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Admin', { type: 'Admin', id: 'UPLOAD_LOGS' }, { type: 'Admin', id: 'SUMMARY' }],
+    }),
     
     // Fetch Results 
     getResults: builder.query<ResultsResponse, {
@@ -179,7 +258,7 @@ export const authApi = apiSlice.injectEndpoints({
         if (params.limit) queryParams.append('limit', params.limit.toString())
         if (params.search) queryParams.append('search', params.search)
         const queryString = queryParams.toString()
-        return `/bece-result/results/${params.schoolId}${queryString ? `?${queryString}` : ''}`
+        return `/bece-result/results/${params.schoolId.replace(/\//g, "-")}${queryString ? `?${queryString}` : ''}`
       },
       providesTags: (_result, _error, params) => [
         { type: 'Admin', id: 'LIST' },
@@ -198,9 +277,15 @@ export const authApi = apiSlice.injectEndpoints({
         if (params && params.page) queryParams.append('page', params.page.toString())
         if (params && params.limit) queryParams.append('limit', params.limit.toString())
         if (params && params.search) queryParams.append('search', params.search)
-        return `/bece-school?${queryParams.toString()}`
+        return `/schools?${queryParams.toString()}`
       },
       providesTags: [{ type: 'Admin', id: 'SCHOOLS' }],
+    }),
+
+    // Get School by ID /schools/{id}
+    getSchoolById: builder.query<School, string>({
+      query: (schoolId) => `/schools/${schoolId.replace(/\//g, "-")}`,
+      providesTags: (result, error, schoolId) => [{ type: 'Admin', id: schoolId }],
     }),
 
     // Update Student Score
@@ -214,6 +299,41 @@ export const authApi = apiSlice.injectEndpoints({
         { type: 'Admin', id: 'LIST' },
         // Invalidate the specific school's results if we can determine it
         ...(result?.student?.school ? [{ type: 'Admin' as const, id: result.student.school }] : [])
+      ],
+    }),
+
+    // Get UBEAT Results
+    getUBEATResults: builder.query<UBEATResultsResponse, {
+      schoolCode: string;
+      page?: number;
+      limit?: number;
+      search?: string;
+    }>({
+      query: (params) => {
+        const queryParams = new URLSearchParams()
+        if (params.page) queryParams.append('page', params.page.toString())
+        if (params.limit) queryParams.append('limit', params.limit.toString())
+        if (params.search) queryParams.append('search', params.search)
+        const queryString = queryParams.toString()
+        return `/ubeat/results/${params.schoolCode.replace(/\//g, "-")}${queryString ? `?${queryString}` : ''}`
+      },
+      providesTags: (_result, _error, params) => [
+        { type: 'Admin', id: 'UBEAT_LIST' },
+        { type: 'Admin', id: `UBEAT_${params.schoolCode}` }
+      ],
+    }),
+
+    // Update UBEAT Student Score
+    updateUBEATScore: builder.mutation<UBEATUpdateScoreResponse, UBEATUpdateScoreRequest>({
+      query: (data) => ({
+        url: '/ubeat/update-score',
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: (result) => [
+        { type: 'Admin', id: 'UBEAT_LIST' },
+        // Invalidate the specific school's results if we can determine it
+        ...(result?.student?.school ? [{ type: 'Admin' as const, id: `UBEAT_${result.student.school}` }] : [])
       ],
     }),
 
@@ -248,9 +368,13 @@ export const {
   useAdminChangePasswordMutation,
   useUploadBeceResultsMutation,
   useUploadBeceExamResultsMutation,
+  useUploadUBEATResultsMutation,
   useGetResultsQuery,
+  useGetUBEATResultsQuery,
   useGetSchoolsQuery,
   useUpdateStudentScoreMutation,
+  useUpdateUBEATScoreMutation,
   useGetUploadLogsQuery,
   useGetDashboardSummaryQuery,
+  useGetSchoolByIdQuery,
 } = authApi
