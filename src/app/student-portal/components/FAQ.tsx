@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import React from 'react'
-import { IoArrowForward, IoSchoolOutline, IoPeopleOutline } from 'react-icons/io5'
+import { IoArrowForward } from 'react-icons/io5'
 
 interface FAQItem {
     question: string
@@ -15,23 +15,27 @@ const faqData: FAQItem[] = [
     },
     {
         question: 'What if I forgot my exam number?',
-        answer: 'For UBEAT, use the alternative login by clicking "Don\'t know your exam number?" For BECE, contact your school to retrieve it.'
+        answer: 'For UBEAT, you can use the alternative login by clicking "Don\'t know your exam number?" and providing your name, school, and LGA. For BECE, contact your school to retrieve it.'
     },
     {
         question: 'Why can\'t I see my results?',
         answer: 'Check your exam number format is correct. Your results might not be uploaded yet. For BECE, ensure payment is complete.'
     },
     {
-        question: 'Do I need to pay for BECE results?',
-        answer: 'Yes, there is a one-time payment required to access BECE results. Once paid, you can view, download, and print your results anytime.'
-    },
-    {
-        question: 'Is UBEAT results access free?',
-        answer: 'Yes, if you have your exam number. If using the alternative login method (name, school, LGA), there\'s a ₦500 service fee.'
+        question: 'Do I need to pay to access my results?',
+        answer: 'Yes, both BECE and UBEAT require a one-time payment to access your results. After payment is confirmed, you can view, download, and print your results unlimited times.'
     },
     {
         question: 'Can I download my results?',
         answer: 'Yes! Once you access your dashboard, you\'ll find "Download" and "Print" buttons. You can save a PDF copy anytime you log back in.'
+    },
+    {
+        question: 'What format should my exam number be?',
+        answer: 'BECE accepts: XX/000/000, XX/000/0000/000, or XX/XX/000/0000 (e.g., ok/977/2025 or ok/977/2025/001). Use lowercase letters and include all forward slashes.'
+    },
+    {
+        question: 'What payment methods are accepted?',
+        answer: 'We accept debit cards (Visa, Mastercard, Verve), bank transfers, and USSD codes. All payments are processed securely through certified payment gateways.'
     }
 ]
 

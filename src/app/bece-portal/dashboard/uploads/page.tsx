@@ -16,6 +16,22 @@ interface ExamType {
 
 const EXAM_TYPES: ExamType[] = [
   {
+    key: 'bece',
+    name: 'Basic Education Certificate Examination',
+    shortName: 'BECE',
+    description: 'Upload student results for BECE examination',
+    iconPath: '/images/ministry-logo.png',
+    color: 'indigo'
+  },
+  {
+    key: 'ubeat',
+    name: 'Universal Basic Education Assessment Test',
+    shortName: 'UBEAT',
+    description: 'Upload student results for UBEAT examination',
+    iconPath: '/images/ministry-logo.png',
+    color: 'orange'
+  },
+  {
     key: 'ubegpt',
     name: 'Universal Basic Education General Placement Test',
     shortName: 'UBEGPT',
@@ -38,22 +54,6 @@ const EXAM_TYPES: ExamType[] = [
     description: 'Upload student results for Common Entrance examination',
     iconPath: '/images/ministry-logo.png',
     color: 'green'
-  },
-  {
-    key: 'bece',
-    name: 'Basic Education Certificate Examination',
-    shortName: 'BECE',
-    description: 'Upload student results for BECE examination',
-    iconPath: '/images/ministry-logo.png',
-    color: 'indigo'
-  },
-  {
-    key: 'ubeat',
-    name: 'Universal Basic Education Assessment Test',
-    shortName: 'UBEAT',
-    description: 'Upload student results for UBEAT examination',
-    iconPath: '/images/ministry-logo.png',
-    color: 'orange'
   },
   {
     key: 'jscbe',

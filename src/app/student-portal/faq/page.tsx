@@ -19,7 +19,7 @@ const allFAQs: FAQItem[] = [
     {
         category: 'general',
         question: 'What if I forgot my exam number?',
-        answer: 'Don\'t worry! For UBEAT, you can use the alternative login method by clicking "Don\'t know your exam number?" on the login page. You\'ll need to provide your full name, school name, LGA, and exam year. For BECE, please contact your school to retrieve your exam number.'
+        answer: 'Don\'t worry! For UBEAT, you can use the alternative login method by clicking "Don\'t know your exam number?" on the login page. You\'ll need to provide your full name, school name, LGA, and exam year. Payment is still required to access results. For BECE, please contact your school to retrieve your exam number.'
     },
     {
         category: 'results',
@@ -33,13 +33,8 @@ const allFAQs: FAQItem[] = [
     },
     {
         category: 'payment',
-        question: 'Do I need to pay to see my BECE results?',
-        answer: 'Yes, there is a one-time payment required to access BECE results. After logging in with your exam number, you\'ll be directed to a secure payment page. Once payment is confirmed, you can view, download, and print your results anytime.'
-    },
-    {
-        category: 'payment',
-        question: 'How much does it cost to access UBEAT results?',
-        answer: 'If you have your exam number, UBEAT results are FREE! However, if you don\'t have your exam number and use the alternative login method (name, school, LGA), there\'s a ₦500 service fee to help us search for your records.'
+        question: 'Do I need to pay to access my results?',
+        answer: 'Yes, both BECE and UBEAT require a one-time payment to access your results. After logging in with your exam number, you\'ll be directed to a secure payment page. Once payment is confirmed, you can view, download, and print your results unlimited times.'
     },
     {
         category: 'payment',
@@ -59,7 +54,7 @@ const allFAQs: FAQItem[] = [
     {
         category: 'technical',
         question: 'What format should my exam number be in?',
-        answer: 'BECE exam numbers typically follow this format: XX/XXX/XXXX/XXX (e.g., ok/977/2025/001). UBEAT exam numbers may vary slightly. The system will validate your format as you type.'
+        answer: 'BECE accepts three formats: 1) XX/000/000 (e.g., ok/977/2025), 2) XX/000/0000/000 (e.g., ok/977/2025/001), or 3) XX/XX/000/0000 (e.g., ok/im/977/2025). UBEAT follows similar patterns. Always use lowercase letters and include all forward slashes. The system validates your format as you type.'
     },
     {
         category: 'technical',
