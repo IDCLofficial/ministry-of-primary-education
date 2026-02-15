@@ -13,6 +13,7 @@ export interface Student {
     subjects: Subject[]
     overallGrade: string
     totalCredits?: number
+    examYear?: number
     createdAt: string
     updatedAt: string
     __v: number
@@ -27,6 +28,7 @@ export interface DisplayStudent {
     schoolName?: string
     subjects: Subject[]
     overallGrade: string
+    examYear?: number
     createdAt: string
     updatedAt: string
     __v: number
@@ -52,6 +54,7 @@ export interface UBEATStudent {
     lga: string
     school: string
     schoolName: string
+    examYear?: number
     subjects: {
         mathematics: {
             ca: number

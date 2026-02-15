@@ -206,6 +206,12 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
                 <label className="text-sm font-medium text-gray-500">Exam Number</label>
                 <p className="text-sm text-gray-900 mt-1">{student.examNo}</p>
               </div>
+              {student.examYear && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Exam Year</label>
+                  <p className="text-sm text-gray-900 mt-1">{student.examYear}</p>
+                </div>
+              )}
             </div>
           </div>
 

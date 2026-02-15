@@ -6,7 +6,7 @@ import DataTable from './components/DataTable'
 import ExamModal from './components/ExamModal'
 import { ExamModalProvider, useExamModal } from './contexts/ExamModalContext'
 import toast from 'react-hot-toast'
-import { parseCSVFile, UBEATStudentRecord } from './utils/csvParser'
+import { parseCSVFile, UBEATStudentRecord, extractExamYearFromFilename } from './utils/csvParser'
 import { IoChevronDown, IoChevronUp, IoInformationCircle } from 'react-icons/io5'
 
 function UploadContent() {
@@ -44,9 +44,10 @@ function UploadContent() {
                     
                     const isXLSX = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')
                     const fileType = isXLSX ? 'XLSX' : 'CSV'
+                    const examYear = extractExamYearFromFilename(file.name)
                     
                     toast.success(
-                        `✓ Parsed ${records.length} UBEAT record${records.length !== 1 ? 's' : ''} from ${fileType} file: ${file.name}`,
+                        `✓ Parsed ${records.length} UBEAT record${records.length !== 1 ? 's' : ''} (Exam Year: ${examYear}) from ${fileType} file: ${file.name}`,
                         { duration: 4000 }
                     )
                 } catch (error) {

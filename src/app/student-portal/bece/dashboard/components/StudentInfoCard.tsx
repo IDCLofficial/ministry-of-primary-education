@@ -1,14 +1,13 @@
 import React from 'react'
-import { StudentData } from '../../utils/api'
+import { StudentData } from '@/app/student-portal/utils/api'
 
 interface StudentInfoCardProps {
     student: StudentData
 }
 
 export default function StudentInfoCard({ student }: StudentInfoCardProps) {
-    console.log({ student })
     return (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
             <div className="border-b border-gray-100 px-6 py-4">
                 <h3 className="text-sm font-semibold text-gray-900">
                     Student Information

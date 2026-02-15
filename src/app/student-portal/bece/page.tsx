@@ -8,36 +8,25 @@ import animationData from '../assets/students.json'
 import Image from 'next/image'
 import { useDebounce } from '../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
+import { useLazyGetBECEResultQuery } from '../store/api/studentApi'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
 // Regex pattern for exam number validation (e.g., XX/000/0000/000)
 const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3,4}\/\d{4}\/\d{3,4}$/
 // Regex pattern for exam number validation (e.g., XX/XX/000/0000)
-const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{3}\/\d{4}$/
+const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}$/
 
-// TypeScript interface for API response
-interface StudentResult {
-    _id: string
-    name: string
-    examNo: string
-    age: number
-    sex: string
-    school: string
-    subjects: Array<{
-        name: string
-        exam: number
-        ca: number
-    }>
-    createdAt: string
-    updatedAt: string
-}
+// Import the interface from the API
+import { BECEStudentResult } from '../store/api/studentApi'
 
 export default function StudentLoginPage() {
     const router = useRouter();
     const [examNo, setExamNo] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // RTK Query hooks
+    const [getBECEResult, { isLoading }] = useLazyGetBECEResultQuery()
 
     const debouncedExamNo = useDebounce(examNo, 500);
 
@@ -60,101 +49,46 @@ export default function StudentLoginPage() {
             return
         }
 
-        setIsLoading(true);
-
         try {
-            const response = await fetch(`${API_BASE_URL}/bece-student/check-result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                }
-            })
+            const result = await getBECEResult(examNo).unwrap()
 
-            // Check if response is ok
-            if (!response.ok) {
-                if (response.status === 404) {
-                    setError('We couldn\'t find your results. Please check your exam number and try again.')
-                } else if (response.status === 400) {
-                    setError('This exam number doesn\'t seem valid. Please double-check and try again.')
-                } else if (response.status === 500) {
-                    setError('Our system is having a moment. Please try again in a few minutes.')
-                } else {
-                    setError(`Something unexpected happened (Error ${response.status}). Please try again.`)
-                }
-
-                console.error('Login failed:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    url: response.url
-                })
-                setIsLoading(false)
-                return
-            }
-
-            // Check if response has content
-            const contentType = response.headers.get('content-type')
-            if (!contentType || !contentType.includes('application/json')) {
-                console.error('Invalid response type:', contentType)
-                setError('Received invalid response from server. Please try again.')
-                setIsLoading(false)
-                return
-            }
-
-            // Parse response
-            const text = await response.text()
-            if (!text || text.trim() === '') {
-                console.error('Empty response received')
-                setError('Server returned empty response. Please try again or contact support.')
-                setIsLoading(false)
-                return
-            }
-
-            let data: StudentResult
-            try {
-                data = JSON.parse(text) as StudentResult
-            } catch (parseError) {
-                console.error('JSON parse error:', parseError, 'Response text:', text)
-                setError('Received malformed response from server. Please try again.')
-                setIsLoading(false)
-                return
-            }
-
-            // Validate data structure according to API response
-            if (!data || !data.examNo || !data.name || !data.school) {
-                console.error('Invalid data structure:', data)
+            // Validate data structure
+            if (!result || !result.examNo || !result.name || !result.school) {
+                console.error('Invalid data structure:', result)
                 setError('We couldn\'t load your results. Please try again or contact support.')
-                setIsLoading(false)
                 return
             }
 
             // Validate subjects array exists
-            if (!data.subjects || !Array.isArray(data.subjects) || data.subjects.length === 0) {
-                console.error('Invalid subjects data:', data.subjects)
+            if (!result.subjects || !Array.isArray(result.subjects) || result.subjects.length === 0) {
+                console.error('Invalid subjects data:', result.subjects)
                 setError('Your results data is incomplete. Please contact support.')
-                setIsLoading(false)
                 return
             }
 
-            // Store the complete student data in localStorage
-            localStorage.setItem('student_data', JSON.stringify(data))
-            localStorage.setItem('student_exam_no', data.examNo)
-            localStorage.setItem('selected_exam_type', 'bece') // Store exam type
+            // Store only exam number and exam type (data will be fetched via RTK Query in dashboard)
+            localStorage.setItem('student_exam_no', examNo)
+            localStorage.setItem('selected_exam_type', 'bece')
 
-            toast.success(`Welcome ${data.name}! Loading your results... 🎉`)
-            router.push('/student-portal/dashboard')
-        } catch (error) {
+            toast.success(`Welcome ${result.name}! Loading your results... 🎉`)
+            router.push('/student-portal/bece/dashboard')
+        } catch (error: any) {
             console.error('Login error:', error)
 
-            // Check for specific error types
-            if (error instanceof TypeError && error.message.includes('fetch')) {
+            // Handle RTK Query errors
+            if (error.status === 404) {
+                setError('We couldn\'t find your results. Please check your exam number and try again.')
+            } else if (error.status === 400) {
+                setError('This exam number doesn\'t seem valid. Please double-check and try again.')
+            } else if (error.status === 500) {
+                setError('Our system is having a moment. Please try again in a few minutes.')
+            } else if (error.status === 'FETCH_ERROR') {
                 setError('Network error: Unable to connect to server. Please check your internet connection.')
-            } else if (error instanceof SyntaxError) {
+            } else if (error.status === 'PARSING_ERROR') {
                 setError('Server returned invalid data. Please try again.')
             } else {
                 setError('We\'re having trouble connecting. Please check your internet and try again.')
             }
-
-            setIsLoading(false)
         }
     }
 
@@ -163,10 +97,10 @@ export default function StudentLoginPage() {
             <div className='absolute h-full w-full inset-0 z-[0]'>
                 <Image
                     src="/images/asset.png"
-                    alt="logo"
+                    alt="pattern background"
                     fill
                     className='object-cover hue-rotate-[0deg] saturate-200 brightness-[0.75] scale-x-[-1]'
-                    title='Imo State Ministry of Primary and Secondary Education logo'
+                    title='pattern background'
                 />
             </div>
             {/* Lottie Animation - Bottom Right */}
@@ -185,21 +119,20 @@ export default function StudentLoginPage() {
             {/* Ministry Header */}
             {isMaintenanceMode ? null : <header className="w-full pt-8 pb-6 px-4 relative z-20">
                 <div className="flex flex-col justify-center gap-3 items-center">
-                    <Image
-                        src="/images/ministry-logo.png"
-                        alt="logo"
-                        width={60}
-                        height={60}
-                        className='object-contain'
-                        title='Imo State Ministry of Primary and Secondary Education logo'
-                    />
+                    <Link href="/student-portal">
+                        <Image
+                            src="/images/ministry-logo.png"
+                            alt="logo"
+                            width={60}
+                            height={60}
+                            className='object-contain'
+                            title='Imo State Ministry of Primary and Secondary Education logo'
+                        />
+                    </Link>
                     <div className="text-center">
                         <div className="flex items-center justify-center gap-2 mb-1">
                             <span className='text-2xl md:text-3xl font-bold'>
                                 <abbr title="Basic Education Certificate Examination" className="no-underline">BECE</abbr>
-                            </span>
-                            <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full border border-green-200">
-                                Active
                             </span>
                         </div>
                         <p className='text-sm md:text-base text-gray-600 max-w-md'>
@@ -324,7 +257,11 @@ export default function StudentLoginPage() {
                                 <button
                                     type="submit"
                                     disabled={isLoading || !canProceed}
-                                    className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer active:scale-95 active:opacity-90 group"
+                                    className={
+                                        `w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer group
+                                         ${isLoading || !canProceed ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_4px_rgba(0,0,0,0.25)] active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2'}
+                                         `
+                                    }
                                 >
                                     {isLoading ? (
                                         <>
@@ -333,7 +270,7 @@ export default function StudentLoginPage() {
                                         </>
                                     ) : (
                                         <>
-                                            <IoLockClosed className="w-5 h-5 mr-2 group-hover:animate-bounce" />
+                                            <IoLockClosed className={`w-5 h-5 mr-2 ${isLoading || !canProceed ? '' : 'group-hover:animate-bounce'}`} />
                                             View My Results
                                         </>
                                     )}
@@ -363,7 +300,7 @@ export default function StudentLoginPage() {
                     {/* Copyright Footer */}
                     <div className="mt-6 text-center">
                         <p className="text-xs text-gray-600">
-                            © {new Date().getFullYear()} Imo State Ministry of Primary and Secondary Education
+                            © {new Date().getFullYear()} <Link href="/" target="_blank" className="text-gray-500 hover:text-gray-700 hover:underline">Imo State Ministry of Primary and Secondary Education</Link>
                         </p>
                     </div>
                 </div>

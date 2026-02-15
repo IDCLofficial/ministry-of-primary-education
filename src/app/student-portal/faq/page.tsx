@@ -223,7 +223,7 @@ export default function FAQPage() {
             <footer className="border-t border-gray-100 py-8 bg-gray-50">
                 <div className="max-w-7xl mx-auto px-6">
                     <p className="text-xs text-gray-500 text-center">
-                        © {new Date().getFullYear()} Imo State Ministry of Primary and Secondary Education
+                        © {new Date().getFullYear()} <Link href="/" target="_blank" className="text-gray-500 hover:text-gray-700 hover:underline">Imo State Ministry of Primary and Secondary Education</Link>
                     </p>
                 </div>
             </footer>

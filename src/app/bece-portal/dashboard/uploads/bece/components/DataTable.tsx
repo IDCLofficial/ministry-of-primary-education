@@ -147,6 +147,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             const results = Object.entries(schoolGroups).map(([schoolName, students]) => ({
                 schoolName,
                 lga: students[0]?.lga,
+                examYear: students[0]?.examYear || new Date().getFullYear(),
                 students: students.map(student => ({
                     name: student.name,
                     examNo: student.examNo,
@@ -201,7 +202,9 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                 <div className="px-6 py-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-medium text-gray-900">Exam Data</h3>
+                            <h3 className="text-lg font-medium text-gray-900">
+                                BECE Exam Data {data.length > 0 && `(Exam Year: ${data[0].examYear})`}
+                            </h3>
                             <p className="text-sm text-gray-500">
                                 {data.length} total records, {filteredData.length} showing
                             </p>

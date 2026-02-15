@@ -1,12 +1,16 @@
 import { configureStore } from '@reduxjs/toolkit'
-import { apiSlice } from '@/app/portal/store/api/apiSlice'
+import { apiSlice as studentApiSlice } from './api/apiSlice'
+import { apiSlice as portalApiSlice } from '@/app/portal/store/api/apiSlice'
 
 export const store = configureStore({
   reducer: {
-    [apiSlice.reducerPath]: apiSlice.reducer,
+    [studentApiSlice.reducerPath]: studentApiSlice.reducer,
+    [portalApiSlice.reducerPath]: portalApiSlice.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(apiSlice.middleware),
+    getDefaultMiddleware()
+      .concat(studentApiSlice.middleware)
+      .concat(portalApiSlice.middleware),
 })
 
 export type RootState = ReturnType<typeof store.getState>

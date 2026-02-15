@@ -178,6 +178,15 @@ export default function UBEATStudentModal({ isOpen, onClose, student, schoolName
                                     <label className="text-sm font-medium text-gray-500">Serial Number</label>
                                     <p className="text-sm text-gray-900 mt-1">#{student.serialNumber}</p>
                                 </div>
+                                {student.examYear && (
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-500 flex items-center">
+                                            <IoCalendar className="w-4 h-4 mr-1" />
+                                            Exam Year
+                                        </label>
+                                        <p className="text-sm text-gray-900 mt-1 font-semibold">{student.examYear}</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

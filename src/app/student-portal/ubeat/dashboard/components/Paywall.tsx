@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { IoLockClosedOutline, IoShieldCheckmarkOutline } from 'react-icons/io5'
 import toast from 'react-hot-toast'
-import { createPayment } from '../../utils/api'
+import { createPayment } from '@/app/student-portal/utils/api'
 import { ExamTypeEnum } from '@/app/portal/store/api/authApi'
 
 interface PaywallProps {
@@ -19,9 +19,9 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
         
         try {
             // Store return URL for redirect after payment
-            localStorage.setItem('student-payment-return-url', '/student-portal/dashboard')
+            localStorage.setItem('student-payment-return-url', '/student-portal/ubeat/dashboard')
             
-            const response = await createPayment(examNo, ExamTypeEnum.BECE);
+            const response = await createPayment(examNo, ExamTypeEnum.UBEAT);
 
             console.log({ response, authorizationUrl: response.authorizationUrl });
             
@@ -43,7 +43,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
             <div className="max-w-lg w-full">
                 {/* Main Card */}
-                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
                     
                     {/* Header - Minimal */}
                     <div className="px-8 pt-8 pb-6 text-center border-b border-gray-100">
@@ -54,7 +54,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                             Results Access Required
                         </h1>
                         <p className="text-sm text-gray-500">
-                            Complete payment to view your BECE results
+                            Complete payment to view your UBEAT results
                         </p>
                     </div>
 
@@ -72,7 +72,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-500">School</span>
                                 <span className="font-medium text-gray-900 capitalize text-right max-w-[60%]">
-                                    {school.toLowerCase()}
+                                    {school?.toLowerCase()}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm">
@@ -105,7 +105,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                             </p>
                             <div className="space-y-2.5">
                                 {[
-                                    'Complete BECE results',
+                                    'Complete UBEAT results',
                                     'Official certificate download',
                                     'Print-ready format',
                                     'Unlimited access'
@@ -122,7 +122,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                         <button
                             onClick={handlePayment}
                             disabled={isProcessing}
-                            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-3xl transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
                         >
                             {isProcessing ? (
                                 <span className="flex items-center justify-center gap-2">

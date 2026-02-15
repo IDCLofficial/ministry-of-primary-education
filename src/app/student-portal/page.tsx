@@ -3,8 +3,8 @@ import React from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
-import { FaFileLines, FaStarHalfStroke, FaThumbsUp } from 'react-icons/fa6'
-import { FaCheckCircle, FaGrinStars, FaQuestionCircle, FaSpinner } from 'react-icons/fa'
+import { FaFileLines, FaInfo, FaStarHalfStroke, FaThumbsUp } from 'react-icons/fa6'
+import { FaCheckCircle, FaGrinStars, FaInfoCircle, FaQuestionCircle, FaSpinner } from 'react-icons/fa'
 import FAQ from './components/FAQ'
 import Link from 'next/link'
 import { IoHappy, IoHappyOutline } from 'react-icons/io5'
@@ -74,14 +74,12 @@ export default function StudentPortalLanding() {
 
     const handleExamSelect = (exam: ExamType) => {
         if (!exam.available) {
-            toast('This examination portal will be available soon', {
-                icon: <FaSpinner className="w-5 h-5 text-gray-600 animate-spin" />,
+            toast('This examination portal will be available soon. Check back later.', {
+                icon: <FaInfoCircle className="w-5 h-5 text-blue-600" />,
                 duration: 2000
             })
             return
         }
-
-        router.push(exam.route)
     }
 
     return (
@@ -100,7 +98,8 @@ export default function StudentPortalLanding() {
                             />
                             <div>
                                 <span className="text-base font-bold text-gray-900 block">Student Portal</span>
-                                <span className="text-xs text-gray-500">Ministry of Education</span>
+                                <span className="text-xs text-gray-500 hidden md:block">Ministry of Primary and Secondary Education</span>
+                                <span className="text-xs text-gray-500 block md:hidden"><abbr title="Ministry of Primary and Secondary Education">MOPSE</abbr></span>
                             </div>
                         </div>
                         <div className="hidden sm:flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full">
@@ -149,17 +148,17 @@ export default function StudentPortalLanding() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {examTypes.map((exam) => (
-                        <button
+                        <Link
                             key={exam.id}
+                            href={ exam.available ? exam.route : '#'}
                             onClick={() => handleExamSelect(exam)}
-                            disabled={!exam.available}
                             className={`
                                 relative text-left p-6 rounded-2xl transition-all group cursor-pointer
                                 ${exam.available
                                     ? 'bg-[#E8F5E9] hover:bg-[#DFF0E0] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-[#C8E6C9]'
                                     : 'bg-gray-50 border border-gray-200'
                                 }
-                                ${exam.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed pointer-events-none'}
+                                ${exam.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}
                             `}
                         >
 
@@ -197,17 +196,17 @@ export default function StudentPortalLanding() {
                             {/* CTA Button */}
                             <button
                                 className={`
-                                    w-full py-2.5 rounded-lg text-sm font-semibold transition-all cursor-pointer
+                                    w-full py-2.5 rounded-lg text-sm font-semibold transition-all cursor-pointer shadow-[0_4px_rgba(0,0,0,0.25)]
                                     ${exam.available
-                                        ? 'bg-green-600 hover:bg-green-700 text-white active:scale-95'
-                                        : 'bg-gray-600 hover:bg-gray-700 text-white active:scale-95'
+                                        ? 'bg-green-600 hover:bg-green-700 text-white  active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2'
+                                        : 'bg-gray-600 hover:bg-gray-700 text-white'
                                     }
                                 `}
                                 disabled={!exam.available}
                             >
                                 {exam.available ? 'View My Results →' : 'Coming Soon'}
                             </button>
-                        </button>
+                        </Link>
                     ))}
                 </div>
 

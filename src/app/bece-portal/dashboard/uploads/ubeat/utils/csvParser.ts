@@ -1,5 +1,28 @@
 import * as XLSX from 'xlsx'
 
+/**
+ * Extract exam year from filename
+ * Expected format: IMSG_EDC_UBEAT_2024_EXAM or similar patterns with year
+ */
+export const extractExamYearFromFilename = (filename: string): number => {
+  // Remove file extension
+  const nameWithoutExt = filename.replace(/\.(csv|xlsx|xls)$/i, '')
+  
+  // Split by common delimiters (underscore, hyphen, space)
+  const parts = nameWithoutExt.split(/[_\-\s]+/)
+  
+  // Look for a 4-digit year (between 2000 and 2099)
+  for (const part of parts) {
+    const year = parseInt(part, 10)
+    if (!isNaN(year) && year >= 2000 && year <= 2099) {
+      return year
+    }
+  }
+  
+  // Default to current year if no valid year found
+  return new Date().getFullYear()
+}
+
 export interface UBEATStudentRecord {
   serialNumber: number
   examNumber: string
@@ -11,6 +34,7 @@ export interface UBEATStudentRecord {
   schoolName: string
   codeNo: string
   attendance: string | number
+  examYear: number
   subjects: {
     mathematics: {
       ca: string
@@ -39,8 +63,11 @@ export const parseCSVFile = (file: File): Promise<UBEATStudentRecord[]> => {
   const isXLSX = file.name.toLowerCase().endsWith('.xlsx') ||
     file.name.toLowerCase().endsWith('.xls')
 
+  // Extract exam year from filename
+  const examYear = extractExamYearFromFilename(file.name)
+
   if (isXLSX) {
-    return parseXLSXFile(file)
+    return parseXLSXFile(file, examYear)
   }
 
   return new Promise((resolve, reject) => {
@@ -49,7 +76,7 @@ export const parseCSVFile = (file: File): Promise<UBEATStudentRecord[]> => {
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string
-        const records = parseCSVText(text, { name: file.name, size: file.size })
+        const records = parseCSVText(text, { name: file.name, size: file.size }, examYear)
         resolve(records)
       } catch (error) {
         reject(error)
@@ -64,7 +91,7 @@ export const parseCSVFile = (file: File): Promise<UBEATStudentRecord[]> => {
   })
 }
 
-export const parseXLSXFile = (file: File): Promise<UBEATStudentRecord[]> => {
+export const parseXLSXFile = (file: File, examYear: number): Promise<UBEATStudentRecord[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
 
@@ -99,7 +126,7 @@ export const parseXLSXFile = (file: File): Promise<UBEATStudentRecord[]> => {
             const records = parseCSVText(csvText, {
               name: `${file.name} - Sheet: ${sheetName}`,
               size: file.size
-            })
+            }, examYear)
 
             if (records.length > 0) {
               allRecords.push(...records)
@@ -131,7 +158,7 @@ export const parseXLSXFile = (file: File): Promise<UBEATStudentRecord[]> => {
   })
 }
 
-export const parseCSVText = (csvText: string, file: { name: string; size: number }): UBEATStudentRecord[] => {
+export const parseCSVText = (csvText: string, file: { name: string; size: number }, examYear: number): UBEATStudentRecord[] => {
   const lines = csvText.trim().split('\n').filter(line => line.trim() !== '')
 
   if (lines.length < 3) {
@@ -236,6 +263,7 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
         schoolName: getStringValue(values, columnIndices.schoolName, 'Unknown School'),
         codeNo: getStringValue(values, columnIndices.codeNo, ''),
         attendance: getAttendanceValue(values, columnIndices.attendance),
+        examYear,
         subjects: {
           mathematics: {
             ca: getStringValue(values, columnIndices.math.ca30, '0'),

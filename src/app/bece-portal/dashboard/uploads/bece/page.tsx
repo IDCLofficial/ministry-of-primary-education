@@ -87,7 +87,8 @@ function UploadContent() {
                 try {
                     const records = await parseCSVFile(file)
                     allRecords.push(...records)
-                    toast.success(`Successfully parsed ${records.length} records from ${file.name}`)
+                    const examYear = records[0]?.examYear || new Date().getFullYear()
+                    toast.success(`Successfully parsed ${records.length} records from ${file.name} (Exam Year: ${examYear})`)
                 } catch (error) {
                     console.error(`Error parsing ${file.name}:`, error)
                     toast.error(`Failed to parse ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)

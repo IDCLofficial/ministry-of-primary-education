@@ -243,6 +243,10 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
                 <label className="text-sm font-medium text-gray-500">Age / Sex</label>
                 <p className="text-sm text-gray-900 mt-1">{currentStudent?.age} years / <span className="capitalize">{currentStudent?.sex}</span></p>
               </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Exam Year</label>
+                <p className="text-sm text-gray-900 mt-1 font-semibold">{currentStudent?.examYear}</p>
+              </div>
             </div>
           </div>
 

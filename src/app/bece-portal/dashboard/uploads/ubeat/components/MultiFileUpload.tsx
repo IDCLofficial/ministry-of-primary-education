@@ -26,7 +26,7 @@ export default function MultiFileUpload({ onFilesUploaded, hasData, className = 
     const validFiles: File[] = []
     const invalidFiles: string[] = []
     const oversizedFiles: string[] = []
-    const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+    const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
     
     files.forEach(file => {
       const fileName = file.name.toLowerCase()

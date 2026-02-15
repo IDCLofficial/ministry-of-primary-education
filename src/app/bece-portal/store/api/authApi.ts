@@ -34,6 +34,7 @@ interface ProfileResponse {
 export interface BeceResultUpload{
   schoolName: string
   lga: string
+  examYear: number
   students: Student[]
 }
 
@@ -50,6 +51,7 @@ interface BeceResultUploadResponse {
 // UBEAT Interfaces
 export interface UBEATResultUpload {
   lga: string
+  examYear: number
   schoolName: string
   students: {
     serialNumber: number

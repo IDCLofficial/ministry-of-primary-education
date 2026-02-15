@@ -15,10 +15,31 @@ interface StudentRecord {
   igbo: number
   preVocationalStudies: number
   lga: string
+  examYear: number
   file: {
     name: string,
     size: number,
   }
+}
+
+/**
+ * Extract exam year from filename
+ * Format examples: "ABOH MBAISE 2025 BECE - SCHOOL.csv"
+ * @param filename - The name of the file
+ * @returns The exam year or current year as fallback
+ */
+export const extractExamYearFromFilename = (filename: string): number => {
+  // Look for 4-digit year pattern in filename (e.g., 2024, 2025)
+  const yearMatch = filename.match(/\b(20\d{2})\b/)
+  if (yearMatch && yearMatch[1]) {
+    const year = parseInt(yearMatch[1], 10)
+    // Validate year is reasonable (between 2020 and 2050)
+    if (year >= 2020 && year <= 2050) {
+      return year
+    }
+  }
+  // Fallback to current year
+  return new Date().getFullYear()
 }
 
 export const parseCSVFile = (file: File): Promise<StudentRecord[]> => {
@@ -35,13 +56,17 @@ export const parseCSVFile = (file: File): Promise<StudentRecord[]> => {
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string
+        // Extract exam year from filename
+        const examYear = extractExamYearFromFilename(file.name)
+        
         // Extract LGA and school name from filename
         // Format: "ABOH MBAISE 2025 BECE - EXCELLENCE ACADEMY.csv"
         const fileNameParts = file.name.replace('.csv', '').split(' - ')
-        const lga = fileNameParts[0]?.replace(' 2025 BECE', '').trim() || 'Unknown LGA'
+        // Remove year and "BECE" from LGA name
+        const lga = fileNameParts[0]?.replace(/\b(20\d{2})\s+BECE\b/i, '').trim() || 'Unknown LGA'
         const schoolName = fileNameParts[1]?.trim() || 'Unknown School'
         
-        const records = parseCSVText(text, lga, schoolName, {name: file.name, size: file.size})
+        const records = parseCSVText(text, lga, schoolName, examYear, {name: file.name, size: file.size})
         resolve(records)
       } catch (error) {
         reject(error)
@@ -71,10 +96,14 @@ export const parseXLSXFile = (file: File): Promise<StudentRecord[]> => {
         const workbook = XLSX.read(data, { type: 'array' })
         const allRecords: StudentRecord[] = []
 
+        // Extract exam year from filename
+        const examYear = extractExamYearFromFilename(file.name)
+
         // Extract LGA from filename
         // Format: "ABOH MBAISE 2025 BECE - EXCELLENCE ACADEMY.xlsx" or similar
         const fileNameParts = file.name.replace(/\.(xlsx|xls)$/i, '').split(' - ')
-        const lga = fileNameParts[0]?.replace(' 2025 BECE', '').trim() || 'Unknown LGA'
+        // Remove year and "BECE" from LGA name
+        const lga = fileNameParts[0]?.replace(/\b(20\d{2})\s+BECE\b/i, '').trim() || 'Unknown LGA'
 
         // Process each sheet
         workbook.SheetNames.forEach((sheetName) => {
@@ -88,7 +117,7 @@ export const parseXLSXFile = (file: File): Promise<StudentRecord[]> => {
           const schoolName = sheetName.trim() || fileNameParts[1]?.trim() || 'Unknown School'
           
           try {
-            const records = parseCSVText(csvText, lga, schoolName, {
+            const records = parseCSVText(csvText, lga, schoolName, examYear, {
               name: `${file.name} - ${sheetName}`,
               size: file.size
             })
@@ -117,7 +146,7 @@ export const parseXLSXFile = (file: File): Promise<StudentRecord[]> => {
   })
 }
 
-export const parseCSVText = (csvText: string, lga: string, schoolName: string, file: {name: string, size: number}): StudentRecord[] => {
+export const parseCSVText = (csvText: string, lga: string, schoolName: string, examYear: number, file: {name: string, size: number}): StudentRecord[] => {
   const lines = csvText.trim().split('\n').filter(line => line.trim() !== '')
 
   if (lines.length < 2) {
@@ -193,6 +222,7 @@ export const parseCSVText = (csvText: string, lga: string, schoolName: string, f
         igbo: getNumberValueOrAbsent(values, columnIndices.igbo, 0),
         preVocationalStudies: getNumberValueOrAbsent(values, columnIndices.preVocationalStudies, 0),
         lga: lga,
+        examYear: examYear,
         file: file
       }
 

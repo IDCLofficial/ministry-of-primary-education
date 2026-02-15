@@ -1,6 +1,6 @@
 import { UBEATStudent } from '../../../types/student.types'
 
-interface CertificateData {
+export interface CertificateData {
     student: UBEATStudent
     schoolName: string
 }
@@ -492,9 +492,9 @@ export const generateUBEATCertificate = async (
                 setFont(ctx, yearConfig)
                 ctx.textAlign = yearConfig.align as CanvasTextAlign
                 ctx.fillStyle = yearConfig.color || '#000000'
-                const yearText = new Date().toLocaleDateString('en-GB', {
-                    year: '2-digit'
-                })
+                // Use student's examYear if available, otherwise use current year
+                const examYear = student.examYear || new Date().getFullYear()
+                const yearText = examYear.toString().slice(-2) // Get last 2 digits
                 drawRotatedText(
                     ctx,
                     applyTransform(yearText, yearConfig.transform),
@@ -509,11 +509,13 @@ export const generateUBEATCertificate = async (
             setFont(ctx, dateConfig)
             ctx.textAlign = dateConfig.align as CanvasTextAlign
             ctx.fillStyle = dateConfig.color || '#000000'
+            // Use student's examYear if available, otherwise use current year
+            const examYear = student.examYear || new Date().getFullYear()
             const dateStr = new Date().toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: 'long',
                 year: certificateType === 'pass' ? 'numeric' : undefined
-            })
+            }).replace(/\d{4}/, examYear.toString()) // Replace year with examYear
             drawRotatedText(
                 ctx,
                 applyTransform(dateStr, dateConfig.transform),
@@ -528,9 +530,11 @@ export const generateUBEATCertificate = async (
                 setFont(ctx, serialConfig)
                 ctx.textAlign = serialConfig.align as CanvasTextAlign
                 ctx.fillStyle = serialConfig.color || '#000000'
-                const serialText = certificateType === 'pass' ? `S/N: ${student.serialNumber}` : new Date().toLocaleDateString('en-GB', {
-                    year: '2-digit'
-                });
+                // Use student's examYear if available, otherwise use current year
+                const examYear = student.examYear || new Date().getFullYear()
+                const serialText = certificateType === 'pass' 
+                    ? `S/N: ${student.serialNumber}` 
+                    : examYear.toString().slice(-2); // Get last 2 digits
                 drawRotatedText(
                     ctx,
                     applyTransform(serialText, serialConfig.transform),

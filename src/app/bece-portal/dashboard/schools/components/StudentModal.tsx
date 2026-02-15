@@ -298,6 +298,12 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                 <label className="text-sm font-medium text-gray-500">Exam Number</label>
                                 <p className="text-sm text-gray-900 mt-1 font-mono">{student.examNo}</p>
                             </div>
+                            {student.examYear && (
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Exam Year</label>
+                                    <p className="text-sm text-gray-900 mt-1">{student.examYear}</p>
+                                </div>
+                            )}
                             <div>
                                 <label className="text-sm font-medium text-gray-500 flex items-center">
                                     <IoCalendar className="w-4 h-4 mr-1" />

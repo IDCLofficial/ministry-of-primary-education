@@ -115,7 +115,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
 
     const handleSaveToDb = async () => {
         const startTime = performance.now()
-        setIsSaving(true)
+        setIsSaving(true);
 
         try {
             toast.loading('Saving UBEAT data to database...')
@@ -133,6 +133,7 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
             // Transform data according to API structure
             const results = Object.entries(schoolGroups).map(([schoolName, students]) => ({
                 lga: students[0]?.lga,
+                examYear: students[0]?.examYear || new Date().getFullYear(),
                 schoolName,
                 students: students.map(student => ({
                     serialNumber: student.serialNumber,
@@ -159,8 +160,8 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                         }
                     }
                 }))
-            }))
-
+            }));
+            
             await uploadUBEATResults({ result: results }).unwrap()
 
             const endTime = performance.now()
@@ -198,7 +199,14 @@ export default function DataTable({ data, onDataChange, className = "" }: DataTa
                 <div className="px-6 py-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-medium text-gray-900">UBEAT Exam Data</h3>
+                            <h3 className="text-lg font-medium text-gray-900">
+                                UBEAT Exam Data
+                                {data.length > 0 && data[0]?.examYear && (
+                                    <span className="ml-2 text-sm font-normal text-green-600">
+                                        (Exam Year: {data[0].examYear})
+                                    </span>
+                                )}
+                            </h3>
                             <p className="text-sm text-gray-500">
                                 {data.length.toLocaleString()} total records, {filteredData.length.toLocaleString()} showing
                             </p>

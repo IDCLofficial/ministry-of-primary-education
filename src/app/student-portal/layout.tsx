@@ -2,6 +2,7 @@ import React from 'react'
 import './portal.css'
 import { Toaster } from 'react-hot-toast'
 import { ReduxProvider } from './store/provider'
+import NextTopLoader from 'nextjs-toploader'
 
 interface StudentPortalLayoutProps {
     children: React.ReactNode
@@ -11,6 +12,10 @@ export default function StudentPortalLayout({ children }: StudentPortalLayoutPro
     return (
         <ReduxProvider>
             <div className="min-h-screen satoshi-font">
+                <NextTopLoader
+                    color='oklch(72.3% 0.219 149.579)'
+                    showSpinner={false}
+                />
                 <Toaster 
                     position="top-right"
                     toastOptions={{
