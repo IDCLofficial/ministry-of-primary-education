@@ -1,7 +1,10 @@
 'use client'
+// BECE Dashboard - This dashboard is specifically for BECE (Basic Education Certificate Examination) results
+// Each exam type (UBEAT, BECE, etc.) has its own dedicated dashboard
+
 import React, { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { IoLogOut, IoDownload, IoPrint, IoSchool, IoSparkles } from 'react-icons/io5'
+import { IoLogOut, IoDownload, IoPrint, IoSchool, IoSparkles, IoSwapHorizontal } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import StudentInfoCard from './components/StudentInfoCard'
 import ResultsCard from './components/ResultsCard'
@@ -23,6 +26,7 @@ export default function StudentDashboardPage() {
     const [isCheckingPayment, setIsCheckingPayment] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
+    const [examType, setExamType] = useState<string>('bece')
 
     // Check for payment success from URL params
     useEffect(() => {
@@ -40,11 +44,21 @@ export default function StudentDashboardPage() {
     useEffect(() => {
         const checkPaymentAndFetchData = async () => {
             const examNo = localStorage.getItem('student_exam_no');
+            const selectedExamType = localStorage.getItem('selected_exam_type');
 
             if (!examNo) {
                 router.push('/student-portal')
                 return
             }
+
+            // Redirect to landing page if no exam type is selected
+            if (!selectedExamType) {
+                router.push('/student-portal')
+                return
+            }
+
+            // Set exam type state
+            setExamType(selectedExamType)
 
             // Validate exam number format
             if (!EXAM_NO_REGEX.test(examNo) && !EXAM_NO_REGEX_02.test(examNo)) {
@@ -108,7 +122,15 @@ export default function StudentDashboardPage() {
         localStorage.removeItem('student_exam_no')
         localStorage.removeItem('student_data')
         localStorage.removeItem('student-payment-return-url')
+        localStorage.removeItem('selected_exam_type')
         toast.success('Logged out successfully')
+        router.push('/student-portal')
+    }
+
+    const handleChangeExam = () => {
+        // Clear selection and return to exam selection
+        localStorage.removeItem('selected_exam_type')
+        toast('Returning to exam selection...', { icon: '🔄' })
         router.push('/student-portal')
     }
 
@@ -131,7 +153,9 @@ export default function StudentDashboardPage() {
                                 <IoSchool className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-base font-bold text-gray-900">BECE Results</h1>
+                                <h1 className="text-base font-bold text-gray-900">
+                                    {examType.toUpperCase()} Results
+                                </h1>
                                 <p className="text-xs text-gray-500">Student Portal</p>
                             </div>
                         </div>
@@ -215,7 +239,9 @@ export default function StudentDashboardPage() {
                             className="h-10 w-auto object-contain"
                         />
                         <div className="border-l border-gray-300 pl-3">
-                            <h1 className="text-sm font-semibold text-gray-900">BECE Results Portal</h1>
+                            <h1 className="text-sm font-semibold text-gray-900">
+                                {examType.toUpperCase()} Results Portal
+                            </h1>
                             <p className="text-xs text-gray-500">Ministry of Primary Education</p>
                         </div>
                     </div>
@@ -237,6 +263,14 @@ export default function StudentDashboardPage() {
                             <span className="hidden md:inline">Download</span>
                         </button>
                         <button
+                            onClick={handleChangeExam}
+                            className="hidden sm:inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer"
+                            title="Change examination type"
+                        >
+                            <IoSwapHorizontal className="w-4 h-4" />
+                            <span className="hidden lg:inline">Change Exam</span>
+                        </button>
+                        <button
                             onClick={handleLogout}
                             className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                         >
@@ -252,18 +286,27 @@ export default function StudentDashboardPage() {
                 {/* Welcome Banner */}
                 <div className="mb-6 print:hidden">
                     <div className="bg-white border border-gray-200 rounded-lg p-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                <IoSparkles className="w-5 h-5 text-green-600" />
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 ${examType === 'bece' ? 'bg-green-100' : 'bg-purple-100'} rounded-lg flex items-center justify-center`}>
+                                    <IoSparkles className={`w-5 h-5 ${examType === 'bece' ? 'text-green-600' : 'text-purple-600'}`} />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-semibold text-gray-900">
+                                        Welcome, <span className="capitalize">{student.name.toLowerCase()}</span>
+                                    </h2>
+                                    <p className="text-sm text-gray-600 mt-0.5">
+                                        Your {examType.toUpperCase()} examination results are displayed below
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-lg font-semibold text-gray-900">
-                                    Welcome, <span className="capitalize">{student.name.toLowerCase()}</span>
-                                </h2>
-                                <p className="text-sm text-gray-600 mt-0.5">
-                                    Your BECE examination results are displayed below
-                                </p>
-                            </div>
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                                examType === 'bece' 
+                                    ? 'bg-green-100 text-green-700 border border-green-200' 
+                                    : 'bg-purple-100 text-purple-700 border border-purple-200'
+                            }`}>
+                                {examType.toUpperCase()}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -271,13 +314,17 @@ export default function StudentDashboardPage() {
                 {/* Print Header (Only visible when printing) */}
                 <div className="hidden print:block mb-8 text-center border-b-2 border-gray-300 pb-6">
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        Basic Education Certificate Examination (BECE)
+                        {examType === 'bece' 
+                            ? 'Basic Education Certificate Examination (BECE)'
+                            : examType === 'ubeat'
+                            ? 'Universal Basic Education Achievement Test (UBEAT)'
+                            : examType.toUpperCase()}
                     </h1>
                     <p className="text-lg text-gray-700">
                         Official Results Statement
                     </p>
                     <p className="text-sm text-gray-600 mt-2">
-                        Academic Year 2024
+                        Academic Year {new Date().getFullYear()}
                     </p>
                 </div>
 

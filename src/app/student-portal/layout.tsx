@@ -1,6 +1,7 @@
 import React from 'react'
 import './portal.css'
 import { Toaster } from 'react-hot-toast'
+import { ReduxProvider } from './store/provider'
 
 interface StudentPortalLayoutProps {
     children: React.ReactNode
@@ -8,32 +9,34 @@ interface StudentPortalLayoutProps {
 
 export default function StudentPortalLayout({ children }: StudentPortalLayoutProps) {
     return (
-        <div className="min-h-screen satoshi-font">
-            <Toaster 
-                position="top-right"
-                toastOptions={{
-                    duration: 3000,
-                    style: {
-                        background: '#363636',
-                        color: '#fff',
-                    },
-                    success: {
+        <ReduxProvider>
+            <div className="min-h-screen satoshi-font">
+                <Toaster 
+                    position="top-right"
+                    toastOptions={{
                         duration: 3000,
-                        iconTheme: {
-                            primary: '#10b981',
-                            secondary: '#fff',
+                        style: {
+                            background: '#363636',
+                            color: '#fff',
                         },
-                    },
-                    error: {
-                        duration: 4000,
-                        iconTheme: {
-                            primary: '#ef4444',
-                            secondary: '#fff',
+                        success: {
+                            duration: 3000,
+                            iconTheme: {
+                                primary: '#10b981',
+                                secondary: '#fff',
+                            },
                         },
-                    },
-                }}
-            />
-            {children}
-        </div>
+                        error: {
+                            duration: 4000,
+                            iconTheme: {
+                                primary: '#ef4444',
+                                secondary: '#fff',
+                            },
+                        },
+                    }}
+                />
+                {children}
+            </div>
+        </ReduxProvider>
     )
 }
