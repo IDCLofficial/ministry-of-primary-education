@@ -17,10 +17,7 @@ export const useSchoolSearch = () => {
 
     const query = searchQuery.toLowerCase();
     return schools.filter((school: School) =>
-      school.schoolName?.toLowerCase().includes(query) ||
-      school.principal?.toLowerCase().includes(query) ||
-      school.address?.toLowerCase().includes(query) ||
-      school.email?.toLowerCase().includes(query)
+      school.schoolName?.toLowerCase().includes(query)
     ).slice(0, 10); // Limit to 10 results
   }, [schools, searchQuery]);
 

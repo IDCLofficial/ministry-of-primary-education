@@ -22,8 +22,8 @@ export default function TabNavigation({ currentTab, onTabChange }: TabNavigation
 
     { 
       key: "applied", 
-      label: "Applied",
-      description: "Pending applications awaiting review"
+      label: "Pending Review",
+      description: "Applications pending review"
     },
     { 
       key: "approved", 

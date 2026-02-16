@@ -161,9 +161,9 @@ function SchoolDetailsPageContent() {
     );
   }
 
-  // Check if this is an applied school with pending or rejected status
-  const isAppliedSchool = (applicationForReview?.applicationStatus === 'pending' || applicationForReview?.applicationStatus === 'rejected') || hasApplication;
-  console.log('Is Applied School:', isAppliedSchool);
+  // Check if this is a pending or rejected application (show ApplicationReviewLayout)
+  const showApplicationReview = applicationForReview?.applicationStatus === 'pending' || applicationForReview?.applicationStatus === 'rejected';
+  console.log('Show Application Review:', showApplicationReview);
   console.log('Application For Review:', applicationForReview);
   console.log('Application Status:', applicationForReview?.applicationStatus);
   console.log('Has Application:', hasApplication);
@@ -172,8 +172,8 @@ function SchoolDetailsPageContent() {
     
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          {isAppliedSchool && applicationForReview ? (
-            /* Application Review Layout for Applied/Rejected Schools */
+          {showApplicationReview && applicationForReview ? (
+            /* Application Review Layout for Pending/Rejected Applications */
             <ApplicationReviewLayout
               application={applicationForReview as Application}
               applicationId={applicationId}

@@ -135,13 +135,13 @@ export default function SchoolTableRTK() {
     const isApplication = 'applicationStatus' in item;
     if (isApplication) {
       // Navigate to school details with application ID
-      if (item.school?._id) {
+      if (item?._id) {
         // If school object exists and has ID, use it
-        router.push(`/admin/schools/${item.school._id}?appId=${item._id}&examType=${item.examType}`);
+        router.push(`/admin/schools/${item._id}?appId=${item._id}&examType=${item.examType}`);
       } else {
         // If school is null, navigate directly with application ID
         // The detail page will need to handle viewing application data
-        router.push(`/admin/schools/application/${item._id}?examType=${item.examType}`);
+        router.push(`/admin/schools/${item._id}?examType=${item.examType}`);
       }
     } else {
       // Navigate to school details

@@ -1,7 +1,8 @@
 'use client'
 
-import { FaUserGraduate, FaChartLine, FaUsers, FaClipboardCheck } from 'react-icons/fa'
+import { FaUserGraduate } from 'react-icons/fa'
 import ExamSchoolTable from '../schools/components/schools/ExamSchoolTable'
+import ExamStatsCards from '../schools/components/schools/ExamStatsCards'
 import { useGetApplicationsQuery } from '@/app/admin/schools/store/api/schoolsApi'
 
 export default function UbegptPage() {
@@ -14,6 +15,7 @@ export default function UbegptPage() {
   const totalStudents = applications.reduce((sum, app) => sum + app.numberOfStudents, 0)
   const approvedApplications = applications.filter(app => app.applicationStatus === 'approved').length
   const pendingApplications = applications.filter(app => app.applicationStatus === 'pending').length
+  
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -26,47 +28,13 @@ export default function UbegptPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Applications</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{applications.length}</p>
-            </div>
-            <FaClipboardCheck className="text-3xl text-blue-500" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Students</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{totalStudents}</p>
-            </div>
-            <FaUsers className="text-3xl text-green-500" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Approved Applications</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{approvedApplications}</p>
-            </div>
-            <FaChartLine className="text-3xl text-green-500" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Pending Applications</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{pendingApplications}</p>
-            </div>
-            <FaUserGraduate className="text-3xl text-yellow-500" />
-          </div>
-        </div>
-      </div>
+      <ExamStatsCards
+        totalApplications={applications.length}
+        totalStudents={totalStudents}
+        approvedApplications={approvedApplications}
+        pendingApplications={pendingApplications}
+        icon={FaUserGraduate}
+      />
 
       <ExamSchoolTable examType="UBEGPT" />
     </div>

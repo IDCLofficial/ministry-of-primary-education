@@ -153,7 +153,7 @@ export function useSchoolStatusActions({
       html: `
         <div style="text-align: left;">
           <label for="swal-reason" style="display: block; margin-bottom: 8px; font-weight: 600;">Reason for Rejection:</label>
-          <select id="swal-reason" class="swal2-select" style="width: 100%; padding: 8px; margin-bottom: 16px; border: 1px solid #d1d5db; border-radius: 4px;">
+          <select id="swal-reason" class="swal2-select" style="width: 70%; padding: 8px; margin-bottom: 16px; border: 1px solid #d1d5db; border-radius: 4px;">
             <option value="">Select a reason...</option>
             <option value="Incomplete documentation">Incomplete documentation</option>
             <option value="Inaccurate student data">Inaccurate student data</option>
@@ -165,7 +165,7 @@ export function useSchoolStatusActions({
           </select>
           
           <label for="swal-notes" style="display: block; margin-bottom: 8px; font-weight: 600;">Additional Notes (Optional):</label>
-          <textarea id="swal-notes" class="swal2-textarea" placeholder="Enter additional details..." style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; resize: vertical;"></textarea>
+          <textarea id="swal-notes" class="swal2-textarea" placeholder="Enter additional details..." style="width: 70%; min-height: 80px; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; resize: vertical;"></textarea>
         </div>
       `,
       icon: 'warning',
@@ -175,6 +175,15 @@ export function useSchoolStatusActions({
       confirmButtonText: 'Reject Applications',
       cancelButtonText: 'Cancel',
       focusConfirm: false,
+      customClass: {
+        popup: 'swal-wide'
+      },
+      didOpen: () => {
+        const popup = document.querySelector('.swal-wide') as HTMLElement;
+        if (popup) {
+          popup.style.width = window.innerWidth <= 768 ? '80%' : '40%';
+        }
+      },
       preConfirm: () => {
         const reason = (document.getElementById('swal-reason') as HTMLSelectElement).value;
         const notes = (document.getElementById('swal-notes') as HTMLTextAreaElement).value;
@@ -351,7 +360,7 @@ export function useSchoolStatusActions({
       html: `
         <div style="text-align: left;">
           <label for="swal-reason" style="display: block; margin-bottom: 8px; font-weight: 600;">Reason for Rejection:</label>
-          <select id="swal-reason" class="swal2-select" style="width: 100%; padding: 8px; margin-bottom: 16px; border: 1px solid #d1d5db; border-radius: 4px;">
+          <select id="swal-reason" class="swal2-select" style="width: 70%; padding: 8px; margin-bottom: 16px; border: 1px solid #d1d5db; border-radius: 4px;">
             <option value="">Select a reason...</option>
             <option value="Incomplete documentation">Incomplete documentation</option>
             <option value="Inaccurate student data">Inaccurate student data</option>
@@ -363,7 +372,7 @@ export function useSchoolStatusActions({
           </select>
           
           <label for="swal-notes" style="display: block; margin-bottom: 8px; font-weight: 600;">Additional Notes (Optional):</label>
-          <textarea id="swal-notes" class="swal2-textarea" placeholder="Enter additional details..." style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; resize: vertical;"></textarea>
+          <textarea id="swal-notes" class="swal2-textarea" placeholder="Enter additional details..." style="width: 70%; min-height: 80px; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; resize: vertical;"></textarea>
         </div>
       `,
       icon: 'warning',
@@ -373,6 +382,15 @@ export function useSchoolStatusActions({
       confirmButtonText: 'Reject Application',
       cancelButtonText: 'Cancel',
       focusConfirm: false,
+      customClass: {
+        popup: 'swal-wide'
+      },
+      didOpen: () => {
+        const popup = document.querySelector('.swal-wide') as HTMLElement;
+        if (popup) {
+          popup.style.width = window.innerWidth <= 768 ? '80%' : '40%';
+        }
+      },
       preConfirm: () => {
         const reason = (document.getElementById('swal-reason') as HTMLSelectElement).value;
         const notes = (document.getElementById('swal-notes') as HTMLTextAreaElement).value;

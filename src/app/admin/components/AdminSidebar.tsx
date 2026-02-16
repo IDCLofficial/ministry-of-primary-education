@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { 
   FaGraduationCap, 
   FaChartBar, 
@@ -77,7 +77,20 @@ const navigationItems: NavItem[] = [
 
 export default function AdminSidebar() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [isCollapsed, setIsCollapsed] = useState(false)
+
+  // Map exam types to their corresponding routes
+  const examTypeToRoute: Record<string, string> = {
+    'WAEC': '/admin/schools',
+    'BECE': '/admin/bece',
+    'BECE-RESIT': '/admin/bece-resit',
+    'JSCBE': '/admin/jscbe',
+    'Common-entrance': '/admin/common-entrance',
+    'UBEAT': '/admin/ubeat',
+    'UBEGPT': '/admin/ubegpt',
+    'UBETMS': '/admin/ubetms',
+  }
 
   return (
     <aside 
@@ -104,7 +117,18 @@ export default function AdminSidebar() {
         <div className="space-y-1">
           
           {navigationItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            // Check if we're on a school details page with examType query param
+            const examType = searchParams.get('examType')
+            const isSchoolDetailsPage = pathname.startsWith('/admin/schools/')
+            
+            let isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            
+            // If on school details page with examType, match based on examType
+            if (isSchoolDetailsPage && examType) {
+              const expectedRoute = examTypeToRoute[examType]
+              isActive = item.href === expectedRoute
+            }
+            
             const Icon = item.icon
 
             return (

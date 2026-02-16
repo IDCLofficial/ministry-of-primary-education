@@ -44,30 +44,15 @@ export default function SchoolSearchDropdown({
             <button
               key={school._id}
               onClick={() => handleSchoolClick(school)}
-              className="w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-b border-gray-100 last:border-b-0"
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors"
             >
-              <div className="flex flex-col">
-                <div className="font-medium text-gray-900 text-sm">
+              <div className="flex items-center justify-between">
+                <div className="font-medium text-gray-900 text-sm capitalize">
                   {school.schoolName}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  
-                
-                </div>
-                <div className="mt-1">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    school.status === 'approved' ? 'bg-green-100 text-green-800' :
-                    school.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    school.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                    school.status === 'onboarded' ? 'bg-blue-100 text-blue-800' :
-                    school.status === 'completed' ? 'bg-purple-100 text-purple-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {school.status === 'not_applied' ? 'Not Applied' : 
-                     school.status === 'pending' ? 'Pending' :
-                     school.status.charAt(0).toUpperCase() + school.status.slice(1)}
-                  </span>
-                </div>
+                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
             </button>
           ))}
