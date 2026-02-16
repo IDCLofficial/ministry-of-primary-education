@@ -81,15 +81,6 @@ const EXAM_TYPES: ExamType[] = [
   }
 ]
 
-// Helper function to safely extract LGA name
-const getLgaName = (lga: string | { _id: string; name: string } | undefined): string => {
-  if (!lga) return 'Unknown LGA'
-  if (typeof lga === 'string') {
-    return lga
-  }
-  return lga?.name || 'Unknown LGA'
-}
-
 export default function ExamSelectionPage({ params }: { params: Promise<{ schoolId: string }> }) {
   const router = useRouter()
   const { schoolId } = use(params)

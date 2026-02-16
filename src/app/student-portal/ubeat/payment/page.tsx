@@ -6,13 +6,12 @@ import Image from 'next/image'
 import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
 import animationData from '../../assets/students.json'
-import Link from 'next/link'
 
 function PaymentContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'success' | 'failed'>('pending')
-    const [studentData, setStudentData] = useState<any>(null)
+    const [studentData, setStudentData] = useState<{ fullName: string, schoolName: string, lga: string, examYear: number } | null>(null);
     const [paymentReference, setPaymentReference] = useState('')
 
     useEffect(() => {

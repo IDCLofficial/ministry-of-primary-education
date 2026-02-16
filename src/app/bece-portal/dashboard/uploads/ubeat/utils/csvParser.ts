@@ -107,7 +107,7 @@ export const parseXLSXFile = (file: File, examYear: number): Promise<UBEATStuden
         const allRecords: UBEATStudentRecord[] = []
 
         // Process each sheet
-        workbook.SheetNames.forEach((sheetName, index) => {
+        workbook.SheetNames.forEach((sheetName) => {
           const worksheet = workbook.Sheets[sheetName]
 
           // Skip empty sheets

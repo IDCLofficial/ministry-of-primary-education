@@ -16,11 +16,9 @@ interface School {
     schoolName: string
     lga: string
     schoolCode?: string
-    students: any[]
     isFirstLogin: boolean
     hasAccount: boolean
     isVerified: boolean
-    exams: any[]
     __v: number
     createdAt: string
     updatedAt: string

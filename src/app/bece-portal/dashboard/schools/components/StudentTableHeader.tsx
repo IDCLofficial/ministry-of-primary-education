@@ -1,5 +1,4 @@
 import React from 'react'
-import { IoSchool, IoPeople } from 'react-icons/io5'
 
 interface StudentTableHeaderProps {
     schoolCount: number

@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { IoPersonCircle, IoLockClosed, IoArrowBack } from 'react-icons/io5'
+import { IoPersonCircle, IoLockClosed } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
 import animationData from '../assets/students.json'
@@ -16,9 +16,6 @@ const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
 const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3,4}\/\d{4}\/\d{3,4}$/
 // Regex pattern for exam number validation (e.g., XX/XX/000/0000)
 const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}$/
-
-// Import the interface from the API
-import { BECEStudentResult } from '../store/api/studentApi'
 
 export default function StudentLoginPage() {
     const router = useRouter();
@@ -72,19 +69,20 @@ export default function StudentLoginPage() {
 
             toast.success(`Welcome ${result.name}! Loading your results... 🎉`)
             router.push('/student-portal/bece/dashboard')
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorObject = error as { status: string | number }
             console.error('Login error:', error)
 
             // Handle RTK Query errors
-            if (error.status === 404) {
+            if (errorObject.status === 404) {
                 setError('We couldn\'t find your results. Please check your exam number and try again.')
-            } else if (error.status === 400) {
+            } else if (errorObject.status === 400) {
                 setError('This exam number doesn\'t seem valid. Please double-check and try again.')
-            } else if (error.status === 500) {
+            } else if (errorObject.status === 500) {
                 setError('Our system is having a moment. Please try again in a few minutes.')
-            } else if (error.status === 'FETCH_ERROR') {
+            } else if (errorObject.status === 'FETCH_ERROR') {
                 setError('Network error: Unable to connect to server. Please check your internet connection.')
-            } else if (error.status === 'PARSING_ERROR') {
+            } else if (errorObject.status === 'PARSING_ERROR') {
                 setError('Server returned invalid data. Please try again.')
             } else {
                 setError('We\'re having trouble connecting. Please check your internet and try again.')

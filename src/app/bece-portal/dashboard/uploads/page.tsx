@@ -1,6 +1,5 @@
 'use client'
 import React from 'react'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { IoCloudUpload } from 'react-icons/io5'
@@ -74,7 +73,6 @@ const EXAM_TYPES: ExamType[] = [
 ]
 
 export default function UploadsPage() {
-  const router = useRouter()
 
   return (
     <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
@@ -185,7 +183,7 @@ export default function UploadsPage() {
                 <ul className="space-y-1 text-sm text-gray-600">
                   <li>• Each file should contain student data for one school</li>
                   <li>• First row must be headers</li>
-                  <li>• File name format: "LGA 2025 EXAM - SCHOOL NAME.csv"</li>
+                  <li>• File name format: &apos;LGA 2025 EXAM - SCHOOL NAME.csv&apos;</li>
                 </ul>
               </div>
 
@@ -199,7 +197,7 @@ export default function UploadsPage() {
                 <ul className="space-y-1 text-sm text-gray-600">
                   <li>• Each sheet represents one school</li>
                   <li>• Sheet name will be used as school name</li>
-                  <li>• File name format: "LGA 2025 EXAM.xlsx"</li>
+                  <li>• File name format: &apos;LGA 2025 EXAM.xlsx&apos;</li>
                 </ul>
               </div>
             </div>

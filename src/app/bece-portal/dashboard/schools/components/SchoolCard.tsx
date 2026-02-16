@@ -1,5 +1,5 @@
 import React from 'react'
-import { IoSchool, IoLocationOutline, IoPeopleOutline, IoChevronForward } from 'react-icons/io5'
+import { IoSchool, IoLocationOutline, IoChevronForward } from 'react-icons/io5'
 import { School } from '../types/student.types'
 import Link from 'next/link'
 

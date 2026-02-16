@@ -1,13 +1,12 @@
 'use client'
 import React from 'react'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
-import { FaFileLines, FaInfo, FaStarHalfStroke, FaThumbsUp } from 'react-icons/fa6'
+import { FaFileLines, FaStarHalfStroke, FaThumbsUp } from 'react-icons/fa6'
 import { FaCheckCircle, FaGrinStars, FaInfoCircle, FaQuestionCircle, FaSpinner } from 'react-icons/fa'
 import FAQ from './components/FAQ'
 import Link from 'next/link'
-import { IoHappy, IoHappyOutline } from 'react-icons/io5'
+import { IoHappyOutline } from 'react-icons/io5'
 
 interface ExamType {
     id: string
@@ -19,7 +18,6 @@ interface ExamType {
 }
 
 export default function StudentPortalLanding() {
-    const router = useRouter()
 
     const examTypes: ExamType[] = [
         {

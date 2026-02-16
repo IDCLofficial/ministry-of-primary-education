@@ -10,7 +10,7 @@ import { useDebounce } from '../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
-import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation, UBEATStudentResult } from '../store/api/studentApi'
+import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation } from '../store/api/studentApi'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
@@ -143,19 +143,20 @@ export default function UBEATLoginPage() {
 
             toast.success(`Welcome ${result.studentName}! Loading your results... 🎉`)
             router.push('/student-portal/ubeat/dashboard')
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorObject = error as { status: string | number }
             console.error('Login error:', error)
 
             // Handle RTK Query errors
-            if (error.status === 404) {
+            if (errorObject.status === 404) {
                 setError('We couldn\'t find your results. Please check your exam number and try again.')
-            } else if (error.status === 400) {
+            } else if (errorObject.status === 400) {
                 setError('This exam number doesn\'t seem valid. Please double-check and try again.')
-            } else if (error.status === 500) {
+            } else if (errorObject.status === 500) {
                 setError('Our system is having a moment. Please try again in a few minutes.')
-            } else if (error.status === 'FETCH_ERROR') {
+            } else if (errorObject.status === 'FETCH_ERROR') {
                 setError('Network error: Unable to connect to server. Please check your internet connection.')
-            } else if (error.status === 'PARSING_ERROR') {
+            } else if (errorObject.status === 'PARSING_ERROR') {
                 setError('Server returned invalid data. Please try again.')
             } else {
                 setError('We\'re having trouble connecting. Please check your internet and try again.')
@@ -192,19 +193,20 @@ export default function UBEATLoginPage() {
 
             toast.success(`Welcome ${result.studentName}! Loading your results... 🎉`)
             router.push('/student-portal/ubeat/dashboard')
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorObject = error as { status: string | number }
             console.error('Find result error:', error)
 
             // Handle RTK Query errors
-            if (error.status === 404) {
+            if (errorObject.status === 404) {
                 setError('We couldn\'t find your results with the provided information. Please check your details and try again.')
-            } else if (error.status === 400) {
+            } else if (errorObject.status === 400) {
                 setError('Invalid information provided. Please double-check your details.')
-            } else if (error.status === 500) {
+            } else if (errorObject.status === 500) {
                 setError('Our system is having a moment. Please try again in a few minutes.')
-            } else if (error.status === 'FETCH_ERROR') {
+            } else if (errorObject.status === 'FETCH_ERROR') {
                 setError('Network error: Unable to connect to server. Please check your internet connection.')
-            } else if (error.status === 'PARSING_ERROR') {
+            } else if (errorObject.status === 'PARSING_ERROR') {
                 setError('Server returned invalid data. Please try again.')
             } else {
                 setError('We\'re having trouble finding your results. Please check your information and try again.')

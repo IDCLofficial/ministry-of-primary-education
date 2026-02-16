@@ -229,7 +229,7 @@ export default function UBEATDashboard() {
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-3">Oops! Something went wrong</h2>
                     <p className="text-base text-gray-600 mb-2">{errorMessage}</p>
-                    <p className="text-sm text-gray-500 mb-6">Don't worry, this happens sometimes. Let's try again!</p>
+                    <p className="text-sm text-gray-500 mb-6">Don&apos;t worry, this happens sometimes. Let&apos;s try again!</p>
                     <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-100">
                         <p className="text-sm text-gray-700">
                             💡 <strong>Quick tip:</strong> Double-check your exam number format or ask your teacher for help
@@ -390,10 +390,10 @@ export default function UBEATDashboard() {
                                         Congratulations, <span className="capitalize">{student.studentName.toLowerCase()}</span>! 🎉
                                     </h2>
                                     <p className="text-base text-gray-700 mb-1">
-                                        You've worked hard and here are your UBEAT results
+                                        You&apos;ve worked hard and here are your UBEAT results
                                     </p>
                                     <p className="text-sm text-gray-600">
-                                        Take a moment to review your performance. We're proud of your effort!
+                                        Take a moment to review your performance. We&apos;re proud of your effort!
                                     </p>
                                 </div>
                             </div>

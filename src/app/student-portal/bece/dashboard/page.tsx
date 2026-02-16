@@ -15,9 +15,12 @@ import Image from 'next/image'
 import { useGetBECEResultQuery } from '../../store/api/studentApi'
 import StudentInfoCard from './components/StudentInfoCard'
 
-// Regex pattern for exam number validation (e.g., ok/977/2025/001)
-const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3}\/\d{4}\/\d{3}$/
-const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3}\/\d{3,4}(\(\d\))?$/
+// Regex pattern for exam number validation (e.g., XX/000/000)
+const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
+// Regex pattern for exam number validation (e.g., XX/000/0000/000)
+const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3,4}\/\d{4}\/\d{3,4}$/
+// Regex pattern for exam number validation (e.g., XX/XX/000/0000)
+const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}$/
 
 export default function StudentDashboardPage() {
     const router = useRouter()
@@ -44,7 +47,7 @@ export default function StudentDashboardPage() {
         const storedExamNo = localStorage.getItem('student_exam_no')
         const selectedExamType = localStorage.getItem('selected_exam_type')
 
-        if (!storedExamNo || selectedExamType !== 'bece') {
+        if (!storedExamNo || selectedExamType !== 'bece' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
             router.push('/student-portal/bece')
             return
         }
@@ -175,7 +178,7 @@ export default function StudentDashboardPage() {
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-3">Oops! Something went wrong</h2>
                     <p className="text-base text-gray-600 mb-2">{errorMessage}</p>
-                    <p className="text-sm text-gray-500 mb-6">Don't worry, this happens sometimes. Let's try again!</p>
+                    <p className="text-sm text-gray-500 mb-6">Don&apos;t worry, this happens sometimes. Let&apos;s try again!</p>
                     <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-100">
                         <p className="text-sm text-gray-700">
                             💡 <strong>Quick tip:</strong> Double-check your exam number format or ask your teacher for help
@@ -293,10 +296,10 @@ export default function StudentDashboardPage() {
                                         Congratulations, <span className="capitalize">{student.name.toLowerCase()}</span>! 🎉
                                     </h2>
                                     <p className="text-base text-gray-700 mb-1">
-                                        You've worked hard and here are your BECE results
+                                        You&apos;ve worked hard and here are your BECE results
                                     </p>
                                     <p className="text-sm text-gray-600">
-                                        Take a moment to review your performance. We're proud of your effort!
+                                        Take a moment to review your performance. We&apos;re proud of your effort!
                                     </p>
                                 </div>
                             </div>

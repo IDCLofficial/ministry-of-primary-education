@@ -17,11 +17,9 @@ interface School {
     schoolName: string
     lga: string
     schoolCode?: string
-    students: any[]
     isFirstLogin: boolean
     hasAccount: boolean
     isVerified: boolean
-    exams: any[]
     __v: number
     createdAt: string
     updatedAt: string
@@ -55,7 +53,6 @@ export default function UBEATSchoolDetailsClient({ school, students, pagination,
     const debouncedSearch = useDebounce(localSearch, 500)
     const [selectedStudent, setSelectedStudent] = useState<UBEATStudent | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const [isGenerating, setIsGenerating] = useState(false)
 
     // Sync URL search param with local state
     useEffect(() => {
@@ -91,7 +88,6 @@ export default function UBEATSchoolDetailsClient({ school, students, pagination,
     }
 
     const handleGenerateCertificate = async (student: DisplayStudent | UBEATStudent) => {
-        setIsGenerating(true)
         try {
             // Extract the UBEATStudent data
             const ubeatStudent: UBEATStudent = 'originalData' in student 
@@ -108,8 +104,6 @@ export default function UBEATSchoolDetailsClient({ school, students, pagination,
         } catch (error) {
             console.error('Error generating certificate:', error)
             toast.error('Failed to generate certificate. Please try again.')
-        } finally {
-            setIsGenerating(false)
         }
     }
 

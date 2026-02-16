@@ -94,11 +94,11 @@ interface School {
   schoolName: string
   lga: string
   schoolCode: string
-  students: any[]
+  students: unknown[]
   isFirstLogin: boolean
   hasAccount: boolean
   isVerified: boolean
-  exams: any[]
+  exams: unknown[]
   __v: number
   createdAt: string
   updatedAt: string
@@ -129,23 +129,6 @@ interface UpdateScoreRequest {
 interface UpdateScoreResponse {
   message: string
   student: Student
-}
-
-// UBEAT Update Score Interfaces
-interface UBEATUpdateScoreSubject {
-  subjectName: string
-  ca: number
-  exam: number
-}
-
-interface UBEATUpdateScoreRequest {
-  examNo: string
-  subjects: UBEATUpdateScoreSubject[]
-}
-
-interface UBEATUpdateScoreResponse {
-  message: string
-  student: any
 }
 
 export interface UploadLog {
@@ -325,20 +308,6 @@ export const authApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    // Update UBEAT Student Score
-    updateUBEATScore: builder.mutation<UBEATUpdateScoreResponse, UBEATUpdateScoreRequest>({
-      query: (data) => ({
-        url: '/ubeat/update-score',
-        method: 'PATCH',
-        body: data,
-      }),
-      invalidatesTags: (result) => [
-        { type: 'Admin', id: 'UBEAT_LIST' },
-        // Invalidate the specific school's results if we can determine it
-        ...(result?.student?.school ? [{ type: 'Admin' as const, id: `UBEAT_${result.student.school}` }] : [])
-      ],
-    }),
-
     // Get Upload Logs
     getUploadLogs: builder.query<UploadLogsResponse, UploadLogsParams | void>({
       query: (params) => {
@@ -375,7 +344,6 @@ export const {
   useGetUBEATResultsQuery,
   useGetSchoolsQuery,
   useUpdateStudentScoreMutation,
-  useUpdateUBEATScoreMutation,
   useGetUploadLogsQuery,
   useGetDashboardSummaryQuery,
   useGetSchoolByIdQuery,
