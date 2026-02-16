@@ -2,8 +2,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { 
   useGetSchoolByIdQuery, 
-  useGetSchoolTransactionsQuery,
-  useGetApplicationsBySchoolIdQuery
+  useGetSchoolTransactionsQuery
 } from "@/app/admin/schools/store/api/schoolsApi";
 import { useSchoolStatusActions } from '@/app/admin/schools/components/schools/SchoolStatusActions';
 import { Application } from '@/app/admin/schools/store/api/schoolsApi';
@@ -22,7 +21,6 @@ function SchoolDetailsPageContent() {
   const searchParams = useSearchParams();
   const schoolId = params.id as string;
   const examTypeParam = searchParams.get('examType'); // Get exam type from URL
-  const appIdParam = searchParams.get('appId'); // Get application ID from URL
 
   // RTK Query hooks
   const { 
@@ -62,7 +60,7 @@ function SchoolDetailsPageContent() {
   // The school object from useGetSchoolByIdQuery is actually the full application object
   // It contains _id, applicationStatus, reviewNotes, etc.
   const applicationId = school?._id || null;
-  const applicationStatus = (school as any)?.applicationStatus;
+  const applicationStatus = (school as Application)?.applicationStatus;
   
   // Check if this is an application (has applicationStatus) vs just a school
   const hasApplication = !!applicationStatus;
@@ -77,7 +75,7 @@ function SchoolDetailsPageContent() {
   console.log('==================');
 
   // The school object IS the application, so we can use it directly
-  const applicationForReview: Application | null = hasApplication ? (school as any) : null;
+  const applicationForReview: Application | null = hasApplication ? (school as Application) : null;
 
   // Use school data directly
   const enhancedSchool = school!;

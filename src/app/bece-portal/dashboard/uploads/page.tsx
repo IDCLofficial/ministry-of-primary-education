@@ -185,7 +185,7 @@ export default function UploadsPage() {
                 <ul className="space-y-1 text-sm text-gray-600">
                   <li>• Each file should contain student data for one school</li>
                   <li>• First row must be headers</li>
-                  <li>• File name format: "LGA 2025 EXAM - SCHOOL NAME.csv"</li>
+                  <li>• File name format: &quot;LGA 2025 EXAM - SCHOOL NAME.csv&quot;</li>
                 </ul>
               </div>
 
@@ -199,7 +199,7 @@ export default function UploadsPage() {
                 <ul className="space-y-1 text-sm text-gray-600">
                   <li>• Each sheet represents one school</li>
                   <li>• Sheet name will be used as school name</li>
-                  <li>• File name format: "LGA 2025 EXAM.xlsx"</li>
+                  <li>• File name format: &quot;LGA 2025 EXAM.xlsx&quot;</li>
                 </ul>
               </div>
             </div>
