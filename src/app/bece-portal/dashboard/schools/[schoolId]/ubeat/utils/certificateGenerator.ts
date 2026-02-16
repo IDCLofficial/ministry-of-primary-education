@@ -383,19 +383,21 @@ export const generateUBEATCertificate = async (
     data: CertificateData,
     certificateType: 'pass' | 'credit' | 'distinction' = 'pass',
     customFields?: CertificateFieldsConfig,
+    customFonts?: CustomFont[]
 ): Promise<void> => {
     const { student, schoolName } = data;
     
-    // Load custom fonts if provided
+    // Load custom fonts if provided, otherwise load default Handlee font
     try {
-        await loadCustomFonts([
+        const fontsToLoad = customFonts || [
             {
                 family: 'Handlee',
                 url: '/fonts/Handlee-Regular.ttf',
                 weight: 'normal',
                 style: 'normal'
             }
-        ])
+        ]
+        await loadCustomFonts(fontsToLoad)
     } catch (error) {
         console.error('Font loading failed:', error)
         // Continue with default fonts if custom fonts fail to load
