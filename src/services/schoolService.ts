@@ -18,11 +18,22 @@ export interface School {
   address: string;
   principal: string;
   email: string;
-  phone?: number;
+  phone?: string;
   numberOfStudents?: number;
   students: Student[];
   status: string;
   isFirstLogin: boolean;
+  hasAccount: boolean;
+  exams?: Array<{
+    name: string;
+    status: string;
+    totalPoints: number;
+    availablePoints: number;
+    usedPoints: number;
+    numberOfStudents: number;
+    reviewNotes?: string;
+    applicationId?: string;
+  }>;
   totalPoints: number;
   availablePoints: number;
   usedPoints: number;
@@ -53,11 +64,22 @@ export interface SchoolApiData {
   address?: string
   principal?: string
   email?: string
-  phone?: number
+  phone?: number | string
   numberOfStudents?: number
   students?: Student[]
   status?: string
   isFirstLogin?: boolean
+  hasAccount?: boolean
+  exams?: Array<{
+    name: string
+    status: string
+    totalPoints: number
+    availablePoints: number
+    usedPoints: number
+    numberOfStudents: number
+    reviewNotes?: string
+    applicationId?: string
+  }>
   totalPoints?: number
   availablePoints?: number
   usedPoints?: number
@@ -79,11 +101,13 @@ export const transformSchoolData = (apiSchool: SchoolApiData): School => {
     address: apiSchool.address || 'N/A',
     principal: apiSchool.principal || 'N/A',
     email: apiSchool.email || 'N/A',
-    phone: apiSchool.phone,
+    phone: apiSchool.phone ? String(apiSchool.phone) : undefined,
     numberOfStudents: apiSchool.numberOfStudents,
     students: apiSchool.students || [],
     status: apiSchool.status || 'not applied',
     isFirstLogin: apiSchool.isFirstLogin || false,
+    hasAccount: apiSchool.hasAccount || false,
+    exams: apiSchool.exams,
     totalPoints: apiSchool.totalPoints || 0,
     availablePoints: apiSchool.availablePoints || 0,
     usedPoints: apiSchool.usedPoints || 0,

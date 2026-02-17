@@ -6,21 +6,37 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 // Application interface
 export interface Application {
   _id: string;
-  school: {
+  school?: {
     _id: string;
     schoolName: string;
     address: string;
     principal: string;
     email: string;
+    lga?: string;
+    phone?: string;
     students: Student[];
-    status: string;
+    status?: string;
     isFirstLogin: boolean;
-    totalPoints: number;
-    availablePoints: number;
-    usedPoints: number;
+    hasAccount: boolean;
+    exams?: Array<{
+      name: string;
+      status: string;
+      totalPoints: number;
+      availablePoints: number;
+      usedPoints: number;
+      numberOfStudents: number;
+      reviewNotes?: string;
+      applicationId?: string;
+    }>;
+    totalPoints?: number;
+    availablePoints?: number;
+    usedPoints?: number;
     __v: number;
     createdAt: string;
     updatedAt: string;
+    tempPassword?: string;
+    tempPasswordExpiry?: string;
+    password?: string;
   };
   schoolName: string;
   address: string;
@@ -29,9 +45,8 @@ export interface Application {
   email: string;
   phone: number;
   numberOfStudents: number;
+  examType: string;
   applicationStatus: string;
-  createdAt: string;
-  updatedAt: string;
   __v: number;
   reviewNotes?: string;
   reviewedAt?: string;
@@ -144,9 +159,12 @@ export const schoolsApi = createApi({
     }),
 
     // Get school by ID
-    getSchoolById: builder.query<School, string>({
-      query: (id) => `schools/${id}`,
-      providesTags: (result, error, id) => [{ type: 'School', id }],
+    getSchoolById: builder.query<School, { id: string; examType?: string }>({
+      query: ({ id, examType }) => ({
+        url: `/applications/${id}?examType=${examType}`,
+        method: 'GET',
+      }),
+      providesTags: (result, error, { id }) => [{ type: 'School', id }],
     }),
 
     // Get school transactions
@@ -171,8 +189,9 @@ export const schoolsApi = createApi({
       limit?: number
       status?: 'not_applied' | 'all' | 'pending' | 'approved' | 'rejected' | 'onboarded' | 'completed'
       searchTerm?: string
+      examType?: 'UBEGPT' | 'UBETMS' | 'Common-entrance' | 'BECE' | 'BECE-resit' | 'UBEAT' | 'JSCBE' | 'WAEC'
     }>({
-      query: ({ page = 1, limit = 20, status, searchTerm } = {}) => {
+      query: ({ page = 1, limit = 20, status, searchTerm, examType } = {}) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
@@ -186,6 +205,11 @@ export const schoolsApi = createApi({
         // Add search term to server-side query
         if (searchTerm?.trim()) {
           params.append('search', searchTerm.trim())
+        }
+        
+        // Add exam type filter to server-side query
+        if (examType) {
+          params.append('examType', examType)
         }
         
         return `applications?${params.toString()}`
@@ -204,6 +228,16 @@ export const schoolsApi = createApi({
             hasPrevPage: response.meta?.hasPrevPage || false
           }
         }
+      },
+      providesTags: ['Application'],
+    }),
+
+    // Get applications by school ID
+    getApplicationsBySchoolId: builder.query<Application[], { schoolId: string; examType: string }>({
+      query: ({ schoolId, examType }) => `applications/${schoolId}?examType=${examType}`,
+      transformResponse: (response: Application[] | { data?: Application[] }) => {
+        if (Array.isArray(response)) return response
+        return response?.data || []
       },
       providesTags: ['Application'],
     }),
@@ -234,19 +268,26 @@ export const schoolsApi = createApi({
       appIds: string | string[]
       status: 'approved' | 'rejected' | 'completed',
       token: string
+      examType?: string
+      reviewNotes?: string
     }>({
-      queryFn: async ({ appIds, status, token }) => {
+      queryFn: async ({ appIds, status, token, examType, reviewNotes }) => {
         const ids = Array.isArray(appIds) ? appIds : [appIds]
         try {
           const responses = await Promise.all(
             ids.map(async (appId) => {
-              const response = await fetch(`${BASE_URL}/applications/${appId}/status`, {
+              const body: { status: string; reviewNotes?: string } = { status };
+              if (reviewNotes) {
+                body.reviewNotes = reviewNotes;
+              }
+              
+              const response = await fetch(`${BASE_URL}/applications/${appId}/status?examType=${examType}`, {
                 method: 'PATCH',
                 headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ status }),
+                body: JSON.stringify(body),
               })
               
               if (!response.ok) {
@@ -274,9 +315,9 @@ export const schoolsApi = createApi({
     }),
 
     // Reapprove rejected application
-    reapproveApplication: builder.mutation<Application, string>({
-      query: (applicationId) => ({
-        url: `applications/revert/${applicationId}`,
+    reapproveApplication: builder.mutation<Application, { applicationId: string; examType?: string }>({
+      query: ({ applicationId, examType }) => ({
+        url: `applications/revert/${applicationId}${examType ? `?examType=${examType}` : ''}`,
         method: 'PATCH',
       }),
       invalidatesTags: ['Application', 'School'],
@@ -299,6 +340,7 @@ export const {
   useGetSchoolByIdQuery,
   useGetSchoolTransactionsQuery,
   useGetApplicationsQuery,
+  useGetApplicationsBySchoolIdQuery,
   useGetAllStudentsQuery,
   useGetStudentsBySchoolIdQuery,
   useGetSchoolNamesQuery,

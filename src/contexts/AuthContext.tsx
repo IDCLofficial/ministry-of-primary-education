@@ -52,6 +52,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!success.error) {
+        // Set token and auth state BEFORE showing success message and navigating
+        const accessToken = success.data.accessToken;
+        localStorage.setItem('admin_token', accessToken);
+        localStorage.setItem('admin_email', email);
+        localStorage.setItem('admin_user', JSON.stringify(success.data.admin));
+        
+        // Update state synchronously
+        setToken(accessToken);
+        setIsAuthenticated(true);
+        setIsTokenLoaded(true);
+        
         Swal.fire({
           title: 'Success!', 
           text: 'Login successful!',
@@ -59,16 +70,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           timer: 1500,
           showConfirmButton: false
         });
-        
-        setIsAuthenticated(true);
-        localStorage.setItem('admin_token', success.data.accessToken);
-        localStorage.setItem('admin_email', email);
-        localStorage.setItem('admin_user', JSON.stringify(success.data.admin));
-        setToken(success.data.accessToken);
 
         console.log('Login successful, token received');
-        router.push('/admin/schools');
-        setLoading(false);
+        
+        // Small delay to ensure state updates propagate
+        setTimeout(() => {
+          setLoading(false);
+          router.push('/admin/schools');
+        }, 100);
       } else {
         throw new Error('Login failed - no token received');
       }

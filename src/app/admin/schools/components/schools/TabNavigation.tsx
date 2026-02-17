@@ -14,20 +14,16 @@ interface TabNavigationProps {
 
 export default function TabNavigation({ currentTab, onTabChange }: TabNavigationProps) {
   const tabs = [
-    { 
-      key: "all", 
-      label: "All",
-      description: "All applications regardless of status"
-    },
-    { 
-      key: "notApplied", 
-      label: "Not Applied",
-      description: "Schools that haven't applied yet"
-    },
+    // { 
+    //   key: "all", 
+    //   label: "All",
+    //   description: "All applications regardless of status"
+    // },
+
     { 
       key: "applied", 
-      label: "Applied",
-      description: "Pending applications awaiting review"
+      label: "Pending Review",
+      description: "Applications pending review"
     },
     { 
       key: "approved", 
@@ -39,11 +35,11 @@ export default function TabNavigation({ currentTab, onTabChange }: TabNavigation
       label: "Rejected",
       description: "Applications that have been rejected"
     },
-    { 
-      key: "onboarded", 
-      label: "Onboarded",
-      description: "Schools that have been onboarded"
-    },
+    // { 
+    //   key: "onboarded", 
+    //   label: "Onboarded",
+    //   description: "Schools that have been onboarded"
+    // },
     { 
       key: "completed", 
       label: "Completed",

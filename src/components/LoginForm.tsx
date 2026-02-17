@@ -30,6 +30,7 @@ export default function LoginForm() {
   const router = useRouter();
 
   const isAuthenticated = React.useMemo(() => {
+    if (typeof window === 'undefined') return false;
     const storedToken = localStorage.getItem('access_token');
     const storedSchool = localStorage.getItem('school');
     return !!storedToken && !!storedSchool;

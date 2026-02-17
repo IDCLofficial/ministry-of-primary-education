@@ -30,7 +30,7 @@ export function useSchoolStatusActions({
   const [updateApplicationStatus] = useUpdateApplicationStatusMutation();
 
   // --- Approve One ---
-  const handleApproveOne = async (appId: string) => {
+  const handleApproveOne = async (appId: string, examType?: string) => {
   
     const result = await Swal.fire({
       title: 'Confirm Approval',
@@ -62,7 +62,7 @@ export function useSchoolStatusActions({
           mutate((apps: Application[]) => apps?.filter((a: Application) => a._id !== appId), false);
         }
 
-        await updateApplicationStatus({ appIds: appId, status: "approved", token: token! }).unwrap();
+        await updateApplicationStatus({ appIds: appId, status: "approved", token: token!, examType }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -147,17 +147,69 @@ export function useSchoolStatusActions({
 
   // --- Reject Selected ---
   const handleRejectSelected = async (selectedApplications: string[]) => {
-    const result = await Swal.fire({
-      title: 'Confirm Rejection',
-      text: `Are you sure you want to reject ${selectedApplications.length} application${selectedApplications.length > 1 ? 's' : ''}?`,
+    // First dialog: Get rejection reason
+    const { value: formValues } = await Swal.fire({
+      title: `Reject ${selectedApplications.length} Application${selectedApplications.length > 1 ? 's' : ''}`,
+      html: `
+        <div style="text-align: left;">
+          <label for="swal-reason" style="display: block; margin-bottom: 8px; font-weight: 600;">Reason for Rejection:</label>
+          <select id="swal-reason" class="swal2-select" style="width: 70%; padding: 8px; margin-bottom: 16px; border: 1px solid #d1d5db; border-radius: 4px;">
+            <option value="">Select a reason...</option>
+            <option value="Incomplete documentation">Incomplete documentation</option>
+            <option value="Inaccurate student data">Inaccurate student data</option>
+            <option value="Missing required information">Missing required information</option>
+            <option value="Does not meet eligibility criteria">Does not meet eligibility criteria</option>
+            <option value="Duplicate application">Duplicate application</option>
+            <option value="Invalid school credentials">Invalid school credentials</option>
+            <option value="Other">Other (specify below)</option>
+          </select>
+          
+          <label for="swal-notes" style="display: block; margin-bottom: 8px; font-weight: 600;">Additional Notes (Optional):</label>
+          <textarea id="swal-notes" class="swal2-textarea" placeholder="Enter additional details..." style="width: 70%; min-height: 80px; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; resize: vertical;"></textarea>
+        </div>
+      `,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, reject them!'
+      confirmButtonText: 'Reject Applications',
+      cancelButtonText: 'Cancel',
+      focusConfirm: false,
+      customClass: {
+        popup: 'swal-wide'
+      },
+      didOpen: () => {
+        const popup = document.querySelector('.swal-wide') as HTMLElement;
+        if (popup) {
+          popup.style.width = window.innerWidth <= 768 ? '80%' : '40%';
+        }
+      },
+      preConfirm: () => {
+        const reason = (document.getElementById('swal-reason') as HTMLSelectElement).value;
+        const notes = (document.getElementById('swal-notes') as HTMLTextAreaElement).value;
+        
+        if (!reason) {
+          Swal.showValidationMessage('Please select a reason for rejection');
+          return false;
+        }
+        
+        // If "Other" is selected but no notes provided, show validation
+        if (reason === 'Other' && !notes.trim()) {
+          Swal.showValidationMessage('Please provide additional details when selecting "Other"');
+          return false;
+        }
+        
+        return { reason, notes };
+      }
     });
 
-    if (result.isConfirmed) {
+    if (formValues) {
+      // Construct review notes
+      let reviewNotes = formValues.reason;
+      if (formValues.notes.trim()) {
+        reviewNotes += `: ${formValues.notes.trim()}`;
+      }
+
       // Show loading
       Swal.fire({
         title: 'Processing...',
@@ -172,7 +224,12 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await updateApplicationStatus({ appIds: selectedApplications, status: "rejected", token: token! }).unwrap();
+        await updateApplicationStatus({ 
+          appIds: selectedApplications, 
+          status: "rejected", 
+          token: token!,
+          reviewNotes 
+        }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -246,7 +303,7 @@ export function useSchoolStatusActions({
   };
 
   // --- Send Confirmation Single ---
-  const handleSendConfirmationSingle = async (appId: string) => {
+  const handleSendConfirmationSingle = async (appId: string, examType?: string) => {
     const result = await Swal.fire({
       title: 'Send Confirmation',
       text: 'Are you sure you want to mark this school as completed?',
@@ -272,7 +329,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await updateApplicationStatus({ appIds: appId, status: "completed", token: token! }).unwrap();
+        await updateApplicationStatus({ appIds: appId, status: "completed", token: token!, examType }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -296,18 +353,70 @@ export function useSchoolStatusActions({
   };
 
   // --- Reject One ---
-  const handleRejectOne = async (appId: string) => {
-    const result = await Swal.fire({
-      title: 'Confirm Rejection',
-      text: 'Are you sure you want to reject this school application?',
+  const handleRejectOne = async (appId: string, examType?: string) => {
+    // First dialog: Get rejection reason
+    const { value: formValues } = await Swal.fire({
+      title: 'Reject Application',
+      html: `
+        <div style="text-align: left;">
+          <label for="swal-reason" style="display: block; margin-bottom: 8px; font-weight: 600;">Reason for Rejection:</label>
+          <select id="swal-reason" class="swal2-select" style="width: 70%; padding: 8px; margin-bottom: 16px; border: 1px solid #d1d5db; border-radius: 4px;">
+            <option value="">Select a reason...</option>
+            <option value="Incomplete documentation">Incomplete documentation</option>
+            <option value="Inaccurate student data">Inaccurate student data</option>
+            <option value="Missing required information">Missing required information</option>
+            <option value="Does not meet eligibility criteria">Does not meet eligibility criteria</option>
+            <option value="Duplicate application">Duplicate application</option>
+            <option value="Invalid school credentials">Invalid school credentials</option>
+            <option value="Other">Other (specify below)</option>
+          </select>
+          
+          <label for="swal-notes" style="display: block; margin-bottom: 8px; font-weight: 600;">Additional Notes (Optional):</label>
+          <textarea id="swal-notes" class="swal2-textarea" placeholder="Enter additional details..." style="width: 70%; min-height: 80px; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; resize: vertical;"></textarea>
+        </div>
+      `,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, reject it!'
+      confirmButtonText: 'Reject Application',
+      cancelButtonText: 'Cancel',
+      focusConfirm: false,
+      customClass: {
+        popup: 'swal-wide'
+      },
+      didOpen: () => {
+        const popup = document.querySelector('.swal-wide') as HTMLElement;
+        if (popup) {
+          popup.style.width = window.innerWidth <= 768 ? '80%' : '40%';
+        }
+      },
+      preConfirm: () => {
+        const reason = (document.getElementById('swal-reason') as HTMLSelectElement).value;
+        const notes = (document.getElementById('swal-notes') as HTMLTextAreaElement).value;
+        
+        if (!reason) {
+          Swal.showValidationMessage('Please select a reason for rejection');
+          return false;
+        }
+        
+        // If "Other" is selected but no notes provided, show validation
+        if (reason === 'Other' && !notes.trim()) {
+          Swal.showValidationMessage('Please provide additional details when selecting "Other"');
+          return false;
+        }
+        
+        return { reason, notes };
+      }
     });
 
-    if (result.isConfirmed) {
+    if (formValues) {
+      // Construct review notes
+      let reviewNotes = formValues.reason;
+      if (formValues.notes.trim()) {
+        reviewNotes += `: ${formValues.notes.trim()}`;
+      }
+
       // Show loading
       Swal.fire({
         title: 'Processing...',
@@ -327,7 +436,13 @@ export function useSchoolStatusActions({
           mutate((apps: Application[]) => apps?.filter((a: Application) => a._id !== appId), false);
         }
 
-        await updateApplicationStatus({ appIds: appId, status: "rejected", token: token! }).unwrap();
+        await updateApplicationStatus({ 
+          appIds: appId, 
+          status: "rejected", 
+          token: token!, 
+          examType,
+          reviewNotes 
+        }).unwrap();
         
         Swal.fire({
           title: 'Success!',
@@ -352,7 +467,7 @@ export function useSchoolStatusActions({
   };
 
   // --- Reapprove Rejected Application ---
-  const handleReapproveOne = async (appId: string) => {
+  const handleReapproveOne = async (appId: string, examType?: string) => {
     const result = await Swal.fire({
       title: 'Reapprove Application',
       text: 'Are you sure you want to reapprove this rejected application?',
@@ -378,7 +493,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await reapproveApplication(appId).unwrap();
+        await reapproveApplication({ applicationId: appId, examType }).unwrap();
         
         Swal.fire({
           title: 'Success!',

@@ -3,7 +3,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { 
   useGetSchoolByIdQuery, 
   useGetSchoolTransactionsQuery,
-  useGetApplicationsQuery
+  useGetApplicationsBySchoolIdQuery
 } from "@/app/admin/schools/store/api/schoolsApi";
 import { useSchoolStatusActions } from '@/app/admin/schools/components/schools/SchoolStatusActions';
 import { Application } from '@/app/admin/schools/store/api/schoolsApi';
@@ -21,14 +21,26 @@ function SchoolDetailsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const schoolId = params.id as string;
-  const applicationId = searchParams.get('ad'); // Get application ID from query params
+  const examTypeParam = searchParams.get('examType'); // Get exam type from URL
+  const appIdParam = searchParams.get('appId'); // Get application ID from URL
+
+  function isApplication(obj: unknown): obj is Application {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "applicationStatus" in obj
+  );
+}
 
   // RTK Query hooks
   const { 
     data: school, 
     isLoading: schoolLoading, 
     error: schoolError 
-  } = useGetSchoolByIdQuery(schoolId, {
+  } = useGetSchoolByIdQuery({
+    id: schoolId,
+    examType: examTypeParam || undefined
+  }, {
     skip: !schoolId
   });
 
@@ -37,14 +49,6 @@ function SchoolDetailsPageContent() {
     isLoading: transactionsLoading 
   } = useGetSchoolTransactionsQuery(schoolId, {
     skip: !schoolId || school?.status === 'not applied'
-  });
-
-  // Fetch applications to get applicationStatus
-  const { 
-    data: applicationsData, 
-    isLoading: applicationsLoading 
-  } = useGetApplicationsQuery({}, {
-    skip: !schoolId
   });
 
   // Initialize SchoolStatusActions hook
@@ -63,42 +67,15 @@ function SchoolDetailsPageContent() {
 
   const transactions = transactionsData?.data || [];
 
-  // Find the application for this school to get applicationStatus
-  const schoolApplication = applicationsData?.data?.find(
-    app => app.school?._id === schoolId
-  );
+  // The school object from useGetSchoolByIdQuery is actually the full application object
+  // It contains _id, applicationStatus, reviewNotes, etc.
+  const applicationId = school?._id || null;
+ const hasApplication = isApplication(school);
+const applicationForReview: Application | null = hasApplication ? school : null;
 
-  // Determine the status: use applicationStatus if available, otherwise fallback to school.status
-  const effectiveStatus = schoolApplication?.applicationStatus || school?.status;
 
-  // Create a fallback application object for declined/rejected schools without application data
-  const applicationForReview: Application | null = schoolApplication || ((effectiveStatus === 'declined' || effectiveStatus === 'rejected') ? {
-    _id: schoolId,
-    school: school!,
-    schoolName: school?.schoolName || '',
-    address: school?.address || '',
-    schoolCode: '',
-    principal: school?.principal || '',
-    email: school?.email || '',
-    phone: school?.phone || 0,
-    numberOfStudents: school?.numberOfStudents || 0,
-    applicationStatus: effectiveStatus as 'declined' | 'rejected',
-    createdAt: school?.createdAt || '',
-    updatedAt: school?.updatedAt || '',
-    __v: 0
-  } : null);
-
-  // Create enhanced school object with Application data for completed schools
-  // At this point, we know school exists due to the guard clause above
-  const enhancedSchool = schoolApplication ? {
-    ...school!,
-    principal: schoolApplication.principal || school!.principal || '',
-    email: schoolApplication.email || school!.email || '',
-    address: schoolApplication.address || school!.address || '',
-    schoolName: schoolApplication.schoolName || school!.schoolName || '',
-    phone: schoolApplication.phone || school!.phone || 0,
-    numberOfStudents: schoolApplication.numberOfStudents || school!.numberOfStudents || 0
-  } : school!;
+  // Use school data directly
+  const enhancedSchool = school!;
 
   // Use custom hooks for calculations and export
   const {
@@ -119,41 +96,41 @@ function SchoolDetailsPageContent() {
   // Handle status actions using the SchoolStatusActions hook
   const handleApproveSchool = async () => {
     if (!applicationId) {
-      console.error('No application ID available. Make sure you navigated from the SchoolTable with appId query param.');
+      console.error('No application ID available.');
       return;
     }
     
-    await handleApproveOne(applicationId);
+    await handleApproveOne(applicationId, examTypeParam || undefined);
   };
 
   const handleRejectSchool = async () => {
     if (!applicationId) {
-      console.error('No application ID available. Make sure you navigated from the SchoolTable with appId query param.');
+      console.error('No application ID available.');
       return;
     }
     
-    await handleRejectOne(applicationId);
+    await handleRejectOne(applicationId, examTypeParam || undefined);
   };
 
   const handleSendConfirmation = async () => {
     if (!applicationId) {
-      console.error('No application ID available. Make sure you navigated from the SchoolTable with appId query param.');
+      console.error('No application ID available.');
       return;
     }
     
-    await handleSendConfirmationSingle(applicationId);
+    await handleSendConfirmationSingle(applicationId, examTypeParam || undefined);
   };
 
   const handleReapproveSchool = async () => {
     if (!applicationId) {
-      console.error('No application ID available. Make sure you navigated from the SchoolTable with appId query param.');
+      console.error('No application ID available.');
       return;
     }
     
-    await handleReapproveOne(applicationId);
+    await handleReapproveOne(applicationId, examTypeParam || undefined);
   };
 
-  if (schoolLoading || applicationsLoading) {
+  if (schoolLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -179,15 +156,19 @@ function SchoolDetailsPageContent() {
     );
   }
 
-  // Check if this is an applied or rejected school
-  const isAppliedSchool = (effectiveStatus === 'pending' || effectiveStatus === 'declined' || effectiveStatus === 'rejected')
+  // Check if this is a pending or rejected application (show ApplicationReviewLayout)
+  const showApplicationReview = applicationForReview?.applicationStatus === 'pending' || applicationForReview?.applicationStatus === 'rejected';
+  console.log('Show Application Review:', showApplicationReview);
+  console.log('Application For Review:', applicationForReview);
+  console.log('Application Status:', applicationForReview?.applicationStatus);
+  console.log('Has Application:', hasApplication);
 
   return (
     
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          {isAppliedSchool && applicationForReview ? (
-            /* Application Review Layout for Applied/Rejected Schools */
+          {showApplicationReview && applicationForReview ? (
+            /* Application Review Layout for Pending/Rejected Applications */
             <ApplicationReviewLayout
               application={applicationForReview as Application}
               applicationId={applicationId}

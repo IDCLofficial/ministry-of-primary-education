@@ -13,6 +13,7 @@ import PortalAccessModal from "@/components/PortalAccessModal";
 export default function Home() {
   return (
     <>
+    
       {/* Portal Access Modal */}
       <PortalAccessModal />
      

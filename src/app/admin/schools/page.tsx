@@ -1,26 +1,27 @@
 'use client'
 
-import StatsCards from '@/app/admin/schools/components/schools/StatsCards'
+import ExamStatsCards from '@/app/admin/schools/components/schools/ExamStatsCards'
 import NotificationBanner from '@/app/admin/schools/components/NotificationBanner'
 import { useSchoolManagement } from '@/hooks/useSchoolManagement'
-import SchoolTableRTK from '@/app/admin/schools/components/schools/SchoolTable'
-import { AuthProvider } from '@/contexts/AuthContext'
-import ProtectedRoute from '@/app/admin/schools/components/ProtectedRoute'
-import { useActivityTimeout } from '@/hooks/useActivityTimeout'
+import ExamSchoolTable from '@/app/admin/schools/components/schools/ExamSchoolTable'
+import { useGetApplicationsQuery } from '@/app/admin/schools/store/api/schoolsApi'
+import { FaSchool } from 'react-icons/fa'
 
-function AdminDashboardContent() {
-  
-  // Initialize activity timeout (5 minutes of inactivity)
-  useActivityTimeout({
-    timeoutMinutes: 5,
-    warningMinutes: 1,
-    redirectPath: '/admin'
-  });
-  
+export default function AdminDashboard() {
   const {
     notification,
     clearNotification
   } = useSchoolManagement()
+
+  const { data: applicationsResponse } = useGetApplicationsQuery({
+    examType: 'WAEC',
+    limit: 20
+  })
+
+  const applications = applicationsResponse?.data || []
+  const totalStudents = applications.reduce((sum, app) => sum + app.numberOfStudents, 0)
+  const approvedApplications = applications.filter(app => app.applicationStatus === 'approved').length
+  const pendingApplications = applications.filter(app => app.applicationStatus === 'pending').length
 
 
   return (
@@ -36,7 +37,13 @@ function AdminDashboardContent() {
         {/* Main Content */}
         <div className="p-6">
           {/* Statistics Cards */}
-          <StatsCards />
+          <ExamStatsCards
+            totalApplications={applications.length}
+            totalStudents={totalStudents}
+            approvedApplications={approvedApplications}
+            pendingApplications={pendingApplications}
+            icon={FaSchool}
+          />
 
           {/* Schools Section */}
           <div className="mt-8">
@@ -44,7 +51,7 @@ function AdminDashboardContent() {
 
             {/* Schools Table */}
             <div className="mb-10">
-              <SchoolTableRTK/>
+              <ExamSchoolTable examType="WAEC" />
             </div>
           </div>
         </div>
@@ -53,12 +60,3 @@ function AdminDashboardContent() {
   )
 }
 
-export default function AdminDashboard() {
-  return (
-    <AuthProvider>
-      <ProtectedRoute>
-        <AdminDashboardContent />
-      </ProtectedRoute>
-    </AuthProvider>
-  )
-}
