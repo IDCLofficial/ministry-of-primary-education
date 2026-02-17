@@ -24,6 +24,14 @@ function SchoolDetailsPageContent() {
   const examTypeParam = searchParams.get('examType'); // Get exam type from URL
   const appIdParam = searchParams.get('appId'); // Get application ID from URL
 
+  function isApplication(obj: unknown): obj is Application {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "applicationStatus" in obj
+  );
+}
+
   // RTK Query hooks
   const { 
     data: school, 
@@ -62,22 +70,9 @@ function SchoolDetailsPageContent() {
   // The school object from useGetSchoolByIdQuery is actually the full application object
   // It contains _id, applicationStatus, reviewNotes, etc.
   const applicationId = school?._id || null;
-  const applicationStatus = (school as any)?.applicationStatus;
-  
-  // Check if this is an application (has applicationStatus) vs just a school
-  const hasApplication = !!applicationStatus;
-  
-  // Debug logging
-  console.log('=== DEBUG INFO ===');
-  console.log('School/Application:', school);
-  console.log('Exam Type Param:', examTypeParam);
-  console.log('Application ID:', applicationId);
-  console.log('Application Status:', applicationStatus);
-  console.log('Has Application:', hasApplication);
-  console.log('==================');
+ const hasApplication = isApplication(school);
+const applicationForReview: Application | null = hasApplication ? school : null;
 
-  // The school object IS the application, so we can use it directly
-  const applicationForReview: Application | null = hasApplication ? (school as any) : null;
 
   // Use school data directly
   const enhancedSchool = school!;
