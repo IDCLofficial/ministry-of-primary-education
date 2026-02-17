@@ -315,9 +315,9 @@ export const schoolsApi = createApi({
     }),
 
     // Reapprove rejected application
-    reapproveApplication: builder.mutation<Application, string>({
-      query: (applicationId) => ({
-        url: `applications/revert/${applicationId}`,
+    reapproveApplication: builder.mutation<Application, { applicationId: string; examType?: string }>({
+      query: ({ applicationId, examType }) => ({
+        url: `applications/revert/${applicationId}${examType ? `?examType=${examType}` : ''}`,
         method: 'PATCH',
       }),
       invalidatesTags: ['Application', 'School'],

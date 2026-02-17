@@ -493,7 +493,7 @@ export function useSchoolStatusActions({
       });
 
       try {
-        await reapproveApplication(appId).unwrap();
+        await reapproveApplication({ applicationId: appId, examType }).unwrap();
         
         Swal.fire({
           title: 'Success!',
