@@ -12,7 +12,7 @@ interface DashboardLayoutProps {
 }
 
 const navigationItems = [
-  { name: 'BECE', href: '/bece-portal' },
+  { name: 'BECE', href: '/exam-portal' },
   { name: 'Schools', href: '/admin/schools' },
 ]
 

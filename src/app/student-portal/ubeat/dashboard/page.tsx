@@ -7,8 +7,8 @@ import Image from 'next/image'
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
 import Paywall from './components/Paywall'
-import { UBEATStudent } from '@/app/bece-portal/dashboard/schools/types/student.types'
-import { generateUBEATCertificate } from '@/app/bece-portal/dashboard/schools/[schoolId]/ubeat/utils/certificateGenerator'
+import { UBEATStudent } from '@/app/exam-portal/dashboard/schools/types/student.types'
+import { generateUBEATCertificate } from '@/app/exam-portal/dashboard/schools/[schoolId]/ubeat/utils/certificateGenerator'
 import { useGetUBEATResultQuery } from '../../store/api/studentApi'
 
 export default function UBEATDashboard() {
