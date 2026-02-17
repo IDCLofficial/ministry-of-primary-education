@@ -32,10 +32,6 @@ const faqData: FAQItem[] = [
     {
         question: 'What format should my exam number be?',
         answer: 'BECE accepts: XX/000/000, XX/000/0000/000, or XX/XX/000/0000 (e.g., ok/977/2025 or ok/977/2025/001). Use lowercase letters and include all forward slashes.'
-    },
-    {
-        question: 'What payment methods are accepted?',
-        answer: 'We accept debit cards (Visa, Mastercard, Verve), bank transfers, and USSD codes. All payments are processed securely through certified payment gateways.'
     }
 ]
 
@@ -69,7 +65,7 @@ export default function FAQ() {
             </div>
 
             {/* Still Have Questions */}
-            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-8 flex items-center justify-between">
+            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="">
                     <h3 className="text-lg md:text-xl font-bold text-gray-900">
                         Still have questions?
@@ -80,7 +76,7 @@ export default function FAQ() {
                 </div>
                 <Link
                     href="/student-portal/faq"
-                    className="inline-flex text-sm items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-all duration-200 cursor-pointer group"
+                    className="inline-flex text-sm items-center gap-2 px-4 py-2 w-full md:w-fit justify-center bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-all duration-200 cursor-pointer group shadow-[0_4px_rgba(0,0,0,0.25)] active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2"
                 >
                     View All FAQs
                     <IoArrowForward className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

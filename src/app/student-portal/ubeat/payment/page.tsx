@@ -1,18 +1,17 @@
 'use client'
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { IoCheckmarkCircle, IoCloseCircle, IoCard, IoShieldCheckmark } from 'react-icons/io5'
+import { IoCheckmarkCircle, IoCloseCircle, IoCard, IoShieldCheckmark, IoPhonePortrait, IoWallet } from 'react-icons/io5'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
 import animationData from '../../assets/students.json'
-import Link from 'next/link'
 
 function PaymentContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'success' | 'failed'>('pending')
-    const [studentData, setStudentData] = useState<any>(null)
+    const [studentData, setStudentData] = useState<{ fullName: string, schoolName: string, lga: string, examYear: number } | null>(null);
     const [paymentReference, setPaymentReference] = useState('')
 
     useEffect(() => {
@@ -133,9 +132,6 @@ function PaymentContent() {
                             <span className='text-2xl md:text-3xl font-bold'>
                                 <abbr title="Universal Basic Education Achievement Test" className="no-underline">UBEAT</abbr> Payment
                             </span>
-                            <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full border border-green-200">
-                                Secure
-                            </span>
                         </div>
                         <p className='text-sm md:text-base text-gray-600 max-w-md'>
                             Complete your payment to access your results
@@ -147,7 +143,7 @@ function PaymentContent() {
             <div className="flex-1 flex items-center justify-center p-4">
                 <div className="w-full max-w-md relative z-10">
                     {/* Payment Card */}
-                    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 animate-fadeIn-y hover:shadow-2xl transition-all duration-300">
+                    <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-8 animate-fadeIn-y hover:shadow-2xl transition-all duration-300">
                         {paymentStatus === 'pending' && (
                             <>
                                 {/* Student Details */}
@@ -190,7 +186,7 @@ function PaymentContent() {
                                     <div className="flex items-center gap-2">
                                         <IoShieldCheckmark className="w-5 h-5 text-green-600 flex-shrink-0" />
                                         <p className="text-xs text-green-800">
-                                            Your payment is secured with 256-bit encryption
+                                            Your payment is secured
                                         </p>
                                     </div>
                                 </div>
@@ -199,9 +195,9 @@ function PaymentContent() {
                                 <div className="mb-6">
                                     <p className="text-xs text-gray-600 mb-3 font-medium">Accepted Payment Methods:</p>
                                     <div className="flex gap-2 flex-wrap">
-                                        <span className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">💳 Debit Card</span>
-                                        <span className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">🏦 Bank Transfer</span>
-                                        <span className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">📱 USSD</span>
+                                        <span className="flex-1 justify-center border border-gray-200 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-full font-medium flex items-center gap-1"><IoCard className="w-4 h-4" /> Debit Card</span>
+                                        <span className="flex-1 justify-center border border-gray-200 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-full font-medium flex items-center gap-1"><IoWallet className="w-4 h-4" /> Bank Transfer</span>
+                                        <span className="flex-1 justify-center border border-gray-200 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-full font-medium flex items-center gap-1"><IoPhonePortrait className="w-4 h-4" /> USSD</span>
                                     </div>
                                 </div>
 
@@ -209,14 +205,14 @@ function PaymentContent() {
                                 <div className="space-y-3">
                                     <button
                                         onClick={handlePayment}
-                                        className="w-full flex items-center justify-center px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200 active:scale-95 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 group"
+                                        className="w-full flex items-center justify-center px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200 active:scale-95 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 group cursor-pointer"
                                     >
                                         <IoCard className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                                         Proceed to Payment
                                     </button>
                                     <button
                                         onClick={handleCancel}
-                                        className="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 active:scale-95 border border-gray-300"
+                                        className="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 active:scale-95 border border-gray-300 cursor-pointer"
                                     >
                                         Cancel Payment
                                     </button>
@@ -267,15 +263,6 @@ function PaymentContent() {
                                 >
                                     Try Again
                                 </button>
-                            </div>
-                        )}
-
-                        {/* Footer Link */}
-                        {paymentStatus === 'pending' && (
-                            <div className="mt-6 pt-6 border-t border-gray-200">
-                                <p className="text-xs text-center text-gray-500">
-                                    Need help? <Link href="/student-portal" className="text-green-600 hover:text-green-700 font-medium transition-all duration-150">Contact Support</Link>
-                                </p>
                             </div>
                         )}
                     </div>

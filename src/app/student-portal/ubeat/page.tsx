@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { IoPersonCircle, IoLockClosed, IoCalendarOutline, IoSwapHorizontal } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
@@ -10,10 +10,14 @@ import { useDebounce } from '../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
+import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation } from '../store/api/studentApi'
 
-// Regex pattern for exam number validation (e.g., ok/977/2025 or ok/977/2025(1))
-const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3}\/\d{3,4}(\(\d\))?$/
-const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3}\/\d{4}\/\d{3}$/
+// Regex pattern for exam number validation (e.g., XX/000/000)
+const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
+// Regex pattern for exam number validation (e.g., XX/000/0000/000)
+const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3,4}\/\d{4}\/\d{3,4}$/
+// Regex pattern for exam number validation (e.g., XX/XX/000/0000)
+const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}$/
 
 // Imo State LGAs
 const IMO_STATE_LGAS = [
@@ -46,26 +50,6 @@ const IMO_STATE_LGAS = [
     'Owerri West'
 ]
 
-// TypeScript interface for API response
-interface UBEATStudentResult {
-    _id: string
-    name: string
-    examNo: string
-    age: number
-    sex: string
-    school: string
-    subjects: {
-        [key: string]: {
-            ca: number
-            exam: number
-            total: number
-            grade: string
-        }
-    }
-    createdAt: string
-    updatedAt: string
-}
-
 // Alternative form data
 interface AlternativeFormData {
     fullName: string
@@ -76,10 +60,12 @@ interface AlternativeFormData {
 
 export default function UBEATLoginPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [examNo, setExamNo] = useState('')
-    const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
-    const [showAlternativeForm, setShowAlternativeForm] = useState(false)
+    
+    // Read form type from URL search params
+    const showAlternativeForm = searchParams.get('form') === 'alternative'
     
     // Alternative form states
     const [altFormData, setAltFormData] = useState<AlternativeFormData>({
@@ -88,7 +74,12 @@ export default function UBEATLoginPage() {
         lga: '',
         examYear: new Date().getFullYear().toString()
     })
-    const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+    // RTK Query hooks
+    const [getUBEATResult, { isLoading }] = useLazyGetUBEATResultQuery()
+    const [findUBEATResult, { isLoading: isFindingResult }] = useFindUBEATResultMutation()
+    
+    // Combined loading state for alternative form
+    const isProcessingPayment = isFindingResult
 
     // Fetch school names based on selected LGA
     const { data: schoolNames, isLoading: isLoadingSchoolNames, isFetching } = useGetSchoolNamesQuery(
@@ -109,17 +100,17 @@ export default function UBEATLoginPage() {
 
     const debouncedExamNo = useDebounce(examNo, 500)
 
-    const canProceed = debouncedExamNo.length >= 10 && (EXAM_NO_REGEX.test(debouncedExamNo) || EXAM_NO_REGEX_02.test(debouncedExamNo))
+    const canProceed = debouncedExamNo.length >= 10 && (EXAM_NO_REGEX.test(debouncedExamNo) || EXAM_NO_REGEX_02.test(debouncedExamNo) || EXAM_NO_REGEX_03.test(debouncedExamNo))
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
     const isMaintenanceMode = !API_BASE_URL
 
     // Check if alternative form is valid
-    const isAltFormValid = altFormData.fullName.trim().length >= 3 && 
-                          altFormData.schoolName.trim().length >= 3 && 
-                          altFormData.lga.trim().length >= 2 && 
-                          altFormData.examYear.trim().length === 4 &&
-                          !isLoadingSchoolNames && 
-                          !isFetching
+    const isAltFormValid = altFormData.fullName.trim().length >= 3 &&
+        altFormData.schoolName.trim().length >= 3 &&
+        altFormData.lga.trim().length >= 2 &&
+        altFormData.examYear.trim().length === 4 &&
+        !isLoadingSchoolNames &&
+        !isFetching
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -131,149 +122,113 @@ export default function UBEATLoginPage() {
         }
 
         // Validate exam number format
-        if (!EXAM_NO_REGEX.test(examNo) && !EXAM_NO_REGEX_02.test(examNo)) {
+        if (!EXAM_NO_REGEX.test(examNo) && !EXAM_NO_REGEX_02.test(examNo) && !EXAM_NO_REGEX_03.test(examNo)) {
             setError('Hmm, that doesn\'t look right. Please use format: xx/000/000 or xx/000/000(0) (e.g., ok/977/2025 or ok/977/2025(1))')
             return
         }
 
-        setIsLoading(true)
-
         try {
-            const response = await fetch(`${API_BASE_URL}/ubeat/result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                }
-            })
+            const result = await getUBEATResult(examNo).unwrap()
 
-            // Check if response is ok
-            if (!response.ok) {
-                if (response.status === 404) {
-                    setError('We couldn\'t find your results. Please check your exam number and try again.')
-                } else if (response.status === 400) {
-                    setError('This exam number doesn\'t seem valid. Please double-check and try again.')
-                } else if (response.status === 500) {
-                    setError('Our system is having a moment. Please try again in a few minutes.')
-                } else {
-                    setError(`Something unexpected happened (Error ${response.status}). Please try again.`)
-                }
-
-                console.error('Login failed:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    url: response.url
-                })
-                setIsLoading(false)
-                return
-            }
-
-            // Check if response has content
-            const contentType = response.headers.get('content-type')
-            if (!contentType || !contentType.includes('application/json')) {
-                console.error('Invalid response type:', contentType)
-                setError('Received invalid response from server. Please try again.')
-                setIsLoading(false)
-                return
-            }
-
-            // Parse response
-            const text = await response.text()
-            if (!text || text.trim() === '') {
-                console.error('Empty response received')
-                setError('Server returned empty response. Please try again or contact support.')
-                setIsLoading(false)
-                return
-            }
-
-            let data: UBEATStudentResult
-            try {
-                data = JSON.parse(text) as UBEATStudentResult
-            } catch (parseError) {
-                console.error('JSON parse error:', parseError, 'Response text:', text)
-                setError('Received malformed response from server. Please try again.')
-                setIsLoading(false)
-                return
-            }
-
-            // Validate data structure according to API response
-            if (!data || !data.examNo || !data.name || !data.school) {
-                console.error('Invalid data structure:', data)
+            // Validate data structure
+            if (!result || !result.examNumber || !result.studentName) {
+                console.error('Invalid data structure:', result)
                 setError('We couldn\'t load your results. Please try again or contact support.')
-                setIsLoading(false)
                 return
             }
 
-            // Validate subjects object exists
-            if (!data.subjects || typeof data.subjects !== 'object' || Object.keys(data.subjects).length === 0) {
-                console.error('Invalid subjects data:', data.subjects)
-                setError('Your results data is incomplete. Please contact support.')
-                setIsLoading(false)
-                return
-            }
+            // Store only exam number and exam type (data will be fetched via RTK Query in dashboard)
+            localStorage.setItem('student_exam_no', examNo)
+            localStorage.setItem('selected_exam_type', 'ubeat')
 
-            // Store the complete student data in localStorage
-            localStorage.setItem('student_data', JSON.stringify(data))
-            localStorage.setItem('student_exam_no', data.examNo)
-            localStorage.setItem('selected_exam_type', 'ubeat') // Store exam type
-
-            toast.success(`Welcome ${data.name}! Loading your results... 🎉`)
+            toast.success(`Welcome ${result.studentName}! Loading your results... 🎉`)
             router.push('/student-portal/ubeat/dashboard')
-        } catch (error) {
+        } catch (error: unknown) {
+            const errorObject = error as { status: string | number }
             console.error('Login error:', error)
 
-            // Check for specific error types
-            if (error instanceof TypeError && error.message.includes('fetch')) {
+            // Handle RTK Query errors
+            if (errorObject.status === 404) {
+                setError('We couldn\'t find your results. Please check your exam number and try again.')
+            } else if (errorObject.status === 400) {
+                setError('This exam number doesn\'t seem valid. Please double-check and try again.')
+            } else if (errorObject.status === 500) {
+                setError('Our system is having a moment. Please try again in a few minutes.')
+            } else if (errorObject.status === 'FETCH_ERROR') {
                 setError('Network error: Unable to connect to server. Please check your internet connection.')
-            } else if (error instanceof SyntaxError) {
+            } else if (errorObject.status === 'PARSING_ERROR') {
                 setError('Server returned invalid data. Please try again.')
             } else {
                 setError('We\'re having trouble connecting. Please check your internet and try again.')
             }
-
-            setIsLoading(false)
         }
     }
 
     const handleAlternativeFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         if (!isAltFormValid) {
             toast.error('Please fill in all fields correctly')
             return
         }
 
-        setIsProcessingPayment(true)
-
         try {
-            // Store form data temporarily
-            localStorage.setItem('ubeat_alt_form_data', JSON.stringify(altFormData))
-            
-            // Simulate payment initialization
-            await new Promise(resolve => setTimeout(resolve, 1500))
-            
-            // In a real implementation, you would:
-            // 1. Call payment gateway API (Paystack, Flutterwave, etc.)
-            // 2. Get payment URL
-            // 3. Redirect to payment page
-            // 4. Handle callback after payment
-            
-            toast.success('Redirecting to payment gateway...', {
-                icon: '💳',
-                duration: 2000
-            })
-            
-            // For now, redirect to a payment page (you'll need to create this)
-            router.push(`/student-portal/ubeat/payment?ref=${Date.now()}`)
-            
-        } catch (error) {
-            console.error('Payment initialization error:', error)
-            toast.error('Failed to initialize payment. Please try again.')
-            setIsProcessingPayment(false)
+            const result = await findUBEATResult({
+                schoolId: altFormData.schoolName,
+                examYear: parseInt(altFormData.examYear),
+                studentName: altFormData.fullName,
+                lga: altFormData.lga
+            }).unwrap()
+
+            // Validate data structure
+            if (!result || !result.examNumber || !result.studentName) {
+                console.error('Invalid data structure:', result)
+                setError('We couldn\'t load your results. Please try again or contact support.')
+                return
+            }
+
+            // Store only exam number and exam type (data will be fetched via RTK Query in dashboard)
+            localStorage.setItem('student_exam_no', result.examNumber)
+            localStorage.setItem('selected_exam_type', 'ubeat')
+
+            toast.success(`Welcome ${result.studentName}! Loading your results... 🎉`)
+            router.push('/student-portal/ubeat/dashboard')
+        } catch (error: unknown) {
+            const errorObject = error as { status: string | number }
+            console.error('Find result error:', error)
+
+            // Handle RTK Query errors
+            if (errorObject.status === 404) {
+                setError('We couldn\'t find your results with the provided information. Please check your details and try again.')
+            } else if (errorObject.status === 400) {
+                setError('Invalid information provided. Please double-check your details.')
+            } else if (errorObject.status === 500) {
+                setError('Our system is having a moment. Please try again in a few minutes.')
+            } else if (errorObject.status === 'FETCH_ERROR') {
+                setError('Network error: Unable to connect to server. Please check your internet connection.')
+            } else if (errorObject.status === 'PARSING_ERROR') {
+                setError('Server returned invalid data. Please try again.')
+            } else {
+                setError('We\'re having trouble finding your results. Please check your information and try again.')
+            }
         }
     }
 
     const toggleForm = () => {
-        setShowAlternativeForm(!showAlternativeForm)
+        const params = new URLSearchParams(searchParams.toString())
+
+        if (showAlternativeForm) {
+            // Going back to exam number form - remove the param
+            params.delete('form')
+        } else {
+            // Going to alternative form - add the param
+            params.set('form', 'alternative')
+        }
+
+        // Update URL with new params
+        router.push(`?${params.toString()}`)
+
+        // Reset form states
         setError('')
         setExamNo('')
         setAltFormData({
@@ -289,10 +244,10 @@ export default function UBEATLoginPage() {
             <div className='absolute h-full w-full inset-0 z-[0]'>
                 <Image
                     src="/images/asset.png"
-                    alt="logo"
+                    alt="pattern background"
                     fill
                     className='object-cover hue-rotate-[0deg] saturate-200 brightness-[0.75] scale-x-[-1]'
-                    title='Imo State Ministry of Primary and Secondary Education logo'
+                    title='pattern background'
                 />
             </div>
             {/* Lottie Animation - Bottom Right */}
@@ -311,21 +266,20 @@ export default function UBEATLoginPage() {
             {/* Ministry Header */}
             {isMaintenanceMode ? null : <header className="w-full pt-8 pb-6 px-4 relative z-20">
                 <div className="flex flex-col justify-center gap-3 items-center">
-                    <Image
-                        src="/images/ministry-logo.png"
-                        alt="logo"
-                        width={60}
-                        height={60}
-                        className='object-contain'
-                        title='Imo State Ministry of Primary and Secondary Education logo'
-                    />
+                    <Link href="/student-portal">
+                        <Image
+                            src="/images/ministry-logo.png"
+                            alt="logo"
+                            width={60}
+                            height={60}
+                            className='object-contain'
+                            title='Imo State Ministry of Primary and Secondary Education logo'
+                        />
+                    </Link>
                     <div className="text-center">
                         <div className="flex items-center justify-center gap-2 mb-1">
                             <span className='text-2xl md:text-3xl font-bold'>
                                 <abbr title="Universal Basic Education Achievement Test" className="no-underline">UBEAT</abbr>
-                            </span>
-                            <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full border border-green-200">
-                                Active
                             </span>
                         </div>
                         <p className='text-sm md:text-base text-gray-600 max-w-md'>
@@ -377,7 +331,7 @@ export default function UBEATLoginPage() {
                                     Welcome, Student! 👋
                                 </h2>
                                 <p className="text-sm text-gray-600">
-                                    {showAlternativeForm 
+                                    {showAlternativeForm
                                         ? "Don't worry! You can still access your UBEAT results by providing your basic information below."
                                         : "We're excited to share your UBEAT (Universal Basic Education Achievement Test) results with you. Simply enter your exam number below to get started."
                                     }
@@ -455,7 +409,11 @@ export default function UBEATLoginPage() {
                                     <button
                                         type="submit"
                                         disabled={isLoading || !canProceed}
-                                        className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer active:scale-95 active:opacity-90 group"
+                                        className={
+                                            `w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer group
+                                             ${isLoading || !canProceed ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_4px_rgba(0,0,0,0.25)] active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2'}
+                                             `
+                                        }
                                     >
                                         {isLoading ? (
                                             <>
@@ -464,7 +422,7 @@ export default function UBEATLoginPage() {
                                             </>
                                         ) : (
                                             <>
-                                                <IoLockClosed className="w-5 h-5 mr-2 group-hover:animate-bounce" />
+                                                <IoLockClosed className={`w-5 h-5 mr-2 ${isLoading || !canProceed ? '' : 'group-hover:animate-bounce'}`} />
                                                 View My Results
                                             </>
                                         )}
@@ -497,29 +455,29 @@ export default function UBEATLoginPage() {
                                                 type="text"
                                                 id="fullName"
                                                 value={altFormData.fullName}
-                                                onChange={(e) => setAltFormData({...altFormData, fullName: e.target.value})}
+                                                onChange={(e) => setAltFormData({ ...altFormData, fullName: e.target.value })}
                                                 placeholder="Enter your full name"
-                                                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200"
+                                                className="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200"
                                                 disabled={isProcessingPayment}
                                             />
                                         </div>
                                     </div>
 
                                     {/* LGA */}
-                                    <div className="group">
+                                    <div className="group relative">
                                         <label htmlFor="lga" className="block text-sm font-medium text-gray-700 mb-2">
                                             Local Government Area (LGA) <span className="text-red-500">*</span>
                                         </label>
                                         <CustomDropdown
                                             options={lgaOptions}
                                             value={altFormData.lga}
-                                            onChange={(value) => setAltFormData({...altFormData, lga: value, schoolName: ''})}
+                                            onChange={(value) => setAltFormData({ ...altFormData, lga: value, schoolName: '' })}
                                             placeholder="Select LGA"
                                         />
                                     </div>
 
                                     {/* School Name */}
-                                    <div className="group">
+                                    <div className="group relative">
                                         <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700 mb-2">
                                             School Name <span className="text-red-500">*</span>
                                         </label>
@@ -541,11 +499,11 @@ export default function UBEATLoginPage() {
                                         ) : (
                                             <CustomDropdown
                                                 options={schoolNamesList.map(school => ({
-                                                    value: school.schoolName,
+                                                    value: school._id,
                                                     label: String(school.schoolName).startsWith('"') ? String(school.schoolName).slice(1) : school.schoolName
                                                 }))}
                                                 value={altFormData.schoolName}
-                                                onChange={(value) => setAltFormData({...altFormData, schoolName: value})}
+                                                onChange={(value) => setAltFormData({ ...altFormData, schoolName: value })}
                                                 placeholder="Select a school"
                                                 searchable
                                                 searchPlaceholder="Search school name..."
@@ -566,10 +524,10 @@ export default function UBEATLoginPage() {
                                                 type="text"
                                                 id="examYear"
                                                 value={altFormData.examYear}
-                                                onChange={(e) => setAltFormData({...altFormData, examYear: e.target.value})}
+                                                onChange={(e) => setAltFormData({ ...altFormData, examYear: e.target.value })}
                                                 placeholder="e.g., 2025"
                                                 maxLength={4}
-                                                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200"
+                                                className="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200"
                                                 disabled={isProcessingPayment}
                                             />
                                         </div>
@@ -596,16 +554,20 @@ export default function UBEATLoginPage() {
                                     <button
                                         type="submit"
                                         disabled={isProcessingPayment || !isAltFormValid}
-                                        className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer active:scale-95 active:opacity-90"
+                                        className={
+                                            `w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer active:opacity-90
+                                             ${isProcessingPayment || !isAltFormValid ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_4px_rgba(0,0,0,0.25)] active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2'}
+                                             `
+                                        }
                                     >
                                         {isProcessingPayment ? (
                                             <>
                                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                                Processing...
+                                                Finding your results...
                                             </>
                                         ) : (
                                             <>
-                                                Proceed to Payment (₦500)
+                                                Find My Results
                                             </>
                                         )}
                                     </button>
@@ -647,7 +609,7 @@ export default function UBEATLoginPage() {
                     {/* Copyright Footer */}
                     <div className="mt-6 text-center">
                         <p className="text-xs text-gray-600">
-                            © {new Date().getFullYear()} Imo State Ministry of Primary and Secondary Education
+                            © {new Date().getFullYear()} <Link href="/" target="_blank" className="text-gray-500 hover:text-gray-700 hover:underline">Imo State Ministry of Primary and Secondary Education</Link>
                         </p>
                     </div>
                 </div>
