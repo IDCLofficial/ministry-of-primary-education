@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { IoArrowBack, IoSchool, IoLocationOutline, IoPeopleOutline } from 'react-icons/io5'
+import { IoArrowBack, IoSchool, IoLocationOutline, IoPeopleOutline, IoCalendarOutline } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import SchoolStudentsTable from '../../components/SchoolStudentsTable'
 import UBEATStudentModal from './components/UBEATStudentModal'
@@ -49,10 +49,14 @@ export default function UBEATSchoolDetailsClient({ school, students, pagination,
     const router = useRouter()
     const searchParams = useSearchParams()
     const searchQuery = searchParams.get("search") || ""
+    const yearFilter = searchParams.get("year") || "all"
     const [localSearch, setLocalSearch] = useState(searchQuery)
     const debouncedSearch = useDebounce(localSearch, 500)
     const [selectedStudent, setSelectedStudent] = useState<UBEATStudent | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
+
+    // Extract unique years from students
+    const availableYears = [2024, 2025, 2026]
 
     // Sync URL search param with local state
     useEffect(() => {
@@ -90,7 +94,7 @@ export default function UBEATSchoolDetailsClient({ school, students, pagination,
     const handleGenerateCertificate = async (student: DisplayStudent | UBEATStudent) => {
         try {
             // Extract the UBEATStudent data
-            const ubeatStudent: UBEATStudent = 'originalData' in student 
+            const ubeatStudent: UBEATStudent = 'originalData' in student
                 ? (student as DisplayStudent).originalData as UBEATStudent
                 : student as UBEATStudent
 
@@ -99,11 +103,19 @@ export default function UBEATSchoolDetailsClient({ school, students, pagination,
                 student: ubeatStudent,
                 schoolName: school.schoolName
             }, (ubeatStudent as UBEATStudent).grade.toLowerCase() as 'pass' | 'credit' | 'distinction')
-            
+
             toast.success('Certificate downloaded successfully!')
         } catch (error) {
             console.error('Error generating certificate:', error)
             toast.error('Failed to generate certificate. Please try again.')
+        }
+    }
+
+    const handleYearChange = (year: string) => {
+        updateSearchParam("year", year)
+        // Reset to page 1 when changing year
+        if (searchParams.get("page") !== "1") {
+            updateSearchParam("page", "1")
         }
     }
 
@@ -148,11 +160,44 @@ export default function UBEATSchoolDetailsClient({ school, students, pagination,
                     </div>
                 </div>
 
-                <SearchBar
-                    searchQuery={localSearch}
-                    onSearchChange={setLocalSearch}
-                    isSearching={isSearching}
-                />
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1 flex items-center justify-between gap-3">
+                        <SearchBar
+                            searchQuery={localSearch}
+                            onSearchChange={setLocalSearch}
+                            isSearching={isSearching}
+                        />
+
+                        {availableYears.length > 0 && (
+                            <div className="flex items-center gap-2 flex-1">
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                    Filter by Year
+                                </label>
+                                <div className="relative">
+                                    <IoCalendarOutline className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    <select
+                                        value={yearFilter}
+                                        onChange={(e) => handleYearChange(e.target.value)}
+                                        className="w-full pl-9 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white cursor-pointer appearance-none"
+                                        style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                                            backgroundPosition: 'right 0.5rem center',
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundSize: '1.5em 1.5em'
+                                        }}
+                                    >
+                                        <option value="all">All Years</option>
+                                        {availableYears.map(year => (
+                                            <option key={year} value={year}>
+                                                {year}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 <SchoolStudentsTable
                     students={students}

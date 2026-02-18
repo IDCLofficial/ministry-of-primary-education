@@ -769,6 +769,7 @@ export default function StudentRegistrationExcel({
       {school && (
         <CertificatePreviewModal
           isOpen={showCertificateModal}
+          examType={examType}
           onClose={() => setShowCertificateModal(false)}
           schoolName={school.schoolName}
           studentsApproved={currentExamData.numberOfStudents || 0}

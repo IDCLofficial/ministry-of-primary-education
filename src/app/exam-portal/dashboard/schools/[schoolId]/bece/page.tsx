@@ -15,6 +15,7 @@ export default function SchoolDetailsPage({ params }: { params: Promise<{ school
     const searchParams = useSearchParams()
     const page = searchParams.get("page") || "1"
     const search = searchParams.get("search") || ""
+    const year = searchParams.get("year") || "all"
 
     
     const { data: school, isLoading: schoolLoading, error: schoolError } = useGetSchoolByIdQuery(schoolId, {
@@ -25,7 +26,8 @@ export default function SchoolDetailsPage({ params }: { params: Promise<{ school
         schoolId,
         page: parseInt(page),
         limit: 10,
-        search: search || undefined
+        search: search || undefined,
+        examYear: year !== "all" ? parseInt(year) : undefined
     }, {
         skip: !schoolId
     })

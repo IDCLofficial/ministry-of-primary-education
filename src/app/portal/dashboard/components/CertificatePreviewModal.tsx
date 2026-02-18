@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useEffect, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
 import { BsDownload } from 'react-icons/bs'
+import { ExamTypeEnum } from '../../store/api/authApi'
 
 interface CertificatePreviewModalProps {
   isOpen: boolean
@@ -15,6 +16,7 @@ interface CertificatePreviewModalProps {
   examSession: string
   approvalId: string
   issueDate: string
+  examType: ExamTypeEnum
 }
 
 export default function CertificatePreviewModal({
@@ -24,10 +26,22 @@ export default function CertificatePreviewModal({
   studentsApproved,
   examSession,
   approvalId,
-  issueDate
+  issueDate,
+  examType,
 }: CertificatePreviewModalProps) {
   const certificateRef = useRef<HTMLDivElement>(null)
   const [isDownloading, setIsDownloading] = useState(false)
+
+  const examTypeToName: Record<ExamTypeEnum, string> = useMemo(() => ({
+    [ExamTypeEnum.WAEC]: 'WAEC',
+    [ExamTypeEnum.UBEGPT]: 'UBEGPT',
+    [ExamTypeEnum.UBETMS]: 'UBETMS',
+    [ExamTypeEnum.COMMON_ENTRANCE]: 'CESS',
+    [ExamTypeEnum.BECE]: 'BECE',
+    [ExamTypeEnum.BECE_RESIT]: 'BECE Resit',
+    [ExamTypeEnum.UBEAT]: 'UBEAT',
+    [ExamTypeEnum.JSCBE]: 'JSCBE'
+  }), [])
 
   useEffect(() => {
     if (isOpen) {
@@ -58,7 +72,7 @@ export default function CertificatePreviewModal({
       })
 
       const link = document.createElement('a')
-      link.download = `WAEC_Approval_Certificate_${schoolName.replace(/[^a-z0-9]/gi, '_')}.png`
+      link.download = `${examTypeToName[examType]}_Approval_Certificate_${schoolName.replace(/[^a-z0-9]/gi, '_')}.png`
       link.href = dataUrl
       link.click()
 
@@ -69,7 +83,7 @@ export default function CertificatePreviewModal({
     } finally {
       setIsDownloading(false)
     }
-  }, [schoolName])
+  }, [schoolName, examType, examTypeToName])
 
   const downloadAsPDF = useCallback(async () => {
     if (!certificateRef.current) {
@@ -156,16 +170,16 @@ export default function CertificatePreviewModal({
               <div className="corner-ornament top-right" style={{ position: 'absolute', width: '100px', height: '100px', background: 'radial-gradient(circle, #d4af37 0, transparent 70%)', opacity: 0.3, top: 0, right: 0, borderRadius: '0 0 0 100px' }}></div>
               <div className="corner-ornament bottom-left" style={{ position: 'absolute', width: '100px', height: '100px', background: 'radial-gradient(circle, #d4af37 0, transparent 70%)', opacity: 0.3, bottom: 0, left: 0, borderRadius: '0 100px 0 0' }}></div>
               <div className="corner-ornament bottom-right" style={{ position: 'absolute', width: '100px', height: '100px', background: 'radial-gradient(circle, #d4af37 0, transparent 70%)', opacity: 0.3, bottom: 0, right: 0, borderRadius: '100px 0 0 0' }}></div>
-              
+
               <div className="decorative-circle circle-1" style={{ position: 'absolute', borderRadius: '50%', border: '2px solid #d4af37', opacity: 0.2, width: '300px', height: '300px', top: '-100px', right: '-100px' }}></div>
               <div className="decorative-circle circle-2" style={{ position: 'absolute', borderRadius: '50%', border: '2px solid #d4af37', opacity: 0.2, width: '200px', height: '200px', bottom: '-50px', left: '-50px' }}></div>
               <div className="decorative-circle circle-3" style={{ position: 'absolute', borderRadius: '50%', border: '2px solid #d4af37', opacity: 0.2, width: '150px', height: '150px', top: '353px', left: '-75px' }}></div>
-              
+
               <div className="border-pattern" style={{ position: 'absolute', inset: '20px', border: '3px solid #c19a6b', pointerEvents: 'none' }}>
                 <div style={{ content: '', position: 'absolute', background: 'linear-gradient(45deg, #d4af37, #f4e4c1, #d4af37)', top: '-3px', left: '-3px', right: '-3px', height: '3px' }}></div>
                 <div style={{ content: '', position: 'absolute', background: 'linear-gradient(45deg, #d4af37, #f4e4c1, #d4af37)', left: '-3px', top: '-3px', bottom: '-3px', width: '3px' }}></div>
               </div>
-              
+
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[120px] font-bold text-black/5 -rotate-45">CERTIFIED</div>
 
               <div className="certificate-content" style={{ position: 'relative', zIndex: 10, padding: '4vmin 5vmin', height: '707px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -184,11 +198,11 @@ export default function CertificatePreviewModal({
                 {/* Body */}
                 <div className="body" style={{ textAlign: 'center', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <p className="presented-to" style={{ fontSize: '1.4vmin', color: '#34495e', marginBottom: '1.2vmin' }}>This certificate is hereby issued to</p>
-                  
+
                   <div className="recipient-name" style={{ fontSize: '3.2vmin', fontWeight: 'bold', color: '#1e3a5f', margin: '1.5vmin 0', padding: '1.2vmin 3vmin', borderBottom: '0.25vmin solid #d4af37', display: 'inline-block', textTransform: 'capitalize' }}>{schoolName}</div>
-                  
+
                   <p className="achievement-text" style={{ fontSize: '1.2vmin', color: '#5d6d7e', lineHeight: 1.6, maxWidth: '900px', margin: '2vmin auto', padding: '0 2vmin' }}>
-                    For successful submission and approval of <strong>WAEC Student Registration</strong> for the upcoming examination. The Ministry hereby certifies that all submitted student records have been reviewed, verified, and approved for registration with the West African Examinations Council (WAEC).
+                    For successful submission and approval of <strong>{examTypeToName[examType]} Student Registration</strong> for the upcoming examination. The Ministry hereby certifies that all submitted student records have been reviewed, verified, and approved for registration with the West African Examinations Council (WAEC).
                   </p>
 
                   <div className="completion-details" style={{ display: 'flex', justifyContent: 'center', gap: '4vmin', marginTop: '2vmin' }}>
@@ -210,12 +224,12 @@ export default function CertificatePreviewModal({
                 {/* Footer */}
                 <div className="footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '3vmin' }}>
                   <div className="signature-block" style={{ textAlign: 'center', flex: 1 }}>
-                    <Image 
-                      src="/images/signature.png" 
-                      alt="Signature" 
-                      width={120} 
-                      height={50} 
-                      className="w-[12vmin] h-[5vmin] object-contain mb-[0.8vmin] ml-[23vmin]" 
+                    <Image
+                      src="/images/signature.png"
+                      alt="Signature"
+                      width={120}
+                      height={50}
+                      className="w-[12vmin] h-[5vmin] object-contain mb-[0.8vmin] ml-[23vmin]"
                     />
                     <div className="signature-line" style={{ width: '15vmin', height: '0.15vmin', background: '#2c3e50', margin: '0 auto 0.8vmin' }}></div>
                     <div className="signature-name" style={{ fontSize: '1.1vmin', fontWeight: 'bold', color: '#2c3e50', marginBottom: '0.25vmin' }}>Prof. Bernard Thompson Ikegwuoha</div>

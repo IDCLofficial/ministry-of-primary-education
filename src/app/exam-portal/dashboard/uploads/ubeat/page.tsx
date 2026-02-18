@@ -29,6 +29,8 @@ function UploadContent() {
     const [showHelp, setShowHelp] = useState(false)
     const [showOverrideModal, setShowOverrideModal] = useState(false)
     const [fileOverrides, setFileOverrides] = useState<FileOverride[]>([])
+    const [bulkExamYear, setBulkExamYear] = useState('')
+    const [bulkLga, setBulkLga] = useState('')
     const { isModalOpen, selectedStudent, closeModal, updateStudent } = useExamModal()
 
     const warningMessage = "Unsaved data will be lost. Continue?"
@@ -184,6 +186,22 @@ function UploadContent() {
         const updated = [...fileOverrides]
         updated[index][field] = value
         setFileOverrides(updated)
+    }
+
+    const handleApplyBulkExamYear = () => {
+        if (bulkExamYear) {
+            const updated = fileOverrides.map(fo => ({ ...fo, examYear: bulkExamYear }))
+            setFileOverrides(updated)
+            toast.success(`Exam year ${bulkExamYear} applied to all ${fileOverrides.length} files`)
+        }
+    }
+
+    const handleApplyBulkLga = () => {
+        if (bulkLga) {
+            const updated = fileOverrides.map(fo => ({ ...fo, lga: bulkLga }))
+            setFileOverrides(updated)
+            toast.success(`LGA "${bulkLga}" applied to all ${fileOverrides.length} files`)
+        }
     }
 
     const handleApplyFileOverrides = () => {
@@ -425,6 +443,55 @@ function UploadContent() {
 
                         {/* Modal Content */}
                         <div className="flex-1 overflow-y-auto px-6 py-4">
+                            {/* Bulk Override Section */}
+                            {fileOverrides.length > 1 && (
+                                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        Quick Apply to All Files
+                                    </h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="number"
+                                                placeholder="Exam Year (e.g. 2024)"
+                                                value={bulkExamYear}
+                                                onChange={(e) => setBulkExamYear(e.target.value)}
+                                                className="flex-1 px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                            <button
+                                                onClick={handleApplyBulkExamYear}
+                                                disabled={!bulkExamYear}
+                                                className="px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                            >
+                                                Apply to All
+                                            </button>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="LGA (e.g. Owerri Municipal)"
+                                                value={bulkLga}
+                                                onChange={(e) => setBulkLga(e.target.value)}
+                                                className="flex-1 px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                            <button
+                                                onClick={handleApplyBulkLga}
+                                                disabled={!bulkLga}
+                                                className="px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                            >
+                                                Apply to All
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-blue-700 mt-2">
+                                        💡 Use this to quickly set the same value for all {fileOverrides.length} files, then adjust individual files below if needed.
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="space-y-4">
                                 {fileOverrides.map((fileOverride, index) => (
                                     <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { IoArrowBack, IoSchool, IoLocationOutline, IoPeopleOutline } from 'react-icons/io5'
+import { IoArrowBack, IoSchool, IoLocationOutline, IoPeopleOutline, IoCalendarOutline } from 'react-icons/io5'
 import SchoolStudentsTable from '../../components/SchoolStudentsTable'
 import StudentModal from '../../components/StudentModal'
 import CertificateModal from '@/components/CertificateModal'
@@ -48,12 +48,21 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
     const router = useRouter()
     const searchParams = useSearchParams()
     const searchQuery = searchParams.get("search") || ""
+    const yearFilter = searchParams.get("year") || "all"
     const [localSearch, setLocalSearch] = useState(searchQuery)
     const debouncedSearch = useDebounce(localSearch, 500)
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
     const [certificateStudent, setCertificateStudent] = useState<Student | null>(null)
+
+    // Extract unique years from students
+    const availableYears = React.useMemo(() => {
+        const years = students
+            .map(s => s.examYear)
+            .filter((year): year is number => year !== undefined && year !== null)
+        return Array.from(new Set(years)).sort((a, b) => b - a)
+    }, [students])
 
     // Sync URL search param with local state
     useEffect(() => {
@@ -99,6 +108,14 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
         setCertificateStudent(null)
     }
 
+    const handleYearChange = (year: string) => {
+        updateSearchParam("year", year)
+        // Reset to page 1 when changing year
+        if (searchParams.get("page") !== "1") {
+            updateSearchParam("page", "1")
+        }
+    }
+
     return (
         <React.Fragment>
             <div className='p-6 bg-white/50 backdrop-blur-[2px] h-full overflow-y-auto border border-black/10 m-1 mb-0 space-y-6'>
@@ -135,11 +152,44 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
                     </div>
                 </div>
 
-                <SearchBar
-                    searchQuery={localSearch}
-                    onSearchChange={setLocalSearch}
-                    isSearching={isSearching}
-                />
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1 flex items-center justify-between gap-3">
+                        <SearchBar
+                            searchQuery={localSearch}
+                            onSearchChange={setLocalSearch}
+                            isSearching={isSearching}
+                        />
+
+                        {availableYears.length > 0 && (
+                            <div className="flex items-center gap-2 flex-1">
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                    Filter by Year
+                                </label>
+                                <div className="relative">
+                                    <IoCalendarOutline className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    <select
+                                        value={yearFilter}
+                                        onChange={(e) => handleYearChange(e.target.value)}
+                                        className="w-full pl-9 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white cursor-pointer appearance-none"
+                                        style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                                            backgroundPosition: 'right 0.5rem center',
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundSize: '1.5em 1.5em'
+                                        }}
+                                    >
+                                        <option value="all">All Years</option>
+                                        {availableYears.map(year => (
+                                            <option key={year} value={year}>
+                                                {year}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 <SchoolStudentsTable
                     students={students}
