@@ -94,6 +94,8 @@ export default function ExamPage() {
   const examName = examIdToName[examId]
   const currentExamData = school?.exams?.find((e) => e.name === examName);
 
+  console.log(currentExamData)
+
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const searchParams = useSearchParams()
@@ -163,6 +165,7 @@ export default function ExamPage() {
   // Use exam-specific points from school profile
   const examPoints = currentExamData?.availablePoints || 0
   const examTotalPoints = currentExamData?.totalPoints || 0
+  const examUsedPoints = currentExamData?.usedPoints || 0
   const examNumberOfStudents = currentExamData?.numberOfStudents || 0
 
   const handleRefresh = useCallback(async () => {
@@ -486,7 +489,7 @@ export default function ExamPage() {
   
   // Check if sidebar should be visible
   const showCostSummary = (examNumberOfStudents - examTotalPoints) > 0;
-  const showOnboardingSummary = (examNumberOfStudents - examTotalPoints) === 0;
+  const showOnboardingSummary = (examNumberOfStudents - examUsedPoints) === 0;
   const showSidebar = (showCostSummary || showOnboardingSummary) && applicationStatus === 'approved'
 
   return (
@@ -521,6 +524,7 @@ export default function ExamPage() {
 
             {showSidebar && (
               <div className="xl:col-span-1 order-1 xl:order-2 overflow-y-auto">
+
                 <div className="space-y-6">
                   <OnboardingCompletionSummary
                     totalStudents={studentsData?.totalItems || 0}

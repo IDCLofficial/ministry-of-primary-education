@@ -76,7 +76,7 @@ const allFAQs: FAQItem[] = [
     {
         category: 'exams',
         question: 'What are the examination fees?',
-        answer: 'Fees vary by exam: WAEC (Naira 7,000/Naira 7,500 late), BECE (Naira 7,000/Naira 7,500 late), JSCBE (Naira 7,000/Naira 7,500 late), UBEGPT (Naira 5,000/Naira 5,500 late), UBEAT (Naira 5,000/Naira 5,500 late), CESS (Naira 3,000/Naira 3,500 late), UBETMS (Naira 3,000), BECE Resit (Naira 2,000). Late fees apply after the deadline.'
+        answer: 'Fees vary by exam (in Naira): WAEC (7,000/7,500 late), BECE (7,000/7,500 late), JSCBE (7,000/7,500 late), UBEGPT (5,000/5,500 late), UBEAT (5,000/5,500 late), CESS (3,000/3,500 late), UBETMS (3,000), BECE Resit (2,000). Late fees apply after the deadline.'
     },
     {
         category: 'exams',

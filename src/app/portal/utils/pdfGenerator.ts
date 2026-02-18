@@ -14,7 +14,7 @@ interface CategoryInfo {
     }
 }
 
-export const generateFAQPDF = async (faqs: FAQItem[], categoryInfo: CategoryInfo) => {
+export const generateFAQPDF = (faqs: FAQItem[], categoryInfo: CategoryInfo) => {
     const doc = new jsPDF()
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
@@ -143,43 +143,21 @@ export const generateFAQPDF = async (faqs: FAQItem[], categoryInfo: CategoryInfo
         
         yPosition += 5
     })
-
-    addNewPageIfNeeded(30)
-    yPosition += 10
-    doc.setFillColor(240, 253, 244)
-    doc.rect(margin, yPosition, maxWidth, 35, 'F')
     
-    yPosition += 10
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(0, 0, 0)
-    doc.text('Need More Help?', margin + 5, yPosition)
-    
-    yPosition += 8
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(60, 60, 60)
-    doc.text('Contact the Ministry IT Support through your LGA education office', margin + 5, yPosition)
-    yPosition += 5
-    doc.text('or reach out to your school administrator for assistance.', margin + 5, yPosition)
-
-    const totalPages = doc.getNumberOfPages()
+    const totalPages = doc.internal.pages.length - 1
     for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i)
         doc.setFontSize(8)
         doc.setTextColor(150, 150, 150)
-        doc.text(
-            `Page ${i} of ${totalPages}`,
-            pageWidth / 2,
-            pageHeight - 10,
-            { align: 'center' }
-        )
-        doc.text(
-            `© ${new Date().getFullYear()} MOPSE`,
-            pageWidth - margin,
-            pageHeight - 10,
-            { align: 'right' }
-        )
+        
+        // Page number centered
+        const pageText = `Page ${i} of ${totalPages}`
+        const textWidth = doc.getStringUnitWidth(pageText) * 8 / doc.internal.scaleFactor
+        doc.text(pageText, (pageWidth - textWidth) / 2, pageHeight - 10)
+        
+        // Copyright on right
+        const copyrightText = `© ${new Date().getFullYear()} MOPSE`
+        doc.text(copyrightText, pageWidth - margin - 15, pageHeight - 10)
     }
 
     doc.save('MOPSE-Portal-FAQ-User-Manual.pdf')

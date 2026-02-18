@@ -109,34 +109,30 @@ export default function StudentRegistrationExcel({
   // Initialize editable students from props and track original data
   useEffect(() => {
     const originalMap = new Map<string, Student>()
-
-    if (examPoints === 0 && students.length > 0) {
-      // Only block new rows / editing when we KNOW points are exhausted
-      // but still allow existing students to render
-      setEditableStudents(prev => {
-        const withoutNewRows = prev.filter(s => !s.isNew)
-        // If prev is empty, initialize from API data
-        if (withoutNewRows.length === 0) return students.map(s => ({ ...s }))
-        return withoutNewRows.map(s => ({ ...s, isEditing: false }))
-      })
-      setShowNewRow(false)
-    } else if (examPoints === 0 && students.length === 0) {
-      // Truly nothing yet, don't touch state
-    } else {
-      setEditableStudents(prev => {
-        const newRows = prev.filter(s => s.isNew)
-        const updatedStudents = students.map(student => {
-          const existing = prev.find(s => s.id === student.id && !s.isNew)
-          return existing ? { ...student, isEditing: existing.isEditing } : student
-        })
-        return [...newRows, ...updatedStudents]
-      })
-    }
-
     students.forEach(s => originalMap.set(s.id, { ...s }))
     setOriginalStudents(originalMap)
+
+    setEditableStudents(prev => {
+      // Keep new rows that haven't been saved yet
+      const newRows = prev.filter(s => s.isNew)
+      
+      // Map students from props, preserving editing state if student exists in prev
+      const updatedStudents = students.map(student => {
+        const existing = prev.find(s => s.id === student.id && !s.isNew)
+        return existing ? { ...student, isEditing: existing.isEditing } : { ...student }
+      })
+      
+      // Combine: new rows first, then updated students
+      return [...newRows, ...updatedStudents]
+    })
+
+    // Close new row if points exhausted
+    if (examPoints === 0 && students.length > 0) {
+      setShowNewRow(false)
+    }
+
     setIsRefreshing(false)
-  }, [students, examPoints])
+  }, [students, examPoints]);
 
   const classOptions = [
     { value: 'SS3', label: 'SS3' },
@@ -415,6 +411,10 @@ export default function StudentRegistrationExcel({
   // Show skeleton on initial load or when explicitly loading
   if (isLoading) {
     return <StudentRegistrationSkeleton />
+  }
+
+  if (!currentExamData) {
+    return <div>Exam not found</div>
   }
 
   return (
@@ -729,7 +729,7 @@ export default function StudentRegistrationExcel({
 
             <button
               onClick={() => setQuickAddMode(!quickAddMode)}
-              className={`px-4 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap ${quickAddMode
+              className={`px-4 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap cursor-pointer ${quickAddMode
                   ? 'bg-green-600 text-white hover:bg-green-700'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
@@ -771,9 +771,9 @@ export default function StudentRegistrationExcel({
           isOpen={showCertificateModal}
           onClose={() => setShowCertificateModal(false)}
           schoolName={school.schoolName}
-          studentsApproved={school.numberOfStudents || 0}
+          studentsApproved={currentExamData.numberOfStudents || 0}
           examSession={new Date().getFullYear().toString()}
-          approvalId={`${examTypeToName[examType]}-IMO-${school.exams.find(exam => exam.name === examType)?.applicationId?.slice(-6)?.toUpperCase() || 'XXXXX'}`}
+          approvalId={`${examTypeToName[examType]}-IMO-${currentExamData.applicationId.slice(-6)?.toUpperCase() || 'XXXXX'}`}
           issueDate={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
         />
       )}
