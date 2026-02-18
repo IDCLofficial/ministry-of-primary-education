@@ -1,10 +1,11 @@
 'use client'
 import { useRef, useState, useCallback } from 'react';
-import { IoClose, IoDownload, IoPrint } from 'react-icons/io5';
+import { IoClose, IoDownload } from 'react-icons/io5';
 import toast from 'react-hot-toast';
-import Image from 'next/image';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
+import useShortcuts, { KeyboardKey } from '@useverse/useshortcuts';
+import Image from 'next/image';
 
 interface Subject {
     name: string
@@ -32,6 +33,18 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
     const certificateRef = useRef<HTMLDivElement>(null);
     const [isDownloading, setIsDownloading] = useState(false);
 
+    useShortcuts({
+        shortcuts: [
+            {
+                key: KeyboardKey.Escape,
+                enabled: isOpen
+            }
+        ],
+        onTrigger: () => {
+            onClose()
+        }
+    }, [isOpen])
+
     const downloadAsImage = useCallback(async () => {
         if (!certificateRef.current || !student) {
             toast.error('Certificate not ready')
@@ -52,12 +65,29 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
             setIsDownloading(true)
             toast.loading('Generating image...', { id: 'download-image' })
             
-            await new Promise(resolve => setTimeout(resolve, 100))
+            // Wait for fonts and images to load
+            await document.fonts.ready
+            
+            // Pre-load all images
+            const images = certificateRef.current.querySelectorAll('img')
+            await Promise.all(
+                Array.from(images).map(img => {
+                    if (img.complete) return Promise.resolve()
+                    return new Promise(resolve => {
+                        img.onload = resolve
+                        img.onerror = resolve
+                    })
+                })
+            )
+            
+            // Extra wait for rendering
+            await new Promise(resolve => setTimeout(resolve, 1500))
             
             const dataUrl = await toPng(certificateRef.current, {
                 cacheBust: true,
-                pixelRatio: 2,
-                backgroundColor: '#ffffff'
+                pixelRatio: 3,
+                backgroundColor: '#ffffff',
+                quality: 1.0
             })
 
             const link = document.createElement('a')
@@ -94,12 +124,29 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
             setIsDownloading(true)
             toast.loading('Generating PDF...', { id: 'download-pdf' })
             
-            await new Promise(resolve => setTimeout(resolve, 100))
+            // Wait for fonts and images to load
+            await document.fonts.ready
+            
+            // Pre-load all images
+            const images = certificateRef.current.querySelectorAll('img')
+            await Promise.all(
+                Array.from(images).map(img => {
+                    if (img.complete) return Promise.resolve()
+                    return new Promise(resolve => {
+                        img.onload = resolve
+                        img.onerror = resolve
+                    })
+                })
+            )
+            
+            // Extra wait for rendering
+            await new Promise(resolve => setTimeout(resolve, 1500))
             
             const dataUrl = await toPng(certificateRef.current, {
                 cacheBust: true,
-                pixelRatio: 2,
-                backgroundColor: '#ffffff'
+                pixelRatio: 3,
+                backgroundColor: '#ffffff',
+                quality: 1.0
             })
 
             const pdf = new jsPDF({
@@ -148,6 +195,18 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
         return { valid: errors.length === 0, errors }
     }
 
+    const calculateGradeFromScore = (score: number): string => {
+        if (score >= 80) return 'A1'
+        if (score >= 70) return 'B2'
+        if (score >= 65) return 'B3'
+        if (score >= 60) return 'C4'
+        if (score >= 55) return 'C5'
+        if (score >= 50) return 'C6'
+        if (score >= 45) return 'D7'
+        if (score >= 40) return 'E8'
+        return 'F9'
+    }
+
     const calculateAggregate = () => {
         const gradePoints: { [key: string]: number } = {
             'A1': 1, 'B2': 2, 'B3': 3, 'C4': 4, 'C5': 5, 'C6': 6,
@@ -161,37 +220,45 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
         }
         
         const totalPoints = student.subjects.reduce((sum, subject) => {
-            return sum + (gradePoints[subject.grade] || 9)
+            const grade = subject.grade || calculateGradeFromScore(subject.exam)
+            return sum + (gradePoints[grade] || 9)
         }, 0)
         
         return totalPoints
     }
 
-    const overallGradeColor = (overallGrade: string) => {
-        if (overallGrade.toLowerCase() === 'distinction') return '#32493e'
-        if (overallGrade.toLowerCase() === 'credit') return '#000080'
-        if (overallGrade.toLowerCase() === 'pass') return '#FF7900'
+    const calculateOverallGradeFromSubjects = () => {
+        if (!student.subjects || !Array.isArray(student.subjects)) return 'N/A'
+        
+        const gradePoints: { [key: string]: number } = {
+            'A1': 1, 'B2': 2, 'B3': 3, 'C4': 4, 'C5': 5, 'C6': 6,
+            'D7': 7, 'E8': 8, 'F9': 9
+        }
+
+        const totalPoints = student.subjects.reduce((sum, subject) => {
+            const grade = subject.grade || calculateGradeFromScore(subject.exam)
+            return sum + (gradePoints[grade] || 9)
+        }, 0)
+
+        const average = totalPoints / student.subjects.length
+        if (average <= 1.5) return 'Distinction'
+        if (average <= 2.5) return 'Credit'
+        if (average <= 4.5) return 'Pass'
+        return 'Fail'
+    }
+
+    const overallGradeColor = (overallGrade: string | undefined) => {
+        if (!overallGrade) return '#000000'
+        const gradeLower = overallGrade.toLowerCase()
+        if (gradeLower === 'distinction') return '#32493e'
+        if (gradeLower === 'credit') return '#000080'
+        if (gradeLower === 'pass') return '#FF7900'
         return '#c41e3a'
     }
 
     const aggregate = calculateAggregate()
-    const overallGrade = student.overallGrade // Use the overallGrade from API
+    const overallGrade = student.overallGrade || calculateOverallGradeFromSubjects()
     const school = schoolName || student.schoolName || student.school || 'N/A'
-
-    const handlePrint = () => {
-        if (!certificateRef.current) {
-            toast.error('Certificate preview not ready')
-            return
-        }
-        const validation = validateStudentData()
-
-        if (!validation.valid) {
-            toast.error(`Cannot print certificate: ${validation.errors.join(', ')}`)
-            return
-        }
-        
-        window.print()
-    }
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -201,7 +268,7 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
                     onClick={onClose}
                 />
 
-                <div className="inline-block w-full max-w-5xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl relative z-10">
+                <div className="inline-block w-full max-w-6xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl relative z-10">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 print:hidden">
                         <div>
                             <h3 className="text-lg font-semibold text-gray-900">
@@ -227,14 +294,6 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
                                 PDF
                             </button>
                             <button
-                                onClick={handlePrint}
-                                disabled={isDownloading}
-                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer active:scale-95"
-                            >
-                                <IoPrint className="w-4 h-4 mr-2" />
-                                Print
-                            </button>
-                            <button
                                 onClick={onClose}
                                 className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                             >
@@ -243,35 +302,34 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
                         </div>
                     </div>
 
-                    <div className="p-8 overflow-y-auto max-h-[calc(100vh-200px)]">
+                    <div className="p-4 overflow-auto max-h-[calc(100vh-150px)] flex items-start justify-center">
                         <div
                             ref={certificateRef}
-                            className="relative overflow-hidden"
+                            className="relative overflow-hidden flex-shrink-0"
                             style={{
-                                aspectRatio: '1.414',
-                                maxWidth: '900px',
-                                margin: '0 auto',
+                                width: '800px',
+                                minHeight: '500px',
                                 background: 'linear-gradient(to bottom right, #FEF3C7, #FED7AA)'
                             }}
                         >
                             {/* Green triangular corners */}
                             <div className="absolute top-0 left-0 w-0 h-0" style={{
-                                borderLeft: '120px solid transparent',
-                                borderTop: '120px solid #15803d'
+                                borderLeft: '100px solid transparent',
+                                borderTop: '100px solid #15803d'
                             }}></div>
                             <div className="absolute top-0 right-0 w-0 h-0" style={{
-                                borderRight: '120px solid transparent',
-                                borderTop: '120px solid #15803d',
+                                borderRight: '100px solid transparent',
+                                borderTop: '100px solid #15803d',
                                 zIndex: 20
                             }}></div>
                             <div className="absolute bottom-0 left-0 w-0 h-0" style={{
-                                borderLeft: '120px solid transparent',
-                                borderBottom: '120px solid #15803d',
+                                borderLeft: '100px solid transparent',
+                                borderBottom: '100px solid #15803d',
                                 zIndex: 20
                             }}></div>
                             <div className="absolute bottom-0 right-0 w-0 h-0" style={{
-                                borderRight: '120px solid transparent',
-                                borderBottom: '120px solid #15803d'
+                                borderRight: '100px solid transparent',
+                                borderBottom: '100px solid #15803d'
                             }}></div>
 
                             {/* Gold dots at corners */}
@@ -281,44 +339,45 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
                             <div className="absolute bottom-3 right-3 w-3 h-3 rounded-full" style={{ backgroundColor: '#f59e0b' }}></div>
 
                             {/* Main Content */}
-                            <div className="relative z-10 p-12 m-6" style={{
+                            <div className="relative z-10 px-10 py-8 m-5" style={{
                                 border: '4px solid #d97706',
-                                backgroundColor: 'rgba(255, 255, 255, 0.95)'
+                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                             }}>
                                 {/* Logo */}
-                                <div className="flex justify-center mb-4">
+                                <div className="flex justify-center mb-3">
                                     <Image
                                         src="/images/ministry-logo.png"
                                         alt="Ministry Logo"
-                                        width={80}
-                                        height={80}
+                                        width={70}
+                                        height={70}
                                         className="object-contain"
                                     />
                                 </div>
 
                                 {/* Header */}
-                                <div className="text-center mb-6">
-                                    <h1 className="text-2xl font-bold text-gray-800 mb-2 tracking-wide uppercase">
+                                <div className="text-center mb-3">
+                                    <h1 className="text-base font-bold text-gray-800 mb-1 tracking-wide uppercase">
                                         {school}
                                     </h1>
-                                    <h2 className="text-3xl font-serif font-bold mb-4" style={{ color: '#15803d' }}>
+                                    <h2 className="text-xl font-serif font-bold mb-2" style={{ color: '#15803d', fontFamily: 'Georgia, "Times New Roman", Times, serif' }}>
                                         CERTIFICATE OF EXCELLENCE
                                     </h2>
-                                    <p className="text-sm text-gray-600 italic">
+                                    <p className="text-[10px] text-gray-600 italic">
                                         This certificate is awarded to
                                     </p>
                                 </div>
 
                                 {/* Student Name */}
-                                <div className="text-center mb-6">
-                                    <h3 className="text-2xl font-serif font-bold capitalize" style={{ color: '#166534' }}>
+                                <div className="text-center mb-3">
+                                    <h3 className="text-lg font-serif font-bold capitalize" style={{ color: '#166534', fontFamily: 'Georgia, "Times New Roman", Times, serif' }}>
                                         {student.name.toLowerCase()}
                                     </h3>
                                 </div>
 
                                 {/* Achievement Text */}
-                                <div className="text-center mb-6 max-w-2xl mx-auto">
-                                    <p id="certificate" className="text-sm text-gray-700 leading-relaxed">
+                                <div className="text-center mb-3 px-4">
+                                    <p id="certificate" className="text-xs text-gray-700 leading-relaxed">
                                         in recognition of outstanding academic achievement in the
                                         <span className="font-semibold"> Basic Education Certificate Examination (BECE)</span>,
                                         demonstrating excellence and dedication to learning.
@@ -326,34 +385,44 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
                                 </div>
 
                                 {/* Student Details */}
-                                <div className="grid grid-cols-3 gap-4 mb-6 text-center text-xs">
+                                <div className="grid grid-cols-3 gap-3 mb-3 text-center">
                                     <div>
-                                        <p className="text-gray-500 mb-1">Exam Number</p>
-                                        <p className="font-semibold text-gray-800 uppercase text-lg">{student.examNo}</p>
+                                        <p className="text-gray-500 mb-1" style={{ fontSize: '9px' }}>Exam Number</p>
+                                        <p className="font-bold text-gray-800 uppercase text-sm">{student.examNo}</p>
                                     </div>
                                     <div>
-                                        <p className="text-gray-500 mb-1">Overall Grade</p>
-                                        <p className="font-semibold lowercase text-lg" style={{ color: overallGradeColor(overallGrade) }}>{overallGrade}</p>
+                                        <p className="text-gray-500 mb-1" style={{ fontSize: '9px' }}>Overall Grade</p>
+                                        <p className="font-bold text-sm lowercase" style={{ color: overallGradeColor(overallGrade) }}>{overallGrade}</p>
                                     </div>
                                     <div>
-                                        <p className="text-gray-500 mb-1">Aggregate</p>
-                                        <p className="font-semibold text-gray-800 text-lg">{aggregate}</p>
+                                        <p className="text-gray-500 mb-1" style={{ fontSize: '9px' }}>Aggregate</p>
+                                        <p className="font-bold text-gray-800 text-sm">{aggregate}</p>
                                     </div>
                                 </div>
 
                                 {/* Date */}
                                 <div className="text-center mb-8">
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-xs text-gray-600">
                                         Given this {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.
                                     </p>
                                 </div>
 
                                 {/* Signature */}
-                                <div className="text-center mt-12">
+                                <div className="text-center mt-20 relative">
                                     <div className="inline-block">
-                                        <div className="pt-2 px-8" style={{ borderTop: '2px solid #1f2937' }}>
-                                            <p className="text-sm font-semibold text-gray-800">Hr. Minister Professor Bernard Thompson Onyemechukwu Ikegwuoha</p>
-                                            <p className="text-xs text-gray-600">Imo State Ministry of Primary and Secondary Education</p>
+                                        {/* Signature Image - Positioned absolutely above the line */}
+                                        <div className="absolute left-1/2 transform -translate-x-1/2" style={{ top: '-45px' }}>
+                                            <Image
+                                                src="/images/signature.png"
+                                                alt="Minister Signature"
+                                                width={140}
+                                                height={45}
+                                                className="object-contain"
+                                            />
+                                        </div>
+                                        <div className="pt-2 px-6" style={{ borderTop: '2px solid #1f2937' }}>
+                                            <p className="text-[10px] font-bold text-gray-800">Hr. Minister Professor Bernard Thompson Onyemechukwu Ikegwuoha</p>
+                                            <p style={{ fontSize: '9px' }} className="text-gray-600">Imo State Ministry of Primary and Secondary Education</p>
                                         </div>
                                     </div>
                                 </div>

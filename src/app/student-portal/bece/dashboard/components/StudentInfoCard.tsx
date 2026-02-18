@@ -42,7 +42,7 @@ export default function StudentInfoCard({ student }: StudentInfoCardProps) {
                             School
                         </p>
                         <p className="text-sm font-medium text-gray-900 capitalize">
-                            {student.schoolName.toLowerCase()}
+                            {student.school.toLowerCase()}
                         </p>
                     </div>
 

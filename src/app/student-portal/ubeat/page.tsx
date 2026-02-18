@@ -10,7 +10,7 @@ import { useDebounce } from '../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
-import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation } from '../store/api/studentApi'
+import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation, UBEATStudentResult } from '../store/api/studentApi'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
@@ -180,19 +180,31 @@ export default function UBEATLoginPage() {
                 lga: altFormData.lga
             }).unwrap()
 
-            // Validate data structure
-            if (!result || !result.examNumber || !result.studentName) {
-                console.error('Invalid data structure:', result)
-                setError('We couldn\'t load your results. Please try again or contact support.')
+            // Type assertion to help TypeScript understand the full interface
+            const fullResult = result as { paymentUrl: string, paymentReference: string }
+            
+            // Validate response has required data
+            if (!fullResult.paymentUrl || !fullResult.paymentReference) {
+                console.error('Invalid payment response:', fullResult)
+                setError('Payment information not available. Please try again or contact support.')
                 return
             }
 
-            // Store only exam number and exam type (data will be fetched via RTK Query in dashboard)
-            localStorage.setItem('student_exam_no', result.examNumber)
+            // Store payment details and student data for payment page
+            localStorage.setItem('ubeat_payment_url', fullResult.paymentUrl)
+            localStorage.setItem('ubeat_payment_reference', fullResult.paymentReference)
+            localStorage.setItem('ubeat_alt_form_data', JSON.stringify(altFormData))
+            
+            // Store exam number for after payment if available
             localStorage.setItem('selected_exam_type', 'ubeat')
-
-            toast.success(`Welcome ${result.studentName}! Loading your results... 🎉`)
-            router.push('/student-portal/ubeat/dashboard')
+            
+            if (fullResult.paymentUrl.toLowerCase().includes('ubeat')) {
+                router.push(`${fullResult.paymentUrl}?trxref=${fullResult.paymentReference}&reference=${fullResult.paymentReference}`)
+                return;
+            }
+            
+            // ALWAYS redirect to payment page
+            router.push('/student-portal/ubeat/payment')
         } catch (error: unknown) {
             const errorObject = error as { status: string | number }
             console.error('Find result error:', error)

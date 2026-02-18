@@ -77,29 +77,29 @@ export default function UBEATDashboard() {
         setIsDownloading(true)
         try {
             // Prepare student data for certificate generation
-            const studentData: UBEATStudent = {
-                _id: student._id,
+            const studentData: Omit<UBEATStudent, "isPaid"> = {
+                _id: student._id || '',
                 examNumber: student.examNumber,
                 studentName: student.studentName,
-                serialNumber: student.serialNumber,
-                age: student.age,
+                serialNumber: student.serialNumber || 0,
+                age: student.age || 0,
                 sex: student.sex as 'male' | 'female',
-                lga: student.lga,
-                school: student.school,
-                schoolName: student.schoolName,
+                lga: student.lga || '',
+                school: student.school || '',
+                schoolName: student?.schoolName || '',
                 subjects: student.subjects as UBEATStudent['subjects'],
-                averageScore: student.averageScore,
-                grade: student.grade,
-                examYear: student.examYear,
-                createdAt: student.createdAt,
-                updatedAt: student.updatedAt,
-                __v: student.__v
+                averageScore: student.averageScore || 0,
+                grade: student.grade || '',
+                examYear: student.examYear || 0,
+                createdAt: student.createdAt || '',
+                updatedAt: student.updatedAt || '',
+                __v: student.__v || 0,
             }
 
             await generateUBEATCertificate({
-                student: studentData,
-                schoolName: student.schoolName
-            }, student.grade.toLowerCase() as 'pass' | 'credit' | 'distinction')
+                student: studentData as UBEATStudent,
+                schoolName: student?.schoolName || ''
+            }, student?.grade?.toLowerCase() as 'pass' | 'credit' | 'distinction' || 'pass')
 
             toast.success('Certificate downloaded successfully!')
         } catch (error) {
@@ -260,7 +260,7 @@ export default function UBEATDashboard() {
             <Paywall
                 examNo={student.examNumber}
                 studentName={student.studentName}
-                school={student.schoolName}
+                school={student?.schoolName || ''}
             />
         )
     }
@@ -279,7 +279,7 @@ export default function UBEATDashboard() {
     }
 
     // Convert subjects object to array for display
-    const subjectsArray = Object.entries(student.subjects).map(([name, data]) => ({
+    const subjectsArray = Object.entries(student?.subjects || {}).map(([name, data]) => ({
         name,
         ...data,
         grade: calculateGrade(data.total)
@@ -337,7 +337,7 @@ export default function UBEATDashboard() {
                             className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-all cursor-pointer"
                         >
                             <IoPrint className="w-4 h-4" />
-                            <span className="hidden md:inline">Print</span>
+                            <span className="hidden md:inline">Print Results</span>
                         </button>
                         <button
                             onClick={handleDownload}
@@ -347,12 +347,12 @@ export default function UBEATDashboard() {
                             {isDownloading ? (
                                 <>
                                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                    <span className="hidden md:inline">Downloading...</span>
+                                    <span className="hidden md:inline">Downloading FSLC...</span>
                                 </>
                             ) : (
                                 <>
                                     <IoDownload className="w-4 h-4" />
-                                    <span className="hidden md:inline">Download</span>
+                                    <span className="hidden md:inline">Download FSLC</span>
                                 </>
                             )}
                         </button>
@@ -436,7 +436,7 @@ export default function UBEATDashboard() {
                                 <div>
                                     <p className="text-xs font-medium text-gray-500 mb-1.5">School</p>
                                     <p className="text-sm font-medium text-gray-900 capitalize">
-                                        {student.schoolName.toLowerCase()}
+                                        {student?.schoolName?.toLowerCase()}
                                     </p>
                                 </div>
                                 {student.lga && (
@@ -462,7 +462,7 @@ export default function UBEATDashboard() {
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="text-center">
                                         <p className="text-2xl font-semibold text-green-600 mb-1 capitalize">
-                                            {student.grade.toLowerCase()}
+                                            {student?.grade?.toLowerCase()}
                                         </p>
                                         <p className="text-xs text-gray-500">Grade</p>
                                     </div>
@@ -625,7 +625,7 @@ export default function UBEATDashboard() {
                         </div>
                         <div>
                             <p className="text-sm text-gray-600 mb-1">School</p>
-                            <p className="text-base font-semibold text-gray-900 capitalize">{student.schoolName.toLowerCase()}</p>
+                            <p className="text-base font-semibold text-gray-900 capitalize">{student?.schoolName?.toLowerCase()}</p>
                         </div>
                         {student.lga && (
                             <div>
@@ -642,7 +642,7 @@ export default function UBEATDashboard() {
                     <div className="grid grid-cols-3 gap-4 text-center">
                         <div>
                             <p className="text-3xl font-bold text-green-600 capitalize">
-                                {student.grade.toLowerCase()}
+                                {student?.grade?.toLowerCase()}
                             </p>
                             <p className="text-sm text-gray-600">Grade</p>
                         </div>

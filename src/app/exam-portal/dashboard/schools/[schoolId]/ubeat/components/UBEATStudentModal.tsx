@@ -106,7 +106,7 @@ export default function UBEATStudentModal({ isOpen, onClose, student, schoolName
                             </p>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <button
+                            {student.isPaid && <button
                                 onClick={() => handleGenerateCertificate(student.grade.toLowerCase() as 'pass' | 'credit' | 'distinction')}
                                 disabled={isGenerating}
                                 className="inline-flex cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -122,7 +122,8 @@ export default function UBEATStudentModal({ isOpen, onClose, student, schoolName
                                         Download Certificate
                                     </>
                                 )}
-                            </button>
+                            </button>}
+                            {!student.isPaid && <div className="text-sm text-gray-700 bg-gray-100 italic border-2 border-gray-300 rounded-3xl px-3 py-0.5">Yet to pay</div>}
                             <button
                                 onClick={onClose}
                                 className="p-2 text-gray-400 cursor-pointer active:scale-90 active:rotate-1 transition-all duration-150 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 rounded-md"

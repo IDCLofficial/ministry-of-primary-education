@@ -62,7 +62,7 @@ export default function StudentRow({ student, onViewStudent, onGenerateCertifica
                         <IoEye className="w-3 h-3 mr-1" />
                         View
                     </button>
-                    <button
+                    {student.isPaid && <button
                         onClick={handleGenerateCertificate}
                         disabled={isGenerating}
                         className="inline-flex items-center px-3 py-1 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 hover:text-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
@@ -87,7 +87,8 @@ export default function StudentRow({ student, onViewStudent, onGenerateCertifica
                                 )}
                             </>
                         )}
-                    </button>
+                    </button>}
+                    {!student.isPaid && <div className="text-sm text-gray-700 bg-gray-100 italic border-2 border-gray-300 rounded-3xl px-3 py-0.5">Yet to pay</div>}
                 </div>
             </td>
         </tr>

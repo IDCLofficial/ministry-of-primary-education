@@ -50,11 +50,6 @@ export default function StatsCards() {
       title: 'Total Schools',
       value: data?.totalSchools || 0,
       bgColor: '#ecf5f4',
-    },
-    {
-      title: 'Certificates Generated',
-      value: data?.certificateGenerated || 0,
-      bgColor: '#ecf5e7',
     }
   ]
 

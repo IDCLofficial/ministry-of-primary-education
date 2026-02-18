@@ -253,7 +253,7 @@ export default function StudentModal({ isOpen, onClose, student, schoolName, onU
                                         <IoPencil className="w-4 h-4 mr-2" />
                                         Edit Results
                                     </button>
-                                    {onGenerateCertificate && (
+                                    {onGenerateCertificate && student.isPaid && (
                                         <button
                                             onClick={() => {
                                                 onGenerateCertificate(student)

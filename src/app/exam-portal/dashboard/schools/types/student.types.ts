@@ -7,6 +7,7 @@ export interface Subject {
 export interface Student {
     _id: string
     name: string
+    isPaid: boolean
     examNo: string
     school: string
     schoolName?: string
@@ -23,6 +24,7 @@ export interface Student {
 export interface DisplayStudent {
     _id: string
     name: string
+    isPaid: boolean
     examNo: string
     school: string
     schoolName?: string
@@ -49,6 +51,7 @@ export interface UBEATStudent {
     examNumber: string
     studentName: string
     serialNumber: number
+    isPaid: boolean
     age: number
     sex: 'male' | 'female'
     lga: string
@@ -141,6 +144,7 @@ export function ubeatStudentToDisplayStudent(ubeatStudent: UBEATStudent): Displa
     return {
         _id: ubeatStudent._id,
         name: ubeatStudent.studentName,
+        isPaid: ubeatStudent.isPaid,
         examNo: ubeatStudent.examNumber,
         school: ubeatStudent.school,
         schoolName: ubeatStudent.schoolName,

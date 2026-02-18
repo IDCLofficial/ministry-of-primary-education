@@ -1,16 +1,11 @@
 'use client'
-// BECE Dashboard - This dashboard is specifically for BECE (Basic Education Certificate Examination) results
-// Each exam type (UBEAT, BECE, etc.) has its own dedicated dashboard
 
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { IoLogOut, IoDownload, IoPrint, IoSchool, IoSparkles, IoSwapHorizontal } from 'react-icons/io5'
+import { IoLogOut, IoDownload, IoPrint, IoSchool, IoSparkles, IoSwapHorizontal, IoTrophy } from 'react-icons/io5'
 import toast from 'react-hot-toast'
-import { toPng } from 'html-to-image'
-import jsPDF from 'jspdf'
-import ResultsCard from './components/ResultsCard'
-import CertificateModal from '@/components/CertificateModal'
 import Paywall from './components/Paywall'
+import CertificateModal from '@/components/CertificateModal'
 import Image from 'next/image'
 import { useGetBECEResultQuery } from '../../store/api/studentApi'
 import StudentInfoCard from './components/StudentInfoCard'
@@ -29,6 +24,81 @@ export default function StudentDashboardPage() {
     const [isDownloading, setIsDownloading] = useState(false)
     const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
     const [examNo, setExamNo] = useState<string | null>(null)
+
+    // Helper functions for score display
+    const getScoreColor = (score: number) => {
+        if (score >= 70) return 'bg-green-100 text-green-800 border-green-200'
+        if (score >= 50) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        return 'bg-red-100 text-red-800 border-red-200'
+    }
+
+    const getGradeColor = (grade: string) => {
+        if (grade === 'A1') return 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white'
+        if (grade === 'B2') return 'text-green-600'
+        if (grade === 'B3') return 'text-green-500'
+        if (grade === 'C4') return 'text-blue-600'
+        if (grade === 'C5') return 'text-blue-500'
+        if (grade === 'C6') return 'text-blue-400'
+        if (grade === 'D7') return 'text-orange-500'
+        if (grade === 'E8') return 'text-yellow-600'
+        if (grade === 'F9') return 'text-red-600'
+        return 'text-gray-600'
+    }
+
+    const hasA1 = (grade: string) => grade === 'A1'
+
+    const getPercentage = (score: number) => {
+        return score.toFixed(1)
+    }
+
+    const calculateAverage = () => {
+        if (!student) return '0'
+        const scores = student.subjects.map(s => s.exam)
+        const total = scores.reduce((sum, score) => sum + score, 0)
+        return (total / scores.length).toFixed(1)
+    }
+
+    // Calculate grade from score
+    const calculateGradeFromScore = (score: number): string => {
+        if (score >= 80) return 'A1'
+        if (score >= 70) return 'B2'
+        if (score >= 65) return 'B3'
+        if (score >= 60) return 'C4'
+        if (score >= 55) return 'C5'
+        if (score >= 50) return 'C6'
+        if (score >= 45) return 'D7'
+        if (score >= 40) return 'E8'
+        return 'F9'
+    }
+
+    // Calculate credits (C4, C5, C6 grades)
+    const calculateCredits = () => {
+        if (!student) return 0
+        return student.subjects.filter(s => {
+            const grade = s.grade || calculateGradeFromScore(s.exam)
+            return ['C4', 'C5', 'C6'].includes(grade)
+        }).length
+    }
+
+    // Calculate overall grade based on grade points average
+    const calculateOverallGrade = () => {
+        if (!student) return 'N/A'
+        const gradePoints: { [key: string]: number } = {
+            'A1': 1, 'B2': 2, 'B3': 3, 'C4': 4, 'C5': 5, 'C6': 6,
+            'D7': 7, 'E8': 8, 'F9': 9
+        }
+
+        const totalPoints = student.subjects.reduce((sum, subject) => {
+            const grade = subject.grade || calculateGradeFromScore(subject.exam)
+            return sum + (gradePoints[grade] || 9)
+        }, 0)
+
+        const average = totalPoints / student.subjects.length
+        if (average <= 1.5) return 'Distinction'
+        if (average <= 2.5) return 'Credit'
+        if (average <= 4.5) return 'Pass'
+        return 'Fail'
+    }
 
     // Check for payment success from URL params
     useEffect(() => {
@@ -81,47 +151,12 @@ export default function StudentDashboardPage() {
         router.push('/student-portal')
     }
 
-    const handleDownload = async () => {
-        if (!certificateRef.current || !student) {
-            toast.error('Results not ready')
-            return
-        }
-
-        try {
-            setIsDownloading(true)
-            toast.loading('Generating PDF...', { id: 'download-pdf' })
-            
-            await new Promise(resolve => setTimeout(resolve, 100))
-            
-            const dataUrl = await toPng(certificateRef.current, {
-                cacheBust: true,
-                pixelRatio: 3,
-                backgroundColor: '#ffffff'
-            })
-
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            })
-
-            const imgWidth = 210
-            const imgHeight = (certificateRef.current.offsetHeight * imgWidth) / certificateRef.current.offsetWidth
-            
-            pdf.addImage(dataUrl, 'PNG', 0, 0, imgWidth, imgHeight)
-            pdf.save(`BECE-Results-${student.examNo}.pdf`)
-            
-            toast.success('PDF downloaded successfully!', { id: 'download-pdf' })
-        } catch (error) {
-            console.error('Error generating PDF:', error)
-            toast.error('Failed to generate PDF', { id: 'download-pdf' })
-        } finally {
-            setIsDownloading(false)
-        }
+    const handleDownload = () => {
+        setIsCertificateModalOpen(true)
     }
 
     const handlePrint = () => {
-        setIsCertificateModalOpen(true)
+        window.print()
     }
 
     // Show loading while fetching data
@@ -247,20 +282,10 @@ export default function StudentDashboardPage() {
                         </button>
                         <button
                             onClick={handleDownload}
-                            disabled={isDownloading}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all cursor-pointer"
                         >
-                            {isDownloading ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                    <span className="hidden md:inline">Downloading...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <IoDownload className="w-4 h-4" />
-                                    <span className="hidden md:inline">Download</span>
-                                </>
-                            )}
+                            <IoDownload className="w-4 h-4" />
+                            <span className="hidden md:inline">Download</span>
                         </button>
                         <button
                             onClick={handleChangeExam}
@@ -321,12 +346,137 @@ export default function StudentDashboardPage() {
                 </div>
 
                 {/* Content Grid */}
-                <div className="space-y-4 mb-6">
+                <div className="space-y-6 mb-6">
                     {/* Student Info */}
                     <StudentInfoCard student={student} />
 
-                    {/* Results */}
-                    <ResultsCard student={student} />
+                    {/* Overall Performance Summary */}
+                    <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
+                        <div className="border-b border-gray-100 px-6 py-4">
+                            <h3 className="text-sm font-semibold text-gray-900">
+                                Overall Performance
+                            </h3>
+                        </div>
+                        <div className="p-6">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="text-center">
+                                    <p className="text-2xl font-semibold text-gray-900 mb-1">
+                                        {student.subjects.length}
+                                    </p>
+                                    <p className="text-xs text-gray-500">Subjects</p>
+                                </div>
+
+                                <div className="text-center">
+                                    <p className="text-2xl font-semibold text-gray-900 mb-1">
+                                        {calculateCredits()}
+                                    </p>
+                                    <p className="text-xs text-gray-500">Credits</p>
+                                </div>
+
+                                <div className="text-center">
+                                    <p className="text-2xl font-bold text-green-600 mb-1">
+                                        {calculateAverage()}%
+                                    </p>
+                                    <p className="text-xs text-gray-500">Average Score</p>
+                                </div>
+
+                                <div className="text-center">
+                                    <p className="text-xl font-semibold text-green-600 mb-1">
+                                        {calculateOverallGrade()}
+                                    </p>
+                                    <p className="text-xs text-gray-500">Overall Grade</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Subject Results Table */}
+                    <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
+                        <div className="border-b border-gray-100 px-6 py-4">
+                            <h3 className="text-sm font-semibold text-gray-900">
+                                Subject Results
+                            </h3>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full">
+                                <thead>
+                                    <tr className="border-b border-gray-100 bg-gray-50">
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">
+                                            Subject
+                                        </th>
+                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500">
+                                            Score
+                                        </th>
+                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500">
+                                            Grade
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {student.subjects.map((subject, index) => {
+                                        const calculatedGrade = calculateGradeFromScore(subject.exam)
+                                        return (
+                                            <tr key={index} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="w-6 h-6 flex items-center justify-center text-xs font-medium text-gray-400">
+                                                            {index + 1}
+                                                        </span>
+                                                        <span className="text-sm font-medium text-gray-900">
+                                                            {subject.name}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="text-sm font-semibold text-gray-900">
+                                                        {subject.exam}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className={`inline-flex items-center gap-1 ${hasA1(calculatedGrade) ? 'px-3 py-1.5 rounded-lg shadow-sm' : ''} text-base font-bold ${getGradeColor(calculatedGrade)}`}>
+                                                        {hasA1(calculatedGrade) && <IoTrophy className="w-4 h-4" />}
+                                                        {calculatedGrade}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Grade Legend */}
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 print:hidden">
+                            <p className="text-xs font-medium text-gray-500 mb-3">Grading Scale</p>
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                                <div className="flex items-center gap-2">
+                                    <IoTrophy className="w-4 h-4 text-amber-500" />
+                                    <span className="font-medium text-gray-700">A1: Distinction</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                    <span className="font-medium text-gray-700">B2-B3: Excellent</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                    <span className="font-medium text-gray-700">C4-C6: Credit</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
+                                    <span className="font-medium text-gray-700">D7: Pass</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                    <span className="font-medium text-gray-700">E8: Pass</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                    <span className="font-medium text-gray-700">F9: Fail</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Info Footer */}
@@ -390,7 +540,7 @@ export default function StudentDashboardPage() {
                         </div>
                         <div>
                             <p className="text-sm text-gray-600 mb-1">School</p>
-                            <p className="text-base font-semibold text-gray-900 capitalize">{student.schoolName.toLowerCase()}</p>
+                            <p className="text-base font-semibold text-gray-900 capitalize">{student?.school.toLowerCase()}</p>
                         </div>
                         <div>
                             <p className="text-sm text-gray-600 mb-1">LGA</p>
@@ -400,25 +550,29 @@ export default function StudentDashboardPage() {
                 </div>
 
                 {/* Overall Performance */}
-                <div className="bg-green-50 rounded-lg p-6 mb-6">
+                <div className="bg-green-50 rounded-lg p-6 mb-6 print:hidden">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Overall Performance</h2>
-                    <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="grid grid-cols-4 gap-4 text-center">
                         <div>
                             <p className="text-3xl font-bold text-gray-900">{student.subjects.length}</p>
                             <p className="text-sm text-gray-600">Subjects</p>
                         </div>
                         <div>
-                            <p className="text-3xl font-bold text-gray-900">{student.totalCredits}</p>
+                            <p className="text-3xl font-bold text-gray-900">{calculateCredits()}</p>
                             <p className="text-sm text-gray-600">Credits</p>
                         </div>
                         <div>
-                            <p className="text-3xl font-bold text-green-600">{student.overallGrade}</p>
-                            <p className="text-sm text-gray-600">Grade</p>
+                            <p className="text-3xl font-bold text-green-600">{calculateAverage()}%</p>
+                            <p className="text-sm text-gray-600">Average Score</p>
+                        </div>
+                        <div>
+                            <p className="text-3xl font-bold text-green-600">{calculateOverallGrade()}</p>
+                            <p className="text-sm text-gray-600">Overall Grade</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Subject Results */}
+                {/* Subject Results Table */}
                 <div className="mb-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Subject Results</h2>
                     <table className="w-full border-collapse">
@@ -430,15 +584,21 @@ export default function StudentDashboardPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {student.subjects.map((subject, index) => (
-                                <tr key={index}>
-                                    <td className="border border-gray-300 px-4 py-2 text-sm">{subject.name}</td>
-                                    <td className="border border-gray-300 px-4 py-2 text-center text-sm font-semibold">{subject.exam}</td>
-                                    <td className="border border-gray-300 px-4 py-2 text-center text-sm font-bold">
-                                        {subject.grade}
-                                    </td>
-                                </tr>
-                            ))}
+                            {student.subjects.map((subject, index) => {
+                                const calculatedGrade = calculateGradeFromScore(subject.exam)
+                                return (
+                                    <tr key={index}>
+                                        <td className="border border-gray-300 px-4 py-2 text-sm">{subject.name}</td>
+                                        <td className="border border-gray-300 px-4 py-2 text-center text-sm font-semibold">{subject.exam}</td>
+                                        <td className="border border-gray-300 px-4 py-2 text-center">
+                                            <span className={`inline-flex items-center gap-1 ${hasA1(calculatedGrade) ? 'px-2 py-0.5 rounded shadow-sm' : ''} text-sm font-bold ${getGradeColor(calculatedGrade)}`}>
+                                                {hasA1(calculatedGrade) && <IoTrophy className="w-3.5 h-3.5" />}
+                                                {calculatedGrade}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -457,7 +617,7 @@ export default function StudentDashboardPage() {
                     isOpen={isCertificateModalOpen}
                     onClose={() => setIsCertificateModalOpen(false)}
                     student={student}
-                    schoolName={student.schoolName}
+                    schoolName={student.school}
                 />
             )}
         </div>

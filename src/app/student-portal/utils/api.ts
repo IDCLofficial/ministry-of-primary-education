@@ -22,7 +22,7 @@ export interface StudentResult {
 export interface StudentData {
     examNo: string
     name: string
-    schoolName: string
+    school: string
     lga: string
     subjects: {
         name: string
@@ -77,12 +77,23 @@ export interface CreatePaymentResponse {
 export interface VerifyPaymentResponse {
     reference: string
     paymentStatus: 'successful' | 'failed' | 'pending'
-    studentName: string
-    school: string
-    paidAt: string
+    studentName?: string
+    school?: string
+    paidAt?: string
     paymentMethod: string
     paymentNotes: string
-    paystackResponse: Record<string, unknown>
+    examNumber: string
+    examYear: number
+    paystackResponse: {
+        metadata?: {
+            custom_fields?: Array<{
+                display_name: string
+                variable_name: string
+                value: string
+            }>
+        }
+        [key: string]: unknown
+    }
     paystackTransactionId: string
 }
 
@@ -199,7 +210,7 @@ export async function checkStudentResult(examNo: string): Promise<StudentData> {
     return {
         examNo: data.examNo,
         name: data.name,
-        schoolName: data.school || 'School Information Not Available',
+        school: data.school || 'School Information Not Available',
         lga: data.lga || 'LGA Information Not Available',
         subjects,
         overallGrade: calculateOverallGrade(subjects),

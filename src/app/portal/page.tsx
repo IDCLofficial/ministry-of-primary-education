@@ -14,8 +14,8 @@ export default function PortalPage() {
                     <Image
                         src="/images/ministry-logo.png"
                         alt="logo"
-                        width={40}
-                        height={40}
+                        width={60}
+                        height={60}
                         className='object-contain'
                         title='Imo State Ministry of Primary and Secondary Education logo'
                     />
@@ -30,8 +30,13 @@ export default function PortalPage() {
                 <div className="max-w-md w-full mx-auto">
                     <LoginForm />
                 </div>
-                <div className="w-full text-center text-sm text-black/80">
-                    Haven&apos;t registered your school? <Link href="/portal/register" className="text-green-600 hover:text-green-800 transition-colors duration-200 underline underline-offset-2 font-medium">Register here</Link>
+                <div className="w-full text-center text-sm text-black/80 space-y-2">
+                    <div>
+                        Haven&apos;t registered your school? <Link href="/portal/register" className="text-green-600 hover:text-green-800 transition-colors duration-200 underline underline-offset-2 font-medium">Register here</Link>
+                    </div>
+                    <div>
+                        Need help? <Link href="/portal/faq" className="text-blue-600 hover:text-blue-800 transition-colors duration-200 underline underline-offset-2 font-medium">View FAQ & User Manual</Link>
+                    </div>
                 </div>
             </main>
         </div>

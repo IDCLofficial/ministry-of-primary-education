@@ -3,6 +3,7 @@
 import React from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import Image from 'next/image'
+import Link from 'next/link'
 import HeaderSkeleton from './HeaderSkeleton'
 
 export default function Header() {

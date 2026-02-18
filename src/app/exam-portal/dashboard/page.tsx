@@ -1,7 +1,7 @@
 import React from 'react'
 import WelcomeText from './components/WelcomeText'
 import StatsCards from './components/StatsCards'
-import RecentActivities from './components/RecentActivities'
+// import RecentActivities from './components/RecentActivities'
 import QuickActions from './components/QuickActions'
 
 export default function BeceDashboardPage() {
@@ -16,7 +16,7 @@ export default function BeceDashboardPage() {
       <QuickActions />
 
       {/* Recent Activities */}
-      <RecentActivities />
+      {/* <RecentActivities /> */}
     </div>
   )
 }

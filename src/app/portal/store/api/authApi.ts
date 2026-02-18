@@ -95,6 +95,7 @@ interface LoginRequest {
 }
 
 export interface ExamDataMain {
+  applicationId: string;
   name: string;
   status: 'not applied' | 'pending' | 'approved' | 'rejected' | 'completed' | "onboarded";
   totalPoints: number;
@@ -209,7 +210,7 @@ interface StudentUpdateResponse {
 
 // Application Status Update interfaces
 interface ApplicationStatusUpdateRequest {
-  status: 'onboarded'
+  status: 'onboarded' | 'completed'
   reviewNotes?: string
 }
 
@@ -409,9 +410,9 @@ export const authApi = apiSlice.injectEndpoints({
     }),
 
     // Update application status
-    updateApplicationStatus: builder.mutation<ApplicationStatusUpdateResponse, { applicationId: string; data: ApplicationStatusUpdateRequest }>({
-      query: ({ applicationId, data }) => ({
-        url: `${API_BASE_URL}${endpoints.UPDATE_APPLICATION_STATUS}/${applicationId}/status`,
+    updateApplicationStatus: builder.mutation<ApplicationStatusUpdateResponse, { applicationId: string; examType: ExamTypeEnum; data: ApplicationStatusUpdateRequest }>({
+      query: ({ applicationId, examType, data }) => ({
+        url: `${API_BASE_URL}${endpoints.UPDATE_APPLICATION_STATUS}/${applicationId}/status?examType=${examType}`,
         method: 'PATCH',
         body: data,
         headers: {

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useAuth } from '@/app/portal/providers/AuthProvider'
@@ -81,6 +81,15 @@ export default function ExamPage() {
     getExamStatus(examId)
   )
 
+  useEffect(() => {
+    if (school?.exams) {
+      const exam = school.exams.find((e) => e.name === examName)
+      if (exam) {
+        setApplicationStatus(exam.status === 'not applied' ? 'not-applied' : exam.status)
+      }
+    }
+  }, [school?.exams])
+
   // Get exam-specific data from school profile
   const examName = examIdToName[examId]
   const currentExamData = school?.exams?.find((e) => e.name === examName);
@@ -148,7 +157,7 @@ export default function ExamPage() {
       gender: filters.gender || undefined,
       sort: filters.sort || undefined
     },
-    { skip: !school?.id || applicationStatus !== 'approved' }
+    { skip: !school?.id || applicationStatus === 'not-applied' }
   )
 
   // Use exam-specific points from school profile
@@ -318,7 +327,7 @@ export default function ExamPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white rounded-lg p-4 border border-gray-200">
                     <p className="text-xs text-gray-500 mb-1">School Name</p>
-                    <p className="text-sm font-semibold text-gray-900">{school?.schoolName}</p>
+                    <p className="text-sm font-semibold text-gray-900 capitalize">{school?.schoolName}</p>
                   </div>
                   <div className="bg-white rounded-lg p-4 border border-gray-200">
                     <p className="text-xs text-gray-500 mb-1">Contact Email</p>
@@ -478,7 +487,7 @@ export default function ExamPage() {
   // Check if sidebar should be visible
   const showCostSummary = (examNumberOfStudents - examTotalPoints) > 0;
   const showOnboardingSummary = (examNumberOfStudents - examTotalPoints) === 0;
-  const showSidebar = showCostSummary || showOnboardingSummary
+  const showSidebar = (showCostSummary || showOnboardingSummary) && applicationStatus === 'approved'
 
   return (
     <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>

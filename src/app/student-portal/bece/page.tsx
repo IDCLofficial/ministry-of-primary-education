@@ -56,13 +56,6 @@ export default function StudentLoginPage() {
                 return
             }
 
-            // Validate subjects array exists
-            if (!result.subjects || !Array.isArray(result.subjects) || result.subjects.length === 0) {
-                console.error('Invalid subjects data:', result.subjects)
-                setError('Your results data is incomplete. Please contact support.')
-                return
-            }
-
             // Store only exam number and exam type (data will be fetched via RTK Query in dashboard)
             localStorage.setItem('student_exam_no', examNo)
             localStorage.setItem('selected_exam_type', 'bece')

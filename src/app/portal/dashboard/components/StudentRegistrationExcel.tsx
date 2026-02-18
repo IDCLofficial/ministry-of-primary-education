@@ -85,8 +85,8 @@ export default function StudentRegistrationExcel({
   const [showCertificateModal, setShowCertificateModal] = useState(false)
   const [originalStudents, setOriginalStudents] = useState<Map<string, Student>>(new Map())
   const [quickAddMode, setQuickAddMode] = useState(false)
-  const [lastStudentDefaults, setLastStudentDefaults] = useState<{ class: string; examYear: number; gender: 'Male' | 'Female' }>({ 
-    class: 'SS3', 
+  const [lastStudentDefaults, setLastStudentDefaults] = useState<{ class: string; examYear: number; gender: 'Male' | 'Female' }>({
+    class: 'SS3',
     examYear: new Date().getFullYear(),
     gender: 'Male'
   })
@@ -108,43 +108,35 @@ export default function StudentRegistrationExcel({
 
   // Initialize editable students from props and track original data
   useEffect(() => {
-    // Only interrupt operations when examPoints reaches 0
-    if (examPoints === 0) {
-      // Preserve the current state of editable students to avoid interrupting ongoing operations
-      setEditableStudents(prev => {
-        // Remove any new rows that haven't been saved yet
-        const withoutNewRows = prev.filter(s => !s.isNew);
-        // Disable editing on all existing rows
-        return withoutNewRows.map(s => ({ ...s, isEditing: false }));
-      });
-      setShowNewRow(false);
-    } else {
-      // Normal update: preserve new rows and editing state
-      setEditableStudents(prev => {
-        // Keep any new rows that are being actively worked on
-        const newRows = prev.filter(s => s.isNew);
-        
-        // Merge incoming students with existing new rows
-        const updatedStudents = students.map(student => {
-          const existing = prev.find(s => s.id === student.id);
-          // Preserve editing state if it exists
-          return existing ? { ...student, isEditing: existing.isEditing } : student;
-        });
-        
-        // Add new rows at the beginning
-        return [...newRows, ...updatedStudents];
-      });
-    }
-    
-    // Store original student data for change detection
     const originalMap = new Map<string, Student>()
-    students.forEach(s => {
-      originalMap.set(s.id, { ...s })
-    })
+
+    if (examPoints === 0 && students.length > 0) {
+      // Only block new rows / editing when we KNOW points are exhausted
+      // but still allow existing students to render
+      setEditableStudents(prev => {
+        const withoutNewRows = prev.filter(s => !s.isNew)
+        // If prev is empty, initialize from API data
+        if (withoutNewRows.length === 0) return students.map(s => ({ ...s }))
+        return withoutNewRows.map(s => ({ ...s, isEditing: false }))
+      })
+      setShowNewRow(false)
+    } else if (examPoints === 0 && students.length === 0) {
+      // Truly nothing yet, don't touch state
+    } else {
+      setEditableStudents(prev => {
+        const newRows = prev.filter(s => s.isNew)
+        const updatedStudents = students.map(student => {
+          const existing = prev.find(s => s.id === student.id && !s.isNew)
+          return existing ? { ...student, isEditing: existing.isEditing } : student
+        })
+        return [...newRows, ...updatedStudents]
+      })
+    }
+
+    students.forEach(s => originalMap.set(s.id, { ...s }))
     setOriginalStudents(originalMap)
-    
     setIsRefreshing(false)
-  }, [students, examPoints]);
+  }, [students, examPoints])
 
   const classOptions = [
     { value: 'SS3', label: 'SS3' },
@@ -161,8 +153,14 @@ export default function StudentRegistrationExcel({
   ]
 
   const yearOptions = [
+    { value: (new Date().getFullYear() - 7).toString(), label: (new Date().getFullYear() - 7).toString() },
+    { value: (new Date().getFullYear() - 6).toString(), label: (new Date().getFullYear() - 6).toString() },
+    { value: (new Date().getFullYear() - 5).toString(), label: (new Date().getFullYear() - 5).toString() },
+    { value: (new Date().getFullYear() - 4).toString(), label: (new Date().getFullYear() - 4).toString() },
+    { value: (new Date().getFullYear() - 3).toString(), label: (new Date().getFullYear() - 3).toString() },
+    { value: (new Date().getFullYear() - 2).toString(), label: (new Date().getFullYear() - 2).toString() },
+    { value: (new Date().getFullYear() - 1).toString(), label: (new Date().getFullYear() - 1).toString() },
     { value: new Date().getFullYear().toString(), label: new Date().getFullYear().toString() },
-    { value: (new Date().getFullYear() + 1).toString(), label: (new Date().getFullYear() + 1).toString() },
   ]
 
   const handleAddNewRow = () => {
@@ -170,7 +168,7 @@ export default function StudentRegistrationExcel({
       toast.error('No available points to onboard new students')
       return
     }
-    
+
     const newStudent: EditableStudent = {
       id: `new-${Date.now()}`,
       fullName: '',
@@ -193,7 +191,7 @@ export default function StudentRegistrationExcel({
 
   const handleCancelEdit = (id: string) => {
     const student = editableStudents.find(s => s.id === id)
-    
+
     setEditableStudents(prev => {
       if (student?.isNew) {
         // Remove new unsaved row
@@ -203,7 +201,7 @@ export default function StudentRegistrationExcel({
       const original = originalStudents.get(id)
       return prev.map(s => (s.id === id && original ? { ...original, isEditing: false } : s))
     })
-    
+
     // Only hide the add button if we're canceling a new row
     if (student?.isNew) {
       setShowNewRow(false)
@@ -251,9 +249,9 @@ export default function StudentRegistrationExcel({
       if (student.isNew) {
         // Create new student
         const studentData = {
-          studentName: student.fullName,
+          studentName: student.fullName.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
           gender: student.gender.toLowerCase() as 'male' | 'female',
-          class: student.class,
+          class: student.class.toLowerCase(),
           examYear: student.examYear,
           school: school.id
         }
@@ -267,7 +265,7 @@ export default function StudentRegistrationExcel({
           isNew: false,
           isLoadingId: true
         }
-        
+
         // Replace the new row with optimistic student, keep other rows unchanged
         setEditableStudents(prev => [optimisticStudent, ...prev.filter(s => s.id !== id)])
         setShowNewRow(false)
@@ -276,18 +274,18 @@ export default function StudentRegistrationExcel({
           examType: examType,
           studentData
         }).unwrap()
-        
+
         toast.success(`Student ${response.studentName} onboarded successfully!`)
-        
+
         // Save the student's class, year, and gender as defaults for next entry
         setLastStudentDefaults({
           class: student.class,
           examYear: student.examYear,
           gender: student.gender
         })
-        
+
         // Update the optimistic student with actual data from response
-        setEditableStudents(prev => prev.map(s => 
+        setEditableStudents(prev => prev.map(s =>
           s.id === tempId ? {
             ...s,
             id: response._id,
@@ -296,12 +294,12 @@ export default function StudentRegistrationExcel({
             isEditing: false
           } : s
         ))
-        
+
         // Refresh in background without showing loader
         if (onRefreshStudents) {
           onRefreshStudents()
         }
-        
+
         // Auto-add new row if in quick-add mode
         if (quickAddMode && examPoints > 1) {
           setTimeout(() => {
@@ -311,14 +309,14 @@ export default function StudentRegistrationExcel({
       } else {
         // Update existing student - check if anything changed
         const original = originalStudents.get(student.id)
-        
+
         if (original) {
-          const hasChanges = 
+          const hasChanges =
             original.fullName !== student.fullName ||
             original.gender !== student.gender ||
             original.class !== student.class ||
             original.examYear !== student.examYear
-          
+
           if (!hasChanges) {
             // No changes detected, just cancel edit mode for this row only
             setEditableStudents(prev =>
@@ -333,7 +331,7 @@ export default function StudentRegistrationExcel({
             return
           }
         }
-        
+
         // Changes detected, proceed with update
         const updateData = {
           studentName: student.fullName,
@@ -341,33 +339,33 @@ export default function StudentRegistrationExcel({
           examYear: student.examYear
         }
 
-        const response = await updateStudent({ 
-          id: student.id, 
+        const response = await updateStudent({
+          id: student.id,
           examType: examType,
           data: updateData,
         }).unwrap()
-        
+
         toast.success(`Student ${response.studentName} updated successfully!`)
-        
+
         // Update local state and cancel edit mode for this row only
         setEditableStudents(prev =>
           prev.map(s => s.id === id ? { ...s, isEditing: false } : s)
         )
-        
+
         // Update original data with new values
         setOriginalStudents(prev => {
           const newMap = new Map(prev)
           const { ...studentData } = student
-          
+
           newMap.set(student.id, studentData as Student)
           return newMap
         })
-        
+
         // Note: No profile refetch needed for updates since no points are consumed
       }
     } catch (error) {
       console.error('Student operation failed:', error)
-      const errorMessage = (error as { data?: { message?: string } })?.data?.message || 
+      const errorMessage = (error as { data?: { message?: string } })?.data?.message ||
         `Failed to ${student.isNew ? 'onboard' : 'update'} student. Please try again.`
       toast.error(errorMessage)
     } finally {
@@ -482,41 +480,42 @@ export default function StudentRegistrationExcel({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                 #
               </th>
-              <th 
+              <th
                 className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('id')}
               >
                 Student ID {getSortIcon('id')}
               </th>
-              <th 
+              <th
                 className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('name')}
               >
                 Full Name {getSortIcon('name')}
               </th>
-              <th 
+              <th
                 className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('gender')}
               >
                 Gender {getSortIcon('gender')}
               </th>
-              <th 
+              <th
                 className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('class')}
               >
                 Class {getSortIcon('class')}
               </th>
-              <th 
+              <th
                 className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('year')}
               >
                 Exam Year {getSortIcon('year')}
               </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+              {examStatus === "approved" && <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                 Actions
-              </th>
+              </th>}
             </tr>
           </thead>
+          {/* {JSON.stringify(students)} */}
           <tbody className="bg-white divide-y divide-gray-200">
             {/* New Record Row - Always at top when active */}
             {showNewRow && editableStudents.find(s => s.isNew) && (() => {
@@ -608,11 +607,11 @@ export default function StudentRegistrationExcel({
                 </tr>
               )
             })()}
-            
+
             {/* Existing Students */}
             {editableStudents.filter(s => !s.isNew).map((student, index) => (
-              <tr 
-                key={student.id} 
+              <tr
+                key={student.id}
                 className={`hover:bg-gray-50 transition-colors ${student.isEditing ? 'bg-blue-50' : ''}`}
               >
                 <td className="px-4 py-3 text-sm text-gray-500">
@@ -674,7 +673,7 @@ export default function StudentRegistrationExcel({
                 <td className="px-4 py-3 text-sm">
                   <span className="text-gray-900">{student.examYear}</span>
                 </td>
-                <td className="px-4 py-3 text-sm text-center">
+                {examStatus === "approved" && <td className="px-4 py-3 text-sm text-center">
                   {student.isEditing ? (
                     <div className="flex items-center justify-center gap-2">
                       <button
@@ -704,7 +703,7 @@ export default function StudentRegistrationExcel({
                       Edit
                     </button>
                   )}
-                </td>
+                </td>}
               </tr>
             ))}
           </tbody>
@@ -727,14 +726,13 @@ export default function StudentRegistrationExcel({
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 ml-2"></div>
               )}
             </button>
-            
+
             <button
               onClick={() => setQuickAddMode(!quickAddMode)}
-              className={`px-4 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap ${
-                quickAddMode
+              className={`px-4 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap ${quickAddMode
                   ? 'bg-green-600 text-white hover:bg-green-700'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
               title="Quick-add mode: Auto-create new row after saving"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -743,7 +741,7 @@ export default function StudentRegistrationExcel({
               Quick Add
             </button>
           </div>
-          
+
           {quickAddMode && (
             <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-4 py-2 rounded-lg">
               <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -775,7 +773,7 @@ export default function StudentRegistrationExcel({
           schoolName={school.schoolName}
           studentsApproved={school.numberOfStudents || 0}
           examSession={new Date().getFullYear().toString()}
-          approvalId={`${examTypeToName[examType]}-IMO-${school.applicationId?.slice(-6)?.toUpperCase() || 'XXXXX'}`}
+          approvalId={`${examTypeToName[examType]}-IMO-${school.exams.find(exam => exam.name === examType)?.applicationId?.slice(-6)?.toUpperCase() || 'XXXXX'}`}
           issueDate={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
         />
       )}

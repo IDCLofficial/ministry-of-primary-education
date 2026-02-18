@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { ExamData, useGetProfileQuery } from '../store/api/authApi'
 
 interface School {
-  applicationId?: string;
   id: string
   schoolName: string
   email: string

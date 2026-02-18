@@ -43,26 +43,34 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
 
   const handleCompleteOnboarding = async () => {
     if (!school?.id) {
-      toast.error('School information not available. Please try again.')
+      toast.error('School information not available. ID is required. Please try again.')
       return
     }
-    if (!school?.applicationId) {
-      toast.error('School information not available. Please try again.')
+    
+    const exam = school?.exams.find(exam => exam.name === examType)
+
+    if (!exam?.applicationId) {
+      toast.error('School information not available. Application ID is required. Please try again.')
       return
     }
+
 
     setIsSubmitting(true)
     
     try {
-      console.log('Submitting onboarding completion to ministry...')
-      
+      toast.loading('Submitting onboarding completion to ministry...', { id: 'onboarding-completion' })
       await updateApplicationStatus({
-        applicationId: school.applicationId,
+        applicationId: exam.applicationId,
+        examType: examType,
         data: {
-          status: 'onboarded',
+          status: examType === ExamTypeEnum.WAEC ? 'onboarded' : 'completed',
           reviewNotes: `Onboarding completed for ${totalStudents} students for ${examType} exam`
         }
       }).unwrap()
+
+      toast.dismiss('onboarding-completion')
+      toast.success('Onboarding completion submitted to ministry successfully!')
+      
       
       // Close confirmation modal and show success modal
       setShowConfirmationModal(false)
@@ -70,6 +78,7 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
       
       handleRefresh()
     } catch (error: unknown) {
+      toast.dismiss('onboarding-completion')
       console.error('Failed to submit onboarding completion:', error)
       let errorMessage = 'Failed to submit onboarding completion. Please try again.'
       

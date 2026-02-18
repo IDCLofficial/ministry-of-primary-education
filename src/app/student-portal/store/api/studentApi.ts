@@ -17,19 +17,19 @@ type Payment = PaymentPaid | PaymentUnpaid;
 
 // UBEAT Student Result
 export interface UBEATStudentResult {
-    _id: string
+    _id?: string
     studentName: string
     examNumber: string
-    age: number
-    sex: string
-    school: string
-    schoolName: string
-    lga: string
-    serialNumber: number
-    averageScore: number
-    grade: string
+    age?: number
+    sex?: string
+    school?: string
+    schoolName?: string
+    lga?: string
+    serialNumber?: number
+    averageScore?: number
+    grade?: string
     examYear?: number
-    subjects: {
+    subjects?: {
         [key: string]: {
             ca: number
             exam: number
@@ -37,10 +37,13 @@ export interface UBEATStudentResult {
             _id: string
         }
     }
-    payment: Payment
-    createdAt: string
-    updatedAt: string
-    __v: number
+    payment?: Payment
+    // Direct payment fields (for alternative form response)
+    paymentUrl?: string
+    paymentReference?: string
+    createdAt?: string
+    updatedAt?: string
+    __v?: number
 }
 
 // BECE Student Result
@@ -90,7 +93,7 @@ export const studentApi = apiSlice.injectEndpoints({
         }),
 
         // Find UBEAT result by student details
-        findUBEATResult: builder.mutation<UBEATStudentResult, FindUBEATResultRequest>({
+        findUBEATResult: builder.mutation<{paymentUrl: string, paymentReference: string}, FindUBEATResultRequest>({
             query: (data) => ({
                 url: `${API_BASE_URL}/ubeat/find-my-result`,
                 method: 'POST',
