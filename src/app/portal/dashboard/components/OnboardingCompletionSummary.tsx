@@ -10,19 +10,18 @@ import Image from 'next/image'
 
 interface OnboardingCompletionSummaryProps {
   totalStudents: number
-  handleRefresh: () => void
   examType: ExamTypeEnum
   examTotalPoints: number
   examNumberOfStudents: number
   pointCost: number
 }
 
-export default function OnboardingCompletionSummary({ totalStudents, handleRefresh, examType, examTotalPoints, pointCost }: OnboardingCompletionSummaryProps) {
+export default function OnboardingCompletionSummary({ totalStudents, examType, examTotalPoints, pointCost }: OnboardingCompletionSummaryProps) {
   const { school } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [updateApplicationStatus] = useUpdateApplicationStatusMutation()
+  const [completeOnboarding] = useUpdateApplicationStatusMutation()
 
   const examTypeToName: Record<ExamTypeEnum, string> = {
     [ExamTypeEnum.WAEC]: 'WAEC',
@@ -52,12 +51,12 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
       return
     }
 
-
     setIsSubmitting(true)
 
     try {
-      toast.loading('Submitting onboarding completion to ministry...', { id: 'onboarding-completion' })
-      await updateApplicationStatus({
+      toast.loading('Initiating payment for onboarding completion...', { id: 'onboarding-completion' })
+
+      const response = await completeOnboarding({
         applicationId: exam.applicationId,
         examType: examType,
         data: {
@@ -67,18 +66,21 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
       }).unwrap()
 
       toast.dismiss('onboarding-completion')
-      toast.success('Onboarding completion submitted to ministry successfully!')
 
+      // Store the return URL in localStorage before redirecting to payment
+      const currentPath = window.location.pathname
+      localStorage.setItem('payment-return-url', currentPath)
 
-      // Close confirmation modal and show success modal
-      setShowConfirmationModal(false)
-      setShowSuccessModal(true)
-
-      handleRefresh()
+      // Redirect to Paystack payment page
+      if (response.authorizationUrl) {
+        window.location.href = response.authorizationUrl
+      } else {
+        throw new Error('Payment authorization URL not received')
+      }
     } catch (error: unknown) {
       toast.dismiss('onboarding-completion')
-      console.error('Failed to submit onboarding completion:', error)
-      let errorMessage = 'Failed to submit onboarding completion. Please try again.'
+      console.error('Failed to initiate onboarding payment:', error)
+      let errorMessage = 'Failed to initiate payment. Please try again.'
 
       if (error && typeof error === 'object') {
         if ('data' in error && error.data && typeof error.data === 'object' && 'message' in error.data) {
@@ -89,7 +91,6 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
       }
 
       toast.error(errorMessage)
-    } finally {
       setIsSubmitting(false)
     }
   }
@@ -143,7 +144,7 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
         </div>
 
         {/* Submit Button */}
-        <button
+        {totalStudents > 0 && <button
           onClick={handleShowConfirmationModal}
           disabled={isSubmitting}
           className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 active:scale-95 active:rotate-2 cursor-pointer"
@@ -161,7 +162,7 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
               Submit {examTypeToName[examType]} Students
             </>
           )}
-        </button>
+        </button>}
 
         {/* Info Text */}
         <p className="text-xs text-gray-500 mt-3">

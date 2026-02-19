@@ -70,8 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           timer: 1500,
           showConfirmButton: false
         });
-
-        console.log('Login successful, token received');
         
         // Small delay to ensure state updates propagate
         setTimeout(() => {
@@ -110,7 +108,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     router.replace('/');
     setIsTokenLoaded(false);
-    console.log('User logged out, all auth data cleared');
   };
 
   return (

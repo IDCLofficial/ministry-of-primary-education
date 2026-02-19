@@ -78,8 +78,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const getUserProfile = useCallback(async () => {
     try {
       const userProfile = await getProfile(token as string)
-
-      console.log({userProfile})
       setUser(userProfile)
       setRole(userProfile.adminType === "iirs_admin" ? "admin" : "user")
       setIsAuthenticated(true)

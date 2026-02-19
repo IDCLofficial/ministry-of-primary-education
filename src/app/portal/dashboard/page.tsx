@@ -23,7 +23,7 @@ export default function DashboardPage() {
   }), [])
 
   // Get exam status from school profile data
-  const getExamStatus = (examId: string): 'not-applied' | 'pending' | 'approved' | 'rejected' | 'completed' | 'onboarded' => {
+  const getExamStatus = (examId: string): 'not-applied' | 'pending' | 'approved' | 'rejected' | 'completed' | 'onboarded'=> {
     if (!school?.exams) return 'not-applied'
     
     // Find the exam in school.exams by matching the exam ID
@@ -46,6 +46,8 @@ export default function DashboardPage() {
         return <span className="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">Completed</span>
       case 'onboarded':
         return <span className="px-2 py-1 text-xs font-semibold rounded bg-purple-100 text-purple-800">Onboarded</span>
+      case 'pending_payment':
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-orange-100 text-orange-800">Pending Payment</span>
       default:
         return <span className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-600">Not Applied</span>
     }

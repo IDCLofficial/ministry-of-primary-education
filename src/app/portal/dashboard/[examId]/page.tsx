@@ -17,6 +17,7 @@ import PaymentStatusModal from '../components/PaymentStatusModal'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
 import Link from 'next/link'
 import CostSummary from '../components/CostSummary'
+import toast from 'react-hot-toast'
 
 interface FilterState {
   class?: string
@@ -95,8 +96,6 @@ export default function ExamPage() {
   const examName = examIdToName[examId]
   const currentExamData = school?.exams?.find((e) => e.name === examName);
 
-  console.log(currentExamData)
-
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const searchParams = useSearchParams()
@@ -163,6 +162,22 @@ export default function ExamPage() {
     { skip: !school?.id || applicationStatus === 'not-applied' }
   )
 
+  // Query for all students (for PDF export)
+  const { data: allStudentsData } = useGetStudentsBySchoolQuery(
+    {
+      schoolId: school?.id || '',
+      examType: examName as ExamTypeEnum,
+      page: 1,
+      limit: studentsData?.totalItems || 10000, // Use total count or large number
+      searchTerm: undefined,
+      class: undefined,
+      year: undefined,
+      gender: undefined,
+      sort: undefined
+    },
+    { skip: !school?.id || applicationStatus === 'not-applied' || !studentsData?.totalItems }
+  )
+
   // Use exam-specific points from school profile
   const examPoints = currentExamData?.availablePoints || 0
   const examTotalPoints = currentExamData?.totalPoints || 0
@@ -173,6 +188,31 @@ export default function ExamPage() {
     // Refetch profile to get updated points
     refreshProfile()
   }, [refetchStudents, refreshProfile])
+
+  const handleExportStudentList = useCallback(() => {
+    if (!allStudentsData?.data || allStudentsData.data.length === 0) {
+      toast.error('No students to export')
+      return
+    }
+
+    // Dynamically import the PDF generator
+    import('../../utils/pdfGenerator').then(({ generateStudentListPDF }) => {
+      const students = allStudentsData.data.map(student => ({
+        id: student._id,
+        studentId: student.studentId?.toString(),
+        fullName: student.studentName,
+        gender: student.gender === 'male' ? 'Male' as const : 'Female' as const,
+        class: student.class,
+        examYear: student.examYear
+      }))
+
+      generateStudentListPDF(students, examName, school?.schoolName || 'Unknown School')
+      toast.success('Student list exported successfully!')
+    }).catch((error) => {
+      console.error('Failed to export student list:', error)
+      toast.error('Failed to export student list')
+    })
+  }, [allStudentsData, examName, school?.schoolName])
 
   const handleClosePaymentStatus = () => {
     setPaymentStatus(null)
@@ -285,6 +325,20 @@ export default function ExamPage() {
               exam={exam}
               onApplicationSubmit={handleApplicationSubmit}
             />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentExamData) {
+    return (
+      <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
+        <ExamHeader />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Exam Data Not Found</h2>
+            <p className="text-gray-600 mb-4">The requested examination data is not available.</p>
           </div>
         </div>
       </div>
@@ -510,6 +564,8 @@ export default function ExamPage() {
     )
   }
 
+  const showPaymentSection = currentExamData?.status === 'approved';
+
   // Show exam dashboard if approved - use exam-specific points
   const hasPointsOrStudents = school && (currentExamData?.usedPoints || examPoints)
 
@@ -520,7 +576,7 @@ export default function ExamPage() {
       <div className="flex-1 mt-4 sm:mt-6">
         {hasPointsOrStudents ? (
           <div className={`flex-1 overflow-y-hidden flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6`}>
-            <div className={`xl:col-span-3 space-y-4 sm:space-y-6 order-2 xl:order-1`}>
+            <div className={`${showPaymentSection ? 'xl:col-span-3' : 'xl:col-span-4'} space-y-4 sm:space-y-6 order-2 xl:order-1`}>
               <ResponsiveFilterBar onFilterChange={handleFilterChange} currentFilters={filters} />
 
               <StudentRegistrationExcel
@@ -540,10 +596,11 @@ export default function ExamPage() {
                 onItemsPerPageChange={setItemsPerPage}
                 examType={getExamType(examId)}
                 isFetchingProfile={isFetchingProfile}
+                onExportStudentList={handleExportStudentList}
               />
             </div>
 
-            <div className="xl:col-span-1 order-1 xl:order-2 overflow-y-auto">
+            {showPaymentSection && <div className="xl:col-span-1 order-1 xl:order-2 overflow-y-auto">
 
               <div className="space-y-6">
                 <CostSummary
@@ -553,7 +610,6 @@ export default function ExamPage() {
                 />
                 <OnboardingCompletionSummary
                   totalStudents={studentsData?.totalItems || 0}
-                  handleRefresh={handleRefresh}
                   examType={examName}
                   examTotalPoints={examTotalPoints}
                   examNumberOfStudents={examNumberOfStudents}
@@ -561,7 +617,7 @@ export default function ExamPage() {
                 />
 
               </div>
-            </div>
+            </div>}
           </div>
         ) : (
           <div className="flex-1 flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6">

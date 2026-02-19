@@ -251,7 +251,6 @@ export default function SchoolRegistrationForm() {
         const successMessage = result?.message || 'Application submitted successfully!'
         toast.success(successMessage)
 
-        console.log('Application submitted successfully:');
         setFormData({
           schoolId: '',
           schoolAddress: '',
@@ -261,7 +260,6 @@ export default function SchoolRegistrationForm() {
           numberOfStudents: ''
         })
 
-        console.log('Form data reset successfully');
         // Redirect to success page with URL parameter
         router.push('/portal/application?submitted=true')
       } catch (error: unknown) {
@@ -301,7 +299,7 @@ export default function SchoolRegistrationForm() {
         }
       }
     } else {
-      console.log('Form has validation errors:', newErrors)
+      console.error('Form has validation errors:', newErrors)
       toast.error('Please fix all validation errors before submitting')
     }
   }

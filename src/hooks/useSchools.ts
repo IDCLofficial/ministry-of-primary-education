@@ -76,8 +76,6 @@ export function useSchools(page: number, limit: number, search?: string, status?
     () => fetchAllSchools(page, limit, search, status)
   );
 
-  console.log(data)
-
   // Apply client-side filtering if search term exists
   const filteredSchools = useMemo(() => {
     if (!search || !search.trim() || !data?.data) {
@@ -85,8 +83,6 @@ export function useSchools(page: number, limit: number, search?: string, status?
     }
 
     const searchTerm = search.toLowerCase().trim();
-    console.log('Filtering schools with search term:', searchTerm);
-    console.log('Total schools before filter:', data.data.length);
     
     const filtered = data.data.filter((school) =>
       school.schoolName?.toLowerCase().includes(searchTerm) ||
@@ -94,8 +90,7 @@ export function useSchools(page: number, limit: number, search?: string, status?
       school.principal?.toLowerCase().includes(searchTerm) ||
       school.email?.toLowerCase().includes(searchTerm)
     );
-    
-    console.log('Filtered schools count:', filtered.length);
+  
     return filtered;
   }, [data?.data, search]);
 

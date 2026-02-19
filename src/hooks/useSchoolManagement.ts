@@ -28,21 +28,15 @@ export function useSchoolManagement() {
   const handleApproveSelected = async () => {
     if (selectedSchools.length === 0) return
     
-    console.log('🚀 Approve button clicked with selected schools:', selectedSchools)
-    
     setIsProcessing(true)
     setNotification(null)
     
     try {
-      console.log('📤 Sending approve request for schools:', selectedSchools)
-      
-      const result = await updateApplicationStatus({
+      await updateApplicationStatus({
         appIds: selectedSchools,
         status: 'approved',
         token: token!
       }).unwrap()
-      
-      console.log('📥 API response received:', result)
       
       // RTK Query mutation succeeded
       setNotification({ 

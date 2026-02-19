@@ -3,7 +3,6 @@ import { UserProfile } from "@/app/portal/iirs/providers/AuthProvider";
 export const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin`;
 
 export async function getTransactionData(token: string) {
-    console.log("Executing getTransactionData")
     const response = await fetch(`${BASE_URL}/stats`, {
         method: 'GET',
         headers: {

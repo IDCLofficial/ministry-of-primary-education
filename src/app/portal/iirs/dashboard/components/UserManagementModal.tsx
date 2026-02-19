@@ -135,7 +135,6 @@ export default function UserManagementModal({ isOpen, onClose }: UserManagementM
             }
 
             const data = await response.json() as User[];
-            console.log({data});
             setUsers(data || []);
         } catch (error) {
             console.error('Error fetching users:', error);

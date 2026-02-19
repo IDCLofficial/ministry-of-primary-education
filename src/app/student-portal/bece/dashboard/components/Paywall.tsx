@@ -22,8 +22,6 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
             localStorage.setItem('student-payment-return-url', '/student-portal/bece/dashboard')
             
             const response = await createPayment(examNo, ExamTypeEnum.BECE);
-
-            console.log({ response, authorizationUrl: response.authorizationUrl });
             
             if (response.authorizationUrl) {
                 toast.success('Redirecting to payment gateway...')

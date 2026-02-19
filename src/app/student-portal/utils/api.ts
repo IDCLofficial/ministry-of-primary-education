@@ -119,7 +119,6 @@ export async function checkPaymentStatus(examNo: string): Promise<PaymentStatus>
 
 // Create payment
 export async function createPayment(examNo: string, examType: ExamTypeEnum): Promise<CreatePaymentResponse> {
-    console.log({ examNo, examType, url: `${API_BASE_URL}/result-payment/create` })
     const response = await fetch(`${API_BASE_URL}/result-payment/create`, {
         method: 'POST',
         headers: {

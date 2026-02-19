@@ -215,8 +215,8 @@ interface ApplicationStatusUpdateRequest {
 }
 
 interface ApplicationStatusUpdateResponse {
-  message: string
-  success: boolean
+  authorizationUrl: string
+  reference: string
 }
 
 interface CreatePasswordRequest {
@@ -246,7 +246,7 @@ export const authApi = apiSlice.injectEndpoints({
           }
         })
 
-        return uniqueSchools.sort((a, b) => 
+        return uniqueSchools.sort((a, b) =>
           a.schoolName.localeCompare(b.schoolName)
         )
       },

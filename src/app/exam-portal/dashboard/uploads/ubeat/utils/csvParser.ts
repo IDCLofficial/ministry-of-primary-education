@@ -130,7 +130,6 @@ export const parseXLSXFile = (file: File, examYear: number): Promise<UBEATStuden
 
             if (records.length > 0) {
               allRecords.push(...records)
-              console.log(`✓ Successfully parsed ${records.length} records from sheet "${sheetName}"`)
             }
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -142,8 +141,6 @@ export const parseXLSXFile = (file: File, examYear: number): Promise<UBEATStuden
           reject(new Error(`No valid UBEAT data found in any sheet of "${file.name}". Please ensure sheets have the correct format with 2 header rows.`))
           return
         }
-
-        console.log(`✓ Total records parsed from "${file.name}": ${allRecords.length} students from ${workbook.SheetNames.length} sheet(s)`)
         resolve(allRecords)
       } catch (error) {
         reject(error)
@@ -230,14 +227,11 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
   for (let i = 2; i < lines.length; i++) {
     const values = parseLine(lines[i])
 
-    if (i === 3) console.log(values[5])
-
     // delete the column if the candidate name includes 20
     if (values[5].includes('20')) {
       values.splice(5, 1)
     }
-    
-    if (i === 3) console.log(values[5])
+  
 
     // Skip empty rows
     const isEmptyRow = !values[columnIndices.serialNo]?.trim() &&

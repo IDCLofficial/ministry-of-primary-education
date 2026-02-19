@@ -17,6 +17,7 @@
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.1.0",
+    "jspdf-autotable": "^5.0.7",
     "lottie-react": "^2.4.1",
     "next": "^15.5.12",
     "nextjs-toploader": "^3.9.17",

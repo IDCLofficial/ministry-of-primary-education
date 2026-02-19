@@ -1,5 +1,15 @@
 import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { allFAQs, categoryInfo } from '../data/faqData'
+
+interface Student {
+    id: string
+    studentId?: string
+    fullName: string
+    gender: 'Male' | 'Female'
+    class: string
+    examYear: number
+}
 
 export const generateFAQPDF = () => {
     const faqs = allFAQs
@@ -28,7 +38,7 @@ export const generateFAQPDF = () => {
         words.forEach(word => {
             const testLine = currentLine ? `${currentLine} ${word}` : word
             const textWidth = doc.getTextWidth(testLine)
-            
+
             if (textWidth > maxWidth) {
                 if (currentLine) {
                     lines.push(currentLine)
@@ -41,11 +51,11 @@ export const generateFAQPDF = () => {
                 currentLine = testLine
             }
         })
-        
+
         if (currentLine) {
             lines.push(currentLine)
         }
-        
+
         return lines
     }
 
@@ -54,11 +64,11 @@ export const generateFAQPDF = () => {
     doc.setTextColor(0, 0, 0)
     doc.text('MOPSE Portal', margin, yPosition)
     yPosition += 10
-    
+
     doc.setFontSize(20)
     doc.text('FAQ & User Manual', margin, yPosition)
     yPosition += 8
-    
+
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(100, 100, 100)
@@ -79,17 +89,17 @@ export const generateFAQPDF = () => {
     yPosition += 10
 
     const categories = Object.keys(categoryInfo)
-    
+
     categories.forEach((category) => {
         const categoryFAQs = faqs.filter(faq => faq.category === category)
-        
+
         if (categoryFAQs.length === 0) return
 
         addNewPageIfNeeded(20)
-        
+
         doc.setFillColor(34, 197, 94)
         doc.rect(margin, yPosition - 5, maxWidth, 10, 'F')
-        
+
         doc.setFontSize(14)
         doc.setFont('helvetica', 'bold')
         doc.setTextColor(255, 255, 255)
@@ -100,53 +110,134 @@ export const generateFAQPDF = () => {
             doc.setFontSize(11)
             doc.setFont('helvetica', 'bold')
             doc.setTextColor(0, 0, 0)
-            
+
             const questionLines = wrapText(faq.question, maxWidth - 10, 11)
             const answerLines = wrapText(faq.answer, maxWidth - 10, 10)
             const totalHeight = (questionLines.length * 6) + (answerLines.length * 5) + 10
-            
+
             addNewPageIfNeeded(totalHeight)
-            
+
             doc.setFillColor(249, 250, 251)
             doc.rect(margin, yPosition, maxWidth, totalHeight - 5, 'F')
-            
+
             yPosition += 5
             questionLines.forEach(line => {
                 doc.text(line, margin + 5, yPosition)
                 yPosition += 6
             })
-            
+
             yPosition += 2
             doc.setFontSize(10)
             doc.setFont('helvetica', 'normal')
             doc.setTextColor(60, 60, 60)
-            
+
             answerLines.forEach(line => {
                 doc.text(line, margin + 5, yPosition)
                 yPosition += 5
             })
-            
+
             yPosition += 8
         })
-        
+
         yPosition += 5
     })
-    
+
     const totalPages = doc.internal.pages.length - 1
     for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i)
         doc.setFontSize(8)
         doc.setTextColor(150, 150, 150)
-        
+
         // Page number centered
         const pageText = `Page ${i} of ${totalPages}`
         const textWidth = doc.getStringUnitWidth(pageText) * 8 / doc.internal.scaleFactor
         doc.text(pageText, (pageWidth - textWidth) / 2, pageHeight - 10)
-        
+
         // Copyright on right
         const copyrightText = `© ${new Date().getFullYear()} MOPSE`
         doc.text(copyrightText, pageWidth - margin - 15, pageHeight - 10)
     }
 
     doc.save('MOPSE-Portal-FAQ-User-Manual.pdf')
+}
+
+export const generateStudentListPDF = (students: Student[], examType: string, schoolName: string) => {
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 20
+
+    // Header
+    doc.setFontSize(20)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(0, 0, 0)
+    doc.text('Student List', margin, 20)
+
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(60, 60, 60)
+    doc.text(`Exam: ${examType}`, margin, 30)
+    doc.text(`School: ${schoolName}`, margin, 37)
+    doc.text(`Total Students: ${students.length}`, margin, 44)
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, margin, 51)
+
+    // Table data
+    const tableData = students.map((student, index) => [
+        (index + 1).toString(),
+        student.studentId || 'N/A',
+        student.fullName,
+        student.gender,
+        student.class,
+        student.examYear.toString()
+    ])
+
+    // Generate table using autoTable
+    autoTable(doc, {
+        head: [['#', 'Student ID', 'Full Name', 'Gender', 'Class', 'Exam Year']],
+        body: tableData,
+        startY: 60,
+        margin: { left: margin, right: margin },
+        styles: {
+            fontSize: 9,
+            cellPadding: 3,
+        },
+        headStyles: {
+            fillColor: [34, 197, 94],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            halign: 'center'
+        },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 15 },
+            1: { halign: 'center', cellWidth: 30 },
+            2: { halign: 'left', cellWidth: 'auto' },
+            3: { halign: 'center', cellWidth: 25 },
+            4: { halign: 'center', cellWidth: 25 },
+            5: { halign: 'center', cellWidth: 30 }
+        },
+        alternateRowStyles: {
+            fillColor: [249, 250, 251]
+        },
+        didDrawPage: (data: { pageNumber: number }) => {
+            // Footer
+            const pageCount = doc.internal.pages.length - 1
+            const currentPage = data.pageNumber
+
+            doc.setFontSize(8)
+            doc.setTextColor(150, 150, 150)
+
+            // Page number
+            const pageText = `Page ${currentPage} of ${pageCount}`
+            const textWidth = doc.getStringUnitWidth(pageText) * 8 / doc.internal.scaleFactor
+            doc.text(pageText, (pageWidth - textWidth) / 2, pageHeight - 10)
+
+            // Copyright
+            const copyrightText = `© ${new Date().getFullYear()} MOPSE`
+            doc.text(copyrightText, pageWidth - margin - 15, pageHeight - 10)
+        }
+    })
+
+    // Save the PDF
+    const fileName = `${examType}-Student-List-${new Date().toISOString().split('T')[0]}.pdf`
+    doc.save(fileName)
 }

@@ -9,6 +9,8 @@ import Pagination from './Pagination'
 import StudentRegistrationSkeleton from './StudentRegistrationSkeleton'
 import CertificatePreviewModal from './CertificatePreviewModal'
 import { FaFileAlt } from 'react-icons/fa'
+import { FaFileExport } from 'react-icons/fa6'
+import { IoDownload } from 'react-icons/io5'
 
 interface Student {
   id: string
@@ -56,6 +58,7 @@ interface StudentRegistrationExcelProps {
   sortState: SortState
   examType: ExamTypeEnum
   isFetchingProfile?: boolean
+  onExportStudentList?: () => void
 }
 
 export default function StudentRegistrationExcel({
@@ -74,6 +77,7 @@ export default function StudentRegistrationExcel({
   isLoading = false,
   examType,
   isFetchingProfile = false,
+  onExportStudentList,
 }: StudentRegistrationExcelProps) {
   const { school } = useAuth()
   const [onboardStudent] = useOnboardStudentMutation()
@@ -377,6 +381,12 @@ export default function StudentRegistrationExcel({
     setShowCertificateModal(true)
   }
 
+  const handleExportAllStudentList = () => {
+    if (onExportStudentList) {
+      onExportStudentList()
+    }
+  }
+
   const getSortIcon = (field: SortableField) => {
     if (sortState.field !== field) {
       return (
@@ -448,6 +458,16 @@ export default function StudentRegistrationExcel({
             >
               <FaFileAlt className="mr-2" />
               Preview Certificate
+            </button>
+          )}
+          {currentExamData && examStatus === "completed" && (
+            <button
+              onClick={handleExportAllStudentList}
+              title="Export Student List"
+              className="inline-flex cursor-pointer items-center px-4 py-2 border-2 border-blue-600 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+            >
+              <IoDownload />
+              <span className="ml-2">Export</span>
             </button>
           )}
 
