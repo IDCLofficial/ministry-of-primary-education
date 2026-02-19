@@ -20,20 +20,20 @@ export default function BecePortalPage() {
                 <Image
                     src="/images/ministry-logo.png"
                     alt="logo"
-                    width={40}
-                    height={40}
+                    width={60}
+                    height={60}
                     className='object-contain'
                     title='Imo State Ministry of Primary and Secondary Education logo'
                 />
 
                 <span className='sm:text-2xl text-xl font-bold max-md:block hidden'>
-                    <abbr title="Basic Education Certificate Examination">BECE</abbr> Portal
+                    <abbr title="Ministry of Primary and Secondary Education">MOPSE</abbr> Portal
                 </span>
-                <span className='sm:text-2xl text-xl text-center font-bold max-md:hidden block'>BECE Portal - Imo State Ministry of Primary and Secondary Education</span>
+                <span className='sm:text-2xl text-xl text-center font-bold max-md:hidden block'>Imo State Ministry of Primary and Secondary Education</span>
             </div>
             <main className="py-8 gap-4 flex flex-col w-full relative z-10">
                 {/* Form Container */}
-                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mt-32">
                     <BeceLoginForm />
                 </div>
             </main>
