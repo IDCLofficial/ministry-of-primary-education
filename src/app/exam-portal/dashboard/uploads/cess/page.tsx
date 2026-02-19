@@ -90,6 +90,7 @@ function UploadContent() {
             <div className={'p-3 bg-white/50 backdrop-blur-[2px] border border-black/10 m-1 mb-0 space-y-4 flex-1 overflow-auto' + (hasData ? ' overflow-y-auto' : 'overflow-hidden')}>
                 {hasData ? (
                     <DataTable 
+                        onOpenOverrideModal={() => {}}
                         data={studentData}
                         onDataChange={handleDataChange}
                         className="flex-1 overflow-hidden"

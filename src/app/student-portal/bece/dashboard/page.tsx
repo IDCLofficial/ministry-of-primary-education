@@ -21,16 +21,8 @@ export default function StudentDashboardPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const certificateRef = useRef<HTMLDivElement>(null)
-    const [isDownloading, setIsDownloading] = useState(false)
     const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
     const [examNo, setExamNo] = useState<string | null>(null)
-
-    // Helper functions for score display
-    const getScoreColor = (score: number) => {
-        if (score >= 70) return 'bg-green-100 text-green-800 border-green-200'
-        if (score >= 50) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-        return 'bg-red-100 text-red-800 border-red-200'
-    }
 
     const getGradeColor = (grade: string) => {
         if (grade === 'A1') return 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white'
@@ -46,10 +38,6 @@ export default function StudentDashboardPage() {
     }
 
     const hasA1 = (grade: string) => grade === 'A1'
-
-    const getPercentage = (score: number) => {
-        return score.toFixed(1)
-    }
 
     const calculateAverage = () => {
         if (!student) return '0'

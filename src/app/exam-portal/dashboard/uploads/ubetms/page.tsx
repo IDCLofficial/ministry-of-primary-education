@@ -91,6 +91,7 @@ function UploadContent() {
                 {hasData ? (
                     <DataTable 
                         data={studentData}
+                        onOpenOverrideModal={() => {}}
                         onDataChange={handleDataChange}
                         className="flex-1 overflow-hidden"
                     />

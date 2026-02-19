@@ -173,28 +173,6 @@ export default function CertificateModal({ isOpen, onClose, student, schoolName 
 
     if (!isOpen || !student) return null
 
-    const validateStudentData = (): { valid: boolean; errors: string[] } => {
-        const errors: string[] = []
-
-        if (!student.name || student.name.trim() === '') {
-            errors.push('Student name is missing')
-        }
-        if (!student.examNo || student.examNo.trim() === '') {
-            errors.push('Exam number is missing')
-        }
-        if (!student.subjects || student.subjects.length === 0) {
-            errors.push('No subjects found')
-        }
-        if (student.subjects && Array.isArray(student.subjects) && student.subjects.some(s => !s.name || s.name.trim() === '')) {
-            errors.push('Some subjects are missing names')
-        }
-        if (student.subjects && Array.isArray(student.subjects) && student.subjects.some(s => typeof s.exam !== 'number')) {
-            errors.push('Some subjects have invalid scores')
-        }
-
-        return { valid: errors.length === 0, errors }
-    }
-
     const calculateGradeFromScore = (score: number): string => {
         if (score >= 80) return 'A1'
         if (score >= 70) return 'B2'
