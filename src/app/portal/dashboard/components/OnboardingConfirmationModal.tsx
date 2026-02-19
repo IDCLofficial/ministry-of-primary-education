@@ -9,6 +9,8 @@ interface OnboardingConfirmationModalProps {
   onConfirm: () => void
   totalStudents: number
   examType: ExamTypeEnum
+  usedPoints: number
+  pointCost: number
 }
 
 export default function OnboardingConfirmationModal({
@@ -16,10 +18,17 @@ export default function OnboardingConfirmationModal({
   onClose,
   onConfirm,
   totalStudents,
-  examType
+  examType,
+  usedPoints,
+  pointCost
 }: OnboardingConfirmationModalProps) {
   const [confirmationText, setConfirmationText] = useState('');
   const [isValid, setIsValid] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const [hasAgreed, setHasAgreed] = useState(false);
+  
+  const accumulatedFee = usedPoints * pointCost + 2000
   
   const examTypeToName: Record<ExamTypeEnum, string> = {
     [ExamTypeEnum.WAEC]: 'WAEC',
@@ -42,11 +51,25 @@ export default function OnboardingConfirmationModal({
     if (isOpen) {
       setConfirmationText('')
       setIsValid(false)
+      setShowDisclaimer(true)
+      setHasScrolledToBottom(false)
+      setHasAgreed(false)
     }
   }, [isOpen])
 
+  const handleDisclaimerScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const element = e.currentTarget
+    const scrolledToBottom = element.scrollHeight - element.scrollTop <= element.clientHeight + 10
+    setHasScrolledToBottom(scrolledToBottom)
+  }
+
+  const handleAgreeToDisclaimer = () => {
+    setHasAgreed(true)
+    setShowDisclaimer(false)
+  }
+
   const handleConfirm = () => {
-    if (isValid) {
+    if (isValid && hasAgreed) {
       onConfirm()
       onClose()
     }
@@ -54,6 +77,176 @@ export default function OnboardingConfirmationModal({
 
   if (!isOpen) return null
 
+  // Show disclaimer modal first
+  if (showDisclaimer) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+          {/* Disclaimer Header */}
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-orange-50">
+            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              Important: Final Submission Notice
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Scrollable Disclaimer Content */}
+          <div 
+            className="flex-1 overflow-y-auto px-6 py-4"
+            onScroll={handleDisclaimerScroll}
+          >
+            <div className="prose prose-sm max-w-none">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-yellow-800 font-semibold mb-2">⚠️ Critical Information</p>
+                <p className="text-sm text-yellow-700">
+                  Please read this document carefully. You must scroll to the bottom to activate the &ldquo;I Understand&rdquo; button.
+                </p>
+              </div>
+
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Onboarding Completion & Payment</h4>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h5 className="font-semibold text-blue-900 mb-3">Payment Summary</h5>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-700">Exam:</span>
+                    <span className="font-semibold text-blue-900">{examTypeToName[examType]}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-700">Total Students:</span>
+                    <span className="font-semibold text-blue-900">{totalStudents.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-700">Points Used:</span>
+                    <span className="font-semibold text-blue-900">{usedPoints.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-700">Cost per Point:</span>
+                    <span className="font-semibold text-blue-900">₦{pointCost.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-700">Processing Fee:</span>
+                    <span className="font-semibold text-blue-900">₦2,000</span>
+                  </div>
+                  <div className="border-t border-blue-300 pt-2 mt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-blue-900">Total Amount Due:</span>
+                      <span className="text-xl font-bold text-blue-900">₦{accumulatedFee.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <h5 className="font-semibold text-gray-900 mt-4 mb-2">1. Finality of Submission</h5>
+              <p className="text-sm text-gray-700 mb-3">
+                By submitting this onboarding completion, you confirm that you have finished onboarding all students for <strong>{examTypeToName[examType]}</strong> and have <strong>no plans to add any additional students</strong> now or in the future for this examination.
+              </p>
+
+              <h5 className="font-semibold text-gray-900 mt-4 mb-2">2. Payment Processing</h5>
+              <p className="text-sm text-gray-700 mb-3">
+                Upon submission, a payment of <strong>₦{accumulatedFee.toLocaleString()}</strong> will be processed immediately. This amount covers:
+              </p>
+              <ul className="text-sm text-gray-700 mb-3 list-disc pl-5 space-y-1">
+                <li>Examination fees for {usedPoints.toLocaleString()} students at ₦{pointCost.toLocaleString()} per student</li>
+                <li>Processing and administrative fee of ₦2,000</li>
+              </ul>
+
+              <h5 className="font-semibold text-gray-900 mt-4 mb-2">3. Ministry Review</h5>
+              <p className="text-sm text-gray-700 mb-3">
+                Your student list will be sent to the Ministry of Primary & Secondary Education for final approval. Once approved, you will not be able to add more students to this examination.
+              </p>
+
+              <h5 className="font-semibold text-gray-900 mt-4 mb-2">4. No Refunds or Changes</h5>
+              <p className="text-sm text-gray-700 mb-3">
+                <strong className="text-red-600">Important:</strong> After submission and payment processing:
+              </p>
+              <ul className="text-sm text-gray-700 mb-3 list-disc pl-5 space-y-1">
+                <li>You cannot add more students to this examination</li>
+                <li>Payments are non-refundable</li>
+                <li>Changes to the student list require formal written request to the Ministry</li>
+              </ul>
+
+              <h5 className="font-semibold text-gray-900 mt-4 mb-2">5. Verification</h5>
+              <p className="text-sm text-gray-700 mb-3">
+                Before proceeding, please verify:
+              </p>
+              <ul className="text-sm text-gray-700 mb-3 list-disc pl-5 space-y-1">
+                <li>All {totalStudents} students have been properly onboarded</li>
+                <li>Student information is accurate and complete</li>
+                <li>You have the authority to complete this submission</li>
+                <li>You understand the payment amount and terms</li>
+              </ul>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6 mb-4">
+                <p className="text-sm text-green-800 font-semibold mb-2">✓ Acknowledgment</p>
+                <p className="text-sm text-green-700">
+                  By clicking &ldquo;I Understand&rdquo; below, you acknowledge that you have read and understood this notice. You confirm that you are ready to complete the onboarding process and authorize the payment of ₦{accumulatedFee.toLocaleString()}.
+                </p>
+              </div>
+
+              <p className="text-xs text-gray-500 mt-4 mb-8">
+                Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+          </div>
+
+          {/* Disclaimer Footer */}
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between gap-4">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAgreeToDisclaimer}
+                disabled={!hasScrolledToBottom}
+                className={`px-6 py-2 text-sm font-semibold rounded-lg transition-all ${
+                  hasScrolledToBottom
+                    ? 'bg-orange-600 text-white hover:bg-orange-700 cursor-pointer'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                {hasScrolledToBottom ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    I Understand
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                    Scroll to bottom
+                  </span>
+                )}
+              </button>
+            </div>
+            {!hasScrolledToBottom && (
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Please scroll through the entire document to activate the &ldquo;I Understand&rdquo; button
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show confirmation input after disclaimer is accepted
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-[8px] flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
@@ -75,16 +268,13 @@ export default function OnboardingConfirmationModal({
         <div className="p-6">
           <div className="text-center mb-6">
             <p className="text-gray-600 mb-4">
-              You are about to complete the <span className="font-semibold text-gray-900">{examType}</span> onboarding process for <span className="font-semibold text-gray-900">{totalStudents} students</span>.
+              Final step: Type the confirmation text below to complete the submission.
             </p>
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
-              <p className="text-orange-800 text-sm font-medium">
-                ⚠️ Important: This action means you are done and have no plans to add more {examType} students.
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+              <p className="text-green-800 text-sm font-medium">
+                ✓ You have acknowledged the terms and payment of <span className="font-bold">₦{accumulatedFee.toLocaleString()}</span>
               </p>
             </div>
-            <p className="text-gray-600 text-sm">
-              Once submitted, your <span className="font-medium">{examType}</span> student list will be sent to the Ministry of Primary & Secondary Education for final approval and you won&apos;t be able to add more students.
-            </p>
           </div>
 
           {/* Confirmation Input */}

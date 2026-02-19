@@ -6,17 +6,17 @@ import Image from 'next/image'
 import { useAuth } from '@/app/portal/providers/AuthProvider'
 import { useGetStudentsBySchoolQuery } from '@/app/portal/store/api/authApi'
 import ExamHeader from '../components/ExamHeader'
-import { getExamById } from '../exams/types'
+import { EXAM_TYPES, getExamById } from '../exams/types'
 import ExamApplicationForm from '../components/ExamApplicationForm'
 import { ExamTypeEnum } from '@/app/portal/store/api/authApi'
 import ResponsiveFilterBar from '../components/ResponsiveFilterBar'
 import StudentRegistrationExcel, { SortableField, SortState } from '../components/StudentRegistrationExcel'
-import CostSummary from '../components/CostSummary'
 import OnboardingCompletionSummary from '../components/OnboardingCompletionSummary'
 import PaymentModal from '../components/PaymentModal'
 import PaymentStatusModal from '../components/PaymentStatusModal'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
 import Link from 'next/link'
+import CostSummary from '../components/CostSummary'
 
 interface FilterState {
   class?: string
@@ -69,7 +69,7 @@ export default function ExamPage() {
   // Get exam status from school profile data
   const getExamStatus = (examId: string): 'not-applied' | 'pending' | 'approved' | 'rejected' | 'completed' | 'onboarded' => {
     if (!school?.exams) return 'not-applied'
-    
+
     const examName = examIdToName[examId]
     const examData = school.exams.find((e) => e.name === examName)
     const status = examData?.status || 'not applied'
@@ -80,6 +80,7 @@ export default function ExamPage() {
   const [applicationStatus, setApplicationStatus] = useState<'not-applied' | 'pending' | 'approved' | 'rejected' | 'completed' | 'onboarded'>(
     getExamStatus(examId)
   )
+  const [isRetrying, setIsRetrying] = useState(false)
 
   useEffect(() => {
     if (school?.exams) {
@@ -100,7 +101,7 @@ export default function ExamPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const searchParams = useSearchParams()
   const router = useRouter()
-  
+
   // Get filters and page from URL search params
   const filters: FilterState = {
     class: searchParams?.get('class') || undefined,
@@ -108,22 +109,22 @@ export default function ExamPage() {
     gender: searchParams?.get('gender') || undefined,
     sort: searchParams?.get('sort') || undefined
   }
-  
+
   const currentPage = parseInt(searchParams?.get('page') || '1', 10)
 
   let sortField: SortableField | null = null
   let sortDirection: SortDirection = null
-  
+
   const sortParam = searchParams?.get('sort')
   if (sortParam) {
     const [field, direction] = sortParam.split('-')
-    if ((direction === 'asc' || direction === 'desc') && 
-        ['id', 'name', 'gender', 'class', 'year', 'paymentStatus'].includes(field)) {
+    if ((direction === 'asc' || direction === 'desc') &&
+      ['id', 'name', 'gender', 'class', 'year', 'paymentStatus'].includes(field)) {
       sortField = field as SortableField
       sortDirection = direction
     }
   }
-  
+
   const sortState: SortState = {
     field: sortField,
     direction: sortDirection,
@@ -165,7 +166,6 @@ export default function ExamPage() {
   // Use exam-specific points from school profile
   const examPoints = currentExamData?.availablePoints || 0
   const examTotalPoints = currentExamData?.totalPoints || 0
-  const examUsedPoints = currentExamData?.usedPoints || 0
   const examNumberOfStudents = currentExamData?.numberOfStudents || 0
 
   const handleRefresh = useCallback(async () => {
@@ -190,10 +190,10 @@ export default function ExamPage() {
 
   const handleSort = (field: SortableField) => {
     const params = new URLSearchParams(searchParams?.toString() || '')
-    
+
     // Reset to page 1 when sorting changes
     params.set('page', '1')
-    
+
     // Cycle through: none -> asc -> desc -> none
     if (sortState.field === field) {
       if (sortState.direction === 'asc') {
@@ -205,36 +205,36 @@ export default function ExamPage() {
       // New field, start with asc
       params.set('sort', `${field}-asc`)
     }
-    
+
     router.replace(`?${params.toString()}`, { scroll: false })
   }
 
   const handleFilterChange = (newFilters: FilterState) => {
     // Update URL search params
     const params = new URLSearchParams(searchParams?.toString() || '')
-    
+
     // Reset to page 1 when filters change
     params.set('page', '1')
-    
+
     // Set or remove filter params
     if (newFilters.class !== 'All') {
       params.set('class', newFilters.class || '')
     } else {
       params.delete('class')
     }
-    
+
     if (newFilters.year !== 'All') {
       params.set('year', newFilters.year || '')
     } else {
       params.delete('year')
     }
-    
+
     if (newFilters.gender !== 'All') {
       params.set('gender', newFilters.gender || '')
     } else {
       params.delete('gender')
     }
-    
+
     // Update URL without page reload
     router.push(`?${params.toString()}`, { scroll: false })
   }
@@ -253,8 +253,8 @@ export default function ExamPage() {
       gender: student.gender === 'male' ? 'Male' as const : 'Female' as const,
       class: student.class,
       examYear: student.examYear,
-      paymentStatus: student.paymentStatus === 'paid' ? 'Completed' as const : 
-                   student.paymentStatus === 'pending' ? 'Pending' as const : 'Not Paid' as const,
+      paymentStatus: student.paymentStatus === 'paid' ? 'Completed' as const :
+        student.paymentStatus === 'pending' ? 'Pending' as const : 'Not Paid' as const,
       onboardingStatus: student.onboardingStatus
     }))
   }, [studentsData])
@@ -273,16 +273,16 @@ export default function ExamPage() {
     )
   }
 
-  // Show application form if not applied
-  if (applicationStatus === 'not-applied') {
+  // Show application form if not applied or retrying after rejection
+  if (applicationStatus === 'not-applied' || (applicationStatus === 'rejected' && isRetrying)) {
     return (
       <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
         <ExamHeader currentExam={exam} />
-        
+
         <div className="flex-1 mt-4 sm:mt-6">
           <div className="max-w-4xl mx-auto">
-            <ExamApplicationForm 
-              exam={exam} 
+            <ExamApplicationForm
+              exam={exam}
               onApplicationSubmit={handleApplicationSubmit}
             />
           </div>
@@ -296,7 +296,7 @@ export default function ExamPage() {
     return (
       <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
         <ExamHeader currentExam={exam} />
-        
+
         <div className="flex-1 mt-4 sm:mt-6">
           <div className="max-w-3xl mx-auto">
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
@@ -461,6 +461,32 @@ export default function ExamPage() {
                       </div>
                     </div>
 
+                    {/* Retry Application Button */}
+                    <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
+                      <div className="flex flex-col items-start justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-900 mb-1">Ready to Reapply?</h4>
+                            <p className="text-sm text-gray-700">
+                              If you&apos;ve addressed the issues mentioned above, you can submit a new application for {exam.shortName}.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setIsRetrying(true)}
+                          className="w-full sm:w-auto px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Retry Application
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                       <div className="flex items-start gap-3">
                         <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -486,22 +512,17 @@ export default function ExamPage() {
 
   // Show exam dashboard if approved - use exam-specific points
   const hasPointsOrStudents = school && (currentExamData?.usedPoints || examPoints)
-  
-  // Check if sidebar should be visible
-  const showCostSummary = (examNumberOfStudents - examTotalPoints) > 0;
-  const showOnboardingSummary = (examNumberOfStudents - examUsedPoints) === 0;
-  const showSidebar = (showCostSummary || showOnboardingSummary) && applicationStatus === 'approved'
 
   return (
     <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
       <ExamHeader currentExam={exam} />
-      
+
       <div className="flex-1 mt-4 sm:mt-6">
         {hasPointsOrStudents ? (
-          <div className={`flex-1 overflow-y-hidden flex flex-col ${showSidebar ? 'xl:grid xl:grid-cols-4' : ''} gap-4 sm:gap-6`}>
-            <div className={`${showSidebar ? 'xl:col-span-3' : ''} space-y-4 sm:space-y-6 ${showSidebar ? 'order-2 xl:order-1' : ''}`}>
+          <div className={`flex-1 overflow-y-hidden flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6`}>
+            <div className={`xl:col-span-3 space-y-4 sm:space-y-6 order-2 xl:order-1`}>
               <ResponsiveFilterBar onFilterChange={handleFilterChange} currentFilters={filters} />
-              
+
               <StudentRegistrationExcel
                 students={students}
                 handleSort={handleSort}
@@ -522,28 +543,25 @@ export default function ExamPage() {
               />
             </div>
 
-            {showSidebar && (
-              <div className="xl:col-span-1 order-1 xl:order-2 overflow-y-auto">
+            <div className="xl:col-span-1 order-1 xl:order-2 overflow-y-auto">
 
-                <div className="space-y-6">
-                  <OnboardingCompletionSummary
-                    totalStudents={studentsData?.totalItems || 0}
-                    handleRefresh={handleRefresh}
-                    examType={examName}
-                    examTotalPoints={examTotalPoints}
-                    examNumberOfStudents={examNumberOfStudents}
-                  />
-                  {showCostSummary && (
-                    <CostSummary
-                      onPurchaseMorePoints={() => setShowPaymentModal(true)}
-                      examPoints={examPoints}
-                      examTotalPoints={examTotalPoints}
-                      examNumberOfStudents={examNumberOfStudents}
-                    />
-                  )}
-                </div>
+              <div className="space-y-6">
+                <CostSummary
+                  pointCost={EXAM_TYPES.find((e) => e.id === examId)?.fee || 0}
+                  examPoints={currentExamData?.availablePoints || 0}
+                  examTotalPoints={currentExamData?.totalPoints || 0}
+                />
+                <OnboardingCompletionSummary
+                  totalStudents={studentsData?.totalItems || 0}
+                  handleRefresh={handleRefresh}
+                  examType={examName}
+                  examTotalPoints={examTotalPoints}
+                  examNumberOfStudents={examNumberOfStudents}
+                  pointCost={EXAM_TYPES.find((e) => e.id === examId)?.fee || 0}
+                />
+
               </div>
-            )}
+            </div>
           </div>
         ) : (
           <div className="flex-1 flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6">
@@ -567,7 +585,7 @@ export default function ExamPage() {
       <PaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        onPaymentSuccess={() => {}}
+        onPaymentSuccess={() => { }}
         numberOfStudents={10}
         examType={getExamType(examId)}
         feePerStudent={exam?.fee || 500}

@@ -1,20 +1,8 @@
-import React from 'react'
 import jsPDF from 'jspdf'
+import { allFAQs, categoryInfo } from '../data/faqData'
 
-interface FAQItem {
-    question: string
-    answer: string
-    category: string
-}
-
-interface CategoryInfo {
-    [key: string]: {
-        title: string
-        icon: React.ComponentType<{ className?: string }>
-    }
-}
-
-export const generateFAQPDF = (faqs: FAQItem[], categoryInfo: CategoryInfo) => {
+export const generateFAQPDF = () => {
+    const faqs = allFAQs
     const doc = new jsPDF()
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()

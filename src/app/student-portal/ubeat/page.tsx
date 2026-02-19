@@ -10,7 +10,7 @@ import { useDebounce } from '../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
-import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation, UBEATStudentResult } from '../store/api/studentApi'
+import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation } from '../store/api/studentApi'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
@@ -166,9 +166,12 @@ export default function UBEATLoginPage() {
 
     const handleAlternativeFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        setError('')
 
         if (!isAltFormValid) {
-            toast.error('Please fill in all fields correctly')
+            const errorMsg = 'Please fill in all fields correctly'
+            setError(errorMsg)
+            toast.error(errorMsg)
             return
         }
 
@@ -186,7 +189,9 @@ export default function UBEATLoginPage() {
             // Validate response has required data
             if (!fullResult.paymentUrl || !fullResult.paymentReference) {
                 console.error('Invalid payment response:', fullResult)
-                setError('Payment information not available. Please try again or contact support.')
+                const errorMsg = 'Payment information not available. Please try again or contact support.'
+                setError(errorMsg)
+                toast.error(errorMsg)
                 return
             }
 
@@ -197,6 +202,8 @@ export default function UBEATLoginPage() {
             
             // Store exam number for after payment if available
             localStorage.setItem('selected_exam_type', 'ubeat')
+
+            toast.success('Data retrieved successfully!')
             
             if (fullResult.paymentUrl.toLowerCase().includes('ubeat')) {
                 router.push(`${fullResult.paymentUrl}?trxref=${fullResult.paymentReference}&reference=${fullResult.paymentReference}`)
@@ -206,23 +213,28 @@ export default function UBEATLoginPage() {
             // ALWAYS redirect to payment page
             router.push('/student-portal/ubeat/payment')
         } catch (error: unknown) {
-            const errorObject = error as { status: string | number }
+            const errorObject = error as { status: string | number; data?: { message?: string } }
             console.error('Find result error:', error)
 
+            let errorMsg = ''
+            
             // Handle RTK Query errors
             if (errorObject.status === 404) {
-                setError('We couldn\'t find your results with the provided information. Please check your details and try again.')
+                errorMsg = 'We couldn\'t find your results with the provided information. Please check your details and try again.'
             } else if (errorObject.status === 400) {
-                setError('Invalid information provided. Please double-check your details.')
+                errorMsg = errorObject.data?.message || 'Invalid information provided. Please double-check your details.'
             } else if (errorObject.status === 500) {
-                setError('Our system is having a moment. Please try again in a few minutes.')
+                errorMsg = 'Our system is having a moment. Please try again in a few minutes.'
             } else if (errorObject.status === 'FETCH_ERROR') {
-                setError('Network error: Unable to connect to server. Please check your internet connection.')
+                errorMsg = 'Network error: Unable to connect to server. Please check your internet connection.'
             } else if (errorObject.status === 'PARSING_ERROR') {
-                setError('Server returned invalid data. Please try again.')
+                errorMsg = 'Server returned invalid data. Please try again.'
             } else {
-                setError('We\'re having trouble finding your results. Please check your information and try again.')
+                errorMsg = 'We\'re having trouble finding your results. Please check your information and try again.'
             }
+            
+            setError(errorMsg)
+            toast.error(errorMsg)
         }
     }
 
@@ -454,6 +466,31 @@ export default function UBEATLoginPage() {
                             ) : (
                                 /* Alternative Form (Name, School, LGA, Year) */
                                 <form onSubmit={handleAlternativeFormSubmit} className="space-y-4">
+                                    {/* Error Message */}
+                                    {error && (
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-shake">
+                                            <div className="flex gap-3">
+                                                <div className="flex-shrink-0">
+                                                    <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-medium text-red-800">{error}</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setError('')}
+                                                    className="flex-shrink-0 text-red-400 hover:text-red-600 transition-colors"
+                                                >
+                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Full Name */}
                                     <div className="group">
                                         <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -467,7 +504,10 @@ export default function UBEATLoginPage() {
                                                 type="text"
                                                 id="fullName"
                                                 value={altFormData.fullName}
-                                                onChange={(e) => setAltFormData({ ...altFormData, fullName: e.target.value })}
+                                                onChange={(e) => {
+                                                    setAltFormData({ ...altFormData, fullName: e.target.value })
+                                                    if (error) setError('')
+                                                }}
                                                 placeholder="Enter your full name"
                                                 className="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200"
                                                 disabled={isProcessingPayment}
@@ -483,7 +523,10 @@ export default function UBEATLoginPage() {
                                         <CustomDropdown
                                             options={lgaOptions}
                                             value={altFormData.lga}
-                                            onChange={(value) => setAltFormData({ ...altFormData, lga: value, schoolName: '' })}
+                                            onChange={(value) => {
+                                                setAltFormData({ ...altFormData, lga: value, schoolName: '' })
+                                                if (error) setError('')
+                                            }}
                                             placeholder="Select LGA"
                                         />
                                     </div>
@@ -515,7 +558,10 @@ export default function UBEATLoginPage() {
                                                     label: String(school.schoolName).startsWith('"') ? String(school.schoolName).slice(1) : school.schoolName
                                                 }))}
                                                 value={altFormData.schoolName}
-                                                onChange={(value) => setAltFormData({ ...altFormData, schoolName: value })}
+                                                onChange={(value) => {
+                                                    setAltFormData({ ...altFormData, schoolName: value })
+                                                    if (error) setError('')
+                                                }}
                                                 placeholder="Select a school"
                                                 searchable
                                                 searchPlaceholder="Search school name..."
@@ -536,7 +582,10 @@ export default function UBEATLoginPage() {
                                                 type="text"
                                                 id="examYear"
                                                 value={altFormData.examYear}
-                                                onChange={(e) => setAltFormData({ ...altFormData, examYear: e.target.value })}
+                                                onChange={(e) => {
+                                                    setAltFormData({ ...altFormData, examYear: e.target.value })
+                                                    if (error) setError('')
+                                                }}
                                                 placeholder="e.g., 2025"
                                                 maxLength={4}
                                                 className="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200"

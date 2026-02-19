@@ -331,13 +331,13 @@ function UploadContent() {
                             
                             {/* Current Step with Animation */}
                             {uploadProgress.currentStep && (
-                                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
                                     <div className="flex items-center justify-center space-x-2">
-                                        <svg className="w-5 h-5 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <svg className="w-5 h-5 text-green-600 animate-spin" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
-                                        <span className="text-sm font-medium text-blue-900 animate-pulse">
+                                        <span className="text-sm font-medium text-green-900 animate-pulse">
                                             {uploadProgress.currentStep}
                                         </span>
                                     </div>
@@ -410,7 +410,7 @@ function UploadContent() {
                                 <h3 className="text-lg font-semibold text-gray-900">Override Exam Year & LGA by File</h3>
                                 <button
                                     onClick={() => setShowOverrideModal(false)}
-                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                    className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
                                 >
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -426,8 +426,8 @@ function UploadContent() {
                         <div className="flex-1 overflow-y-auto px-6 py-4">
                             {/* Bulk Override Section */}
                             {fileOverrides.length > 1 && (
-                                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <h4 className="text-sm font-semibold text-green-900 mb-3 flex items-center gap-2">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                         </svg>
@@ -440,12 +440,12 @@ function UploadContent() {
                                                 placeholder="Exam Year (e.g. 2024)"
                                                 value={bulkExamYear}
                                                 onChange={(e) => setBulkExamYear(e.target.value)}
-                                                className="flex-1 px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                className="flex-1 px-3 py-2 border border-green-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
                                             />
                                             <button
                                                 onClick={handleApplyBulkExamYear}
                                                 disabled={!bulkExamYear}
-                                                className="px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                                className="px-3 py-2 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
                                             >
                                                 Apply to All
                                             </button>
@@ -456,18 +456,18 @@ function UploadContent() {
                                                 placeholder="LGA (e.g. Owerri Municipal)"
                                                 value={bulkLga}
                                                 onChange={(e) => setBulkLga(e.target.value)}
-                                                className="flex-1 px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                className="flex-1 px-3 py-2 border border-green-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
                                             />
                                             <button
                                                 onClick={handleApplyBulkLga}
                                                 disabled={!bulkLga}
-                                                className="px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                                className="px-3 py-2 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
                                             >
                                                 Apply to All
                                             </button>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-blue-700 mt-2">
+                                    <p className="text-xs text-green-700 mt-2">
                                         💡 Use this to quickly set the same value for all {fileOverrides.length} files, then adjust individual files below if needed.
                                     </p>
                                 </div>
@@ -496,7 +496,7 @@ function UploadContent() {
                                                     placeholder="e.g. 2024"
                                                     value={fileOverride.examYear}
                                                     onChange={(e) => handleUpdateFileOverride(index, 'examYear', e.target.value)}
-                                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
                                                 />
                                             </div>
                                             <div>
@@ -508,7 +508,7 @@ function UploadContent() {
                                                     placeholder="e.g. Owerri Municipal"
                                                     value={fileOverride.lga}
                                                     onChange={(e) => handleUpdateFileOverride(index, 'lga', e.target.value)}
-                                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
                                                 />
                                             </div>
                                         </div>
@@ -521,13 +521,13 @@ function UploadContent() {
                         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end space-x-3">
                             <button
                                 onClick={() => setShowOverrideModal(false)}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
                             >
                                 Skip
                             </button>
                             <button
                                 onClick={handleApplyFileOverrides}
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors active:scale-95"
+                                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors active:scale-95 cursor-pointer"
                             >
                                 Apply Overrides
                             </button>

@@ -1,11 +1,11 @@
 'use client'
-
 import React, { useState } from 'react'
 import Image from 'next/image'
-import { useAuth } from '@/app/portal/providers/AuthProvider'
-import { ExamType } from '../exams/types'
+import { useAuth } from '../../providers/AuthProvider'
 import { ExamTypeEnum, useSubmitExamApplicationMutation, useGetProfileQuery } from '@/app/portal/store/api/authApi'
 import toast from 'react-hot-toast'
+import { ExamType } from '../exams/types'
+import { allFAQs } from '../../data/faqData'
 
 interface ExamApplicationFormProps {
   exam: ExamType
@@ -17,6 +17,9 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
   const [submitApplication, { isLoading: isSubmitting }] = useSubmitExamApplicationMutation()
   const { refetch: refetchProfile } = useGetProfileQuery()
   const [numberOfStudents, setNumberOfStudents] = useState('')
+  const [showTermsModal, setShowTermsModal] = useState(false)
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   // Map exam IDs to ExamTypeEnum
   const getExamType = (examId: string): ExamTypeEnum => {
@@ -33,12 +36,31 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
     return mapping[examId] || ExamTypeEnum.UBEGPT
   }
 
+  const handleTermsScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement
+    const bottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 10
+    if (bottom && !hasScrolledToBottom) {
+      setHasScrolledToBottom(true)
+    }
+  }
+
+  const handleAgreeToTerms = () => {
+    setAgreedToTerms(true)
+    setShowTermsModal(false)
+    toast.success('Thank you for reviewing the terms and conditions')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     if (isSubmitting) return;
     e.preventDefault()
 
     if (!numberOfStudents || parseInt(numberOfStudents) < 1) {
       toast.error('Please enter a valid number of students')
+      return
+    }
+
+    if (!agreedToTerms) {
+      toast.error('Please read and agree to the terms and conditions')
       return
     }
 
@@ -164,6 +186,21 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
               </div>
               <p className="text-xs text-gray-500 mt-1">Enter the total number of students participating in this examination</p>
             </div>
+
+            {/* Warning Disclaimer */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
+              <div className="flex gap-3">
+                <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <p className="text-sm text-red-800 font-semibold mb-1">⚠️ Important Notice</p>
+                  <p className="text-xs text-red-700">
+                    <strong>The number of students cannot be changed or updated after your application is approved.</strong> Please ensure the count is accurate before submitting. Once approved, this number becomes final and any modifications will require a new application process.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Summary Card */}
@@ -192,9 +229,48 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
             </div>
           )}
 
+          {/* Terms & Conditions Agreement */}
+          <div className="mb-6">
+            <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <input
+                type="checkbox"
+                id="termsAgreement"
+                checked={agreedToTerms}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setShowTermsModal(true)
+                    e.target.checked = false
+                  } else {
+                    setAgreedToTerms(false)
+                  }
+                }}
+                className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded cursor-pointer"
+              />
+              <label htmlFor="termsAgreement" className="flex-1 text-sm text-gray-700 cursor-pointer">
+                I have read and agree to the{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="text-green-600 hover:text-green-700 font-semibold underline"
+                >
+                  Terms and Conditions
+                </button>
+                {' '}for exam application submission <span className="text-red-500">*</span>
+              </label>
+            </div>
+            {!agreedToTerms && numberOfStudents && (
+              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                Please review and accept the terms and conditions to continue
+              </p>
+            )}
+          </div>
+
           <button
             type="submit"
-            disabled={isSubmitting || !numberOfStudents || parseInt(numberOfStudents) < 1}
+            disabled={isSubmitting || !numberOfStudents || parseInt(numberOfStudents) < 1 || !agreedToTerms}
             className="w-full bg-green-600 text-white py-4 px-6 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2 cursor-pointer"
           >
             {isSubmitting ? (
@@ -216,6 +292,119 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
           </button>
         </form>
       </div>
+
+      {/* Terms & Conditions Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-green-50">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Terms and Conditions
+              </h3>
+              <button
+                onClick={() => {
+                  setShowTermsModal(false)
+                  setHasScrolledToBottom(false)
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div 
+              className="flex-1 overflow-y-auto px-6 py-4"
+              onScroll={handleTermsScroll}
+            >
+              <div className="prose prose-sm max-w-none">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Exam Application Process - Important Guidelines</h4>
+                
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-yellow-800 font-semibold mb-2">⚠️ Critical Information</p>
+                  <p className="text-sm text-yellow-700">
+                    Please read this document carefully. You must scroll to the bottom to activate the &ldquo;I Understand&rdquo; button.
+                  </p>
+                </div>
+
+                {/* Dynamically render FAQ items from application-process category */}
+                {allFAQs
+                  .filter(faq => faq.category === 'application-process')
+                  .map((faq, index) => (
+                    <div key={index} className="mb-4">
+                      <h5 className="font-semibold text-gray-900 mt-4 mb-2">{index + 1}. {faq.question}</h5>
+                      <p className="text-sm text-gray-700 mb-3">
+                        {faq.answer}
+                      </p>
+                    </div>
+                  ))}
+
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6 mb-4">
+                  <p className="text-sm text-green-800 font-semibold mb-2">✓ Acknowledgment</p>
+                  <p className="text-sm text-green-700">
+                    By clicking &ldquo;I Understand&rdquo; below, you acknowledge that you have read, understood, and agree to abide by these terms and conditions. You confirm that the information you provide is accurate and final.
+                  </p>
+                </div>
+
+                <p className="text-xs text-gray-500 mt-4 mb-8">
+                  Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between gap-4">
+                <button
+                  onClick={() => {
+                    setShowTermsModal(false)
+                    setHasScrolledToBottom(false)
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAgreeToTerms}
+                  disabled={!hasScrolledToBottom}
+                  className={`px-6 py-2 text-sm font-semibold rounded-lg transition-all ${
+                    hasScrolledToBottom
+                      ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {hasScrolledToBottom ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      I Understand
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                      Scroll to bottom
+                    </span>
+                  )}
+                </button>
+              </div>
+              {!hasScrolledToBottom && (
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Please scroll through the entire document to activate the &ldquo;I Understand&rdquo; button
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

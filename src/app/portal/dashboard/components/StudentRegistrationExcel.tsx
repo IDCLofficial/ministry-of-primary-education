@@ -115,13 +115,13 @@ export default function StudentRegistrationExcel({
     setEditableStudents(prev => {
       // Keep new rows that haven't been saved yet
       const newRows = prev.filter(s => s.isNew)
-      
+
       // Map students from props, preserving editing state if student exists in prev
       const updatedStudents = students.map(student => {
         const existing = prev.find(s => s.id === student.id && !s.isNew)
         return existing ? { ...student, isEditing: existing.isEditing } : { ...student }
       })
-      
+
       // Combine: new rows first, then updated students
       return [...newRows, ...updatedStudents]
     })
@@ -671,7 +671,17 @@ export default function StudentRegistrationExcel({
                   )}
                 </td>
                 <td className="px-4 py-3 text-sm">
-                  <span className="text-gray-900">{student.examYear}</span>
+                  {student.isEditing ? (
+                    <div className="w-32 relative z-10">
+                      <CustomDropdown
+                        options={yearOptions}
+                        value={String(student.examYear)}
+                        onChange={(value) => handleFieldChange(student.id, 'examYear', value)}
+                        className="text-sm"
+                      />
+                    </div>
+                  ) :
+                    (<span className="text-gray-900">{student.examYear}</span>)}
                 </td>
                 {examStatus === "approved" && <td className="px-4 py-3 text-sm text-center">
                   {student.isEditing ? (
@@ -730,8 +740,8 @@ export default function StudentRegistrationExcel({
             <button
               onClick={() => setQuickAddMode(!quickAddMode)}
               className={`px-4 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap cursor-pointer ${quickAddMode
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-green-600 text-white hover:bg-green-700'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               title="Quick-add mode: Auto-create new row after saving"
             >

@@ -25,6 +25,8 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [isSaving, setIsSaving] = useState(false)
+    const [uploadProgress, setUploadProgress] = useState(0)
+    const [progressMessage, setProgressMessage] = useState('')
     const [failedSchools, setFailedSchools] = useState<string[]>([])
     const { openModal } = useExamModal()
     const router = useRouter()
@@ -65,6 +67,58 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     React.useEffect(() => {
         setCurrentPage(1)
     }, [searchTerm])
+
+    // Optimistic progress simulation based on data length
+    React.useEffect(() => {
+        if (!isSaving) {
+            setUploadProgress(0)
+            setProgressMessage('')
+            return
+        }
+
+        // Calculate estimated time: ~2.4ms per record (1600 records in 3.88s)
+        const estimatedTimeMs = data.length * 2.4
+        const updateInterval = 100 // Update every 100ms
+        const totalSteps = Math.ceil(estimatedTimeMs / updateInterval)
+        let currentStep = 0
+
+        const progressMessages = [
+            'Validating student records...',
+            'Grouping students by school...',
+            'Transforming subject scores...',
+            'Preparing data for upload...',
+            'Uploading to server...',
+            'Processing exam records...',
+            'Finalizing upload...'
+        ]
+
+        const interval = setInterval(() => {
+            currentStep++
+            
+            // Optimistic progress: reaches ~95% by estimated time, then slows down
+            let progress
+            if (currentStep < totalSteps) {
+                // Smooth curve to 95%
+                progress = Math.min(95, (currentStep / totalSteps) * 95)
+            } else {
+                // Slow crawl from 95% to 99%
+                const extraSteps = currentStep - totalSteps
+                progress = Math.min(99, 95 + (extraSteps * 0.5))
+            }
+
+            setUploadProgress(Math.floor(progress))
+
+            // Update message based on progress
+            const messageIndex = Math.min(
+                Math.floor((progress / 100) * progressMessages.length),
+                progressMessages.length - 1
+            )
+            setProgressMessage(progressMessages[messageIndex])
+
+        }, updateInterval)
+
+        return () => clearInterval(interval)
+    }, [isSaving, data.length])
 
     const handleSort = (key: keyof StudentRecord) => {
         setSortConfig(prev => ({
@@ -173,6 +227,13 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
 
             toast.dismiss()
 
+            // Set to 100% before clearing
+            setUploadProgress(100)
+            setProgressMessage('Upload complete!')
+
+            // Small delay to show 100% completion
+            await new Promise(resolve => setTimeout(resolve, 300))
+
             // Clear data and show success message
             onDataChange([])
             setFailedSchools([])
@@ -279,9 +340,9 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                         <button
                             onClick={onOpenOverrideModal}
                             disabled={isSaving || data.length === 0}
-                            className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${isSaving || data.length === 0
+                            className={`inline-flex items-center cursor-pointer px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${isSaving || data.length === 0
                                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95 cursor-pointer'
+                                    : 'bg-green-600 text-white hover:bg-green-700 active:scale-95 cursor-pointer'
                                 }`}
                         >
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -471,7 +532,7 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                     </div>
                 )}
 
-                {/* Loading Overlay */}
+                {/* Loading Overlay with Progress Bar */}
                 {isSaving && (
                     <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
                         <div className="bg-white p-8 rounded-lg shadow-xl border border-gray-200 max-w-md w-full mx-4">
@@ -487,31 +548,32 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                     Processing {data.length.toLocaleString()} BECE exam records...
                                 </p>
                                 
-                                {/* Progress Assurance Messages */}
-                                <div className="space-y-2 mt-6 text-left bg-green-50 rounded-lg p-4 border border-green-100">
-                                    <p className="text-xs text-green-800 flex items-center">
-                                        <svg className="w-4 h-4 mr-2 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                        Grouping students by school
-                                    </p>
-                                    <p className="text-xs text-green-800 flex items-center">
-                                        <svg className="w-4 h-4 mr-2 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                        Transforming subject scores
-                                    </p>
-                                    <p className="text-xs text-green-800 flex items-center">
-                                        <svg className="w-4 h-4 mr-2 flex-shrink-0 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                        Uploading to server
-                                    </p>
+                                {/* Progress Bar */}
+                                <div className="mb-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-green-700">{progressMessage}</span>
+                                        <span className="text-sm font-semibold text-green-600">{uploadProgress}%</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                        <div 
+                                            className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-300 ease-out relative overflow-hidden"
+                                            style={{ width: `${uploadProgress}%` }}
+                                        >
+                                            {/* Animated shimmer effect */}
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+                                        </div>
+                                    </div>
                                 </div>
                                 
-                                <p className="text-xs text-gray-500 mt-4">
-                                    ⏳ This may take a moment. Please don&apos;t close this window.
-                                </p>
+                                {/* Status Info */}
+                                <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                                    <p className="text-xs text-blue-800 flex items-center justify-center">
+                                        <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                        </svg>
+                                        Please don&apos;t close this window
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>

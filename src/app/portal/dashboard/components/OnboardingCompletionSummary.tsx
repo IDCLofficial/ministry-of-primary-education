@@ -14,9 +14,10 @@ interface OnboardingCompletionSummaryProps {
   examType: ExamTypeEnum
   examTotalPoints: number
   examNumberOfStudents: number
+  pointCost: number
 }
 
-export default function OnboardingCompletionSummary({ totalStudents, handleRefresh, examType, examTotalPoints }: OnboardingCompletionSummaryProps) {
+export default function OnboardingCompletionSummary({ totalStudents, handleRefresh, examType, examTotalPoints, pointCost }: OnboardingCompletionSummaryProps) {
   const { school } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
@@ -24,18 +25,15 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
   const [updateApplicationStatus] = useUpdateApplicationStatusMutation()
 
   const examTypeToName: Record<ExamTypeEnum, string> = {
-      [ExamTypeEnum.WAEC]: 'WAEC',
-      [ExamTypeEnum.UBEGPT]: 'UBEGPT',
-      [ExamTypeEnum.UBETMS]: 'UBETMS',
-      [ExamTypeEnum.COMMON_ENTRANCE]: 'CESS',
-      [ExamTypeEnum.BECE]: 'BECE',
-      [ExamTypeEnum.BECE_RESIT]: 'BECE Resit',
-      [ExamTypeEnum.UBEAT]: 'UBEAT',
-      [ExamTypeEnum.JSCBE]: 'JSCBE'
-    }
-
-  // Only show if school has students and total students equals exam total points (all students onboarded for this exam)
-  const shouldShow = school && totalStudents > 0 && totalStudents === examTotalPoints
+    [ExamTypeEnum.WAEC]: 'WAEC',
+    [ExamTypeEnum.UBEGPT]: 'UBEGPT',
+    [ExamTypeEnum.UBETMS]: 'UBETMS',
+    [ExamTypeEnum.COMMON_ENTRANCE]: 'CESS',
+    [ExamTypeEnum.BECE]: 'BECE',
+    [ExamTypeEnum.BECE_RESIT]: 'BECE Resit',
+    [ExamTypeEnum.UBEAT]: 'UBEAT',
+    [ExamTypeEnum.JSCBE]: 'JSCBE'
+  }
 
   const handleShowConfirmationModal = () => {
     setShowConfirmationModal(true)
@@ -46,7 +44,7 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
       toast.error('School information not available. ID is required. Please try again.')
       return
     }
-    
+
     const exam = school?.exams.find(exam => exam.name === examType)
 
     if (!exam?.applicationId) {
@@ -56,7 +54,7 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
 
 
     setIsSubmitting(true)
-    
+
     try {
       toast.loading('Submitting onboarding completion to ministry...', { id: 'onboarding-completion' })
       await updateApplicationStatus({
@@ -70,18 +68,18 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
 
       toast.dismiss('onboarding-completion')
       toast.success('Onboarding completion submitted to ministry successfully!')
-      
-      
+
+
       // Close confirmation modal and show success modal
       setShowConfirmationModal(false)
       setShowSuccessModal(true)
-      
+
       handleRefresh()
     } catch (error: unknown) {
       toast.dismiss('onboarding-completion')
       console.error('Failed to submit onboarding completion:', error)
       let errorMessage = 'Failed to submit onboarding completion. Please try again.'
-      
+
       if (error && typeof error === 'object') {
         if ('data' in error && error.data && typeof error.data === 'object' && 'message' in error.data) {
           errorMessage = error.data.message as string
@@ -89,14 +87,12 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
           errorMessage = error.message
         }
       }
-      
+
       toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
   }
-
-  if (!shouldShow) return null
 
   return (
     <div className="bg-white rounded-xl shadow-lg shadow-black/2 border border-black/10 p-6 mb-6">
@@ -119,14 +115,13 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
         </div>
 
         {/* Title */}
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">
-          {examType} Onboarding Complete!
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+          Finished Onboarding Your Students for {examType}?
         </h3>
-        
+
         {/* Description */}
-        <p className="text-gray-600 mb-6">
-          Congratulations! You have successfully onboarded all {totalStudents} students for the <span className="font-semibold text-gray-800">{examType}</span> examination. 
-          You can now submit your student list to the Ministry of Primary & Secondary Education for approval.
+        <p className="text-gray-600 mb-6 text-sm">
+          All {totalStudents} students have been onboarded for <span className="font-semibold text-gray-800">{examType}</span>. Submit to the Ministry when you&apos;re done.
         </p>
 
         {/* Review Summary */}
@@ -181,6 +176,8 @@ export default function OnboardingCompletionSummary({ totalStudents, handleRefre
         onConfirm={handleCompleteOnboarding}
         totalStudents={totalStudents}
         examType={examType}
+        usedPoints={totalStudents}
+        pointCost={pointCost}
       />
 
       {/* Success Modal */}
