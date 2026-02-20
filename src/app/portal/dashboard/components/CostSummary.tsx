@@ -28,7 +28,7 @@ export default function CostSummary({
   // Calculate exam-specific values
   const examAvailablePoints = examPoints
   const examUsedPoints = examTotalPoints - examPoints
-  const accumulatedFee = examUsedPoints * pointCost + (2000)
+  const accumulatedFee = examUsedPoints * pointCost
 
   return (
     <div className="bg-white rounded-xl shadow-lg shadow-black/2 border border-black/10 p-6 relative">

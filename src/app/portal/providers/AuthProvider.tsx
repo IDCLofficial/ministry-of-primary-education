@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { ExamData, useGetProfileQuery } from '../store/api/authApi'
+import { ExamData, useGetProfileQuery, useLogoutMutation } from '../store/api/authApi'
 
 interface School {
   id: string
@@ -36,7 +36,6 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const path = usePathname();
-  const [loggingOut, setLoggingOut] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [school, setSchool] = useState<School | null>(null)
   const [token, setToken] = useState<string | null>(null)
@@ -48,6 +47,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { data: profileData, error: profileError, refetch: refetchProfile, isFetching: isFetchingProfile } = useGetProfileQuery(undefined, {
     skip: skipProfileQuery || !token,
   })
+
+  const [handleLogout, { isLoading: isLoggingOut, isError: isLogoutError, isSuccess: isLogoutSuccess }] = useLogoutMutation()
+
+  useEffect(() => {
+    if (isLogoutSuccess) {
+      setToken(null)
+      setSchool(null)
+      setIsAuthenticated(false)
+      setSkipProfileQuery(true) // Disable profile query
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('school');
+
+      setTimeout(() => {
+        router.push('/portal')
+      }, 100);
+    }
+  }, [isLogoutSuccess])
 
   // Check for existing authentication on mount
   useEffect(() => {
@@ -82,21 +98,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = useCallback(() => {
     try {
-      setLoggingOut(true)
-      setToken(null)
-      setSchool(null)
-      setIsAuthenticated(false)
-      setSkipProfileQuery(true) // Disable profile query
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('school');
-
-      setTimeout(() => {
-        router.push('/portal')
-      }, 100);
+      handleLogout()
     } catch (error) {
       console.error('Error during logout:', error)
     }
-  }, [router])
+  }, [handleLogout])
 
   // Handle profile data updates
   useEffect(() => {
@@ -137,7 +143,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value: AuthContextType = {
     isAuthenticated,
     school,
-    loggingOut,
+    loggingOut: isLoggingOut,
     token,
     login,
     logout,

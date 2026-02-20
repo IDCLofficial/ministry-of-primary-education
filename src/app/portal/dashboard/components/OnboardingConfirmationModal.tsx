@@ -28,7 +28,7 @@ export default function OnboardingConfirmationModal({
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [hasAgreed, setHasAgreed] = useState(false);
   
-  const accumulatedFee = usedPoints * pointCost + 2000
+  const accumulatedFee = usedPoints * pointCost
   
   const examTypeToName: Record<ExamTypeEnum, string> = {
     [ExamTypeEnum.WAEC]: 'WAEC',

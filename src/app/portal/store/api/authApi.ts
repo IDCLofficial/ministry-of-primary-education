@@ -304,6 +304,14 @@ export const authApi = apiSlice.injectEndpoints({
       }),
     }),
 
+    // Logout
+    logout: builder.mutation<void, void>({
+      query: () => ({
+        url: `${API_BASE_URL}${endpoints.LOGOUT}`,
+        method: 'POST',
+      }),
+    }),
+
     // Create password
     createPassword: builder.mutation<CreatePasswordResponse, CreatePasswordRequest>({
       query: (createPasswordData) => ({
@@ -440,6 +448,7 @@ export const {
   useOnboardStudentMutation,
   useUpdateStudentMutation,
   useUpdateApplicationStatusMutation,
+  useLogoutMutation,
 } = authApi
 
 // Export types for use in components
