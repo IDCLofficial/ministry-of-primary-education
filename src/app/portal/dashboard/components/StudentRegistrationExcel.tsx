@@ -802,7 +802,7 @@ export default function StudentRegistrationExcel({
           examType={examType}
           onClose={() => setShowCertificateModal(false)}
           schoolName={school.schoolName}
-          studentsApproved={currentExamData.numberOfStudents || 0}
+          studentsApproved={students.length || 0}
           examSession={new Date().getFullYear().toString()}
           approvalId={`${examTypeToName[examType]}-IMO-${currentExamData.applicationId.slice(-6)?.toUpperCase() || 'XXXXX'}`}
           issueDate={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
