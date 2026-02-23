@@ -1,8 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useAuth } from '../../providers/AuthProvider'
-import { useCreateStudentPaymentMutation, ExamTypeEnum } from '../../store/api/authApi'
+import { useCreateStudentPaymentMutation, ExamTypeEnum, SchoolByCodeResponse } from '../../store/api/authApi'
 import toast from 'react-hot-toast'
 
 interface PaymentModalProps {
@@ -12,16 +11,16 @@ interface PaymentModalProps {
   numberOfStudents: number
   examType: ExamTypeEnum
   feePerStudent: number
+  school: SchoolByCodeResponse | null
 }
 
-export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, numberOfStudents, examType, feePerStudent }: PaymentModalProps) {
-  const { school } = useAuth()
+export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, numberOfStudents, examType, feePerStudent, school }: PaymentModalProps) {
   const [createStudentPayment] = useCreateStudentPaymentMutation();
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedStudentCount, setSelectedStudentCount] = useState(numberOfStudents);
   const [customInput, setCustomInput] = useState('');
 
-  const currentExamData = school?.exams.find(e => e.name === examType);
+  const currentExamData = school?.exams?.find(e => e.name === examType);
   const examPoints = currentExamData?.availablePoints || 0;
   const examTotalPoints = currentExamData?.totalPoints || 0;
   const examNumberOfStudents = currentExamData?.numberOfStudents || 0;
@@ -75,7 +74,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
   }, [isOpen, numberOfStudents, maxPointsAllowed])
 
   const handlePayment = async () => {
-    if (!school?.id) {
+    if (!school?._id) {
       toast.error('School information not found. Please try logging in again.')
       return
     }
@@ -89,7 +88,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
     
     try {
       const response = await createStudentPayment({
-        schoolId: school.id,
+        schoolId: school._id,
         paymentData: {
           examType: examType,
           numberOfStudents: selectedStudentCount

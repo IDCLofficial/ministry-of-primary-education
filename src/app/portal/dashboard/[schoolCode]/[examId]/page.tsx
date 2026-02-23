@@ -106,6 +106,7 @@ export default function ExamPage() {
     getExamStatus(examId)
   )
   const [isRetrying, setIsRetrying] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (school?.exams) {
@@ -356,6 +357,16 @@ export default function ExamPage() {
             />
           </div>
         </div>
+      </div>
+    )
+  }
+
+  // Show loading skeleton while submitting
+  if (isSubmitting) {
+    return (
+      <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
+        <ExamHeader currentExam={exam} />
+        <ExamPageSkeleton />
       </div>
     )
   }
@@ -614,6 +625,7 @@ export default function ExamPage() {
                 sortState={sortState}
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
+                school={school}
                 filters={filters}
                 onRefreshStudents={handleRefresh}
                 isLoading={isLoading}
@@ -674,6 +686,7 @@ export default function ExamPage() {
         numberOfStudents={10}
         examType={getExamType(examId)}
         feePerStudent={exam?.fee || 500}
+        school={school || null}
       />
 
       <PaymentStatusModal

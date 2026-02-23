@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux'
 import type { RootState } from '@/app/portal/store'
 import Image from 'next/image'
 import { useAuth } from '../../providers/AuthProvider'
-import { ExamTypeEnum, useSubmitExamApplicationMutation, useGetProfileQuery } from '@/app/portal/store/api/authApi'
+import { ExamTypeEnum, useSubmitExamApplicationMutation, useGetProfileQuery, useGetSchoolByCodeQuery } from '@/app/portal/store/api/authApi'
 import toast from 'react-hot-toast'
 import { ExamType } from '../[schoolCode]/types'
 import { allFAQs } from '../../data/faqData'
@@ -21,8 +21,12 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
   // Get selected school data from Redux store
   const { selectedSchool } = useSelector((state: RootState) => state.school)
 
-  const [submitApplication, { isLoading: isSubmitting }] = useSubmitExamApplicationMutation()
+  const [submitApplication, { isLoading: isSubmitting, isSuccess }] = useSubmitExamApplicationMutation()
   const { refetch: refetchProfile } = useGetProfileQuery()
+  const { refetch: refetchSchool } = useGetSchoolByCodeQuery(selectedSchool?.schoolCode.replace(/\//g, '-') || '', {
+    skip: !selectedSchool?.schoolCode
+  });
+
   const [numberOfStudents, setNumberOfStudents] = useState('')
   const [principalName, setPrincipalName] = useState('')
   const [principalNameError, setPrincipalNameError] = useState('')
@@ -90,6 +94,7 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (isSubmitting) return;
+    if (isSuccess) return;
     e.preventDefault()
 
     // Validate principal's name
@@ -176,7 +181,7 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
 
       // Refresh profile to get updated exam data
       await refetchProfile()
-
+      await refetchSchool()
       onApplicationSubmit()
     } catch (error) {
       console.error('Application error:', error)
@@ -474,7 +479,7 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
 
           <button
             type="submit"
-            disabled={isSubmitting || !numberOfStudents || parseInt(numberOfStudents) < 1 || !agreedToTerms}
+            disabled={(isSubmitting || !numberOfStudents || parseInt(numberOfStudents) < 1 || !agreedToTerms) || isSuccess}
             className="w-full bg-green-600 text-white py-4 px-6 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2 cursor-pointer"
           >
             {isSubmitting ? (

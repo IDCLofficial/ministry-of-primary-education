@@ -41,7 +41,7 @@ export default function Header() {
                         >
                             <div>
                                 <p className='sm:text-sm text-xs font-semibold'>{school.email}</p>
-                                <p className='text-xs text-gray-500 capitalize'>{school.lga} LGA</p>
+                                <p className='text-xs text-gray-500 capitalize'>AEE: {school.lga}</p>
                             </div>
                             <div className='flex items-center justify-center w-8 h-8 bg-green-100 rounded-full'>
                                 <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,8 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useAuth } from '../../providers/AuthProvider'
-import { ExamTypeEnum, useOnboardStudentMutation, useUpdateStudentMutation } from '../../store/api/authApi'
+import { ExamTypeEnum, useOnboardStudentMutation, useUpdateStudentMutation, SchoolByCodeResponse } from '../../store/api/authApi'
 import CustomDropdown from './CustomDropdown'
 import toast from 'react-hot-toast'
 import Pagination from './Pagination'
@@ -57,6 +56,7 @@ interface StudentRegistrationExcelProps {
   handleSort: (field: SortableField) => void
   sortState: SortState
   examType: ExamTypeEnum
+  school: SchoolByCodeResponse | null
   isFetchingProfile?: boolean
   onExportStudentList?: () => void
 }
@@ -66,6 +66,7 @@ export default function StudentRegistrationExcel({
   searchTerm,
   onSearchChange,
   onRefreshStudents,
+  school,
   currentPage,
   totalPages,
   itemsPerPage,
@@ -79,7 +80,6 @@ export default function StudentRegistrationExcel({
   isFetchingProfile = false,
   onExportStudentList,
 }: StudentRegistrationExcelProps) {
-  const { school } = useAuth()
   const [onboardStudent] = useOnboardStudentMutation()
   const [updateStudent] = useUpdateStudentMutation()
   const [editableStudents, setEditableStudents] = useState<EditableStudent[]>([])
@@ -106,7 +106,7 @@ export default function StudentRegistrationExcel({
     [ExamTypeEnum.JSCBE]: 'JSCBE'
   }
 
-  const currentExamData = school?.exams.find(e => e.name === examType);
+  const currentExamData = school?.exams?.find(e => e.name === examType);
   const examPoints = currentExamData?.availablePoints || 0
   const examStatus = currentExamData?.status || 'approved'
 
@@ -229,7 +229,7 @@ export default function StudentRegistrationExcel({
 
   const handleSaveRow = async (id: string) => {
     const student = editableStudents.find(s => s.id === id)
-    if (!student || !school?.id) return
+    if (!student || !school?._id) return
 
     // Prevent save operations when profile is being refetched (points updating)
     if (isFetchingProfile) {
@@ -253,7 +253,7 @@ export default function StudentRegistrationExcel({
           gender: student.gender.toLowerCase() as 'male' | 'female',
           class: student.class.toLowerCase(),
           examYear: student.examYear,
-          school: school.id
+          school: school._id
         }
 
         // Optimistically add the student to the table with loading state for ID

@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation'
 import { useDispatch } from 'react-redux'
 import { useGetSchoolByCodeQuery } from '@/app/portal/store/api/authApi'
 import { setSelectedSchool } from '@/app/portal/store/slices/schoolSlice'
-import Header from '../components/Header'
+import ExamHeader from '../components/ExamHeader'
 import SchoolPageSkeleton from './components/SchoolPageSkeleton'
 import { EXAM_TYPES, formatCurrency } from './types'
 import Link from 'next/link'
@@ -73,7 +73,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
-        <Header />
+        <ExamHeader isFirst={true} />
         <SchoolPageSkeleton />
       </div>
     )
@@ -82,7 +82,7 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
-        <Header />
+        <ExamHeader isFirst={true} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md mx-auto p-6">
             <svg className="w-16 h-16 text-red-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,7 +108,7 @@ export default function DashboardPage() {
   if (!school) {
     return (
       <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
-        <Header />
+        <ExamHeader isFirst={true} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md mx-auto p-6">
             <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +133,7 @@ export default function DashboardPage() {
 
   return (
     <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
-      <Header />
+      <ExamHeader isFirst={true} />
       
       <div className="flex-1 mt-4 sm:mt-6">
         <div className="max-w-7xl mx-auto">

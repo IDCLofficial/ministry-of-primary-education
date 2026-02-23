@@ -10,9 +10,10 @@ import { EXAM_TYPES, ExamType } from '../[schoolCode]/types'
 
 interface ExamHeaderProps {
   currentExam?: ExamType
+  isFirst?: boolean
 }
 
-export default function ExamHeader({ currentExam }: ExamHeaderProps) {
+export default function ExamHeader({ currentExam, isFirst }: ExamHeaderProps) {
   const params = useParams()
   const rawSchoolCode = params?.schoolCode as string
   const { selectedSchool } = useSelector((state: RootState) => state.school)
@@ -23,7 +24,7 @@ export default function ExamHeader({ currentExam }: ExamHeaderProps) {
       <div className='flex justify-between items-center'>
         {/* Left Section - Back Button & Exam Selector */}
         <div className='flex items-center gap-3'>
-          <Link
+          {!isFirst && <Link
             href={rawSchoolCode ? `/portal/dashboard/${rawSchoolCode}` : "/portal/dashboard"}
             className="text-green-600 hover:text-green-700 font-medium flex items-center gap-2 cursor-pointer transition-colors"
           >
@@ -31,7 +32,16 @@ export default function ExamHeader({ currentExam }: ExamHeaderProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             <span className="hidden sm:inline">Back to Exams</span>
-          </Link>
+          </Link>}
+          {isFirst && <Link
+            href={`/portal/dashboard`}
+            className="text-green-600 hover:text-green-700 font-medium flex items-center gap-2 cursor-pointer transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="hidden sm:inline">Back to Dashboard</span>
+          </Link>}
 
           {currentExam && (
             <>
