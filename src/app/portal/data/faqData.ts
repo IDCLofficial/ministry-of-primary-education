@@ -16,23 +16,23 @@ export interface CategoryInfo {
 export const allFAQs: FAQItem[] = [
   {
     category: 'registration',
-    question: 'How do I register my school on the portal?',
-    answer: 'Navigate to the registration page from the login screen. Select your LGA from the dropdown, then select your school name. Fill in your school address, principal name, contact email, and phone number. After submission, you\'ll receive login credentials via email within 24 hours.'
+    question: 'How do I register as an Area Education Executive (AEE)?',
+    answer: 'Navigate to the registration page from the login screen. Provide your full name, select your LGA from the dropdown, enter your email address, and phone number. After submission, you\'ll receive login credentials via email within 24 hours. As an AEE, you will manage all schools within your LGA.'
   },
   {
     category: 'registration',
-    question: 'What if my school is not listed in the dropdown?',
-    answer: 'If your school is not listed, please contact the Ministry of Primary and Secondary Education IT department. They will verify your school\'s information and add it to the system. You can reach them through your LGA education office.'
+    question: 'What is the difference between AEE and school accounts?',
+    answer: 'AEE (Area Education Executive) accounts are LGA-level accounts that manage multiple schools within a specific Local Government Area. Each AEE can view and manage exam applications for all schools in their LGA. Individual school accounts are no longer used - all management is done at the LGA level.'
   },
   {
     category: 'registration',
     question: 'Can I register multiple times?',
-    answer: 'No, each school can only register once. If your school already has an account, the system will notify you during registration. Contact your school administrator or the Ministry if you need to recover existing login credentials.'
+    answer: 'No, each LGA can only have one AEE account. If your LGA already has an account, the system will notify you during registration. Contact the Ministry if you need to recover existing login credentials or transfer account ownership.'
   },
   {
     category: 'registration',
     question: 'What information do I need to register?',
-    answer: 'You need: Your school\'s LGA, official school name, complete school address, principal\'s full name, a valid contact email address, and a working phone number (10-15 digits). Ensure all information is accurate as it will be used for official communications.'
+    answer: 'You need: Your full name, the LGA you manage, a valid email address for official communications, and a working phone number (at least 10 digits). Ensure all information is accurate as it will be used for official communications and account recovery.'
   },
   {
     category: 'login',
@@ -46,13 +46,13 @@ export const allFAQs: FAQItem[] = [
   },
   {
     category: 'login',
-    question: 'Can multiple people use the same school account?',
-    answer: 'Yes, but we recommend sharing credentials only with authorized school staff. Each school has one account, so coordinate with your colleagues to avoid conflicts when submitting applications or managing student data.'
+    question: 'Can multiple people use the same AEE account?',
+    answer: 'Yes, but we recommend sharing credentials only with authorized education officials in your LGA. Each LGA has one AEE account, so coordinate with your colleagues to avoid conflicts when submitting applications or managing school data.'
   },
   {
     category: 'dashboard',
     question: 'What can I do on the dashboard?',
-    answer: 'The dashboard displays all available examinations (WAEC, BECE, UBEGPT, UBETMS, CESS, UBEAT, JSCBE, and BECE Resit). You can view exam details, check application status, apply for exams, and manage student registrations for approved exams.'
+    answer: 'The main dashboard shows statistics for your LGA including total schools, registered schools, and pending applications. You can view a list of all schools in your LGA with their codes. Click on any school to access their examination portals where you can apply for exams and manage student registrations.'
   },
   {
     category: 'dashboard',
@@ -61,13 +61,13 @@ export const allFAQs: FAQItem[] = [
   },
   {
     category: 'dashboard',
-    question: 'How do I view my school information?',
-    answer: 'Your school name and status are displayed in the dashboard header. Click on your school name or profile section to view complete details including address, contact information, and registered exams.'
+    question: 'How do I access a school\'s examination portals?',
+    answer: 'From your main dashboard, click on any school in the schools list. This will take you to that school\'s examination portal page where you can see all available exams (WAEC, BECE, UBEGPT, UBETMS, CESS, UBEAT, JSCBE, and BECE Resit) and their application status. Click on an exam card to apply or manage students.'
   },
   {
     category: 'exams',
     question: 'How do I apply for an examination?',
-    answer: 'From the dashboard, click on the exam card you want to apply for. Fill out the application form with required details including total number of students. Submit the form and wait for approval from the Ministry. You\'ll be notified via email once approved.'
+    answer: 'Navigate to the school\'s examination portal page, then click on the exam card you want to apply for. Fill out the application form with required details: principal\'s name, phone number, school address, and total number of students. Your AEE email will be used automatically. Submit the form and wait for approval from the Ministry. You\'ll be notified via email once approved.'
   },
   {
     category: 'exams',
@@ -87,12 +87,32 @@ export const allFAQs: FAQItem[] = [
   {
     category: 'exams',
     question: 'What happens after my exam application is approved?',
-    answer: 'Once approved, you can proceed to register your students for the exam. The exam card status will change to "Approved" and you\'ll have access to the student registration portal where you can upload student information and make payments.'
+    answer: 'Once approved, the exam status changes to "Approved" and you can register students. You\'ll see the student registration interface where you can add students individually or in bulk, edit student information, manage payments, and track onboarding status. You can also export student lists and view payment summaries.'
   },
   {
     category: 'exams',
     question: 'Can I edit my application after submission?',
-    answer: 'No, applications cannot be edited after submission. If you need to make changes, contact the Ministry IT support immediately. For approved applications, you can update student numbers during the registration phase.'
+    answer: 'No, applications cannot be edited after submission. If you need to make changes, contact the Ministry IT support immediately. The number of students specified in your application is final and cannot be changed after approval.'
+  },
+  {
+    category: 'dashboard',
+    question: 'How do I manage my AEE profile?',
+    answer: 'Click on your profile dropdown in the header (top right) to access account settings. You can change your password via the "Change Password" option or delete your account if needed. Your profile shows your email and LGA assignment.'
+  },
+  {
+    category: 'exams',
+    question: 'How do I register students for an approved exam?',
+    answer: 'Once your exam application is approved, click on the exam card to access the student registration page. You can add students one by one using the "Add Student" button or enable "Quick Add Mode" for faster bulk entry. Fill in student name, gender, class, and exam year. Each student registration deducts points from your allocated quota.'
+  },
+  {
+    category: 'exams',
+    question: 'What are exam points and how do they work?',
+    answer: 'When your exam application is approved, you receive points equal to the number of students you specified. Each student you register consumes one point. You can see your available points vs total points in the student registration interface. Once points are exhausted, you cannot add more students.'
+  },
+  {
+    category: 'exams',
+    question: 'How do I make payments for student registrations?',
+    answer: 'After registering students, click the "Make School Payment" button in the payment section. Select the number of students to pay for (up to your available points), review the cost summary including processing fees, and proceed to payment via Paystack. You\'ll be redirected back to the portal after payment completion.'
   },
   {
     category: 'application-process',
@@ -107,7 +127,7 @@ export const allFAQs: FAQItem[] = [
   {
     category: 'application-process',
     question: 'What should I do after my application is approved?',
-    answer: 'Upon approval: (1) You will be allocated exam points based on the number of students, (2) Each student registration will deduct points from your allocation, (3) You must register the exact number of students specified in your application, (4) Unused points cannot be transferred or refunded.'
+    answer: 'Upon approval: (1) You will be allocated exam points based on the number of students you specified, (2) Click on the exam card to access the student registration page, (3) Register students using the provided interface - each registration deducts one point, (4) Make payment for registered students, (5) Complete student onboarding process.'
   },
   {
     category: 'application-process',
@@ -117,17 +137,32 @@ export const allFAQs: FAQItem[] = [
   {
     category: 'application-process',
     question: 'What should I verify before submitting my application?',
-    answer: 'Before submitting, verify that: (1) The student count is accurate and final, (2) Your school information is correct and up-to-date, (3) You have the authority to submit this application on behalf of your school, (4) You understand the implications of the student count being unchangeable.'
+    answer: 'Before submitting, verify that: (1) The student count is accurate and final, (2) The school information (principal name, address, phone) is correct and up-to-date, (3) You have the authority to submit this application on behalf of the school, (4) You understand the student count cannot be changed after approval.'
   },
   {
     category: 'application-process',
-    question: 'What are my responsibilities regarding application data?',
-    answer: 'You are responsible for ensuring that: (1) All information provided is accurate and truthful, (2) The student count reflects your actual registration needs, (3) Your contact information is current for receiving notifications, (4) You have consulted with relevant school authorities before submission.'
+    question: 'What are my responsibilities as an AEE?',
+    answer: 'As an AEE, you are responsible for: (1) Managing exam applications for all schools in your LGA, (2) Ensuring all information provided is accurate and truthful, (3) Coordinating with school principals before submitting applications, (4) Managing student registrations and payments for approved exams, (5) Keeping your contact information current for receiving notifications.'
   },
   {
     category: 'application-process',
     question: 'Where can I get help with my application?',
-    answer: 'If you have questions or need clarification: (1) Review the FAQ section in your dashboard, (2) Contact the Ministry of Education support team at support@education.im.gov.ng, (3) Consult with your school administrator before submitting, (4) Do not submit if you are uncertain about any aspect of the application.'
+    answer: 'If you have questions or need clarification: (1) Review the FAQ section accessible from any page, (2) Contact the Ministry of Education support team at support@education.im.gov.ng, (3) Consult with school principals before submitting applications, (4) Do not submit if you are uncertain about any aspect of the application.'
+  },
+  {
+    category: 'exams',
+    question: 'Can I edit student information after registration?',
+    answer: 'Yes, you can edit student information before payment and onboarding. Click the edit icon next to any student row, make your changes, and click save. Once a student is onboarded, their information cannot be modified through the portal.'
+  },
+  {
+    category: 'exams',
+    question: 'How do I navigate between schools and exams?',
+    answer: 'Use the back navigation in the header: From an exam detail page, click "Back to Exams" to return to the school\'s exam list. From a school\'s exam list, click "Back to Dashboard" to return to your main LGA dashboard. The header always shows your current context (AEE profile or school information).'
+  },
+  {
+    category: 'exams',
+    question: 'What happens if I encounter an error during application?',
+    answer: 'If you see validation errors, carefully review all required fields: principal\'s name (minimum 3 characters), phone number (at least 10 digits), school address (minimum 10 characters), and number of students (must be greater than 0). Ensure all fields are properly filled before resubmitting.'
   },
   {
     category: 'technical',
