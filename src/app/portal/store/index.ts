@@ -5,6 +5,7 @@ import studentsReducer from './slices/studentsSlice'
 import filtersReducer from './slices/filtersSlice'
 import uiReducer from './slices/uiSlice'
 import authReducer from './slices/authSlice'
+import schoolReducer from './slices/schoolSlice'
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     filters: filtersReducer,
     ui: uiReducer,
     auth: authReducer,
+    school: schoolReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

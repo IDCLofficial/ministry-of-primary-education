@@ -1,17 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuth } from '../../providers/AuthProvider'
+import { useSelector } from 'react-redux'
+import { useParams } from 'next/navigation'
+import type { RootState } from '@/app/portal/store'
 import Image from 'next/image'
 import Link from 'next/link'
-import { EXAM_TYPES, ExamType } from '../exams/types'
+import { EXAM_TYPES, ExamType } from '../[schoolCode]/types'
 
 interface ExamHeaderProps {
   currentExam?: ExamType
 }
 
 export default function ExamHeader({ currentExam }: ExamHeaderProps) {
-  const { school, logout } = useAuth()
+  const params = useParams()
+  const rawSchoolCode = params?.schoolCode as string
+  const { selectedSchool } = useSelector((state: RootState) => state.school)
   const [showExamDropdown, setShowExamDropdown] = useState(false);
 
   return (
@@ -20,7 +24,7 @@ export default function ExamHeader({ currentExam }: ExamHeaderProps) {
         {/* Left Section - Back Button & Exam Selector */}
         <div className='flex items-center gap-3'>
           <Link
-            href="/portal/dashboard"
+            href={rawSchoolCode ? `/portal/dashboard/${rawSchoolCode}` : "/portal/dashboard"}
             className="text-green-600 hover:text-green-700 font-medium flex items-center gap-2 cursor-pointer transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,7 +80,7 @@ export default function ExamHeader({ currentExam }: ExamHeaderProps) {
                         </p>
                         {EXAM_TYPES.map((exam) => (
                           <Link
-                            href={`/portal/dashboard/${exam.id}`}
+                            href={`./${exam.id}`}
                             key={exam.id}
                             onClick={() => setShowExamDropdown(false)}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
@@ -114,55 +118,32 @@ export default function ExamHeader({ currentExam }: ExamHeaderProps) {
           )}
         </div>
 
-        {/* Right Section - School Info & Logout */}
+        {/* Right Section - School Info & Back to Dashboard */}
         <div className='flex items-center gap-4'>
-          {school && (
-            <div className='sm:flex hidden gap-2 items-center text-right'>
-              <div>
-                <p className='sm:text-sm text-xs font-semibold capitalize'>{(school.schoolName).toLowerCase()}</p>
-                <p className="text-xs text-gray-500">{school.email}</p>
+          {selectedSchool && (
+            <div className='sm:flex hidden gap-2 items-center text-right bg-gray-50 rounded-lg px-3 py-2 border border-gray-200'>
+              <div className='flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full'>
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
               </div>
-              <svg
-                height="25px"
-                width="25px"
-                version="1.1"
-                id="_x32_"
-                xmlns="http://www.w3.org/2000/svg"
-                xmlnsXlink="http://www.w3.org/1999/xlink"
-                viewBox="0 0 512 512"
-                xmlSpace="preserve"
-                fill="#000000"
-              >
-                <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
-                <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g>
-                <g id="SVGRepo_iconCarrier">
-                  <g>
-                    <path className="st0" d="M320.707,0L37.037,69.971v417.625L320.447,512l154.516-26.258V62.568L320.707,0z M290.346,471.742 l-92.584-7.974v-79.426l-55.086-0.677v75.36l-68.109-5.866V99.367l215.779-53.224V471.742z"></path>
-                    <polygon className="st0" points="271.25,76.933 226.537,86.32 226.537,138.956 271.25,131.246 "></polygon>
-                    <polygon className="st0" points="118.574,112.033 87.416,118.622 87.416,164.818 118.574,159.469 "></polygon>
-                    <polygon className="st0" points="190.012,95.942 150.426,104.23 150.426,153.027 190.012,146.202 "></polygon>
-                    <polygon className="st0" points="118.576,203.184 87.416,207.448 87.416,253.722 118.576,250.622 "></polygon>
-                    <polygon className="st0" points="190.012,192.792 150.426,198.154 150.426,246.952 190.012,243.052 "></polygon>
-                    <polygon className="st0" points="271.25,181.04 226.537,187.097 226.537,238.911 271.25,234.506 "></polygon>
-                    <polygon className="st0" points="271.25,286.135 226.537,288.889 226.537,340.702 271.25,339.6 "></polygon>
-                    <polygon className="st0" points="190.012,291.476 150.426,293.914 150.426,342.712 190.012,341.737 "></polygon>
-                    <polygon className="st0" points="118.574,296.198 87.416,298.136 87.416,344.409 118.574,343.634 "></polygon>
-                  </g>
-                </g>
-              </svg>
+              <div>
+                <p className='sm:text-sm text-xs font-semibold capitalize'>{selectedSchool.schoolName.toLowerCase()}</p>
+                <p className="text-xs text-gray-500 capitalize">{selectedSchool.lga}</p>
+              </div>
             </div>
           )}
           
-          <button
-            onClick={logout}
-            title='Press to logout your school account'
-            className="inline-flex items-center cursor-pointer active:scale-90 active:rotate-2 text-red-600 px-3 py-2 border border-red-600 shadow-sm text-sm leading-4 font-medium rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600 transition-all duration-200"
+          <Link
+            href="/portal/dashboard"
+            title='Back to Dashboard'
+            className="inline-flex items-center cursor-pointer active:scale-90 text-green-600 px-3 py-2 border border-green-600 shadow-sm text-sm leading-4 font-medium rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 transition-all duration-200"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
-            <span className="hidden sm:inline">Logout</span>
-          </button>
+            <span className="hidden sm:inline">Dashboard</span>
+          </Link>
         </div>
       </div>
     </header>

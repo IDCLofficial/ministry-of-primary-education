@@ -1,10 +1,12 @@
 'use client'
 import React, { useState } from 'react'
+import { useSelector } from 'react-redux'
+import type { RootState } from '@/app/portal/store'
 import Image from 'next/image'
 import { useAuth } from '../../providers/AuthProvider'
 import { ExamTypeEnum, useSubmitExamApplicationMutation, useGetProfileQuery } from '@/app/portal/store/api/authApi'
 import toast from 'react-hot-toast'
-import { ExamType } from '../exams/types'
+import { ExamType } from '../[schoolCode]/types'
 import { allFAQs } from '../../data/faqData'
 
 interface ExamApplicationFormProps {
@@ -13,13 +15,49 @@ interface ExamApplicationFormProps {
 }
 
 export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamApplicationFormProps) {
-  const { school } = useAuth()
+  // Get AEE profile data (email, phone) from AuthProvider
+  const { school: aeeProfile } = useAuth()
+  
+  // Get selected school data from Redux store
+  const { selectedSchool } = useSelector((state: RootState) => state.school)
+
   const [submitApplication, { isLoading: isSubmitting }] = useSubmitExamApplicationMutation()
   const { refetch: refetchProfile } = useGetProfileQuery()
   const [numberOfStudents, setNumberOfStudents] = useState('')
+  const [principalName, setPrincipalName] = useState('')
+  const [principalNameError, setPrincipalNameError] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [phoneNumberError, setPhoneNumberError] = useState('')
+  const [address, setAddress] = useState('')
+  const [addressError, setAddressError] = useState('')
   const [showTermsModal, setShowTermsModal] = useState(false)
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
+
+  // Autofill fields when school data is available
+  React.useEffect(() => {
+    if (selectedSchool) {
+      // Autofill address from actual school data if available
+      if (selectedSchool.address) {
+        setAddress(selectedSchool.address)
+      }
+      
+      // Autofill phone from actual school data if available
+      if (selectedSchool.phone) {
+        setPhoneNumber(selectedSchool.phone)
+      }
+      
+      // Autofill principal name from actual school data if available
+      if (selectedSchool.principal) {
+        setPrincipalName(selectedSchool.principal)
+      }
+      
+      // Autofill phone from actual school data if available
+      if (selectedSchool.phone) {
+        setPhoneNumber(selectedSchool.phone)
+      }
+    }
+  }, [selectedSchool, aeeProfile])
 
   // Map exam IDs to ExamTypeEnum
   const getExamType = (examId: string): ExamTypeEnum => {
@@ -54,29 +92,81 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
     if (isSubmitting) return;
     e.preventDefault()
 
+    // Validate principal's name
+    if (!principalName.trim()) {
+      setPrincipalNameError('Principal\'s name is required')
+      toast.error('Please enter the principal\'s name')
+      return
+    }
+
+    if (principalName.trim().length < 3) {
+      setPrincipalNameError('Please enter a valid principal\'s name (at least 3 characters)')
+      toast.error('Please enter a valid principal\'s name')
+      return
+    }
+
+    // Validate phone number
+    if (!phoneNumber.trim()) {
+      setPhoneNumberError('Phone number is required')
+      toast.error('Please enter a phone number')
+      return
+    }
+
+    const phoneDigits = phoneNumber.replace(/\D/g, '')
+    if (phoneDigits.length < 10) {
+      setPhoneNumberError('Please enter a valid phone number (at least 10 digits)')
+      toast.error('Please enter a valid phone number')
+      return
+    }
+
+    // Validate address
+    if (!address.trim()) {
+      setAddressError('School address is required')
+      toast.error('Please enter your school address')
+      return
+    }
+
+    if (address.trim().length < 10) {
+      setAddressError('Please enter a complete address (at least 10 characters)')
+      toast.error('Please enter a complete school address')
+      return
+    }
+
     if (!numberOfStudents || parseInt(numberOfStudents) < 1) {
       toast.error('Please enter a valid number of students')
       return
     }
+
+    setPrincipalNameError('')
+    setPhoneNumberError('')
 
     if (!agreedToTerms) {
       toast.error('Please read and agree to the terms and conditions')
       return
     }
 
-    if (!school?.id) {
+    if (!selectedSchool?._id) {
       toast.error('School information not found')
       return
     }
 
+    if (!aeeProfile?.email) {
+      toast.error('AEE profile information not found')
+      return
+    }
+
+    setAddressError('')
+
     try {
+      const phoneDigits = phoneNumber.replace(/\D/g, '')
+      
       const applicationData = {
         examType: getExamType(exam.id),
-        schoolId: school.id,
-        address: school.address,
-        principal: school.schoolName,
-        email: school.email,
-        phone: parseInt(school.phone.replace(/\D/g, '')),
+        schoolId: selectedSchool._id,
+        address: address.trim(),
+        principal: principalName.trim(),
+        email: aeeProfile.email,
+        phone: parseInt(phoneDigits),
         numberOfStudents: parseInt(numberOfStudents)
       }
 
@@ -129,19 +219,15 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white rounded-lg p-4 border border-gray-200">
               <p className="text-xs text-gray-500 mb-1">School Name</p>
-              <p className="text-sm font-semibold text-gray-900">{school?.schoolName}</p>
+              <p className="text-sm font-semibold text-gray-900 capitalize">{selectedSchool?.schoolName.toLowerCase()}</p>
             </div>
             <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-xs text-gray-500 mb-1">Contact Email</p>
-              <p className="text-sm font-semibold text-gray-900">{school?.email}</p>
+              <p className="text-xs text-gray-500 mb-1">LGA</p>
+              <p className="text-sm font-semibold text-gray-900 capitalize">{selectedSchool?.lga}</p>
             </div>
             <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-xs text-gray-500 mb-1">Contact Phone</p>
-              <p className="text-sm font-semibold text-gray-900">{school?.phone}</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-xs text-gray-500 mb-1">School Address</p>
-              <p className="text-sm font-semibold text-gray-900">{school?.address}</p>
+              <p className="text-xs text-gray-500 mb-1">Contact Email (AEE)</p>
+              <p className="text-sm font-semibold text-gray-900">{aeeProfile?.email}</p>
             </div>
           </div>
         </div>
@@ -163,6 +249,123 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
               </div>
             </div>
 
+            {/* Principal's Name Field */}
+            <div className="space-y-2 mb-6">
+              <label className="block text-sm font-semibold text-gray-700">
+                Principal's Name <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  disabled={isSubmitting}
+                  value={principalName}
+                  onChange={(e) => {
+                    setPrincipalName(e.target.value)
+                    if (principalNameError) setPrincipalNameError('')
+                  }}
+                  placeholder="Enter the principal's full name"
+                  className={`w-full pl-12 pr-4 py-3.5 text-base border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                    principalNameError 
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 focus:ring-green-500 focus:border-transparent'
+                  }`}
+                  required
+                />
+              </div>
+              {principalNameError && (
+                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {principalNameError}
+                </p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">Enter the full name of the school principal</p>
+            </div>
+
+            {/* Phone Number Field */}
+            <div className="space-y-2 mb-6">
+              <label className="block text-sm font-semibold text-gray-700">
+                Phone Number <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <input
+                  type="tel"
+                  disabled={isSubmitting}
+                  value={phoneNumber}
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value)
+                    if (phoneNumberError) setPhoneNumberError('')
+                  }}
+                  placeholder="Enter phone number (e.g., 08012345678)"
+                  className={`w-full pl-12 pr-4 py-3.5 text-base border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                    phoneNumberError 
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 focus:ring-green-500 focus:border-transparent'
+                  }`}
+                  required
+                />
+              </div>
+              {phoneNumberError && (
+                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {phoneNumberError}
+                </p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">Enter a valid phone number (at least 10 digits)</p>
+            </div>
+
+            {/* School Address Field */}
+            <div className="space-y-2 mb-6">
+              <label className="block text-sm font-semibold text-gray-700">
+                School Address <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute top-3 left-0 pl-4 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <textarea
+                  disabled={isSubmitting}
+                  value={address}
+                  onChange={(e) => {
+                    setAddress(e.target.value)
+                    if (addressError) setAddressError('')
+                  }}
+                  placeholder="Enter your complete school address"
+                  rows={3}
+                  className={`w-full pl-12 pr-4 py-3 text-base border rounded-lg focus:outline-none focus:ring-2 transition-all resize-none ${addressError
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-green-500 focus:border-transparent'
+                    }`}
+                  required
+                />
+              </div>
+              {addressError && (
+                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {addressError}
+                </p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">Provide the complete physical address of your school</p>
+            </div>
+
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-gray-700">
                 Number of Students <span className="text-red-500">*</span>
@@ -177,6 +380,7 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
                   type="number"
                   min="1"
                   disabled={isSubmitting}
+                  onWheel={(e)=> e.preventDefault()}
                   value={numberOfStudents}
                   onChange={(e) => setNumberOfStudents(e.target.value)}
                   placeholder="Enter number of students"
@@ -219,7 +423,7 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-green-700">School:</span>
-                  <span className="text-sm font-semibold text-green-900">{school?.schoolName}</span>
+                  <span className="text-sm font-semibold text-green-900 capitalize">{selectedSchool?.schoolName.toLowerCase()}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-green-700">Total Students:</span>
@@ -319,13 +523,13 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
             </div>
 
             {/* Scrollable Content */}
-            <div 
+            <div
               className="flex-1 overflow-y-auto px-6 py-4"
               onScroll={handleTermsScroll}
             >
               <div className="prose prose-sm max-w-none">
                 <h4 className="text-lg font-semibold text-gray-900 mb-3">Exam Application Process - Important Guidelines</h4>
-                
+
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                   <p className="text-sm text-yellow-800 font-semibold mb-2">⚠️ Critical Information</p>
                   <p className="text-sm text-yellow-700">
@@ -373,11 +577,10 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
                 <button
                   onClick={handleAgreeToTerms}
                   disabled={!hasScrolledToBottom}
-                  className={`px-6 py-2 text-sm font-semibold rounded-lg transition-all ${
-                    hasScrolledToBottom
+                  className={`px-6 py-2 text-sm font-semibold rounded-lg transition-all ${hasScrolledToBottom
                       ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   {hasScrolledToBottom ? (
                     <span className="flex items-center gap-2">

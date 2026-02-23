@@ -6,14 +6,10 @@ import { ExamData, useGetProfileQuery, useLogoutMutation } from '../store/api/au
 
 interface School {
   id: string
-  schoolName: string
   email: string
   isFirstLogin: boolean
-  address: string
-  phone: string
-  numberOfStudents?: number
-  status?: string
-  exams: ExamData[]
+  lga: string
+  totalSchoolsInLga: number
 }
 
 interface AuthContextType {
@@ -73,15 +69,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const storedToken = localStorage.getItem('access_token')
         const storedSchool = localStorage.getItem('school')
 
-        if (storedToken) {
+        // Validate token exists and is not 'undefined' string
+        if (storedToken && storedToken !== 'undefined' && storedToken !== 'null') {
           setToken(storedToken)
           setSkipProfileQuery(false) // Enable profile query
           
-          if (storedSchool) {
-            const parsedSchool = JSON.parse(storedSchool) as School
-            setSchool(parsedSchool)
-            setIsAuthenticated(true)
+          // Validate school data exists and is valid JSON
+          if (storedSchool && storedSchool !== 'undefined' && storedSchool !== 'null') {
+            try {
+              const parsedSchool = JSON.parse(storedSchool) as School
+              if (parsedSchool && typeof parsedSchool === 'object') {
+                setSchool(parsedSchool)
+                setIsAuthenticated(true)
+              } else {
+                throw new Error('Invalid school data format')
+              }
+            } catch (parseError) {
+              console.error('Error parsing school data:', parseError)
+              localStorage.removeItem('school')
+            }
           }
+        } else {
+          // Clear invalid token
+          localStorage.removeItem('access_token')
+          localStorage.removeItem('school')
         }
       } catch (error) {
         console.error('Error checking authentication:', error)
@@ -113,7 +124,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsAuthenticated(true)
       // Update localStorage with fresh profile data
       localStorage.setItem('school', JSON.stringify(profileData))
-    } else if (profileError) {
+    } else if (profileError && token) {
+      // Only log and logout if we have a token but profile fetch failed
       console.error('Profile fetch error:', profileError)
       // If profile fetch fails, clear auth data
       logout()
@@ -124,7 +136,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       localStorage.setItem('access_token', newToken)
       localStorage.setItem('school', JSON.stringify(newSchool))
-      refetchProfile();
       setToken(newToken)
       setSchool(newSchool)
       setIsAuthenticated(true)

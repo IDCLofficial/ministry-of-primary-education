@@ -6,6 +6,7 @@ export const endpoints = {
     LOGOUT: '/auth/logout',
     REGISTER: '/schools/register',
     GET_SCHOOL_NAMES: '/schools/names',
+    GET_SCHOOL_BY_CODE: (schoolCode: string) => `/schools/${schoolCode}`,
     SUBMIT_SCHOOL_APPLICATION: '/applications',
     LOGIN: '/auth/login',
     CREATE_PASSWORD: '/auth/createPassword',

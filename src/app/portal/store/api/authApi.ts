@@ -6,7 +6,29 @@ interface SchoolName {
   _id: string
   schoolName: string
   hasAccount: boolean
-  status?: 'not applied' | 'applied' | 'pending' | 'approved' | 'rejected'
+  schoolCode: string
+}
+
+// School by code response type
+interface SchoolByCodeResponse {
+  _id: string
+  schoolName: string
+  lga: string
+  schoolCode: string
+  email?: string
+  address?: string
+  principal?: string
+  phone?: string
+  students: string[]
+  isFirstLogin: boolean
+  hasAccount: boolean
+  isVerified: boolean
+  exams: ExamData[]
+  createdAt: string
+  updatedAt: string
+  __v: number
+  accessTokens?: string[]
+  addedBySystem?: boolean
 }
 
 // Student response type
@@ -74,12 +96,10 @@ interface SchoolApplicationResponse {
 
 // Registration types
 export interface RegistrationRequest {
+  fullName: string
   lga: string
-  schoolName: string
-  schoolAddress: string
-  principalName: string
-  contactEmail: string
-  contactPhone: string
+  email: string
+  phoneNumber: string
 }
 
 interface RegistrationResponse {
@@ -114,15 +134,11 @@ type ExamData = ExamDataMain | RejectedExamData;
 interface LoginResponse {
   access_token: string
   school: {
-    applicationId?: string;
-    id: string;
-    schoolName: string;
-    email: string;
-    phone: string;
-    isFirstLogin: boolean;
-    address: string;
-    numberOfStudents?: number;
-    exams: ExamData[];
+    id: string
+    email: string
+    isFirstLogin: boolean
+    lga: string
+    totalSchoolsInLga: number
   }
 }
 
@@ -236,20 +252,21 @@ export const authApi = apiSlice.injectEndpoints({
       query: ({ lga }) => `${API_BASE_URL}${endpoints.GET_SCHOOL_NAMES}?lga=${lga.toLowerCase()}`,
       transformResponse: (response: SchoolName[]) => {
         const uniqueSchools = Array.from(
-          new Set(response.map(school => school.schoolName))
-        ).map(schoolName => {
-          const originalSchool = response.find(s => s.schoolName === schoolName)
-          return {
-            _id: originalSchool?._id || '',
-            schoolName,
-            hasAccount: originalSchool?.hasAccount || false
-          }
-        })
+          new Map(
+            response.map(school => [school.schoolName, school])
+          ).values()
+        )
 
         return uniqueSchools.sort((a, b) =>
           a.schoolName.localeCompare(b.schoolName)
         )
       },
+      providesTags: ['School'],
+    }),
+
+    // Get school by code
+    getSchoolByCode: builder.query<SchoolByCodeResponse, string>({
+      query: (schoolCode) => `${API_BASE_URL}${endpoints.GET_SCHOOL_BY_CODE(schoolCode)}`,
       providesTags: ['School'],
     }),
 
@@ -436,6 +453,7 @@ export const authApi = apiSlice.injectEndpoints({
 
 export const {
   useGetSchoolNamesQuery,
+  useGetSchoolByCodeQuery,
   useSubmitSchoolApplicationMutation,
   useSubmitExamApplicationMutation,
   useRegisterSchoolMutation,
@@ -452,4 +470,4 @@ export const {
 } = authApi
 
 // Export types for use in components
-export type { Student, SchoolName, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentUpdateRequest, StudentUpdateResponse, StudentsResponse, ApplicationStatusUpdateRequest, ApplicationStatusUpdateResponse, ExamDataMain as ExamData }
+export type { Student, SchoolName, SchoolByCodeResponse, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentUpdateRequest, StudentUpdateResponse, StudentsResponse, ApplicationStatusUpdateRequest, ApplicationStatusUpdateResponse, ExamDataMain as ExamData }

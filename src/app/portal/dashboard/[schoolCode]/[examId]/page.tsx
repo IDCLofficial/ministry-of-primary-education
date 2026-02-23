@@ -2,21 +2,24 @@
 
 import React, { useState, useCallback, useEffect } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
+import { useSelector, useDispatch } from 'react-redux'
 import Image from 'next/image'
-import { useAuth } from '@/app/portal/providers/AuthProvider'
-import { useGetStudentsBySchoolQuery } from '@/app/portal/store/api/authApi'
-import ExamHeader from '../components/ExamHeader'
-import { EXAM_TYPES, getExamById } from '../exams/types'
-import ExamApplicationForm from '../components/ExamApplicationForm'
+import { useGetStudentsBySchoolQuery, useGetSchoolByCodeQuery } from '@/app/portal/store/api/authApi'
+import { setSelectedSchool } from '@/app/portal/store/slices/schoolSlice'
+import type { RootState } from '@/app/portal/store'
+import ExamHeader from '../../components/ExamHeader'
+import { EXAM_TYPES, getExamById } from '../types'
+import ExamApplicationForm from '../../components/ExamApplicationForm'
+import ExamPageSkeleton from './components/ExamPageSkeleton'
 import { ExamTypeEnum } from '@/app/portal/store/api/authApi'
-import ResponsiveFilterBar from '../components/ResponsiveFilterBar'
-import StudentRegistrationExcel, { SortableField, SortState } from '../components/StudentRegistrationExcel'
-import OnboardingCompletionSummary from '../components/OnboardingCompletionSummary'
-import PaymentModal from '../components/PaymentModal'
-import PaymentStatusModal from '../components/PaymentStatusModal'
+import ResponsiveFilterBar from '../../components/ResponsiveFilterBar'
+import StudentRegistrationExcel, { SortableField, SortState } from '../../components/StudentRegistrationExcel'
+import OnboardingCompletionSummary from '../../components/OnboardingCompletionSummary'
+import PaymentModal from '../../components/PaymentModal'
+import PaymentStatusModal from '../../components/PaymentStatusModal'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
 import Link from 'next/link'
-import CostSummary from '../components/CostSummary'
+import CostSummary from '../../components/CostSummary'
 import toast from 'react-hot-toast'
 
 interface FilterState {
@@ -35,10 +38,31 @@ function hasReviewNotes(examData: unknown): examData is { reviewNotes: string } 
 
 export default function ExamPage() {
   const params = useParams()
+  const dispatch = useDispatch()
+  const router = useRouter()
 
-  const { school, refreshProfile, isFetchingProfile } = useAuth();
   const examId = params.examId as string
+  const rawSchoolCode = params.schoolCode as string
   const exam = getExamById(examId)
+
+  // Get school from Redux store
+  const { selectedSchool, schoolCode: storedSchoolCode } = useSelector((state: RootState) => state.school)
+
+  // Fallback: fetch school data if not in store or schoolCode doesn't match
+  const shouldFetch = !selectedSchool || storedSchoolCode !== rawSchoolCode
+  const { data: fetchedSchool, isLoading: isFetchingSchool } = useGetSchoolByCodeQuery(rawSchoolCode, {
+    skip: !shouldFetch || !rawSchoolCode
+  })
+
+  // Use store data or fetched data
+  const school = selectedSchool && storedSchoolCode === rawSchoolCode ? selectedSchool : fetchedSchool
+
+  // Update store when school is fetched
+  useEffect(() => {
+    if (fetchedSchool && rawSchoolCode && (!selectedSchool || storedSchoolCode !== rawSchoolCode)) {
+      dispatch(setSelectedSchool({ school: fetchedSchool, schoolCode: rawSchoolCode }))
+    }
+  }, [fetchedSchool, rawSchoolCode, selectedSchool, storedSchoolCode, dispatch])
 
   // Map exam IDs to API exam names
   const examIdToName: Record<string, ExamTypeEnum> = {
@@ -99,7 +123,6 @@ export default function ExamPage() {
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const searchParams = useSearchParams()
-  const router = useRouter()
 
   // Get filters and page from URL search params
   const filters: FilterState = {
@@ -137,19 +160,17 @@ export default function ExamPage() {
     const payment = searchParams?.get('payment')
     if (payment === 'success') {
       setPaymentStatus('success')
-      // Refetch profile to get updated points after payment
-      refreshProfile()
     } else if (payment === 'failed') {
       setPaymentStatus('failed')
     }
-  }, [searchParams, refreshProfile])
+  }, [searchParams])
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500)
 
   // Fetch students for the authenticated school
   const { data: studentsData, refetch: refetchStudents, isLoading } = useGetStudentsBySchoolQuery(
     {
-      schoolId: school?.id || '',
+      schoolId: school?._id || '',
       examType: examName as ExamTypeEnum,
       page: currentPage,
       limit: itemsPerPage,
@@ -159,13 +180,13 @@ export default function ExamPage() {
       gender: filters.gender || undefined,
       sort: filters.sort || undefined
     },
-    { skip: !school?.id || applicationStatus === 'not-applied' }
+    { skip: !school?._id || applicationStatus === 'not-applied' }
   )
 
   // Query for all students (for PDF export)
   const { data: allStudentsData } = useGetStudentsBySchoolQuery(
     {
-      schoolId: school?.id || '',
+      schoolId: school?._id || '',
       examType: examName as ExamTypeEnum,
       page: 1,
       limit: studentsData?.totalItems || 10000, // Use total count or large number
@@ -175,7 +196,7 @@ export default function ExamPage() {
       gender: undefined,
       sort: undefined
     },
-    { skip: !school?.id || applicationStatus === 'not-applied' || !studentsData?.totalItems }
+    { skip: !school?._id || applicationStatus === 'not-applied' || !studentsData?.totalItems }
   )
 
   // Use exam-specific points from school profile
@@ -185,9 +206,7 @@ export default function ExamPage() {
 
   const handleRefresh = useCallback(async () => {
     await refetchStudents()
-    // Refetch profile to get updated points
-    refreshProfile()
-  }, [refetchStudents, refreshProfile])
+  }, [refetchStudents])
 
   const handleExportStudentList = useCallback(() => {
     if (!allStudentsData?.data || allStudentsData.data.length === 0) {
@@ -196,7 +215,7 @@ export default function ExamPage() {
     }
 
     // Dynamically import the PDF generator
-    import('../../utils/pdfGenerator').then(({ generateStudentListPDF }) => {
+    import('../../../utils/pdfGenerator').then(({ generateStudentListPDF }) => {
       const students = allStudentsData.data.map(student => ({
         id: student._id,
         studentId: student.studentId?.toString(),
@@ -206,13 +225,13 @@ export default function ExamPage() {
         examYear: student.examYear
       }))
 
-      generateStudentListPDF(students, examName, school?.schoolName || 'Unknown School')
+      generateStudentListPDF(students, examName, school?.lga || 'Unknown School')
       toast.success('Student list exported successfully!')
     }).catch((error) => {
       console.error('Failed to export student list:', error)
       toast.error('Failed to export student list')
     })
-  }, [allStudentsData, examName, school?.schoolName])
+  }, [allStudentsData, examName, school?.lga])
 
   const handleClosePaymentStatus = () => {
     setPaymentStatus(null)
@@ -299,6 +318,16 @@ export default function ExamPage() {
     }))
   }, [studentsData])
 
+  // Show loading skeleton while fetching school data
+  if (isFetchingSchool || (!school && shouldFetch)) {
+    return (
+      <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
+        <ExamHeader currentExam={exam} />
+        <ExamPageSkeleton />
+      </div>
+    )
+  }
+
   if (!exam) {
     return (
       <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
@@ -383,8 +412,8 @@ export default function ExamPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <p className="text-xs text-gray-500 mb-1">School Name</p>
-                    <p className="text-sm font-semibold text-gray-900 capitalize">{school?.schoolName}</p>
+                    <p className="text-xs text-gray-500 mb-1">Local Government Area</p>
+                    <p className="text-sm font-semibold text-gray-900 capitalize">{school?.lga}</p>
                   </div>
                   <div className="bg-white rounded-lg p-4 border border-gray-200">
                     <p className="text-xs text-gray-500 mb-1">Contact Email</p>
@@ -595,7 +624,7 @@ export default function ExamPage() {
                 onPageChange={handlePageChange}
                 onItemsPerPageChange={setItemsPerPage}
                 examType={getExamType(examId)}
-                isFetchingProfile={isFetchingProfile}
+                isFetchingProfile={isFetchingSchool}
                 onExportStudentList={handleExportStudentList}
               />
             </div>
