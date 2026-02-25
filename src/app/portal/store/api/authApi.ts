@@ -288,6 +288,16 @@ interface ResetPasswordResponse {
   message: string
 }
 
+// Verify Reset Token interfaces
+interface VerifyResetTokenRequest {
+  token: string
+}
+
+interface VerifyResetTokenResponse {
+  valid: boolean
+  message: string
+}
+
 // Auth API endpoints
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -547,6 +557,18 @@ export const authApi = apiSlice.injectEndpoints({
         },
       }),
     }),
+
+    // Verify reset token
+    verifyResetToken: builder.mutation<VerifyResetTokenResponse, VerifyResetTokenRequest>({
+      query: (data) => ({
+        url: `${API_BASE_URL}${endpoints.VERIFY_RESET_TOKEN}`,
+        method: 'POST',
+        body: data,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+    }),
   }),
   overrideExisting: true,
 })
@@ -572,6 +594,7 @@ export const {
   useDeleteAccountMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useVerifyResetTokenMutation,
 } = authApi
 
 // Export types for use in components

@@ -5,12 +5,50 @@ import Image from 'next/image'
 import ResetPasswordForm from '@/components/ResetPasswordForm'
 import HangingTree from '../components/HangingTree'
 import { useSearchParams } from 'next/navigation'
+import { useVerifyResetTokenMutation } from '../store/api/authApi'
  
 function ResetPasswordContent() {
     const searchParams = useSearchParams()
     const token = searchParams.get('token') || ''
- 
-    if (!token) {
+    const [verifyResetToken, { isLoading: isVerifying }] = useVerifyResetTokenMutation()
+    const [isTokenValid, setIsTokenValid] = React.useState<boolean | null>(null)
+    const [errorMessage, setErrorMessage] = React.useState<string>('')
+
+    // Verify token on mount
+    React.useEffect(() => {
+        if (token) {
+            verifyResetToken({ token })
+                .unwrap()
+                .then((response) => {
+                    setIsTokenValid(response.valid)
+                    if (!response.valid) {
+                        setErrorMessage(response.message || 'This reset link is invalid or has expired.')
+                    }
+                })
+                .catch((error) => {
+                    setIsTokenValid(false)
+                    setErrorMessage(error?.data?.message || 'Failed to verify reset link. Please try again.')
+                })
+        } else {
+            setIsTokenValid(false)
+            setErrorMessage('No reset token provided.')
+        }
+    }, [token, verifyResetToken])
+
+    // Loading state while verifying token
+    if (isVerifying || isTokenValid === null) {
+        return (
+            <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg shadow-black/5 border border-black/5 p-6">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Verifying reset link...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // Error state for invalid token
+    if (!isTokenValid) {
         return (
             <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg shadow-black/5 border border-black/5 p-6">
                 <div className="text-center">
@@ -19,15 +57,15 @@ function ResetPasswordContent() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                     </div>
- 
+
                     <h2 className="sm:text-2xl text-lg font-semibold text-gray-800 mb-2">
                         Invalid Reset Link
                     </h2>
- 
+
                     <p className="text-gray-600 mb-6">
-                        This password reset link is invalid or has expired. Please request a new one.
+                        {errorMessage}
                     </p>
- 
+
                     <a
                         href="/portal/forgot-password"
                         className="block w-full bg-green-600 cursor-pointer text-white py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 font-medium text-center"
@@ -38,7 +76,8 @@ function ResetPasswordContent() {
             </div>
         )
     }
- 
+
+    // Valid token - show reset password form
     return <ResetPasswordForm token={token} />
 }
  
