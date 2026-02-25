@@ -8,8 +8,8 @@ import Pagination from './Pagination'
 import StudentRegistrationSkeleton from './StudentRegistrationSkeleton'
 import CertificatePreviewModal from './CertificatePreviewModal'
 import { FaFileAlt } from 'react-icons/fa'
-import { FaFileExport } from 'react-icons/fa6'
 import { IoDownload } from 'react-icons/io5'
+import { getExamById } from '../[schoolCode]/types'
 
 interface Student {
   id: string
@@ -55,10 +55,12 @@ interface StudentRegistrationExcelProps {
   isLoading?: boolean
   handleSort: (field: SortableField) => void
   sortState: SortState
+  refetchProfile?: () => void
   examType: ExamTypeEnum
   school: SchoolByCodeResponse | null
   isFetchingProfile?: boolean
   onExportStudentList?: () => void
+  allStudents: number
 }
 
 export default function StudentRegistrationExcel({
@@ -75,22 +77,27 @@ export default function StudentRegistrationExcel({
   onItemsPerPageChange,
   handleSort,
   sortState,
+  refetchProfile,
   isLoading = false,
   examType,
   isFetchingProfile = false,
   onExportStudentList,
+  allStudents
 }: StudentRegistrationExcelProps) {
+  const examTypeData = getExamById(examType === "Common-entrance" ? "CESS" : examType)
   const [onboardStudent] = useOnboardStudentMutation()
   const [updateStudent] = useUpdateStudentMutation()
   const [editableStudents, setEditableStudents] = useState<EditableStudent[]>([])
   const [showNewRow, setShowNewRow] = useState(false)
   const [savingRows, setSavingRows] = useState<Set<string>>(new Set())
+  const [failedRows, setFailedRows] = useState<Set<string>>(new Set())
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [pendingNewStudents, setPendingNewStudents] = useState<Set<string>>(new Set())
   const [showCertificateModal, setShowCertificateModal] = useState(false)
   const [originalStudents, setOriginalStudents] = useState<Map<string, Student>>(new Map())
   const [quickAddMode, setQuickAddMode] = useState(false)
   const [lastStudentDefaults, setLastStudentDefaults] = useState<{ class: string; examYear: number; gender: 'Male' | 'Female' }>({
-    class: 'SS3',
+    class: examTypeData?.class || 'SS3',
     examYear: new Date().getFullYear(),
     gender: 'Male'
   })
@@ -109,6 +116,9 @@ export default function StudentRegistrationExcel({
   const currentExamData = school?.exams?.find(e => e.name === examType);
   const examPoints = currentExamData?.availablePoints || 0
   const examStatus = currentExamData?.status || 'approved'
+  
+  // Calculate actual available points accounting for pending saves
+  const actualAvailablePoints = examPoints - pendingNewStudents.size
 
   // Initialize editable students from props and track original data
   useEffect(() => {
@@ -138,39 +148,24 @@ export default function StudentRegistrationExcel({
     setIsRefreshing(false)
   }, [students, examPoints]);
 
-  const classOptions = [
-    { value: 'SS3', label: 'SS3' },
-    { value: 'SS2', label: 'SS2' },
-    { value: 'SS1', label: 'SS1' },
-    { value: 'JSS3', label: 'JSS3' },
-    { value: 'JSS2', label: 'JSS2' },
-    { value: 'JSS1', label: 'JSS1' },
-  ]
-
   const genderOptions = [
     { value: 'Male', label: 'Male' },
     { value: 'Female', label: 'Female' }
   ]
 
   const yearOptions = [
-    { value: (new Date().getFullYear() - 7).toString(), label: (new Date().getFullYear() - 7).toString() },
-    { value: (new Date().getFullYear() - 6).toString(), label: (new Date().getFullYear() - 6).toString() },
-    { value: (new Date().getFullYear() - 5).toString(), label: (new Date().getFullYear() - 5).toString() },
-    { value: (new Date().getFullYear() - 4).toString(), label: (new Date().getFullYear() - 4).toString() },
-    { value: (new Date().getFullYear() - 3).toString(), label: (new Date().getFullYear() - 3).toString() },
-    { value: (new Date().getFullYear() - 2).toString(), label: (new Date().getFullYear() - 2).toString() },
-    { value: (new Date().getFullYear() - 1).toString(), label: (new Date().getFullYear() - 1).toString() },
     { value: new Date().getFullYear().toString(), label: new Date().getFullYear().toString() },
   ]
 
   const handleAddNewRow = () => {
-    if (examPoints <= 0) {
+    if (actualAvailablePoints <= 0) {
       toast.error('No available points to onboard new students')
       return
     }
 
+    const newStudentId = `new-${Date.now()}`
     const newStudent: EditableStudent = {
-      id: `new-${Date.now()}`,
+      id: newStudentId,
       fullName: '',
       gender: lastStudentDefaults.gender,
       class: lastStudentDefaults.class,
@@ -180,6 +175,7 @@ export default function StudentRegistrationExcel({
     }
     // Add new student at the top of the table
     setEditableStudents(prev => [newStudent, ...prev])
+    setPendingNewStudents(prev => new Set(prev).add(newStudentId))
     setShowNewRow(true)
   }
 
@@ -205,6 +201,12 @@ export default function StudentRegistrationExcel({
     // Only hide the add button if we're canceling a new row
     if (student?.isNew) {
       setShowNewRow(false)
+      // Remove from pending new students
+      setPendingNewStudents(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(id)
+        return newSet
+      })
     }
   }
 
@@ -251,7 +253,7 @@ export default function StudentRegistrationExcel({
         const studentData = {
           studentName: student.fullName.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
           gender: student.gender.toLowerCase() as 'male' | 'female',
-          class: student.class.toLowerCase(),
+          class: examTypeData?.class || 'N/A',
           examYear: student.examYear,
           school: school._id
         }
@@ -269,6 +271,13 @@ export default function StudentRegistrationExcel({
         // Replace the new row with optimistic student, keep other rows unchanged
         setEditableStudents(prev => [optimisticStudent, ...prev.filter(s => s.id !== id)])
         setShowNewRow(false)
+        
+        // Remove from pending new students immediately (optimistic)
+        setPendingNewStudents(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(id)
+          return newSet
+        })
 
         const response = await onboardStudent({
           examType: examType,
@@ -295,16 +304,31 @@ export default function StudentRegistrationExcel({
           } : s
         ))
 
+        // Remove from failed rows if it was there
+        setFailedRows(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(id)
+          return newSet
+        })
+
         // Refresh in background without showing loader
         if (onRefreshStudents) {
           onRefreshStudents()
         }
+        if (refetchProfile) {
+          refetchProfile()
+        }
+        
+        // Ensure pending student is removed (in case optimistic removal failed)
+        setPendingNewStudents(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(id)
+          return newSet
+        })
 
-        // Auto-add new row if in quick-add mode
-        if (quickAddMode && examPoints > 1) {
-          setTimeout(() => {
-            handleAddNewRow()
-          }, 100)
+        // Auto-add new row after successful save if in quick-add mode
+        if (quickAddMode && actualAvailablePoints > 0) {
+          handleAddNewRow()
         }
       } else {
         // Update existing student - check if anything changed
@@ -361,13 +385,42 @@ export default function StudentRegistrationExcel({
           return newMap
         })
 
+        // Remove from failed rows if it was there
+        setFailedRows(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(id)
+          return newSet
+        })
+
         // Note: No profile refetch needed for updates since no points are consumed
       }
     } catch (error) {
+      if (refetchProfile) {
+        refetchProfile()
+      }
       console.error('Student operation failed:', error)
       const errorMessage = (error as { data?: { message?: string } })?.data?.message ||
         `Failed to ${student.isNew ? 'onboard' : 'update'} student. Please try again.`
       toast.error(errorMessage)
+
+      // If it was a new student that failed, remove it from state
+      if (student.isNew) {
+        setEditableStudents(prev => prev.filter(s => s.id !== id))
+        setShowNewRow(false)
+        // Remove from pending students
+        setPendingNewStudents(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(id)
+          return newSet
+        })
+      } else {
+        // For existing students, keep them in edit mode
+        setEditableStudents(prev => prev.map(s => 
+          s.id === id ? { ...s, isEditing: true } : s
+        ))
+        // Mark row as failed for retry
+        setFailedRows(prev => new Set(prev).add(id))
+      }
     } finally {
       setSavingRows(prev => {
         const newSet = new Set(prev)
@@ -375,6 +428,16 @@ export default function StudentRegistrationExcel({
         return newSet
       })
     }
+  }
+
+  const handleRetry = (id: string) => {
+    // Remove from failed state and retry save
+    setFailedRows(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(id)
+      return newSet
+    })
+    handleSaveRow(id)
   }
 
   const handlePreviewCertificate = () => {
@@ -429,12 +492,12 @@ export default function StudentRegistrationExcel({
 
   return (
     <div className="bg-white rounded-xl shadow-lg shadow-black/2 border border-black/10 sm:p-6 p-3 relative">
-      {/* Loading Overlay */}
-      {isRefreshing && (
+      {/* Loading Overlay - for refresh, page changes, or profile refetch */}
+      {(isRefreshing || isLoading || isFetchingProfile) && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
           <div className="flex flex-col items-center gap-3">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600"></div>
-            <p className="text-sm font-medium text-gray-600">Updating...</p>
+            <p className="text-sm font-medium text-gray-600">{isRefreshing || isFetchingProfile ? 'Updating...' : 'Loading...'}</p>
           </div>
         </div>
       )}
@@ -541,7 +604,11 @@ export default function StudentRegistrationExcel({
             {showNewRow && editableStudents.find(s => s.isNew) && (() => {
               const newStudent = editableStudents.find(s => s.isNew)!
               return (
-                <tr key={newStudent.id} className="bg-blue-50 border-2 border-blue-200">
+                <tr onBlur={() => {
+                  if (newStudent.fullName.trim() === '' && !quickAddMode) {
+                    handleCancelEdit(newStudent.id)
+                  } 
+                }} key={newStudent.id} className="bg-blue-50 border-2 border-blue-200">
                   <td className="px-4 py-3 text-sm text-gray-500">
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       New
@@ -577,13 +644,8 @@ export default function StudentRegistrationExcel({
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm relative">
-                    <div className="w-32 relative z-10">
-                      <CustomDropdown
-                        options={classOptions}
-                        value={newStudent.class}
-                        onChange={(value) => handleFieldChange(newStudent.id, 'class', value)}
-                        className="text-sm uppercase"
-                      />
+                    <div className="w-32 relative z-10 uppercase text-sm">
+                      {examTypeData?.class}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm relative">
@@ -598,20 +660,40 @@ export default function StudentRegistrationExcel({
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => handleSaveRow(newStudent.id)}
-                        disabled={savingRows.has(newStudent.id)}
-                        className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Save"
-                      >
-                        {savingRows.has(newStudent.id) ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                        ) : (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </button>
+                      {failedRows.has(newStudent.id) ? (
+                        <button
+                          onClick={() => handleRetry(newStudent.id)}
+                          disabled={savingRows.has(newStudent.id)}
+                          className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1"
+                          title="Retry"
+                        >
+                          {savingRows.has(newStudent.id) ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                          ) : (
+                            <>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                              Retry
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleSaveRow(newStudent.id)}
+                          disabled={savingRows.has(newStudent.id)}
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Save"
+                        >
+                          {savingRows.has(newStudent.id) ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                      )}
                       <button
                         onClick={() => handleCancelEdit(newStudent.id)}
                         disabled={savingRows.has(newStudent.id)}
@@ -678,13 +760,8 @@ export default function StudentRegistrationExcel({
                 </td>
                 <td className="px-4 py-3 text-sm relative">
                   {student.isEditing ? (
-                    <div className="w-32 relative z-10">
-                      <CustomDropdown
-                        options={classOptions}
-                        value={student.class}
-                        onChange={(value) => handleFieldChange(student.id, 'class', value)}
-                        className="text-sm uppercase"
-                      />
+                    <div className="w-32 relative z-10 uppercase text-sm">
+                      {examTypeData?.class}
                     </div>
                   ) : (
                     <span className="text-gray-900 uppercase">{student.class}</span>
@@ -706,17 +783,36 @@ export default function StudentRegistrationExcel({
                 {examStatus === "approved" && <td className="px-4 py-3 text-sm text-center">
                   {student.isEditing ? (
                     <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => handleSaveRow(student.id)}
-                        disabled={savingRows.has(student.id)}
-                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                      >
-                        {savingRows.has(student.id) ? (
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                        ) : (
-                          'Save'
-                        )}
-                      </button>
+                      {failedRows.has(student.id) ? (
+                        <button
+                          onClick={() => handleRetry(student.id)}
+                          disabled={savingRows.has(student.id)}
+                          className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          {savingRows.has(student.id) ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                          ) : (
+                            <>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                              Retry
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleSaveRow(student.id)}
+                          disabled={savingRows.has(student.id)}
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        >
+                          {savingRows.has(student.id) ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                          ) : (
+                            'Save'
+                          )}
+                        </button>
+                      )}
                       <button
                         onClick={() => handleCancelEdit(student.id)}
                         disabled={savingRows.has(student.id)}
@@ -802,7 +898,7 @@ export default function StudentRegistrationExcel({
           examType={examType}
           onClose={() => setShowCertificateModal(false)}
           schoolName={school.schoolName}
-          studentsApproved={students.length || 0}
+          studentsApproved={allStudents}
           examSession={new Date().getFullYear().toString()}
           approvalId={`${examTypeToName[examType]}-IMO-${currentExamData.applicationId.slice(-6)?.toUpperCase() || 'XXXXX'}`}
           issueDate={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}

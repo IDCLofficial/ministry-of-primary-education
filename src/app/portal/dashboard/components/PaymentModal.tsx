@@ -25,16 +25,16 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
   const examTotalPoints = currentExamData?.totalPoints || 0;
   const examNumberOfStudents = currentExamData?.numberOfStudents || 0;
   const maxPointsAllowed = examNumberOfStudents > 0 ? Math.max(0, examNumberOfStudents - examTotalPoints) : 0;
-  
-  const minStudentsForCustom = 1 // Minimum students to allow custom input
-  const studentFees = selectedStudentCount * feePerStudent
-  const processingFee = Math.round(studentFees * 0.015) // 1.5% processing fee
-  const totalAmount = studentFees + processingFee
 
-  
-  // Preset suggestions (filtered to not exceed max allowed and start from 10)
-  const suggestions = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500].filter(count => count <= maxPointsAllowed)
-  const allowCustomInput = maxPointsAllowed > minStudentsForCustom
+  // Dynamic minimum based on available points: if > 20, must buy at least 20; otherwise can buy below 20
+  const minPurchasePoints = maxPointsAllowed >= 20 ? 20 : 1
+  const studentFees = selectedStudentCount * feePerStudent
+  const totalAmount = studentFees
+
+
+  // Preset suggestions (filtered to not exceed max allowed and respect minimum)
+  const suggestions = [10, 20, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500].filter(count => count >= minPurchasePoints && count <= maxPointsAllowed)
+  const allowCustomInput = maxPointsAllowed >= minPurchasePoints
 
   const handleSuggestionClick = (count: number) => {
     if (count <= maxPointsAllowed) {
@@ -46,32 +46,53 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
   const handleCustomInputChange = (value: string) => {
     setCustomInput(value)
     const numValue = parseInt(value) || 0
-    if (!isNaN(numValue) && numValue >= minStudentsForCustom && numValue <= maxPointsAllowed) {
+    if (!isNaN(numValue) && numValue >= minPurchasePoints && numValue <= maxPointsAllowed) {
       setSelectedStudentCount(numValue)
     } else if (numValue > maxPointsAllowed) {
       // Optionally cap at max
       setSelectedStudentCount(maxPointsAllowed)
-    } else if (numValue > 0 && numValue < minStudentsForCustom) {
+    } else if (numValue > 0 && numValue < minPurchasePoints) {
       // Set to minimum
-      setSelectedStudentCount(minStudentsForCustom)
+      setSelectedStudentCount(minPurchasePoints)
+    }
+  }
+
+  const handleInputBlur = () => {
+    // Enforce constraints when user leaves the input field
+    const numValue = parseInt(customInput) || 0
+    if (numValue < minPurchasePoints) {
+      setCustomInput(minPurchasePoints.toString())
+      setSelectedStudentCount(minPurchasePoints)
+    } else if (numValue > maxPointsAllowed) {
+      setCustomInput(maxPointsAllowed.toString())
+      setSelectedStudentCount(maxPointsAllowed)
+    } else if (numValue === 0 || isNaN(numValue)) {
+      setCustomInput(minPurchasePoints.toString())
+      setSelectedStudentCount(minPurchasePoints)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+      e.preventDefault()
     }
   }
 
   // Reset selected count when modal opens with new data
   useEffect(() => {
     if (isOpen) {
-      // If less than 10 points available, select all available
-      // If 10 or more available, start at 10 or the numberOfStudents (whichever is less)
+      // Set initial count based on minimum purchase requirement
       let initialCount
-      if (maxPointsAllowed < minStudentsForCustom) {
+      if (maxPointsAllowed < minPurchasePoints) {
         initialCount = maxPointsAllowed
       } else {
-        initialCount = Math.max(minStudentsForCustom, Math.min(numberOfStudents, maxPointsAllowed))
+        // Start at minimum purchase points or numberOfStudents (whichever is appropriate)
+        initialCount = Math.max(minPurchasePoints, Math.min(numberOfStudents, maxPointsAllowed))
       }
       setSelectedStudentCount(initialCount)
       setCustomInput(initialCount.toString())
     }
-  }, [isOpen, numberOfStudents, maxPointsAllowed])
+  }, [isOpen, numberOfStudents, maxPointsAllowed, minPurchasePoints])
 
   const handlePayment = async () => {
     if (!school?._id) {
@@ -79,13 +100,13 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
       return
     }
 
-    if (selectedStudentCount < 1 || selectedStudentCount > maxPointsAllowed) {
-      toast.error(`Please select between 1 and ${maxPointsAllowed} points`)
+    if (selectedStudentCount < minPurchasePoints || selectedStudentCount > maxPointsAllowed) {
+      toast.error(`Please select between ${minPurchasePoints} and ${maxPointsAllowed} points`)
       return
     }
 
     setIsProcessing(true)
-    
+
     try {
       const response = await createStudentPayment({
         schoolId: school._id,
@@ -95,16 +116,13 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
         }
       }).unwrap()
 
-      // If successful, redirect to Paystack authorization URL
-      if (response.data.authorizationUrl) {
-        // Save current URL to localStorage for payment callback to return to
-        localStorage.setItem('payment-return-url', window.location.href)
-        window.location.href = response.data.authorizationUrl
-      } else {
-        // Fallback: show success and close modal
-        onPaymentSuccess()
-        onClose()
+      if (!response.authorizationUrl) {
+        throw new Error('Payment authorization URL not found. Please try again.')
       }
+
+      // Save current URL to localStorage for payment callback to return to
+      localStorage.setItem('payment-return-url', window.location.href)
+      window.location.href = response.authorizationUrl
     } catch (error) {
       setIsProcessing(false)
       console.error('Payment initiation failed:', error)
@@ -164,10 +182,10 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
                     <span className="font-medium">Available:</span> {maxPointsAllowed.toLocaleString()} points
                   </p>
                   <p className="text-xs text-yellow-700 mt-1">
-                    {maxPointsAllowed >= minStudentsForCustom ? `Minimum for custom input: ${minStudentsForCustom} points | ` : ''}({examNumberOfStudents} students - {examTotalPoints} available = {maxPointsAllowed} needed)
+                    <span className="font-medium">Minimum purchase:</span> {minPurchasePoints} points | ({examNumberOfStudents} students - {examTotalPoints} available = {maxPointsAllowed} needed)
                   </p>
                 </div>
-                
+
                 {allowCustomInput ? (
                   <>
                     {/* Preset Suggestions */}
@@ -179,11 +197,10 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
                             <button
                               key={count}
                               onClick={() => handleSuggestionClick(count)}
-                              className={`px-3 active:scale-95 active:rotate-1 cursor-pointer py-2 text-sm font-medium rounded-md border transition-all duration-200 ${
-                                selectedStudentCount === count
+                              className={`px-3 active:scale-95 active:rotate-1 cursor-pointer py-2 text-sm font-medium rounded-md border transition-all duration-200 ${selectedStudentCount === count
                                   ? 'bg-green-600 text-white border-green-600'
                                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                              }`}
+                                }`}
                             >
                               {count}
                             </button>
@@ -200,11 +217,13 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
                       <input
                         id="customStudentCount"
                         type="number"
-                        min={minStudentsForCustom}
+                        min={minPurchasePoints}
                         max={maxPointsAllowed}
                         value={customInput}
                         onChange={(e) => handleCustomInputChange(e.target.value)}
-                        placeholder={`Enter number of points (${minStudentsForCustom}-${maxPointsAllowed})`}
+                        onBlur={handleInputBlur}
+                        onKeyDown={handleKeyDown}
+                        placeholder={`Enter number of points (${minPurchasePoints}-${maxPointsAllowed})`}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       />
                     </div>
@@ -234,10 +253,6 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Points Fees</span>
                     <span className="font-medium">₦{studentFees.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Processing Fee (1.5%)</span>
-                    <span className="font-medium">₦{processingFee.toLocaleString()}</span>
                   </div>
                   <div className="border-t border-gray-200 pt-2 mt-2">
                     <div className="flex justify-between">

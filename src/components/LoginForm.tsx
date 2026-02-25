@@ -114,9 +114,6 @@ export default function LoginForm() {
         login(result.access_token, result.school)
 
         toast.success('Login successful!')
-
-        router.push('/portal/dashboard')
-
       } catch (error: unknown) {
         console.error('Login error:', error)
 

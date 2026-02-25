@@ -7,17 +7,21 @@ import OnboardingConfirmationModal from './OnboardingConfirmationModal'
 import OnboardingSuccessModal from './OnboardingSuccessModal'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
+import { RootState } from '../../store'
+import { useAppSelector } from '../../store/hooks'
 
 interface OnboardingCompletionSummaryProps {
   totalStudents: number
   examType: ExamTypeEnum
-  examTotalPoints: number
+  usedPoints: number
   examNumberOfStudents: number
   pointCost: number
+  isFetchingProfile?: boolean
 }
 
-export default function OnboardingCompletionSummary({ totalStudents, examType, examTotalPoints, pointCost }: OnboardingCompletionSummaryProps) {
-  const { school } = useAuth()
+export default function OnboardingCompletionSummary({ totalStudents, examType, usedPoints, pointCost, isFetchingProfile = false }: OnboardingCompletionSummaryProps) {
+  // Get school from Redux store
+  const { selectedSchool, schoolCode: storedSchoolCode } = useAppSelector((state: RootState) => state.school)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -39,12 +43,12 @@ export default function OnboardingCompletionSummary({ totalStudents, examType, e
   }
 
   const handleCompleteOnboarding = async () => {
-    if (!school?.id) {
+    if (!selectedSchool?._id) {
       toast.error('School information not available. ID is required. Please try again.')
       return
     }
 
-    const exam = school?.exams.find(exam => exam.name === examType)
+    const exam = selectedSchool?.exams.find(exam => exam.name === examType)
 
     if (!exam?.applicationId) {
       toast.error('School information not available. Application ID is required. Please try again.')
@@ -54,9 +58,9 @@ export default function OnboardingCompletionSummary({ totalStudents, examType, e
     setIsSubmitting(true)
 
     try {
-      toast.loading('Initiating payment for onboarding completion...', { id: 'onboarding-completion' })
+      toast.loading('Submitting to Ministry for approval...', { id: 'onboarding-completion' })
 
-      const response = await completeOnboarding({
+      await completeOnboarding({
         applicationId: exam.applicationId,
         examType: examType,
         data: {
@@ -66,21 +70,16 @@ export default function OnboardingCompletionSummary({ totalStudents, examType, e
       }).unwrap()
 
       toast.dismiss('onboarding-completion')
+      toast.success('Successfully submitted to Ministry!')
 
-      // Store the return URL in localStorage before redirecting to payment
-      const currentPath = window.location.pathname
-      localStorage.setItem('payment-return-url', currentPath)
-
-      // Redirect to Paystack payment page
-      if (response.authorizationUrl) {
-        window.location.href = response.authorizationUrl
-      } else {
-        throw new Error('Payment authorization URL not received')
-      }
+      // Close confirmation modal and show success modal
+      setShowConfirmationModal(false)
+      setShowSuccessModal(true)
+      setIsSubmitting(false)
     } catch (error: unknown) {
       toast.dismiss('onboarding-completion')
-      console.error('Failed to initiate onboarding payment:', error)
-      let errorMessage = 'Failed to initiate payment. Please try again.'
+      console.error('Failed to submit onboarding:', error)
+      let errorMessage = 'Failed to submit to Ministry. Please try again.'
 
       if (error && typeof error === 'object') {
         if ('data' in error && error.data && typeof error.data === 'object' && 'message' in error.data) {
@@ -96,7 +95,16 @@ export default function OnboardingCompletionSummary({ totalStudents, examType, e
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg shadow-black/2 border border-black/10 p-6 mb-6">
+    <div className="bg-white rounded-xl shadow-lg shadow-black/2 border border-black/10 p-6 mb-6 relative">
+      {/* Loading Overlay */}
+      {isFetchingProfile && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <p className="text-xs font-medium text-gray-600">Updating...</p>
+          </div>
+        </div>
+      )}
       <div className="text-center">
         {/* Success Icon */}
         <div className='h-fit w-full relative'>
@@ -137,7 +145,7 @@ export default function OnboardingCompletionSummary({ totalStudents, examType, e
               <div className="text-green-600 text-xs">Students</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-green-800">{examTotalPoints}</div>
+              <div className="font-semibold text-green-800">{usedPoints}</div>
               <div className="text-green-600 text-xs">Points Used</div>
             </div>
           </div>
@@ -187,6 +195,7 @@ export default function OnboardingCompletionSummary({ totalStudents, examType, e
         onClose={() => setShowSuccessModal(false)}
         totalStudents={totalStudents}
         examType={examType}
+        status={examType === ExamTypeEnum.WAEC ? 'onboarded' : 'completed'}
       />
     </div>
   )

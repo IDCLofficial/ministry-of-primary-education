@@ -4,12 +4,13 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useAuth } from '../../providers/AuthProvider'
 import { useVerifyPaymentQuery } from '../../store/api/authApi'
-import { useGetProfileQuery } from '../../store/api/authApi' 
+import { useGetProfileQuery } from '../../store/api/authApi'
+import { useSelector } from 'react-redux'
+import { RootState } from '../../store'
 
 export default function PaymentCallbackPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { school } = useAuth()
 
   const [paymentDetails, setPaymentDetails] = useState<{
     reference: string
@@ -23,7 +24,7 @@ export default function PaymentCallbackPage() {
   const trxref = searchParams.get('trxref')
   const reference = searchParams.get('reference')
 
-  const paymentReturnUrl = useMemo(()=>localStorage.getItem('payment-return-url'), [])
+  const paymentReturnUrl = useMemo(() => localStorage.getItem('payment-return-url'), [])
 
   // Use query hook to verify payment
   const {
@@ -39,8 +40,8 @@ export default function PaymentCallbackPage() {
     refetch
   } = useGetProfileQuery();
 
-  useEffect(()=>{
-    if(isSuccess){
+  useEffect(() => {
+    if (isSuccess) {
       refetch();
     }
   }, [isSuccess, refetch]);
@@ -103,7 +104,7 @@ export default function PaymentCallbackPage() {
   useEffect(() => {
     if (countdown === 0) {
       if (status === 'success') {
-         router.replace(`${paymentReturnUrl ? paymentReturnUrl : "/portal/dashboard"}?payment=success`);
+        router.replace(`${paymentReturnUrl ? paymentReturnUrl : "/portal/dashboard"}?payment=success`);
       } else {
         router.replace('/portal/dashboard?payment=failed')
       }
@@ -163,7 +164,7 @@ export default function PaymentCallbackPage() {
               <div className="flex justify-between">
                 <span className="text-green-700">School:</span>
                 <span className="font-medium text-green-900 capitalize">
-                  {school?.schoolName?.toLowerCase()}
+                  {verificationResponse?.data?.school?.schoolName?.toLowerCase()}
                 </span>
               </div>
               <div className="flex justify-between">

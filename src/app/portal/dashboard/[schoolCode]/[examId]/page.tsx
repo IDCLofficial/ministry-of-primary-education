@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { useSelector, useDispatch } from 'react-redux'
 import Image from 'next/image'
@@ -48,14 +48,14 @@ export default function ExamPage() {
   // Get school from Redux store
   const { selectedSchool, schoolCode: storedSchoolCode } = useSelector((state: RootState) => state.school)
 
-  // Fallback: fetch school data if not in store or schoolCode doesn't match
-  const shouldFetch = !selectedSchool || storedSchoolCode !== rawSchoolCode
-  const { data: fetchedSchool, isLoading: isFetchingSchool } = useGetSchoolByCodeQuery(rawSchoolCode, {
-    skip: !shouldFetch || !rawSchoolCode
+  // Always fetch school data to enable refetch functionality
+  // RTK Query will use cached data when available
+  const { data: fetchedSchool, isLoading: isFetchingSchool, refetch, isFetching } = useGetSchoolByCodeQuery(rawSchoolCode, {
+    skip: !rawSchoolCode
   })
 
   // Use store data or fetched data
-  const school = selectedSchool && storedSchoolCode === rawSchoolCode ? selectedSchool : fetchedSchool
+  const school = fetchedSchool
 
   // Update store when school is fetched
   useEffect(() => {
@@ -105,8 +105,7 @@ export default function ExamPage() {
   const [applicationStatus, setApplicationStatus] = useState<'not-applied' | 'pending' | 'approved' | 'rejected' | 'completed' | 'onboarded'>(
     getExamStatus(examId)
   )
-  const [isRetrying, setIsRetrying] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
     if (school?.exams) {
@@ -119,7 +118,9 @@ export default function ExamPage() {
 
   // Get exam-specific data from school profile
   const examName = examIdToName[examId]
-  const currentExamData = school?.exams?.find((e) => e.name === examName);
+  const currentExamData = useMemo(() => {
+    return school?.exams?.find((e) => e.name === examName)
+  }, [school?.exams])
 
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -169,7 +170,7 @@ export default function ExamPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 500)
 
   // Fetch students for the authenticated school
-  const { data: studentsData, refetch: refetchStudents, isLoading } = useGetStudentsBySchoolQuery(
+  const { data: studentsData, refetch: refetchStudents, isLoading: isLoadingStudents } = useGetStudentsBySchoolQuery(
     {
       schoolId: school?._id || '',
       examType: examName as ExamTypeEnum,
@@ -185,7 +186,7 @@ export default function ExamPage() {
   )
 
   // Query for all students (for PDF export)
-  const { data: allStudentsData } = useGetStudentsBySchoolQuery(
+  const { data: allStudentsData, isLoading: isLoadingAllStudents } = useGetStudentsBySchoolQuery(
     {
       schoolId: school?._id || '',
       examType: examName as ExamTypeEnum,
@@ -202,7 +203,6 @@ export default function ExamPage() {
 
   // Use exam-specific points from school profile
   const examPoints = currentExamData?.availablePoints || 0
-  const examTotalPoints = currentExamData?.totalPoints || 0
   const examNumberOfStudents = currentExamData?.numberOfStudents || 0
 
   const handleRefresh = useCallback(async () => {
@@ -226,7 +226,9 @@ export default function ExamPage() {
         examYear: student.examYear
       }))
 
-      generateStudentListPDF(students, examName, school?.lga || 'Unknown School')
+      // Capitalize school name
+      const schoolName = school?.schoolName?.replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown School'
+      generateStudentListPDF(students, examName, schoolName)
       toast.success('Student list exported successfully!')
     }).catch((error) => {
       console.error('Failed to export student list:', error)
@@ -320,7 +322,7 @@ export default function ExamPage() {
   }, [studentsData])
 
   // Show loading skeleton while fetching school data
-  if (isFetchingSchool || (!school && shouldFetch)) {
+  if (isFetchingSchool || isLoadingStudents || isLoadingAllStudents || (!school)) {
     return (
       <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
         <ExamHeader currentExam={exam} />
@@ -357,16 +359,6 @@ export default function ExamPage() {
             />
           </div>
         </div>
-      </div>
-    )
-  }
-
-  // Show loading skeleton while submitting
-  if (isSubmitting) {
-    return (
-      <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
-        <ExamHeader currentExam={exam} />
-        <ExamPageSkeleton />
       </div>
     )
   }
@@ -607,7 +599,7 @@ export default function ExamPage() {
   const showPaymentSection = currentExamData?.status === 'approved';
 
   // Show exam dashboard if approved - use exam-specific points
-  const hasPointsOrStudents = school && (currentExamData?.usedPoints || examPoints)
+  const hasPointsOrStudents = school && (examPoints || (allStudentsData?.totalItems || 0) > 0);
 
   return (
     <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
@@ -617,7 +609,7 @@ export default function ExamPage() {
         {hasPointsOrStudents ? (
           <div className={`flex-1 overflow-y-hidden flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6`}>
             <div className={`${showPaymentSection ? 'xl:col-span-3' : 'xl:col-span-4'} space-y-4 sm:space-y-6 order-2 xl:order-1`}>
-              <ResponsiveFilterBar onFilterChange={handleFilterChange} currentFilters={filters} />
+              <ResponsiveFilterBar onFilterChange={handleFilterChange} currentFilters={filters} examType={examId} />
 
               <StudentRegistrationExcel
                 students={students}
@@ -627,8 +619,9 @@ export default function ExamPage() {
                 onSearchChange={setSearchTerm}
                 school={school}
                 filters={filters}
+                allStudents={allStudentsData?.totalItems || 0}
                 onRefreshStudents={handleRefresh}
-                isLoading={isLoading}
+                isLoading={isLoadingStudents}
                 currentPage={currentPage}
                 totalPages={studentsData?.totalPages || 1}
                 itemsPerPage={itemsPerPage}
@@ -637,25 +630,32 @@ export default function ExamPage() {
                 onItemsPerPageChange={setItemsPerPage}
                 examType={getExamType(examId)}
                 isFetchingProfile={isFetchingSchool}
+                refetchProfile={refetch}
                 onExportStudentList={handleExportStudentList}
               />
             </div>
 
             {showPaymentSection && <div className="xl:col-span-1 order-1 xl:order-2 overflow-y-auto">
-
               <div className="space-y-6">
                 <CostSummary
                   pointCost={EXAM_TYPES.find((e) => e.id === examId)?.fee || 0}
                   examPoints={currentExamData?.availablePoints || 0}
                   examTotalPoints={currentExamData?.totalPoints || 0}
-                />
-                <OnboardingCompletionSummary
-                  totalStudents={studentsData?.totalItems || 0}
-                  examType={examName}
-                  examTotalPoints={examTotalPoints}
                   examNumberOfStudents={examNumberOfStudents}
-                  pointCost={EXAM_TYPES.find((e) => e.id === examId)?.fee || 0}
+                  onPurchaseMorePoints={() => setShowPaymentModal(true)}
+                  isFetchingProfile={isFetching}
                 />
+                {/* Only show OnboardingCompletionSummary when no unused points remain */}
+                {(currentExamData?.availablePoints || 0) === 0 && (
+                  <OnboardingCompletionSummary
+                    totalStudents={studentsData?.totalItems || 0}
+                    examType={examName}
+                    usedPoints={studentsData?.totalItems || 0}
+                    examNumberOfStudents={examNumberOfStudents}
+                    pointCost={EXAM_TYPES.find((e) => e.id === examId)?.fee || 0}
+                    isFetchingProfile={isFetchingSchool}
+                  />
+                )}
 
               </div>
             </div>}

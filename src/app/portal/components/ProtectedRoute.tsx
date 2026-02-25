@@ -12,12 +12,22 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children, requireAuth = true }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, school, loggingOut } = useAuth()
+
+  useEffect(()=>{
+    console.log("Auth state changed", isAuthenticated);
+  }, [isAuthenticated])
   const router = useRouter()
 
   useEffect(() => {
     if (loggingOut) return;
     if (!isLoading && requireAuth) {
       if (!isAuthenticated) {
+
+        console.log('Not authenticated, redirecting to login', {
+          isAuthenticated,
+          isLoading,
+          requireAuth,
+        })
         // Not authenticated, redirect to login
         router.replace('/portal')
       }
@@ -47,7 +57,7 @@ export default function ProtectedRoute({ children, requireAuth = true }: Protect
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
 
           <CreatePasswordForm
-            school={school.schoolName}
+            school={school.email}
           />
         </div>
       </div>

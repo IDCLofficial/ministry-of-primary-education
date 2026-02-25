@@ -7,6 +7,7 @@ export const endpoints = {
     REGISTER: '/schools/register',
     GET_SCHOOL_NAMES: '/schools/names',
     GET_SCHOOL_BY_CODE: (schoolCode: string) => `/schools/${schoolCode}`,
+    GET_LGAS: '/lga/aee-registered-lga',
     SUBMIT_SCHOOL_APPLICATION: '/applications',
     LOGIN: '/auth/login',
     CREATE_PASSWORD: '/auth/createPassword',
@@ -15,5 +16,7 @@ export const endpoints = {
     CREATE_STUDENT_PAYMENT: '/student-payments/school',
     VERIFY_PAYMENT: '/student-payments/verify',
     ONBOARD_STUDENT: '/onboarding',
-    UPDATE_APPLICATION_STATUS: '/applications'
+    UPDATE_APPLICATION_STATUS: '/applications',
+    CHANGE_PASSWORD: "/auth/change-password",
+    DELETE_ACCOUNT: "/auth/delete-aee-account",
 } as const

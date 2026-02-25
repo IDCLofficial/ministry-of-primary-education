@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { ExamData, useGetProfileQuery, useLogoutMutation } from '../store/api/authApi'
+import toast from 'react-hot-toast'
 
 interface School {
   id: string
@@ -47,7 +48,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [handleLogout, { isLoading: isLoggingOut, isError: isLogoutError, isSuccess: isLogoutSuccess }] = useLogoutMutation()
 
   useEffect(() => {
+    if (isLogoutError) {
+      console.error('Logout error:', isLogoutError)
+      toast.dismiss('logging-out');
+      setToken(null)
+      setSchool(null)
+      setIsAuthenticated(false)
+      setSkipProfileQuery(true) // Disable profile query
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('school');
+    
+      setTimeout(() => {
+        router.push('/portal')
+      }, 100);
+    }
+  }, [isLogoutError])
+
+  useEffect(() => {
     if (isLogoutSuccess) {
+      toast.dismiss('logging-out')
+      toast.success('You have been logged out successfully.')
       setToken(null)
       setSchool(null)
       setIsAuthenticated(false)
@@ -73,7 +93,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (storedToken && storedToken !== 'undefined' && storedToken !== 'null') {
           setToken(storedToken)
           setSkipProfileQuery(false) // Enable profile query
-          
+
           // Validate school data exists and is valid JSON
           if (storedSchool && storedSchool !== 'undefined' && storedSchool !== 'null') {
             try {
@@ -108,11 +128,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [path])
 
   const logout = useCallback(() => {
-    try {
-      handleLogout()
-    } catch (error) {
-      console.error('Error during logout:', error)
-    }
+    toast.loading('Logging out...', {
+      id: 'logging-out'
+    })
+    handleLogout()
   }, [handleLogout])
 
   // Handle profile data updates
@@ -136,9 +155,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       localStorage.setItem('access_token', newToken)
       localStorage.setItem('school', JSON.stringify(newSchool))
+      
+      // Batch state updates to ensure they happen together
       setToken(newToken)
       setSchool(newSchool)
+
       setIsAuthenticated(true)
+      setIsLoading(false) // Ensure loading is complete
+
+      setTimeout(() => {
+        router.push('/portal/dashboard')
+      }, 600);
     } catch (error) {
       console.error('Error storing authentication data:', error)
     }

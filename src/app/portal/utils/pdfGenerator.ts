@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { allFAQs, categoryInfo } from '../data/faqData'
+import { getExamById } from '../dashboard/[schoolCode]/types'
 
 interface Student {
     id: string
@@ -162,24 +163,35 @@ export const generateFAQPDF = () => {
 }
 
 export const generateStudentListPDF = (students: Student[], examType: string, schoolName: string) => {
+    const examTypeData = getExamById(examType === "Common-entrance" ? "CESS" : examType)
     const doc = new jsPDF()
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
     const margin = 20
 
     // Header
-    doc.setFontSize(20)
+    doc.setFontSize(12)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(0, 0, 0)
-    doc.text('Student List', margin, 20)
-
-    doc.setFontSize(12)
+    doc.text('Onboarded Student List', margin, 20)
+    
+    // Exam details
+    doc.setFontSize(16)
+    doc.setTextColor(34, 197, 94)
+    doc.text(`${examTypeData?.name || examType}`, margin, 28)
+    
+    doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
+    doc.setTextColor(100, 100, 100)
+    doc.text(`Class: ${examTypeData?.classFull || examTypeData?.class || 'N/A'}`, margin, 36)
+    
+    // School and student count
+    doc.setFontSize(10)
     doc.setTextColor(60, 60, 60)
-    doc.text(`Exam: ${examType}`, margin, 30)
-    doc.text(`School: ${schoolName}`, margin, 37)
-    doc.text(`Total Students: ${students.length}`, margin, 44)
-    doc.text(`Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, margin, 51)
+    doc.setFont('helvetica', 'bold')
+    doc.text(`School: ${schoolName}`, margin, 43)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Total Students: ${students.length}`, margin, 50)
 
     // Table data
     const tableData = students.map((student, index) => [
@@ -195,7 +207,7 @@ export const generateStudentListPDF = (students: Student[], examType: string, sc
     autoTable(doc, {
         head: [['#', 'Student ID', 'Full Name', 'Gender', 'Class', 'Exam Year']],
         body: tableData,
-        startY: 60,
+        startY: 62,
         margin: { left: margin, right: margin },
         styles: {
             fontSize: 9,
@@ -205,15 +217,15 @@ export const generateStudentListPDF = (students: Student[], examType: string, sc
             fillColor: [34, 197, 94],
             textColor: [255, 255, 255],
             fontStyle: 'bold',
-            halign: 'center'
+            halign: 'left'
         },
         columnStyles: {
-            0: { halign: 'center', cellWidth: 15 },
-            1: { halign: 'center', cellWidth: 30 },
-            2: { halign: 'left', cellWidth: 'auto' },
-            3: { halign: 'center', cellWidth: 25 },
-            4: { halign: 'center', cellWidth: 25 },
-            5: { halign: 'center', cellWidth: 30 }
+            0: { halign: 'center', cellWidth: 12 },
+            1: { halign: 'left', cellWidth: 35 },
+            2: { halign: 'left', cellWidth: 60 },
+            3: { halign: 'left', cellWidth: 22 },
+            4: { halign: 'left', cellWidth: 20 },
+            5: { halign: 'left', cellWidth: 25 }
         },
         alternateRowStyles: {
             fillColor: [249, 250, 251]
@@ -226,14 +238,19 @@ export const generateStudentListPDF = (students: Student[], examType: string, sc
             doc.setFontSize(8)
             doc.setTextColor(150, 150, 150)
 
-            // Page number
+            // Generated date - bottom left
+            const generatedText = `Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
+            doc.text(generatedText, margin, pageHeight - 10)
+
+            // Page number - center
             const pageText = `Page ${currentPage} of ${pageCount}`
             const textWidth = doc.getStringUnitWidth(pageText) * 8 / doc.internal.scaleFactor
             doc.text(pageText, (pageWidth - textWidth) / 2, pageHeight - 10)
 
-            // Copyright
+            // Copyright - bottom right
             const copyrightText = `© ${new Date().getFullYear()} MOPSE`
-            doc.text(copyrightText, pageWidth - margin - 15, pageHeight - 10)
+            const copyrightWidth = doc.getStringUnitWidth(copyrightText) * 8 / doc.internal.scaleFactor
+            doc.text(copyrightText, pageWidth - margin - copyrightWidth, pageHeight - 10)
         }
     })
 

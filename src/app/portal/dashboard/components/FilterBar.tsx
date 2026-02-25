@@ -2,10 +2,12 @@
 
 import React, { useState } from 'react'
 import CustomDropdown from './CustomDropdown'
+import { getExamById } from '../[schoolCode]/types'
 
 interface FilterBarProps {
   onFilterChange: (filters: FilterState) => void
   isMobile?: boolean
+  examType: string
   currentFilters?: FilterState
 }
 
@@ -16,7 +18,7 @@ interface FilterState {
   sort?: string
 }
 
-export default function FilterBar({ onFilterChange, isMobile = false, currentFilters }: FilterBarProps) {
+export default function FilterBar({ onFilterChange, isMobile = false, currentFilters, examType }: FilterBarProps) {
   // Initialize from currentFilters (URL search params) or defaults
   const initialFilters = currentFilters || {
     class: 'All',
@@ -38,15 +40,11 @@ export default function FilterBar({ onFilterChange, isMobile = false, currentFil
     }
   }, [currentFilters])
 
+  const examTypeData = getExamById(examType === "Common-entrance" ? "CESS" : examType)
+
   // Dropdown options
   const classOptions = [
-    { value: 'All', label: 'All' },
-    // { value: 'SS1', label: 'SS1' },
-    // { value: 'SS2', label: 'SS2' },
-    { value: 'SS3', label: 'SS3' },
-    // { value: 'JSS1', label: 'JSS1' },
-    // { value: 'JSS2', label: 'JSS2' },
-    // { value: 'JSS3', label: 'JSS3' }
+    { value: examTypeData?.class || 'N/A', label: examTypeData?.classFull || examTypeData?.class || 'N/A' },
   ]
 
   const yearOptions = [

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import FormInput from './FormInput'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
-import { RegistrationRequest, useGetSchoolNamesQuery, useRegisterSchoolMutation } from '@/app/portal/store/api/authApi'
+import { RegistrationRequest, useGetLGAsQuery, useGetSchoolNamesQuery, useRegisterSchoolMutation } from '@/app/portal/store/api/authApi'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 
@@ -61,6 +61,7 @@ export default function RegistrationForm() {
   })
 
   const [submitApplication, { isLoading: isSubmitting }] = useRegisterSchoolMutation()
+  const { data: lgas, isLoading: isLGAsLoading, error: lgasError } = useGetLGAsQuery();
   const router = useRouter()
 
   const [errors, setErrors] = useState<FormErrors>({})
@@ -195,7 +196,7 @@ export default function RegistrationForm() {
 
       } catch (error: unknown) {
         console.error('Registration error:', error)
-        
+
         // Handle RTK Query error format
         const apiError = error as {
           status?: number | string;
@@ -205,9 +206,9 @@ export default function RegistrationForm() {
           };
           error?: string;
         }
-        
+
         let errorMessage = 'Registration failed. Please try again.'
-        
+
         // Check different error formats
         if (apiError.data?.message) {
           errorMessage = apiError.data.message
@@ -220,21 +221,24 @@ export default function RegistrationForm() {
         } else if (apiError.status) {
           errorMessage = `Registration failed with status: ${apiError.status}`
         }
-        
+
         console.error('Detailed error:', {
           status: apiError.status,
           data: apiError.data,
           error: apiError.error,
           fullError: error
         })
-        
+
         setServerError(errorMessage)
         toast.error(errorMessage)
       }
     }
   }
 
-  const lgaOptions = IMO_STATE_LGAS.map(lga => ({ value: lga, label: lga }))
+  const lgaOptions = IMO_STATE_LGAS.map(lga => ({ value: lga, label: lga })).filter(lga => {
+    const normalizedReqLga = lgas?.map(lga => lga.toLowerCase().replace(/\s/g, '').replace(/'/g, '').replace(/-/g, ''))
+    return !normalizedReqLga?.includes(lga.value.toLowerCase().replace(/\s/g, '').replace(/'/g, '').replace(/-/g, ''))
+  })
 
   const handleInputChange = (field: keyof RegistrationData) => (value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -263,21 +267,23 @@ export default function RegistrationForm() {
         </div>
       )}
 
-
       <form onSubmit={handleSubmit} className="space-y-4">
-        
+
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
             Local Government Area (LGA) <span className="text-red-500">*</span>
           </label>
-          <CustomDropdown
+          {isLGAsLoading ? <div className="w-full bg-gray-100 border cursor-pointer text-center text-gray-500 border-gray-300 rounded-lg px-3 py-2 text-sm animate-pulse focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent hover:bg-gray-50 transition-colors duration-200">Loading LGAs...</div> : <CustomDropdown
             options={lgaOptions}
             value={formData.lga}
             onChange={handleInputChange('lga')}
             placeholder="Select LGA"
-          />
+          />}
           {errors.lga && (
             <p className="text-sm text-red-500 mt-1">{errors.lga}</p>
+          )}
+          {lgasError && (
+            <p className="text-sm text-red-500 mt-1">Failed to load LGAs. Please try again.</p>
           )}
         </div>
 

@@ -149,19 +149,7 @@ interface StudentPaymentRequest {
 }
 
 interface StudentPaymentResponse {
-  success: boolean
-  data: {
-    _id: string
-    school: object
-    numberOfStudents: number
-    amountPerStudent: number
-    totalAmount: number
-    pointsAwarded: number
-    paymentStatus: string
-    reference: string
-    authorizationUrl: string
-  }
-  message: string
+  authorizationUrl: string
 }
 
 // Payment Verification interfaces
@@ -169,11 +157,32 @@ interface PaymentVerificationResponse {
   success: boolean
   data: {
     _id: string
-    paymentStatus: 'successful' | 'failed' | 'pending'
-    totalAmount: number
+    school: {
+      _id: string
+      schoolName: string
+      lga: string
+      schoolCode: string
+      email?: string
+      address?: string
+      principal?: string
+      phone?: string
+      [key: string]: any
+    }
     numberOfStudents: number
+    examType: string
+    amountPerStudent: number
+    totalAmount: number
     pointsAwarded: number
-    paidAt: string
+    paymentStatus: 'successful' | 'failed' | 'pending'
+    reference: string
+    createdAt: string
+    updatedAt: string
+    authorizationUrl?: string
+    paystackResponse?: any
+    paidAt?: string
+    paymentMethod?: string
+    paymentNotes?: string
+    paystackTransactionId?: string
   }
   message: string
 }
@@ -244,6 +253,21 @@ interface CreatePasswordResponse {
   message: string
 }
 
+// Change Password interfaces
+interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+}
+
+interface ChangePasswordResponse {
+  message: string
+}
+
+// Delete Account interfaces
+interface DeleteAccountResponse {
+  message: string
+}
+
 // Auth API endpoints
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -267,6 +291,12 @@ export const authApi = apiSlice.injectEndpoints({
     // Get school by code
     getSchoolByCode: builder.query<SchoolByCodeResponse, string>({
       query: (schoolCode) => `${API_BASE_URL}${endpoints.GET_SCHOOL_BY_CODE(schoolCode)}`,
+      providesTags: ['School'],
+    }),
+    
+    // Get LGAs
+    getLGAs: builder.query<string[], void>({
+      query: () => `${API_BASE_URL}${endpoints.GET_LGAS}`,
       providesTags: ['School'],
     }),
 
@@ -447,6 +477,32 @@ export const authApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['School'],
     }),
+
+    // Change password
+    changePassword: builder.mutation<ChangePasswordResponse, ChangePasswordRequest>({
+      query: (data) => ({
+        url: `${API_BASE_URL}${endpoints.CHANGE_PASSWORD}`,
+        method: 'PATCH',
+        body: data,
+        headers: {
+          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+    }),
+
+    // Delete account
+    deleteAccount: builder.mutation<DeleteAccountResponse, void>({
+      query: () => ({
+        url: `${API_BASE_URL}${endpoints.DELETE_ACCOUNT}`,
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['School'],
+    }),
   }),
   overrideExisting: true,
 })
@@ -454,6 +510,7 @@ export const authApi = apiSlice.injectEndpoints({
 export const {
   useGetSchoolNamesQuery,
   useGetSchoolByCodeQuery,
+  useGetLGAsQuery,
   useSubmitSchoolApplicationMutation,
   useSubmitExamApplicationMutation,
   useRegisterSchoolMutation,
@@ -467,6 +524,8 @@ export const {
   useUpdateStudentMutation,
   useUpdateApplicationStatusMutation,
   useLogoutMutation,
+  useChangePasswordMutation,
+  useDeleteAccountMutation,
 } = authApi
 
 // Export types for use in components

@@ -15,6 +15,7 @@ export const apiSlice = createApi({
                 'registerSchool', 
                 'submitSchoolApplication', 
                 'getSchoolNames',
+                'getLGAs',
                 'getUBEATResult',
                 'getBECEResult',
                 'findUBEATResult'

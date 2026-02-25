@@ -8,9 +8,10 @@ interface OnboardingSuccessModalProps {
   onClose: () => void
   totalStudents: number
   examType: string
+  status: 'onboarded' | 'completed'
 }
 
-export default function OnboardingSuccessModal({ isOpen, onClose, totalStudents, examType }: OnboardingSuccessModalProps) {
+export default function OnboardingSuccessModal({ isOpen, onClose, totalStudents, examType, status }: OnboardingSuccessModalProps) {
   if (!isOpen) return null
 
   return (
@@ -36,12 +37,12 @@ export default function OnboardingSuccessModal({ isOpen, onClose, totalStudents,
 
           {/* Title */}
           <h3 className="text-xl font-semibold text-gray-800 mb-2 text-center">
-            {examType} Onboarding Submitted!
+            {examType} {status === 'onboarded' ? 'Onboarding' : 'Application'} Submitted!
           </h3>
           
           {/* Description */}
           <p className="text-gray-600 mb-6 text-center">
-            Your <span className="font-semibold text-gray-800">{examType}</span> onboarding for <span className="font-semibold text-gray-800">{totalStudents} students</span> has been successfully submitted to the Ministry of Primary & Secondary Education.
+            Your <span className="font-semibold text-gray-800">{examType}</span> {status === 'onboarded' ? 'onboarding' : 'application'} for <span className="font-semibold text-gray-800">{totalStudents} students</span> has been successfully submitted to the Ministry of Primary & Secondary Education.
           </p>
 
           {/* What happens next section */}

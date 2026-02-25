@@ -125,7 +125,7 @@ export default function CreatePasswordForm({ school }: CreatePasswordFormProps) 
       
       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
         <p className="text-sm text-blue-700 capitalize">
-          <strong>School Name:</strong> {school.toLowerCase()}
+          <strong>AEE's Email:</strong> {school.toLowerCase()}
         </p>
         <p className="text-xs text-blue-600 mt-1">
           You&apos;re almost done! Please create a new, secure password to complete your account setup

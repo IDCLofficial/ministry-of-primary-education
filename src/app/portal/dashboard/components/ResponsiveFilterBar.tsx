@@ -6,6 +6,7 @@ import FilterBar from './FilterBar'
 interface ResponsiveFilterBarProps {
   onFilterChange: (filters: FilterState) => void
   currentFilters?: FilterState
+  examType: string
 }
 
 interface FilterState {
@@ -15,7 +16,7 @@ interface FilterState {
   sort?: string
 }
 
-export default function ResponsiveFilterBar({ onFilterChange, currentFilters }: ResponsiveFilterBarProps) {
+export default function ResponsiveFilterBar({ onFilterChange, currentFilters, examType }: ResponsiveFilterBarProps) {
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false)
 
   const openBottomSheet = () => setIsBottomSheetOpen(true)
@@ -25,7 +26,7 @@ export default function ResponsiveFilterBar({ onFilterChange, currentFilters }: 
     <>
       {/* Desktop Version - Always visible on xl+ screens */}
       <div className="hidden xl:block">
-        <FilterBar onFilterChange={onFilterChange} currentFilters={currentFilters} />
+        <FilterBar examType={examType} onFilterChange={onFilterChange} currentFilters={currentFilters} />
       </div>
 
       {/* Mobile/Tablet Version - Filter Button */}
@@ -86,6 +87,7 @@ export default function ResponsiveFilterBar({ onFilterChange, currentFilters }: 
                 }} 
                 isMobile={true}
                 currentFilters={currentFilters}
+                examType={examType}
               />
             </div>
           </div>

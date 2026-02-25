@@ -113,10 +113,10 @@ export default function OnboardingConfirmationModal({
                 </p>
               </div>
 
-              <h4 className="text-lg font-semibold text-gray-900 mb-3">Onboarding Completion & Payment</h4>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Onboarding Completion Summary</h4>
               
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <h5 className="font-semibold text-blue-900 mb-3">Payment Summary</h5>
+                <h5 className="font-semibold text-blue-900 mb-3">Payment Summary (Already Paid)</h5>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-center">
                     <span className="text-blue-700">Exam:</span>
@@ -134,13 +134,9 @@ export default function OnboardingConfirmationModal({
                     <span className="text-blue-700">Cost per Point:</span>
                     <span className="font-semibold text-blue-900">₦{pointCost.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-blue-700">Processing Fee:</span>
-                    <span className="font-semibold text-blue-900">₦2,000</span>
-                  </div>
                   <div className="border-t border-blue-300 pt-2 mt-2">
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold text-blue-900">Total Amount Due:</span>
+                      <span className="font-semibold text-blue-900">Total Amount Paid:</span>
                       <span className="text-xl font-bold text-blue-900">₦{accumulatedFee.toLocaleString()}</span>
                     </div>
                   </div>
@@ -152,13 +148,12 @@ export default function OnboardingConfirmationModal({
                 By submitting this onboarding completion, you confirm that you have finished onboarding all students for <strong>{examTypeToName[examType]}</strong> and have <strong>no plans to add any additional students</strong> now or in the future for this examination.
               </p>
 
-              <h5 className="font-semibold text-gray-900 mt-4 mb-2">2. Payment Processing</h5>
+              <h5 className="font-semibold text-gray-900 mt-4 mb-2">2. Payment Confirmation</h5>
               <p className="text-sm text-gray-700 mb-3">
-                Upon submission, a payment of <strong>₦{accumulatedFee.toLocaleString()}</strong> will be processed immediately. This amount covers:
+                Payment of <strong>₦{accumulatedFee.toLocaleString()}</strong> has already been completed for:
               </p>
               <ul className="text-sm text-gray-700 mb-3 list-disc pl-5 space-y-1">
                 <li>Examination fees for {usedPoints.toLocaleString()} students at ₦{pointCost.toLocaleString()} per student</li>
-                <li>Processing and administrative fee of ₦2,000</li>
               </ul>
 
               <h5 className="font-semibold text-gray-900 mt-4 mb-2">3. Ministry Review</h5>
@@ -166,14 +161,14 @@ export default function OnboardingConfirmationModal({
                 Your student list will be sent to the Ministry of Primary & Secondary Education for final approval. Once approved, you will not be able to add more students to this examination.
               </p>
 
-              <h5 className="font-semibold text-gray-900 mt-4 mb-2">4. No Refunds or Changes</h5>
+              <h5 className="font-semibold text-gray-900 mt-4 mb-2">4. No Changes After Submission</h5>
               <p className="text-sm text-gray-700 mb-3">
-                <strong className="text-red-600">Important:</strong> After submission and payment processing:
+                <strong className="text-red-600">Important:</strong> After submission:
               </p>
               <ul className="text-sm text-gray-700 mb-3 list-disc pl-5 space-y-1">
                 <li>You cannot add more students to this examination</li>
-                <li>Payments are non-refundable</li>
                 <li>Changes to the student list require formal written request to the Ministry</li>
+                <li>Payment has already been processed and is non-refundable</li>
               </ul>
 
               <h5 className="font-semibold text-gray-900 mt-4 mb-2">5. Verification</h5>
@@ -190,7 +185,7 @@ export default function OnboardingConfirmationModal({
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6 mb-4">
                 <p className="text-sm text-green-800 font-semibold mb-2">✓ Acknowledgment</p>
                 <p className="text-sm text-green-700">
-                  By clicking &ldquo;I Understand&rdquo; below, you acknowledge that you have read and understood this notice. You confirm that you are ready to complete the onboarding process and authorize the payment of ₦{accumulatedFee.toLocaleString()}.
+                  By clicking &ldquo;I Understand&rdquo; below, you acknowledge that you have read and understood this notice. You confirm that you are ready to submit your student list to the Ministry for final approval.
                 </p>
               </div>
 
@@ -272,7 +267,7 @@ export default function OnboardingConfirmationModal({
             </p>
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
               <p className="text-orange-800 text-sm font-medium">
-                ✓ You have acknowledged the terms and payment of <span className="font-bold">₦{accumulatedFee.toLocaleString()}</span>
+                ✓ You have acknowledged the terms. Payment of <span className="font-bold">₦{accumulatedFee.toLocaleString()}</span> has been completed.
               </p>
             </div>
           </div>
