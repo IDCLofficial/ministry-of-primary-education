@@ -18,7 +18,9 @@ export const apiSlice = createApi({
                 'getLGAs',
                 'getUBEATResult',
                 'getBECEResult',
-                'findUBEATResult'
+                'findUBEATResult',
+                'forgotPassword',
+                'resetPassword'
             ]
             headers.set('ngrok-skip-browser-warning', 'true')
             if (!skipAuthEndpoints.includes(endpoint)) {
