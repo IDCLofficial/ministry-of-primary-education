@@ -163,6 +163,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsAuthenticated(true)
       setIsLoading(false) // Ensure loading is complete
 
+      profileData && refetchProfile()
+
       setTimeout(() => {
         router.push('/portal/dashboard')
       }, 600);
