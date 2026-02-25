@@ -152,6 +152,7 @@ export default function FormInput({
         {type === 'password' && (
           <button
             type="button"
+            tabIndex={-1}
             title="Toggle password visibility"
             onClick={togglePasswordVisibility}
             className="absolute inset-y-0 cursor-pointer active:scale-95 active:-rotate-6 transition-transform duration-200 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"

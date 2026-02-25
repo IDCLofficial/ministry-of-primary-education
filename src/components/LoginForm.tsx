@@ -7,6 +7,7 @@ import { useLoginMutation } from '@/app/portal/store/api/authApi'
 import { useAuth } from '@/app/portal/providers/AuthProvider'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 interface LoginData {
   email: string
@@ -162,17 +163,24 @@ export default function LoginForm() {
           required
         />
 
-        <FormInput
-          label="Password"
-          placeholder="Enter your password"
-          name="password"
-          type="password"
-          value={formData.password}
-          disabled={isAuthenticated}
-          onChange={handleInputChange('password')}
-          error={errors.password}
-          required
-        />
+        <div>
+          <FormInput
+            label="Password"
+            placeholder="Enter your password"
+            name="password"
+            type="password"
+            value={formData.password}
+            disabled={isAuthenticated}
+            onChange={handleInputChange('password')}
+            error={errors.password}
+            required
+          />
+          <div className="text-right mt-1">
+            <Link href="/portal/forgot-password" className="text-sm text-green-600 hover:text-green-800 transition-colors font-medium">
+              Forgot password?
+            </Link>
+          </div>
+        </div>
 
         {isAuthenticated ? (
           <button

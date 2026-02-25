@@ -26,7 +26,7 @@ export default function DashboardPage() {
 
   return (
     <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
-      <Header />
+      <Header schoolCount={schools.length} />
       
       <div className="flex-1 mt-4 sm:mt-6">
         <div className="max-w-7xl mx-auto">

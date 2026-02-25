@@ -8,7 +8,7 @@ import ChangePasswordModal from './ChangePasswordModal'
 import DeleteAccountModal from './DeleteAccountModal'
 import { useClickAway } from "react-use";
 
-export default function Header() {
+export default function Header({ schoolCount }: { schoolCount: number }) {
     const { school, logout, isLoading } = useAuth()
     const [showProfileMenu, setShowProfileMenu] = useState(false)
     const [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
@@ -73,7 +73,7 @@ export default function Header() {
                                         <div className='px-4 py-3 border-b border-gray-100'>
                                             <p className='text-sm font-semibold text-gray-900'>{school.email}</p>
                                             <p className='text-xs text-gray-500 capitalize mt-1'>{school.lga} LGA</p>
-                                            <p className='text-xs text-gray-400 mt-1'>{school.totalSchoolsInLga} schools</p>
+                                            <p className='text-xs text-gray-400 mt-1'>{schoolCount} schools</p>
                                         </div>
                                         
                                         <button
