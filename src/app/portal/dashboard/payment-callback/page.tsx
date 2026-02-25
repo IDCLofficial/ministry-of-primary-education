@@ -181,7 +181,7 @@ export default function PaymentCallbackPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-green-700">Reference:</span>
-                <span className="font-mono text-xs text-green-900">
+                <span className="font-mono text-xs text-green-900 truncate">
                   {paymentDetails?.reference}
                 </span>
               </div>
