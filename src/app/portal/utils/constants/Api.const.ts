@@ -18,5 +18,7 @@ export const endpoints = {
     ONBOARD_STUDENT: '/onboarding',
     UPDATE_APPLICATION_STATUS: '/applications',
     CHANGE_PASSWORD: "/auth/change-password",
-    DELETE_ACCOUNT: "/auth/delete-aee-account",
+    DELETE_ACCOUNT: "/auth/account",
+    FORGOT_PASSWORD: "/auth/request-password-reset",
+    RESET_PASSWORD: "/auth/verify-reset-code",
 } as const

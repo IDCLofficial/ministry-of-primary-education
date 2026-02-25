@@ -268,6 +268,26 @@ interface DeleteAccountResponse {
   message: string
 }
 
+// Forgot Password interfaces
+interface ForgotPasswordRequest {
+  email: string
+}
+
+interface ForgotPasswordResponse {
+  message: string
+}
+
+// Reset Password interfaces
+interface ResetPasswordRequest {
+  token: string
+  newPassword: string
+  confirmPassword: string
+}
+
+interface ResetPasswordResponse {
+  message: string
+}
+
 // Auth API endpoints
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -503,6 +523,30 @@ export const authApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['School'],
     }),
+
+    // Forgot password
+    forgotPassword: builder.mutation<ForgotPasswordResponse, ForgotPasswordRequest>({
+      query: (data) => ({
+        url: `${API_BASE_URL}${endpoints.FORGOT_PASSWORD}`,
+        method: 'POST',
+        body: data,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+    }),
+
+    // Reset password
+    resetPassword: builder.mutation<ResetPasswordResponse, ResetPasswordRequest>({
+      query: (data) => ({
+        url: `${API_BASE_URL}${endpoints.RESET_PASSWORD}`,
+        method: 'POST',
+        body: data,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+    }),
   }),
   overrideExisting: true,
 })
@@ -526,6 +570,8 @@ export const {
   useLogoutMutation,
   useChangePasswordMutation,
   useDeleteAccountMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
 } = authApi
 
 // Export types for use in components
