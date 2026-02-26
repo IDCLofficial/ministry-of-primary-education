@@ -22,5 +22,5 @@ export const endpoints = {
     FORGOT_PASSWORD: "/auth/request-password-reset",
     VERIFY_RESET_CODE: "/auth/verify-reset-code",
     RESET_PASSWORD: "/auth/reset-password",
-    VERIFY_RESET_TOKEN: "/auth/verify-reset-token",
+    VERIFY_RESET_TOKEN: "/auth/validate-reset-token",
 } as const

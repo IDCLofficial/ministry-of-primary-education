@@ -281,7 +281,6 @@ interface ForgotPasswordResponse {
 interface ResetPasswordRequest {
   token: string
   newPassword: string
-  confirmPassword: string
 }
 
 interface ResetPasswordResponse {

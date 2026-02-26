@@ -101,10 +101,9 @@ export default function ResetPasswordForm({ token }: ResetPasswordFormProps) {
       const sanitizedData = {
         token,
         newPassword: formData.password.trim(),
-        confirmPassword: formData.confirmPassword.trim()
       }
 
-      await resetPassword(sanitizedData).unwrap()
+      await resetPassword(sanitizedData).unwrap();
 
       toast.success('Password reset successfully!')
       setIsSuccess(true)
