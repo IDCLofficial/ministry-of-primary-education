@@ -254,10 +254,10 @@ export default function RegistrationForm() {
     <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg shadow-black/5 border border-black/5 p-6">
       <div className="mb-6">
         <h2 className="sm:text-2xl text-lg font-semibold text-gray-800 text-center mb-2">
-          School Registration
+          AEE Registration
         </h2>
         <p className="text-sm text-gray-600 text-center">
-          Register your school to access the MOPSE portal
+          Register as an AEE to access the MOPSE portal
         </p>
       </div>
 
@@ -326,7 +326,7 @@ export default function RegistrationForm() {
           disabled={!canProceed}
           className="w-full bg-green-600 cursor-pointer active:scale-95 text-white py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-transform duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
         >
-          {isSubmitting ? 'Submitting...' : 'Register School'}
+          {isSubmitting ? 'Submitting...' : 'Register AEE'}
         </button>
       </form>
     </div>
