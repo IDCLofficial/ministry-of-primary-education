@@ -3,6 +3,7 @@
 import InvoiceTable from './components/InvoiceTable';
 import MonthlyChart from './components/MonthlyChart';
 import MetricsCards from './components/MetricsCards';
+import DownloadReportButton from './components/DownloadReportButton';
 import { useAuth } from '../providers/AuthProvider';
 
 export default function Dashboard() {
@@ -25,23 +26,24 @@ export default function Dashboard() {
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">IIRS Dashboard <span className="text-gray-500 text-base">{role === "admin" ? "" : "(View Only)"}</span></h1>
+                    <DownloadReportButton />
                 </div>
 
                 {/* Metrics Cards */}
                 <MetricsCards />
 
                 {/* Main Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                     {/* Left Column - Invoice Table */}
                     <div className="lg:col-span-2">
                         <InvoiceTable />
                     </div>
 
-                    {/* Right Column - Charts */}
+                    {/* Right Column - Charts
                     <div className="space-y-6">
                         <MonthlyChart />
-                        {/* Transaction Overview Skeleton */}
-                    </div>
+                        Transaction Overview Skeleton
+                    </div> */}
                 </div>
             </div>
         </div>
