@@ -1,4 +1,5 @@
 import { IoSchoolOutline, IoBookOutline, IoFileTrayStackedOutline, IoCashOutline, IoBuildOutline } from 'react-icons/io5'
+import { EXAM_TYPES } from '../dashboard/[schoolCode]/types'
 
 export interface FAQItem {
   question: string
@@ -41,18 +42,13 @@ export const allFAQs: FAQItem[] = [
   },
   {
     category: 'login',
-    question: 'What are the different entry points to the portal?',
-    answer: 'The portal has several entry points: (1) Main Login Page (/portal) - for existing users with credentials, (2) Registration Page - for new AEE registration (accessible from login page), (3) Forgot Password Page (/portal/forgot-password) - to reset your password, (4) Reset Password Page (/portal/reset-password) - accessed via email link after requesting password reset. All entry points are public and don\'t require authentication except the dashboard.'
-  },
-  {
-    category: 'login',
     question: 'What happens after I successfully log in?',
     answer: 'After successful login, you\'re redirected to your AEE dashboard. The dashboard shows your LGA overview, all schools under your management, and quick access to examination portals. Your session remains active until you log out or it expires for security.'
   },
   {
     category: 'login',
     question: 'Why am I being redirected to create a password?',
-    answer: 'This happens on your first login. The system requires you to create a secure password to protect your school\'s account. Choose a strong password with at least 6 characters that you can remember.'
+    answer: 'When you register as an AEE, an email is sent to you containing your temporary login credentials: your registration email and a temporary password. On your first login with these credentials, the system requires you to create a secure password to protect your account. Choose a strong password with at least 8 characters, including uppercase, lowercase, numbers, and special characters.'
   },
   {
     category: 'login',
@@ -117,7 +113,7 @@ export const allFAQs: FAQItem[] = [
   {
     category: 'exams',
     question: 'What are the examination fees?',
-    answer: 'Fees vary by exam (in Naira): WAEC (7,000/7,500 late), BECE (7,000/7,500 late), JSCBE (7,000/7,500 late), UBEGPT (5,000/5,500 late), UBEAT (5,000/5,500 late), CESS (3,000/3,500 late), UBETMS (3,000), BECE Resit (2,000). Late fees apply after the deadline.'
+    answer: `Fees vary by exam (in Naira): WAEC (${EXAM_TYPES[0].fee}/${EXAM_TYPES[0].lateFee} late), BECE (${EXAM_TYPES[1].fee}/${EXAM_TYPES[1].lateFee} late), JSCBE (${EXAM_TYPES[2].fee}/${EXAM_TYPES[2].lateFee} late), UBEGPT (${EXAM_TYPES[3].fee}/${EXAM_TYPES[3].lateFee} late), UBEAT (${EXAM_TYPES[4].fee}/${EXAM_TYPES[4].lateFee} late), CESS (${EXAM_TYPES[5].fee}/${EXAM_TYPES[5].lateFee} late), UBETMS (${EXAM_TYPES[6].fee}), BECE Resit (${EXAM_TYPES[7].fee}). Late fees apply after the deadline.`
   },
   {
     category: 'exams',
@@ -152,12 +148,12 @@ export const allFAQs: FAQItem[] = [
   {
     category: 'exams',
     question: 'What are exam points and how does the points system work?',
-    answer: 'The points system is the core mechanism for managing student onboarding: (1) After your exam application is approved, you must purchase points to onboard students, (2) Each point costs the exam fee (e.g., ₦7,000 for WAEC) and allows you to onboard one student, (3) You can purchase points in batches - buy some now and more later as needed, (4) One point = one student onboarding slot, (5) Points are consumed when you onboard a student with their details (name, gender, class, exam year), (6) You can track available points vs used points in the student registration interface, (7) Purchase more points anytime until you reach your approved student limit, (8) Once all students are onboarded, submit for final Ministry review and confirmation. This system ensures payment is made before students are officially registered for examinations.'
+    answer: `The points system is the core mechanism for managing student onboarding: (1) After your exam application is approved, you must purchase points to onboard students, (2) Each point costs the exam fee (e.g., ₦${EXAM_TYPES[0].fee} for WAEC) and allows you to onboard one student, (3) You can purchase points in batches - buy some now and more later as needed, (4) One point = one student onboarding slot, (5) Points are consumed when you onboard a student with their details (name, gender, class, exam year), (6) You can track available points vs used points in the student registration interface, (7) Purchase more points anytime until you reach your approved student limit, (8) Once all students are onboarded, submit for final Ministry review and confirmation. This system ensures payment is made before students are officially registered for examinations.`
   },
   {
     category: 'exams',
     question: 'How do I make payments for student registrations?',
-    answer: 'After registering students, click the "Make School Payment" button in the payment section. Select the number of students to pay for (up to your available points), review the cost summary including processing fees, and proceed to payment via Paystack. You\'ll be redirected back to the portal after payment completion.'
+    answer: 'After registering students, click the "Make School Payment" button in the payment section. Select the number of students to pay for (up to your available points), review the cost summary, and proceed to payment via Paystack. You\'ll be redirected back to the portal after payment completion.'
   },
   {
     category: 'exams',
@@ -172,17 +168,12 @@ export const allFAQs: FAQItem[] = [
   {
     category: 'exams',
     question: 'What happens after I make a payment?',
-    answer: 'After successful payment: (1) You\'ll receive a payment confirmation on screen, (2) A receipt will be sent to your email, (3) The payment status in your dashboard will update to "Paid", (4) Paid students will be marked as ready for onboarding, (5) You can download payment receipts from the payment history section. The system automatically verifies payments with Paystack.'
+    answer: 'After successful payment: (1) You\'ll receive a payment confirmation on screen, (2) Points are allocated to your account based on the number of students you paid for (one point per student), (3) A receipt will be sent to your email, (4) You can now use these points to onboard students with their details, (5) You can download payment receipts from the payment history section. The system automatically verifies payments with Paystack.'
   },
   {
     category: 'exams',
     question: 'What if my payment fails or is declined?',
     answer: 'If payment fails: (1) Check your card details and try again, (2) Ensure you have sufficient funds, (3) Try a different payment method, (4) Contact your bank if the issue persists, (5) The system will show an error message with details. Your student registrations remain saved and you can retry payment anytime. No points are deducted for failed payments.'
-  },
-  {
-    category: 'exams',
-    question: 'Can I get a refund if I paid by mistake?',
-    answer: 'Refund requests must be submitted in writing to the Ministry of Primary and Secondary Education. Include your payment reference number, school details, and reason for refund. Refunds are processed on a case-by-case basis according to Ministry policy. Contact support@education.im.gov.ng for refund inquiries.'
   },
   {
     category: 'application-process',
@@ -197,7 +188,7 @@ export const allFAQs: FAQItem[] = [
   {
     category: 'application-process',
     question: 'What should I do after my application is approved?',
-    answer: 'Upon approval: (1) You will be allocated exam points based on the number of students you specified, (2) Click on the exam card to access the student registration page, (3) Register students using the provided interface - each registration deducts one point, (4) Make payment for registered students, (5) Complete student onboarding process.'
+    answer: 'Upon approval: (1) Click on the exam card to access the student registration page, (2) Make a payment to purchase points for student onboarding, (3) After payment, you receive points (one point per student paid for), (4) Use these points to onboard students by entering their details (name, gender, class, exam year) - each student onboarded consumes one point, (5) Purchase more points as needed until you reach your approved student limit, (6) Once all students are onboarded, submit for final Ministry review and confirmation.'
   },
   {
     category: 'application-process',
@@ -232,7 +223,7 @@ export const allFAQs: FAQItem[] = [
   {
     category: 'exams',
     question: 'What is the student onboarding process?',
-    answer: 'Student onboarding happens after payment: (1) Register students with their details (name, gender, class, exam year), (2) Make payment for the registered students, (3) After payment verification, students are automatically onboarded, (4) Each onboarded student receives a unique Student ID, (5) You can view and export the list of onboarded students with their IDs, (6) Onboarded students are ready for the examination. The system tracks onboarding status for each student.'
+    answer: 'The student onboarding process follows these steps: (1) After your exam application is approved, make a payment to purchase points, (2) Each payment gives you points based on the number of students you paid for (one point per student), (3) Use these points to onboard students by entering their details (name, gender, class, exam year) - each student onboarded consumes one point, (4) Each onboarded student receives a unique Student ID, (5) You can view and export the list of onboarded students with their IDs, (6) Purchase more points as needed until you reach your approved student limit, (7) Onboarded students are ready for the examination. The system tracks your available points and onboarding status for each student.'
   },
   {
     category: 'exams',
