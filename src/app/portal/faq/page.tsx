@@ -7,6 +7,30 @@ import { generateFAQPDF } from '../utils/pdfGenerator'
 import { useRouter } from 'next/navigation'
 import { allFAQs, categoryInfo } from '../data/faqData'
 
+// Helper function to parse and format FAQ answers with numbered lists
+function parseAnswer(answer: string) {
+    // Check if answer contains numbered list pattern like (1), (2), (3)
+    const hasNumberedList = /\(\d+\)/.test(answer)
+    
+    if (!hasNumberedList) {
+        return { type: 'text' as const, content: answer }
+    }
+    
+    // Split by numbered items
+    const parts = answer.split(/(?=\(\d+\))/)
+    const intro = parts[0].trim()
+    const items = parts.slice(1).map(part => {
+        // Extract number and content - using multiline flag instead of dotAll
+        const match = part.match(/^\((\d+)\)\s*([\s\S]+)$/)
+        if (match) {
+            return { number: match[1], text: match[2].trim() }
+        }
+        return null
+    }).filter((item): item is { number: string; text: string } => item !== null)
+    
+    return { type: 'list' as const, intro, items }
+}
+
 export default function PortalFAQPage() {
     const router = useRouter(); 
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
@@ -90,15 +114,32 @@ export default function PortalFAQPage() {
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {categoryFAQs.map((faq) => {
                                     const globalIndex = allFAQs.indexOf(faq)
+                                    const parsedAnswer = parseAnswer(faq.answer)
                                     
                                     return (
                                         <div key={globalIndex} className="space-y-3">
                                             <h3 className="text-base font-bold text-gray-900 leading-tight">
                                                 {faq.question}
                                             </h3>
-                                            <p className="text-sm text-gray-600 leading-relaxed">
-                                                {faq.answer}
-                                            </p>
+                                            {parsedAnswer.type === 'text' ? (
+                                                <p className="text-sm text-gray-600 leading-relaxed">
+                                                    {parsedAnswer.content}
+                                                </p>
+                                            ) : (
+                                                <div className="text-sm text-gray-600 leading-relaxed space-y-2">
+                                                    {parsedAnswer.intro && (
+                                                        <p className="mb-2">{parsedAnswer.intro}</p>
+                                                    )}
+                                                    <ul className="space-y-1.5 ml-1">
+                                                        {parsedAnswer.items.map((item: any, idx: number) => (
+                                                            <li key={idx} className="flex gap-2">
+                                                                <span className="text-green-600 font-semibold flex-shrink-0">•</span>
+                                                                <span>{item.text}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
                                         </div>
                                     )
                                 })}

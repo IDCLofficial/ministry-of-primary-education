@@ -113,7 +113,7 @@ export const allFAQs: FAQItem[] = [
   {
     category: 'exams',
     question: 'What are the examination fees?',
-    answer: `Fees vary by exam (in Naira): WAEC (${EXAM_TYPES[0].fee}/${EXAM_TYPES[0].lateFee} late), BECE (${EXAM_TYPES[1].fee}/${EXAM_TYPES[1].lateFee} late), JSCBE (${EXAM_TYPES[2].fee}/${EXAM_TYPES[2].lateFee} late), UBEGPT (${EXAM_TYPES[3].fee}/${EXAM_TYPES[3].lateFee} late), UBEAT (${EXAM_TYPES[4].fee}/${EXAM_TYPES[4].lateFee} late), CESS (${EXAM_TYPES[5].fee}/${EXAM_TYPES[5].lateFee} late), UBETMS (${EXAM_TYPES[6].fee}), BECE Resit (${EXAM_TYPES[7].fee}). Late fees apply after the deadline.`
+    answer: `Fees vary by exam: WAEC (₦${EXAM_TYPES[0].fee}/₦${EXAM_TYPES[0].lateFee} late), BECE (₦${EXAM_TYPES[1].fee}/₦${EXAM_TYPES[1].lateFee} late), JSCBE (₦${EXAM_TYPES[2].fee}/₦${EXAM_TYPES[2].lateFee} late), UBEGPT (₦${EXAM_TYPES[3].fee}/₦${EXAM_TYPES[3].lateFee} late), UBEAT (₦${EXAM_TYPES[4].fee}/₦${EXAM_TYPES[4].lateFee} late), CESS (₦${EXAM_TYPES[5].fee}/₦${EXAM_TYPES[5].lateFee} late), UBETMS (₦${EXAM_TYPES[6].fee}), BECE Resit (₦${EXAM_TYPES[7].fee}). Late fees apply after the deadline.`
   },
   {
     category: 'exams',
