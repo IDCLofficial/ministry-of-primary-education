@@ -147,7 +147,7 @@ export const allFAQs: FAQItem[] = [
   },
   {
     category: 'exams',
-    question: 'What are exam points and how does the points system work?',
+    question: 'What are the exam points and how does the points system work?',
     answer: `The points system is the core mechanism for managing student onboarding: (1) After your exam application is approved, you must purchase points to onboard students, (2) Each point costs the exam fee (e.g., ₦${EXAM_TYPES[0].fee} for WAEC) and allows you to onboard one student, (3) You can purchase points in batches - buy some now and more later as needed, (4) One point = one student onboarding slot, (5) Points are consumed when you onboard a student with their details (name, gender, class, exam year), (6) You can track available points vs used points in the student registration interface, (7) Purchase more points anytime until you reach your approved student limit, (8) Once all students are onboarded, submit for final Ministry review and confirmation. This system ensures payment is made before students are officially registered for examinations.`
   },
   {
