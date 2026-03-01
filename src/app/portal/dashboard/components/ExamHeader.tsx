@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { useParams } from 'next/navigation'
 import type { RootState } from '@/app/portal/store'
 import Image from 'next/image'
 import Link from 'next/link'
 import { EXAM_TYPES, ExamType } from '../[schoolCode]/types'
+import { useClickAway } from 'react-use'
 
 interface ExamHeaderProps {
   currentExam?: ExamType
@@ -18,6 +19,12 @@ export default function ExamHeader({ currentExam, isFirst }: ExamHeaderProps) {
   const rawSchoolCode = params?.schoolCode as string
   const { selectedSchool } = useSelector((state: RootState) => state.school)
   const [showExamDropdown, setShowExamDropdown] = useState(false);
+
+  const dropDownRef = useRef<HTMLDivElement>(null);
+
+  useClickAway(dropDownRef, () => {
+    setShowExamDropdown(false);
+  });
 
   return (
     <header className='sm:p-4 sticky sm:top-4 top-2 z-50 p-2 bg-white/50 backdrop-blur-lg rounded-xl shadow-lg shadow-black/5 border border-black/10'>
@@ -80,6 +87,7 @@ export default function ExamHeader({ currentExam, isFirst }: ExamHeaderProps) {
                 {showExamDropdown && (
                   <>
                     <div
+                      ref={dropDownRef}
                       className="fixed inset-0 z-10"
                       onClick={() => setShowExamDropdown(false)}
                     />

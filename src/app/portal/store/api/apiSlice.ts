@@ -38,4 +38,4 @@ export const apiSlice = createApi({
 })
 
 // Export hooks for usage in functional components
-export const { } = apiSlice
+export const massInvalidateTags = apiSlice.util.invalidateTags;
