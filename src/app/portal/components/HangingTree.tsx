@@ -5,8 +5,10 @@ import React from 'react'
 import animationData01 from "./lottie/open-doodles-reading-side.json"
 import animationData02 from "./lottie/open-doodles-sitting-man.json"
 import Finance from "./lottie/finance.json"
+import { useMedia } from 'react-use'
 
 export default function HangingTree({ type = "both", finance = false }: { type?: "left" | "right" | "both", finance?: boolean }) {
+    const isMobile = useMedia('(max-width: 1000px)')
     return (
         <div className={
             'fixed inset-0 h-screen w-screen flex animate-fadeIn-y ' 
@@ -21,7 +23,7 @@ export default function HangingTree({ type = "both", finance = false }: { type?:
                         loop={true}
                         autoPlay={true}
                         style={{
-                            height: '40vmin'
+                            height: isMobile ? '30vmin' : '40vmin'
                         }}
                     />
                 )}
@@ -32,7 +34,7 @@ export default function HangingTree({ type = "both", finance = false }: { type?:
                         autoPlay={true}
                         className='max-sm:hidden mb-5'
                         style={{
-                            height: '40vmin',
+                            height: isMobile ? '30vmin' : '40vmin',
                         }}
                     />
                 )}
@@ -44,7 +46,7 @@ export default function HangingTree({ type = "both", finance = false }: { type?:
                     autoPlay={true}
                     className='max-sm:hidden mb-5'
                     style={{
-                        height: '40vmin',
+                        height: isMobile ? '30vmin' : '40vmin',
                     }}
                 />
             )}
