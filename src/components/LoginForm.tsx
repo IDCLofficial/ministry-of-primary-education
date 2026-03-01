@@ -27,7 +27,7 @@ export default function LoginForm() {
 
   const [errors, setErrors] = useState<LoginErrors>({})
   const [loginMutation, { isLoading }] = useLoginMutation()
-  const { login } = useAuth();
+  const { login, isNavigating } = useAuth();
   const router = useRouter();
 
   const isAuthenticated = React.useMemo(() => {
@@ -110,9 +110,9 @@ export default function LoginForm() {
         }
 
         const result = await loginMutation(sanitizedData).unwrap()
-
+        
         // Use auth context to store authentication data
-        login(result.access_token, result.school)
+        login(result.access_token, result.aee)
 
         toast.success('Login successful!')
       } catch (error: unknown) {
@@ -193,7 +193,7 @@ export default function LoginForm() {
         ) : (
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isNavigating}
             className="w-full bg-green-600 cursor-pointer active:scale-95 text-white py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-transform duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Logging in...' : 'Login'}

@@ -133,7 +133,7 @@ type ExamData = ExamDataMain | RejectedExamData;
 
 interface LoginResponse {
   access_token: string
-  school: {
+  aee: {
     id: string
     email: string
     isFirstLogin: boolean

@@ -3,7 +3,6 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../providers/AuthProvider'
-import CreatePasswordForm from '@/components/CreatePasswordForm'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -11,31 +10,18 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requireAuth = true }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, school, loggingOut } = useAuth()
-
-  useEffect(()=>{
-    console.log("Auth state changed", isAuthenticated);
-  }, [isAuthenticated])
+  const { isAuthenticated, isLoading, isNavigating, loggingOut } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (loggingOut) return;
-    if (!isLoading && requireAuth) {
-      if (!isAuthenticated) {
-
-        console.log('Not authenticated, redirecting to login', {
-          isAuthenticated,
-          isLoading,
-          requireAuth,
-        })
-        // Not authenticated, redirect to login
-        router.replace('/portal')
-      }
+    if (loggingOut || isNavigating) return
+    if (!isLoading && requireAuth && !isAuthenticated) {
+      router.replace('/portal')
     }
-  }, [isAuthenticated, isLoading, requireAuth, router, loggingOut])
+  }, [isAuthenticated, isLoading, isNavigating, requireAuth, router, loggingOut])
 
-  // Show loading spinner while checking authentication
-  if (isLoading) {
+  // Show spinner during initial auth check or post-login navigation
+  if (isLoading || isNavigating) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -46,22 +32,9 @@ export default function ProtectedRoute({ children, requireAuth = true }: Protect
     )
   }
 
-  // If authentication is required but user is not authenticated, show nothing (redirect will happen)
+  // Render nothing while redirect is pending
   if (requireAuth && !isAuthenticated) {
     return null
-  }
-
-  if (school?.isFirstLogin) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-[#F3F3F3]">
-        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-
-          <CreatePasswordForm
-            school={school.email}
-          />
-        </div>
-      </div>
-    )
   }
 
   return <>{children}</>
