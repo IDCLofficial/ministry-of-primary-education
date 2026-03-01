@@ -401,7 +401,7 @@ export const authApi = apiSlice.injectEndpoints({
     }),
 
     // Get profile
-    getProfile: builder.query<LoginResponse['school'], void>({
+    getProfile: builder.query<LoginResponse['aee'], void>({
       query: () => ({
         url: `${API_BASE_URL}${endpoints.PROFILE}`,
         method: 'GET',
