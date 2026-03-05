@@ -93,6 +93,7 @@ export interface UBEATStudent {
 
 export interface UBEATResultsResponse {
     data: UBEATStudent[]
+    availableYears: Array<string>
     pagination: {
         total: number
         page: number

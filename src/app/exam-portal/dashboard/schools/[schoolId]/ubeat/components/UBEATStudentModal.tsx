@@ -85,7 +85,7 @@ export default function UBEATStudentModal({ isOpen, onClose, student, schoolName
     const averageScore = totalSum / 4
 
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="fixed inset-0 z-50 overflow-y-auto backdrop-blur-[2px]">
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0 relative">
                 {/* Background overlay */}
                 <div

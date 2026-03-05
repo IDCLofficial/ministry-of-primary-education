@@ -446,7 +446,7 @@ export default function UBEATLoginPage() {
                                             </>
                                         ) : (
                                             <>
-                                                <IoLockClosed className={`w-5 h-5 mr-2 ${isLoading || !canProceed ? '' : 'group-hover:animate-bounce'}`} />
+                                                <IoLockClosed className={`w-5 h-5 mr-2 ${isLoading || !canProceed ? '' : 'group-hover:animate-pulse'}`} />
                                                 View My Results
                                             </>
                                         )}

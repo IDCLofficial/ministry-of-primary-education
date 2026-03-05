@@ -135,6 +135,7 @@ export default function UBEATSchoolDetailsPage({ params }: { params: Promise<{ s
         <SchoolDetailsClient
             school={school}
             schoolId={schoolId}
+            availableYears={studentsData?.availableYears || []}
             students={students}
             pagination={pagination}
             isSearching={isSearching}

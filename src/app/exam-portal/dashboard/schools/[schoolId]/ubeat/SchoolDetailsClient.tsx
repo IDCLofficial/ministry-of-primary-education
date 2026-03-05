@@ -38,6 +38,7 @@ interface SchoolDetailsClientProps {
     isLoading?: boolean
     error?: string | null
     schoolId: string
+    availableYears: string[]
 }
 
 const getLgaName = (lga: string | undefined): string => {
@@ -45,7 +46,7 @@ const getLgaName = (lga: string | undefined): string => {
     return lga
 }
 
-export default function UBEATSchoolDetailsClient({ school, students, pagination, isSearching = false, isLoading = false, error = null, schoolId }: SchoolDetailsClientProps) {
+export default function UBEATSchoolDetailsClient({ school, students, pagination, isSearching = false, isLoading = false, error = null, schoolId, availableYears }: SchoolDetailsClientProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const searchQuery = searchParams.get("search") || ""
@@ -54,9 +55,6 @@ export default function UBEATSchoolDetailsClient({ school, students, pagination,
     const debouncedSearch = useDebounce(localSearch, 500)
     const [selectedStudent, setSelectedStudent] = useState<UBEATStudent | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
-
-    // Extract unique years from students
-    const availableYears = [2024, 2025, 2026]
 
     // Sync URL search param with local state
     useEffect(() => {
@@ -162,15 +160,17 @@ export default function UBEATSchoolDetailsClient({ school, students, pagination,
 
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="flex-1 flex items-center justify-between gap-3">
-                        <SearchBar
-                            searchQuery={localSearch}
-                            onSearchChange={setLocalSearch}
-                            isSearching={isSearching}
-                        />
+                        <div className="flex-1">
+                            <SearchBar
+                                searchQuery={localSearch}
+                                onSearchChange={setLocalSearch}
+                                isSearching={isSearching}
+                            />
+                        </div>
 
                         {availableYears.length > 0 && (
-                            <div className="flex items-center gap-2 flex-1">
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            <div className="flex items-center gap-2">
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5 max-sm:sr-only">
                                     Filter by Year
                                 </label>
                                 <div className="relative">
@@ -186,7 +186,6 @@ export default function UBEATSchoolDetailsClient({ school, students, pagination,
                                             backgroundSize: '1.5em 1.5em'
                                         }}
                                     >
-                                        <option value="all">All Years</option>
                                         {availableYears.map(year => (
                                             <option key={year} value={year}>
                                                 {year}
