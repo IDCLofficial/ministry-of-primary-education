@@ -15,9 +15,9 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
     const [isProcessing, setIsProcessing] = useState(false);
 
     const handlePayment = async () => {
-        setIsProcessing(true)
-        
+        if (isProcessing) return;
         try {
+            setIsProcessing(true)
             // Store return URL for redirect after payment
             localStorage.setItem('student-payment-return-url', '/student-portal/ubeat/dashboard')
             
