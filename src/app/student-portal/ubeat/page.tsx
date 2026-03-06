@@ -75,7 +75,7 @@ export default function UBEATLoginPage() {
         examYear: new Date().getFullYear().toString()
     })
     // RTK Query hooks
-    const [getUBEATResult, { isLoading }] = useLazyGetUBEATResultQuery()
+    const [getUBEATResult, { isLoading, isFetching: isFetchingResult }] = useLazyGetUBEATResultQuery();
     const [findUBEATResult, { isLoading: isFindingResult }] = useFindUBEATResultMutation()
     
     // Combined loading state for alternative form
@@ -113,6 +113,7 @@ export default function UBEATLoginPage() {
         !isFetching
 
     const handleLogin = async (e: React.FormEvent) => {
+        if (isFetchingResult || isLoading || !canProceed) return;
         e.preventDefault()
         setError('')
 
@@ -432,21 +433,21 @@ export default function UBEATLoginPage() {
                                     {/* Login Button */}
                                     <button
                                         type="submit"
-                                        disabled={isLoading || !canProceed}
+                                        disabled={isLoading || !canProceed || isFetchingResult}
                                         className={
                                             `w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer group
                                              ${isLoading || !canProceed ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_4px_rgba(0,0,0,0.25)] active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2'}
                                              `
                                         }
                                     >
-                                        {isLoading ? (
+                                        {(isLoading || isFetchingResult) ? (
                                             <>
                                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                                                 Loading your results...
                                             </>
                                         ) : (
                                             <>
-                                                <IoLockClosed className={`w-5 h-5 mr-2 ${isLoading || !canProceed ? '' : 'group-hover:animate-pulse'}`} />
+                                                <IoLockClosed className={`w-5 h-5 mr-2 ${(isLoading || isFetchingResult || !canProceed) ? '' : 'group-hover:animate-pulse'}`} />
                                                 View My Results
                                             </>
                                         )}
