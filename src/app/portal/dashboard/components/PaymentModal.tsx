@@ -27,7 +27,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
   const maxPointsAllowed = examNumberOfStudents > 0 ? Math.max(0, examNumberOfStudents - examTotalPoints) : 0;
 
   // Dynamic minimum based on available points: if > 20, must buy at least 20; otherwise can buy below 20
-  const minPurchasePoints = maxPointsAllowed >= 20 ? 20 : 1
+  const minPurchasePoints = 1
   const studentFees = selectedStudentCount * feePerStudent
   const totalAmount = studentFees
 
