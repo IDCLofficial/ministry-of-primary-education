@@ -132,7 +132,7 @@ export default function UBEATLoginPage() {
         }
 
         try {
-            const result = await getUBEATResult(examNo).unwrap()
+            const result = await getUBEATResult(examNo).unwrap();
 
             // Validate data structure
             if (!result || !result.examNumber || !result.studentName) {

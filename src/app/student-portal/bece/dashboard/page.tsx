@@ -7,11 +7,14 @@ import toast from 'react-hot-toast'
 import Paywall from './components/Paywall'
 import CertificateModal from '@/components/CertificateModal'
 import Image from 'next/image'
+import { toPng } from 'html-to-image'
+import jsPDF from 'jspdf'
 import { useGetBECEResultQuery } from '../../store/api/studentApi'
 import StudentInfoCard from './components/StudentInfoCard'
 import Lottie from 'lottie-react'
 import celebrationData from "./components/celebrationBirthdayEmoji.json";
 import { useMedia } from 'react-use'
+import PortalHeader from '../../components/Portalheader'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
@@ -26,6 +29,7 @@ export default function StudentDashboardPage() {
     const searchParams = useSearchParams()
     const certificateRef = useRef<HTMLDivElement>(null)
     const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
+    const [isPrinting, setIsPrinting] = useState(false)
     const [examNo, setExamNo] = useState<string | null>(null)
 
     const getGradeColor = (grade: string) => {
@@ -147,8 +151,57 @@ export default function StudentDashboardPage() {
         setIsCertificateModalOpen(true)
     }
 
-    const handlePrint = () => {
-        window.print()
+    const handlePrint = async () => {
+        if (!certificateRef.current || !student) {
+            toast.error('Results not ready')
+            return
+        }
+        try {
+            setIsPrinting(true)
+            toast.loading('Generating PDF...', { id: 'download-pdf' })
+            const element = certificateRef.current
+            // Temporarily make the element visible for rendering
+            element.style.left = '0'
+            element.style.opacity = '1'
+            // Wait for content to be fully rendered
+            await new Promise(resolve => setTimeout(resolve, 300))
+            // Ensure all images are loaded
+            const images = element.getElementsByTagName('img')
+            await Promise.all(
+                Array.from(images).map(img => {
+                    if (img.complete) return Promise.resolve()
+                    return new Promise((resolve, reject) => {
+                        img.onload = () => resolve(null)
+                        img.onerror = reject
+                        setTimeout(() => resolve(null), 5000)
+                    })
+                })
+            )
+            const dataUrl = await toPng(element, {
+                cacheBust: true,
+                pixelRatio: 3,
+                backgroundColor: '#ffffff',
+                skipFonts: false,
+            })
+            // Hide element again
+            element.style.left = '-9999px'
+            element.style.opacity = '0'
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            })
+            const imgWidth = 210
+            const imgHeight = (element.offsetHeight * imgWidth) / element.offsetWidth
+            pdf.addImage(dataUrl, 'PNG', 0, 0, imgWidth, imgHeight)
+            pdf.save(`BECE-Results-${student.examNo}.pdf`)
+            toast.success('PDF downloaded successfully!', { id: 'download-pdf' })
+        } catch (error) {
+            console.error('Error generating PDF:', error)
+            toast.error('Failed to generate PDF', { id: 'download-pdf' })
+        } finally {
+            setIsPrinting(false)
+        }
     }
 
     // Show loading while fetching data
@@ -158,12 +211,16 @@ export default function StudentDashboardPage() {
                 <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center">
-                                <IoSchool className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-base font-bold text-gray-900">BECE Results</h1>
-                                <p className="text-xs text-gray-600">Your achievement awaits</p>
+                            <Image
+                                src={"/images/ministry-logo.png"}
+                                width={40}
+                                height={40}
+                                alt="BECE Results"
+                                className="h-10 w-auto object-contain flex-shrink-0"
+                            />
+                            <div className='pl-4 border-l border-l-gray-100 animate-pulse'>
+                                <h1 className="text-sm font-semibold text-gray-900">Loading your data</h1>
+                                <p className="text-xs text-gray-600">Please wait while we fetch your results</p>
                             </div>
                         </div>
                     </div>
@@ -177,8 +234,8 @@ export default function StudentDashboardPage() {
                                     <IoSparkles className="w-6 h-6 text-green-600 animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Almost there!</h3>
-                            <p className="text-base text-gray-600">Loading your results...</p>
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">Almost there!</h3>
+                            <p className="text-base text-gray-600 animate-pulse">Loading your results...</p>
                         </div>
                     </div>
                 </main>
@@ -244,78 +301,68 @@ export default function StudentDashboardPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50/30 via-white to-blue-50/30 print:bg-white">
             {/* Header */}
-            <header className="bg-white border-b border-gray-100 sticky top-0 z-50 print:hidden">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                    {/* Logo */}
-                    <div className="flex items-center gap-3">
-                        <Image
-                            src="/images/ministry-logo.png"
-                            width={40}
-                            height={40}
-                            alt="Ministry Logo"
-                            className="h-10 w-auto object-contain"
-                        />
-                        <div className="border-l border-gray-200 pl-3">
-                            <h1 className="text-sm font-semibold text-gray-900">
-                                Your BECE Results
-                            </h1>
-                            <p className="text-xs text-gray-600">Well done on your hard work!</p>
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={handlePrint}
-                            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-all cursor-pointer"
-                        >
-                            <IoPrint className="w-4 h-4" />
-                            <span className="hidden md:inline">Print</span>
-                        </button>
-                        <button
-                            onClick={handleDownload}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all cursor-pointer"
-                        >
-                            <IoDownload className="w-4 h-4" />
-                            <span className="hidden md:inline">Download</span>
-                        </button>
-                        <button
-                            onClick={handleChangeExam}
-                            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all cursor-pointer"
-                            title="View other exam results"
-                        >
-                            <IoSwapHorizontal className="w-4 h-4" />
-                            <span className="hidden lg:inline">Switch Exam</span>
-                        </button>
-                        <button
-                            onClick={handleLogout}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all cursor-pointer"
-                        >
-                            <IoLogOut className="w-4 h-4" />
-                            <span className="hidden md:inline">Logout</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
+            <PortalHeader
+                title="Your BECE Results"
+                subtitle="Well done on your hard work!"
+                actions={[
+                    {
+                        key: 'print',
+                        label: 'Print your Results',
+                        shortLabel: 'Get Results',
+                        icon: <IoPrint className="w-4 h-4" />,
+                        onClick: handlePrint,
+                        variant: 'ghost',
+                        loading: isPrinting,
+                        loadingLabel: 'Printing...',
+                        hideOnMobileTray: true,
+                    },
+                    {
+                        key: 'download',
+                        loading: isCertificateModalOpen,
+                        label: 'Download your Certificate',
+                        shortLabel: 'Certificate',
+                        loadingLabel: 'Downloading...',
+                        icon: <IoDownload className="w-4 h-4" />,
+                        onClick: handleDownload,
+                        variant: 'primary',
+                    },
+                    {
+                        key: 'switch',
+                        label: 'Switch Exam',
+                        icon: <IoSwapHorizontal className="w-4 h-4" />,
+                        onClick: handleChangeExam,
+                        variant: 'secondary',
+                        hideOnMobileTray: true,
+                    },
+                    {
+                        key: 'logout',
+                        label: 'Logout',
+                        icon: <IoLogOut className="w-4 h-4" />,
+                        onClick: handleLogout,
+                        variant: 'ghost',
+                        hideOnMobileTray: true,
+                    },
+                ]}
+            />
 
             {/* Main Content */}
             <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:py-0">
                 {/* Welcome Banner */}
                 <div className="mb-6 print:hidden">
-                    <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-100 rounded-2xl p-8">
+                    <div className="sm:bg-gradient-to-r bg-linear-to-b from-green-50 to-pink-50 border border-green-100 rounded-3xl p-8">
                         <div className="flex sm:items-start relative items-baseline justify-between gap-4">
                             <div className="flex items-start gap-4">
-                                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm max-sm:hidden">
                                     <IoSparkles className="w-7 h-7 text-green-600" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                                    <h2 className="sm:text-2xl text-lg font-bold text-gray-900 mb-2">
                                         Congratulations, <span className="capitalize">{student.name.toLowerCase()}</span>!
                                     </h2>
-                                    <p className="text-base text-gray-700 mb-1">
+                                    <p className="sm:text-base text-sm text-gray-700 mb-1">
                                         You&apos;ve worked hard and here are your BECE results
                                     </p>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="sm:text-sm text-xs text-gray-600 max-sm:mb-4">
                                         Take a moment to review your performance. We&apos;re proud of your effort!
                                     </p>
                                 </div>
@@ -353,7 +400,7 @@ export default function StudentDashboardPage() {
                     <StudentInfoCard student={student} />
 
                     {/* Overall Performance Summary */}
-                    <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
+                    <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden print:hidden">
                         <div className="border-b border-gray-100 px-6 py-4">
                             <h3 className="text-sm font-semibold text-gray-900">
                                 Overall Performance
@@ -436,7 +483,7 @@ export default function StudentDashboardPage() {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <span className={`inline-flex items-center gap-1 ${hasA1(calculatedGrade) ? 'px-3 py-1.5 rounded-lg shadow-sm' : ''} text-base font-bold ${getGradeColor(calculatedGrade)}`}>
+                                                    <span className={`inline-flex items-center gap-1 ${hasA1(calculatedGrade) ? 'px-3 py-1.5 rounded-lg shadow-sm' : ''} text-sm font-bold ${getGradeColor(calculatedGrade)}`}>
                                                         {hasA1(calculatedGrade) && <IoTrophy className="w-4 h-4" />}
                                                         {calculatedGrade}
                                                     </span>
@@ -482,7 +529,7 @@ export default function StudentDashboardPage() {
                 </div>
 
                 {/* Info Footer */}
-                <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-100 rounded-2xl p-6 mb-6 print:hidden">
+                <div className="bg-gradient-to-b from-white to-green-50 border border-blue-100 rounded-2xl p-6 mb-6 print:hidden">
                     <div className="flex items-start gap-4">
                         <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
                             <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -506,31 +553,34 @@ export default function StudentDashboardPage() {
                 <p className="mt-2 text-xs">Printed on: {new Date().toLocaleDateString()} • Keep this for your records</p>
             </footer>
 
-            {/* Hidden Certificate for PDF Generation */}
-            <div ref={certificateRef} className="fixed -left-[9999px] top-0 w-[210mm] bg-white p-12">
+            {/* Hidden Certificate for PDF Generation (used by handlePrint) */}
+            <div
+                ref={certificateRef}
+                style={{ position: 'fixed', left: '-9999px', top: '0', opacity: 0 }}
+                className="w-[210mm] bg-white px-12 py-8 pointer-events-none"
+            >
                 {/* Header */}
-                <div className="text-center mb-8 border-b-2 border-gray-200 pb-6">
+                <div className="text-center pb-8">
                     <div className="flex items-center justify-center mb-4">
                         <Image
                             src="/images/ministry-logo.png"
-                            width={80}
-                            height={80}
+                            width={60}
+                            height={60}
                             alt="Ministry Logo"
-                            className="h-20 w-auto object-contain"
+                            className="h-16 w-auto object-contain"
                         />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-1">
                         Basic Education Certificate Examination (BECE)
                     </h1>
-                    <p className="text-xl text-gray-700">Official Results Document</p>
-                    <p className="text-base text-gray-600 mt-2">
+                    <p className="text-lg text-gray-700">Official Results Document</p>
+                    <p className="text-sm text-gray-600">
                         Academic Year {new Date().getFullYear()}
                     </p>
                 </div>
 
                 {/* Student Information */}
-                <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Student Information</h2>
+                <div className="bg-gray-50 rounded-2xl p-6 mb-6 border border-slate-200">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-sm text-gray-600 mb-1">Full Name</p>
@@ -551,24 +601,24 @@ export default function StudentDashboardPage() {
                     </div>
                 </div>
 
+
                 {/* Overall Performance */}
-                <div className="bg-green-50 rounded-lg p-6 mb-6 print:hidden">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Overall Performance</h2>
+                <div className="bg-green-50 rounded-2xl p-6 mb-6 border border-green-200">
                     <div className="grid grid-cols-4 gap-4 text-center">
                         <div>
-                            <p className="text-3xl font-bold text-gray-900">{student.subjects.length}</p>
+                            <p className="text-2xl font-bold text-gray-900">{student.subjects.length}</p>
                             <p className="text-sm text-gray-600">Subjects</p>
                         </div>
                         <div>
-                            <p className="text-3xl font-bold text-gray-900">{calculateCredits()}</p>
+                            <p className="text-2xl font-bold text-gray-900">{calculateCredits()}</p>
                             <p className="text-sm text-gray-600">Credits</p>
                         </div>
                         <div>
-                            <p className="text-3xl font-bold text-green-600">{calculateAverage()}%</p>
+                            <p className="text-2xl font-bold text-green-600">{calculateAverage()}%</p>
                             <p className="text-sm text-gray-600">Average Score</p>
                         </div>
                         <div>
-                            <p className="text-3xl font-bold text-green-600">{calculateOverallGrade()}</p>
+                            <p className="text-2xl font-bold text-green-600">{calculateOverallGrade()}</p>
                             <p className="text-sm text-gray-600">Overall Grade</p>
                         </div>
                     </div>
@@ -606,14 +656,13 @@ export default function StudentDashboardPage() {
                 </div>
 
                 {/* Footer */}
-                <div className="mt-8 pt-6 border-t-2 border-gray-200 text-center text-sm text-gray-600">
+                <div className="pt-2 text-center text-sm text-gray-600">
                     <p className="font-semibold text-gray-900">Imo State Ministry of Primary and Secondary Education</p>
-                    <p className="mt-1">Official Results Document</p>
-                    <p className="mt-2 text-xs">Downloaded on: {new Date().toLocaleDateString()} • Keep this for your records</p>
+                    <p className="text-xs text-slate-400">Printed on: {new Date().toISOString().split('T')[0]} • Keep this for your records</p>
                 </div>
             </div>
 
-            {/* Certificate Modal */}
+            {/* Certificate Modal (used by handleDownload) */}
             {student && (
                 <CertificateModal
                     isOpen={isCertificateModalOpen}
