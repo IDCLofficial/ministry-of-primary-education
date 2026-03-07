@@ -53,7 +53,7 @@ const IMO_STATE_LGAS = [
 // Alternative form data
 interface AlternativeFormData {
     fullName: string
-    schoolName: string
+    schoolName: { id: string; name: string}
     lga: string
     examYear: string
 }
@@ -70,7 +70,10 @@ export default function UBEATLoginPage() {
     // Alternative form states
     const [altFormData, setAltFormData] = useState<AlternativeFormData>({
         fullName: '',
-        schoolName: '',
+        schoolName: {
+            id: "",
+            name: ""
+        },
         lga: '',
         examYear: new Date().getFullYear().toString()
     })
@@ -106,7 +109,7 @@ export default function UBEATLoginPage() {
 
     // Check if alternative form is valid
     const isAltFormValid = altFormData.fullName.trim().length >= 3 &&
-        altFormData.schoolName.trim().length >= 3 &&
+        altFormData.schoolName.id.trim().length >= 3 &&
         altFormData.lga.trim().length >= 2 &&
         altFormData.examYear.trim().length === 4 &&
         !isLoadingSchoolNames &&
@@ -166,6 +169,8 @@ export default function UBEATLoginPage() {
     }
 
     const handleAlternativeFormSubmit = async (e: React.FormEvent) => {
+        if (isFindingResult) return;
+
         e.preventDefault()
         setError('')
 
@@ -178,7 +183,7 @@ export default function UBEATLoginPage() {
 
         try {
             const result = await findUBEATResult({
-                schoolId: altFormData.schoolName,
+                schoolId: altFormData.schoolName.id,
                 examYear: parseInt(altFormData.examYear),
                 studentName: altFormData.fullName,
                 lga: altFormData.lga
@@ -197,9 +202,12 @@ export default function UBEATLoginPage() {
             }
 
             // Store payment details and student data for payment page
-            localStorage.setItem('ubeat_payment_url', fullResult.paymentUrl)
-            localStorage.setItem('ubeat_payment_reference', fullResult.paymentReference)
-            localStorage.setItem('ubeat_alt_form_data', JSON.stringify(altFormData))
+            localStorage.setItem('ubeat_alt_form_data', JSON.stringify({
+                fullName: altFormData.fullName,
+                school: altFormData.schoolName,
+                lga: altFormData.lga,
+                examYear: altFormData.examYear
+            }))
             
             // Store exam number for after payment if available
             localStorage.setItem('selected_exam_type', 'ubeat')
@@ -258,7 +266,10 @@ export default function UBEATLoginPage() {
         setExamNo('')
         setAltFormData({
             fullName: '',
-            schoolName: '',
+            schoolName: {
+                id: "",
+                name: ""
+            },
             lga: '',
             examYear: new Date().getFullYear().toString()
         })
@@ -510,7 +521,7 @@ export default function UBEATLoginPage() {
                                                     if (error) setError('')
                                                 }}
                                                 placeholder="Enter your full name"
-                                                className="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200"
+                                                className="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200 capitalize"
                                                 disabled={isProcessingPayment}
                                             />
                                         </div>
@@ -525,7 +536,7 @@ export default function UBEATLoginPage() {
                                             options={lgaOptions}
                                             value={altFormData.lga}
                                             onChange={(value) => {
-                                                setAltFormData({ ...altFormData, lga: value, schoolName: '' })
+                                                setAltFormData({ ...altFormData, lga: value, schoolName: {id:'', name: ''} })
                                                 if (error) setError('')
                                             }}
                                             placeholder="Select LGA"
@@ -558,9 +569,13 @@ export default function UBEATLoginPage() {
                                                     value: school._id,
                                                     label: String(school.schoolName).startsWith('"') ? String(school.schoolName).slice(1) : school.schoolName
                                                 }))}
-                                                value={altFormData.schoolName}
+                                                value={altFormData.schoolName.id}
                                                 onChange={(value) => {
-                                                    setAltFormData({ ...altFormData, schoolName: value })
+                                                    console.log({school: value})
+                                                    setAltFormData({ ...altFormData, schoolName: {
+                                                        id: value,
+                                                        name: schoolNamesList.find(school => school._id === value)?.schoolName!
+                                                    } })
                                                     if (error) setError('')
                                                 }}
                                                 placeholder="Select a school"

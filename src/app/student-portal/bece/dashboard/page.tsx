@@ -9,6 +9,9 @@ import CertificateModal from '@/components/CertificateModal'
 import Image from 'next/image'
 import { useGetBECEResultQuery } from '../../store/api/studentApi'
 import StudentInfoCard from './components/StudentInfoCard'
+import Lottie from 'lottie-react'
+import celebrationData from "./components/celebrationBirthdayEmoji.json";
+import { useMedia } from 'react-use'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
@@ -18,6 +21,7 @@ const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3,4}\/\d{4}\/\d{3,4}$/
 const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}$/
 
 export default function StudentDashboardPage() {
+    const isMobile = useMedia('(max-width: 1000px)')
     const router = useRouter()
     const searchParams = useSearchParams()
     const certificateRef = useRef<HTMLDivElement>(null)
@@ -116,11 +120,11 @@ export default function StudentDashboardPage() {
     }, [router])
 
     // Fetch student data using RTK Query
-    const { 
-        data: student, 
-        isLoading, 
-        isError, 
-        error 
+    const {
+        data: student,
+        isLoading,
+        isError,
+        error
     } = useGetBECEResultQuery(examNo || '', {
         skip: !examNo,
     })
@@ -183,12 +187,12 @@ export default function StudentDashboardPage() {
     }
 
     if (isError) {
-        const errorMessage = error && 'status' in error 
-            ? error.status === 404 
+        const errorMessage = error && 'status' in error
+            ? error.status === 404
                 ? 'We couldn\'t find your results. Please check your exam number.'
                 : error.status === 500
-                ? 'Our system is having a moment. Please try again.'
-                : 'Something went wrong. Please try again.'
+                    ? 'Our system is having a moment. Please try again.'
+                    : 'Something went wrong. Please try again.'
             : 'Unable to load your results. Please try again.'
 
         return (
@@ -244,11 +248,11 @@ export default function StudentDashboardPage() {
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     {/* Logo */}
                     <div className="flex items-center gap-3">
-                        <Image 
-                            src="/images/ministry-logo.png" 
+                        <Image
+                            src="/images/ministry-logo.png"
                             width={40}
                             height={40}
-                            alt="Ministry Logo" 
+                            alt="Ministry Logo"
                             className="h-10 w-auto object-contain"
                         />
                         <div className="border-l border-gray-200 pl-3">
@@ -299,14 +303,14 @@ export default function StudentDashboardPage() {
                 {/* Welcome Banner */}
                 <div className="mb-6 print:hidden">
                     <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-100 rounded-2xl p-8">
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex sm:items-start relative items-baseline justify-between gap-4">
                             <div className="flex items-start gap-4">
                                 <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
                                     <IoSparkles className="w-7 h-7 text-green-600" />
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                                        Congratulations, <span className="capitalize">{student.name.toLowerCase()}</span>! 🎉
+                                        Congratulations, <span className="capitalize">{student.name.toLowerCase()}</span>!
                                     </h2>
                                     <p className="text-base text-gray-700 mb-1">
                                         You&apos;ve worked hard and here are your BECE results
@@ -316,6 +320,16 @@ export default function StudentDashboardPage() {
                                     </p>
                                 </div>
                             </div>
+
+                            <Lottie
+                                animationData={celebrationData}
+                                loop={true}
+                                autoPlay={true}
+                                style={{
+                                    height: isMobile ? '20vmin' : '16vmin',
+                                }}
+                                className='absolute sm:right-4 -right-6 sm:top-1/2 sm:-translate-y-1/2 -mt-3 -bottom-8'
+                            />
                         </div>
                     </div>
                 </div>
@@ -497,11 +511,11 @@ export default function StudentDashboardPage() {
                 {/* Header */}
                 <div className="text-center mb-8 border-b-2 border-gray-200 pb-6">
                     <div className="flex items-center justify-center mb-4">
-                        <Image 
-                            src="/images/ministry-logo.png" 
+                        <Image
+                            src="/images/ministry-logo.png"
                             width={80}
                             height={80}
-                            alt="Ministry Logo" 
+                            alt="Ministry Logo"
                             className="h-20 w-auto object-contain"
                         />
                     </div>

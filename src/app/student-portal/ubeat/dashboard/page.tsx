@@ -10,8 +10,13 @@ import Paywall from './components/Paywall'
 import { UBEATStudent } from '@/app/exam-portal/dashboard/schools/types/student.types'
 import { generateUBEATCertificate } from '@/app/exam-portal/dashboard/schools/[schoolId]/ubeat/utils/certificateGenerator'
 import { useGetUBEATResultQuery } from '../../store/api/studentApi'
+import Lottie from 'lottie-react'
+import celebrationData from "./components/CelebrationLolo.json";
+import { useMedia } from 'react-use'
 
 export default function UBEATDashboard() {
+    const isMobile = useMedia('(max-width: 1000px)')
+
     const router = useRouter()
     const searchParams = useSearchParams()
     const certificateRef = useRef<HTMLDivElement>(null)
@@ -46,11 +51,11 @@ export default function UBEATDashboard() {
     }, [router])
 
     // Fetch student data using RTK Query
-    const { 
-        data: student, 
-        isLoading, 
-        isError, 
-        error 
+    const {
+        data: student,
+        isLoading,
+        isError,
+        error
     } = useGetUBEATResultQuery(examNo || '', {
         skip: !examNo,
     })
@@ -211,12 +216,12 @@ export default function UBEATDashboard() {
     }
 
     if (isError) {
-        const errorMessage = error && 'status' in error 
-            ? error.status === 404 
+        const errorMessage = error && 'status' in error
+            ? error.status === 404
                 ? 'We couldn\'t find your results. Please check your exam number.'
                 : error.status === 500
-                ? 'Our system is having a moment. Please try again.'
-                : 'Something went wrong. Please try again.'
+                    ? 'Our system is having a moment. Please try again.'
+                    : 'Something went wrong. Please try again.'
             : 'Unable to load your results. Please try again.'
 
         return (
@@ -379,24 +384,34 @@ export default function UBEATDashboard() {
             <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:py-0">
                 {/* Welcome Banner */}
                 <div className="mb-6 print:hidden">
-                    <div className="bg-gradient-to-r from-green-50 to-pink-50 border border-green-100 rounded-3xl p-8">
-                        <div className="flex items-start justify-between gap-4">
+                    <div className="sm:bg-gradient-to-r bg-linear-to-b from-green-50 to-pink-50 border border-green-100 rounded-3xl p-8">
+                        <div className="flex sm:items-start relative items-baseline justify-between gap-4">
                             <div className="flex items-start gap-4">
-                                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm max-sm:hidden">
                                     <IoSparkles className="w-7 h-7 text-green-600" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                                        Congratulations, <span className="capitalize">{student.studentName.toLowerCase()}</span>! 🎉
+                                    <h2 className="sm:text-2xl text-lg font-bold text-gray-900 mb-2">
+                                        Congratulations, <span className="capitalize">{student.studentName.toLowerCase()}</span>!
                                     </h2>
-                                    <p className="text-base text-gray-700 mb-1">
+                                    <p className="sm:text-base text-sm text-gray-700 mb-1">
                                         You&apos;ve worked hard and here are your UBEAT results
                                     </p>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="sm:text-sm text-xs text-gray-600 max-sm:mb-4">
                                         Take a moment to review your performance. We&apos;re proud of your effort!
                                     </p>
                                 </div>
                             </div>
+
+                            <Lottie
+                                animationData={celebrationData}
+                                loop={true}
+                                autoPlay={true}
+                                style={{
+                                    height: isMobile ? '20vmin' : '16vmin',
+                                }}
+                                className='absolute sm:right-4 -right-6 sm:top-1/2 sm:-translate-y-1/2 -mt-3 -bottom-8'
+                            />
                         </div>
                     </div>
                 </div>
