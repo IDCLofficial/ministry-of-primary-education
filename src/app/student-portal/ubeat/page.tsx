@@ -1,7 +1,7 @@
 'use client'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { IoPersonCircle, IoLockClosed, IoCalendarOutline, IoSwapHorizontal } from 'react-icons/io5'
+import { IoPersonCircle, IoLockClosed, IoCalendarOutline, IoSwapHorizontal, IoChevronForward, IoClose, IoTimeOutline, IoTrashOutline, IoChevronDown, IoChevronUp } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
 import animationData from '../assets/students.json'
@@ -11,174 +11,290 @@ import Link from 'next/link'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
 import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation } from '../store/api/studentApi'
+import { AnimatePresence, motion, Variants } from 'framer-motion'
+import { useLocalStorage } from 'react-use'
 
-// Regex pattern for exam number validation (e.g., XX/000/000)
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
-// Regex pattern for exam number validation (e.g., XX/000/0000/000)
 const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3,4}\/\d{4}\/\d{3,4}$/
-// Regex pattern for exam number validation (e.g., XX/XX/000/0000)
 const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}$/
 
-// Imo State LGAs
+const MAX_RECENT_ACCOUNTS = 5
+
 const IMO_STATE_LGAS = [
-    'Aboh Mbaise',
-    'Ahiazu Mbaise',
-    'Ehime Mbano',
-    'Ezinihitte',
-    'Ideato North',
-    'Ideato South',
-    'Ihitte/Uboma',
-    'Ikeduru',
-    'Isiala Mbano',
-    'Isu',
-    'Mbaitoli',
-    'Ngor Okpala',
-    'Njaba',
-    'Nkwerre',
-    'Nwangele',
-    'Obowo',
-    'Oguta',
-    'Ohaji/Egbema',
-    'Okigwe',
-    'Onuimo',
-    'Orlu',
-    'Orsu',
-    'Oru East',
-    'Oru West',
-    'Owerri Municipal',
-    'Owerri North',
-    'Owerri West'
+    'Aboh Mbaise', 'Ahiazu Mbaise', 'Ehime Mbano', 'Ezinihitte',
+    'Ideato North', 'Ideato South', 'Ihitte/Uboma', 'Ikeduru',
+    'Isiala Mbano', 'Isu', 'Mbaitoli', 'Ngor Okpala', 'Njaba',
+    'Nkwerre', 'Nwangele', 'Obowo', 'Oguta', 'Ohaji/Egbema',
+    'Okigwe', 'Onuimo', 'Orlu', 'Orsu', 'Oru East', 'Oru West',
+    'Owerri Municipal', 'Owerri North', 'Owerri West',
 ]
 
-// Alternative form data
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface RecentAccount {
+    examNo: string
+    studentName: string
+    school: string
+    lastAccessed: number // Unix ms timestamp
+}
+
 interface AlternativeFormData {
     fullName: string
-    schoolName: { id: string; name: string}
+    schoolName: { id: string; name: string }
     lga: string
     examYear: string
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function isValidExamNo(val: string) {
+    return EXAM_NO_REGEX.test(val) || EXAM_NO_REGEX_02.test(val) || EXAM_NO_REGEX_03.test(val)
+}
+
+function getInitials(name: string) {
+    return name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(n => n[0].toUpperCase())
+        .join('')
+}
+
+function timeAgo(ms: number) {
+    const diff = Date.now() - ms
+    const mins = Math.floor(diff / 60_000)
+    const hours = Math.floor(diff / 3_600_000)
+    const days = Math.floor(diff / 86_400_000)
+    if (mins < 1) return 'Just now'
+    if (mins < 60) return `${mins}m ago`
+    if (hours < 24) return `${hours}h ago`
+    return `${days}d ago`
+}
+
+// ─── Motion variants ──────────────────────────────────────────────────────────
+
+const listVariants: Variants = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.055 } },
+    exit: { transition: { staggerChildren: 0.03, staggerDirection: -1 } },
+}
+
+const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 8 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 380, damping: 28 } },
+    exit: { opacity: 0, x: -16, transition: { duration: 0.15 } },
+}
+
+const sectionVariants: Variants = {
+    hidden: { opacity: 0, height: 0 },
+    show: { opacity: 1, height: 'auto', transition: { type: 'spring', stiffness: 300, damping: 30 } },
+    exit: { opacity: 0, height: 0, transition: { duration: 0.2 } },
+}
+
+// ─── Recent Account Card ─────────────────────────────────────────────────────
+
+function RecentAccountCard({
+    account,
+    onSelect,
+    onRemove,
+}: {
+    account: RecentAccount
+    onSelect: (examNo: string) => void
+    onRemove: (examNo: string) => void
+}) {
+    return (
+        <motion.div
+            variants={itemVariants}
+            layout
+            className="group relative flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-green-50 hover:border-green-200 transition-all duration-150 cursor-pointer active:scale-[0.98]"
+            onClick={() => onSelect(account.examNo)}
+        >
+            {/* Avatar */}
+            <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                {getInitials(account.studentName)}
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate capitalize">
+                    {account.studentName.toLowerCase()}
+                </p>
+                <p className="text-xs text-gray-400 truncate font-mono uppercase">
+                    {account.examNo}
+                </p>
+            </div>
+
+            {/* Time + arrow */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className="text-[10px] text-gray-400">{timeAgo(account.lastAccessed)}</span>
+                <IoChevronForward className="w-3.5 h-3.5 text-gray-300 group-hover:text-green-500 transition-colors" />
+            </div>
+
+            {/* Remove button */}
+            <button
+                onClick={e => { e.stopPropagation(); onRemove(account.examNo) }}
+                aria-label="Remove account"
+                className="absolute top-1.5 group-hover:-top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-300 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150 shadow-sm cursor-pointer"
+            >
+                <IoClose className="w-3 h-3" />
+            </button>
+        </motion.div>
+    )
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function UBEATLoginPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
+
     const [examNo, setExamNo] = useState('')
     const [error, setError] = useState('')
-    
-    // Read form type from URL search params
+    const [showAllAccounts, setShowAllAccounts] = useState(false)
+
     const showAlternativeForm = searchParams.get('form') === 'alternative'
-    
-    // Alternative form states
+
     const [altFormData, setAltFormData] = useState<AlternativeFormData>({
         fullName: '',
-        schoolName: {
-            id: "",
-            name: ""
-        },
+        schoolName: { id: '', name: '' },
         lga: '',
-        examYear: new Date().getFullYear().toString()
+        examYear: new Date().getFullYear().toString(),
     })
-    // RTK Query hooks
-    const [getUBEATResult, { isLoading, isFetching: isFetchingResult }] = useLazyGetUBEATResultQuery();
-    const [findUBEATResult, { isLoading: isFindingResult }] = useFindUBEATResultMutation()
-    
-    // Combined loading state for alternative form
-    const isProcessingPayment = isFindingResult
 
-    // Fetch school names based on selected LGA
-    const { data: schoolNames, isLoading: isLoadingSchoolNames, isFetching } = useGetSchoolNamesQuery(
-        { lga: altFormData.lga },
-        { skip: !altFormData.lga }
+    // ── Recent accounts (persisted) ───────────────────────────────────────────
+    const [recentAccounts, setRecentAccounts] = useLocalStorage<RecentAccount[]>(
+        'ubeat_recent_accounts',
+        [],
     )
 
-    // Memoized school names list
-    const schoolNamesList = useMemo(() => {
-        if (!schoolNames) return []
-        return schoolNames
-    }, [schoolNames])
+    const syncRecentAccount = useCallback((account: RecentAccount) => {
+        setRecentAccounts(prev => {
+            const existing = (prev ?? []).filter(a => a.examNo !== account.examNo)
+            return [account, ...existing].slice(0, MAX_RECENT_ACCOUNTS)
+        })
+    }, [setRecentAccounts])
 
-    // LGA options for dropdown
-    const lgaOptions = useMemo(() => {
-        return IMO_STATE_LGAS.map(lga => ({ value: lga, label: lga }))
-    }, [])
+    const removeRecentAccount = useCallback((examNo: string) => {
+        setRecentAccounts(prev => (prev ?? []).filter(a => a.examNo !== examNo))
+    }, [setRecentAccounts])
+
+    const clearAllRecentAccounts = useCallback(() => {
+        setRecentAccounts([])
+    }, [setRecentAccounts])
+
+    const allAccounts = recentAccounts ?? []
+    const hasRecentAccounts = allAccounts.length > 0
+    const hasMore = allAccounts.length > 1
+    // Always show the most-recently-accessed first (already sorted by syncRecentAccount)
+    const visibleAccounts = showAllAccounts ? allAccounts : allAccounts.slice(0, 1)
+
+    // ── RTK Query ─────────────────────────────────────────────────────────────
+    const [getUBEATResult, { isLoading, isFetching: isFetchingResult }] = useLazyGetUBEATResultQuery()
+    const [findUBEATResult, { isLoading: isFindingResult }] = useFindUBEATResultMutation()
+    const isProcessingPayment = isFindingResult
+
+    const { data: schoolNames, isLoading: isLoadingSchoolNames, isFetching } = useGetSchoolNamesQuery(
+        { lga: altFormData.lga },
+        { skip: !altFormData.lga },
+    )
+
+    const schoolNamesList = useMemo(() => schoolNames ?? [], [schoolNames])
+    const lgaOptions = useMemo(() => IMO_STATE_LGAS.map(lga => ({ value: lga, label: lga })), [])
 
     const debouncedExamNo = useDebounce(examNo, 500)
+    const canProceed = debouncedExamNo.length >= 10 && isValidExamNo(debouncedExamNo)
 
-    const canProceed = debouncedExamNo.length >= 10 && (EXAM_NO_REGEX.test(debouncedExamNo) || EXAM_NO_REGEX_02.test(debouncedExamNo) || EXAM_NO_REGEX_03.test(debouncedExamNo))
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
     const isMaintenanceMode = !API_BASE_URL
 
-    // Check if alternative form is valid
-    const isAltFormValid = altFormData.fullName.trim().length >= 3 &&
+    const isAltFormValid =
+        altFormData.fullName.trim().length >= 3 &&
         altFormData.schoolName.id.trim().length >= 3 &&
         altFormData.lga.trim().length >= 2 &&
         altFormData.examYear.trim().length === 4 &&
         !isLoadingSchoolNames &&
         !isFetching
 
+    // ── Handlers ──────────────────────────────────────────────────────────────
+
     const handleLogin = async (e: React.FormEvent) => {
-        if (isFetchingResult || isLoading || !canProceed) return;
+        if (isFetchingResult || isLoading || !canProceed) return
         e.preventDefault()
         setError('')
 
-        if (!examNo.trim()) {
-            setError('Oops! Please enter your exam number to continue')
-            return
-        }
-
-        // Validate exam number format
-        if (!EXAM_NO_REGEX.test(examNo) && !EXAM_NO_REGEX_02.test(examNo) && !EXAM_NO_REGEX_03.test(examNo)) {
-            setError('Hmm, that doesn\'t look right. Please use format: xx/000/000 or xx/000/000(0) (e.g., ok/977/2025 or ok/977/2025(1))')
+        if (!examNo.trim()) { setError('Please enter your exam number to continue'); return }
+        if (!isValidExamNo(examNo)) {
+            setError("Invalid format. Try: ok/977/2025/001")
             return
         }
 
         try {
-            const result = await getUBEATResult(examNo).unwrap();
+            const result = await getUBEATResult(examNo).unwrap()
 
-            // Validate data structure
-            if (!result || !result.examNumber || !result.studentName) {
-                console.error('Invalid data structure:', result)
-                setError('We couldn\'t load your results. Please try again or contact support.')
+            if (!result?.examNumber || !result?.studentName) {
+                setError("Couldn't load your results. Please try again.")
                 return
             }
 
-            // Store only exam number and exam type (data will be fetched via RTK Query in dashboard)
+            syncRecentAccount({
+                examNo: examNo,
+                studentName: result.studentName,
+                school: result.schoolName ?? result.school ?? '',
+                lastAccessed: Date.now(),
+            })
+
             localStorage.setItem('student_exam_no', examNo)
             localStorage.setItem('selected_exam_type', 'ubeat')
 
             toast.success(`Welcome ${result.studentName}! Loading your results... 🎉`)
             router.push('/student-portal/ubeat/dashboard')
         } catch (error: unknown) {
-            const errorObject = error as { status: string | number }
-            console.error('Login error:', error)
+            const err = error as { status: string | number }
+            if (err.status === 404) setError("We couldn't find your results. Check your exam number.")
+            else if (err.status === 400) setError("This exam number doesn't look valid.")
+            else if (err.status === 500) setError("Our system is having a moment. Try again shortly.")
+            else if (err.status === 'FETCH_ERROR') setError("No internet connection. Please check and retry.")
+            else setError("Something went wrong. Please try again.")
+        }
+    }
 
-            // Handle RTK Query errors
-            if (errorObject.status === 404) {
-                setError('We couldn\'t find your results. Please check your exam number and try again.')
-            } else if (errorObject.status === 400) {
-                setError('This exam number doesn\'t seem valid. Please double-check and try again.')
-            } else if (errorObject.status === 500) {
-                setError('Our system is having a moment. Please try again in a few minutes.')
-            } else if (errorObject.status === 'FETCH_ERROR') {
-                setError('Network error: Unable to connect to server. Please check your internet connection.')
-            } else if (errorObject.status === 'PARSING_ERROR') {
-                setError('Server returned invalid data. Please try again.')
-            } else {
-                setError('We\'re having trouble connecting. Please check your internet and try again.')
+    const handleSelectRecent = async (selectedExamNo: string) => {
+        setExamNo(selectedExamNo)
+        setError('')
+
+        try {
+            const result = await getUBEATResult(selectedExamNo).unwrap()
+            if (!result?.examNumber || !result?.studentName) {
+                setError("Couldn't load results for this account.")
+                return
             }
+
+            syncRecentAccount({
+                examNo: selectedExamNo,
+                studentName: result.studentName,
+                school: result.schoolName ?? result.school ?? '',
+                lastAccessed: Date.now(),
+            })
+
+            localStorage.setItem('student_exam_no', selectedExamNo)
+            localStorage.setItem('selected_exam_type', 'ubeat')
+            toast.success(`Welcome back, ${result.studentName}! 🎉`)
+            router.push('/student-portal/ubeat/dashboard')
+        } catch {
+            setError("Couldn't load this account. Try entering the exam number manually.")
         }
     }
 
     const handleAlternativeFormSubmit = async (e: React.FormEvent) => {
-        if (isFindingResult) return;
-
+        if (isFindingResult) return
         e.preventDefault()
         setError('')
 
         if (!isAltFormValid) {
-            const errorMsg = 'Please fill in all fields correctly'
-            setError(errorMsg)
-            toast.error(errorMsg)
-            return
+            const msg = 'Please fill in all fields correctly'
+            setError(msg); toast.error(msg); return
         }
 
         try {
@@ -186,222 +302,231 @@ export default function UBEATLoginPage() {
                 schoolId: altFormData.schoolName.id,
                 examYear: parseInt(altFormData.examYear),
                 studentName: altFormData.fullName,
-                lga: altFormData.lga
+                lga: altFormData.lga,
             }).unwrap()
 
-            // Type assertion to help TypeScript understand the full interface
-            const fullResult = result as { paymentUrl: string, paymentReference: string }
-            
-            // Validate response has required data
+            const fullResult = result as { paymentUrl: string; paymentReference: string }
+
             if (!fullResult.paymentUrl || !fullResult.paymentReference) {
-                console.error('Invalid payment response:', fullResult)
-                const errorMsg = 'Payment information not available. Please try again or contact support.'
-                setError(errorMsg)
-                toast.error(errorMsg)
-                return
+                const msg = 'Payment information unavailable. Please try again.'
+                setError(msg); toast.error(msg); return
             }
 
-            // Store payment details and student data for payment page
             localStorage.setItem('ubeat_alt_form_data', JSON.stringify({
                 fullName: altFormData.fullName,
                 school: altFormData.schoolName,
                 lga: altFormData.lga,
-                examYear: altFormData.examYear
+                examYear: altFormData.examYear,
             }))
-            
-            // Store exam number for after payment if available
             localStorage.setItem('selected_exam_type', 'ubeat')
 
             toast.success('Data retrieved successfully!')
-            
+
             if (fullResult.paymentUrl.toLowerCase().includes('ubeat')) {
                 router.push(`${fullResult.paymentUrl}?trxref=${fullResult.paymentReference}&reference=${fullResult.paymentReference}`)
-                return;
+                return
             }
-            
-            // ALWAYS redirect to payment page
             router.push('/student-portal/ubeat/payment')
         } catch (error: unknown) {
-            const errorObject = error as { status: string | number; data?: { message?: string } }
-            console.error('Find result error:', error)
-
-            let errorMsg = ''
-            
-            // Handle RTK Query errors
-            if (errorObject.status === 404) {
-                errorMsg = 'We couldn\'t find your results with the provided information. Please check your details and try again.'
-            } else if (errorObject.status === 400) {
-                errorMsg = errorObject.data?.message || 'Invalid information provided. Please double-check your details.'
-            } else if (errorObject.status === 500) {
-                errorMsg = 'Our system is having a moment. Please try again in a few minutes.'
-            } else if (errorObject.status === 'FETCH_ERROR') {
-                errorMsg = 'Network error: Unable to connect to server. Please check your internet connection.'
-            } else if (errorObject.status === 'PARSING_ERROR') {
-                errorMsg = 'Server returned invalid data. Please try again.'
-            } else {
-                errorMsg = 'We\'re having trouble finding your results. Please check your information and try again.'
-            }
-            
-            setError(errorMsg)
-            toast.error(errorMsg)
+            const err = error as { status: string | number; data?: { message?: string } }
+            let msg = ''
+            if (err.status === 404) msg = "Couldn't find results with that info. Check your details."
+            else if (err.status === 400) msg = err.data?.message ?? 'Invalid information provided.'
+            else if (err.status === 500) msg = 'Our system is having a moment. Try again shortly.'
+            else if (err.status === 'FETCH_ERROR') msg = 'No internet connection.'
+            else msg = "Couldn't find your results. Check your information."
+            setError(msg); toast.error(msg)
         }
     }
 
     const toggleForm = () => {
         const params = new URLSearchParams(searchParams.toString())
-
-        if (showAlternativeForm) {
-            // Going back to exam number form - remove the param
-            params.delete('form')
-        } else {
-            // Going to alternative form - add the param
-            params.set('form', 'alternative')
-        }
-
-        // Update URL with new params
+        if (showAlternativeForm) params.delete('form')
+        else params.set('form', 'alternative')
         router.push(`?${params.toString()}`)
-
-        // Reset form states
-        setError('')
-        setExamNo('')
-        setAltFormData({
-            fullName: '',
-            schoolName: {
-                id: "",
-                name: ""
-            },
-            lga: '',
-            examYear: new Date().getFullYear().toString()
-        })
+        setError(''); setExamNo('')
+        setAltFormData({ fullName: '', schoolName: { id: '', name: '' }, lga: '', examYear: new Date().getFullYear().toString() })
     }
+
+    // ── Render ────────────────────────────────────────────────────────────────
 
     return (
         <div className="min-h-screen bg-[#F3F3F3] flex flex-col relative overflow-hidden">
-            <div className='absolute h-full w-full inset-0 z-[0]'>
+            <div className="absolute h-full w-full inset-0 z-[0]">
                 <Image
                     src="/images/asset.png"
                     alt="pattern background"
                     fill
-                    className='object-cover hue-rotate-[0deg] saturate-200 brightness-[0.75] scale-x-[-1]'
-                    title='pattern background'
+                    className="object-cover hue-rotate-[0deg] saturate-200 brightness-[0.75] scale-x-[-1]"
+                    title="pattern background"
                 />
             </div>
-            {/* Lottie Animation - Bottom Right */}
+
+            {/* Lottie */}
             <div className="fixed inset-0 h-screen w-screen flex animate-fadeIn-y sm:justify-end justify-center items-end pointer-events-none">
                 <Lottie
                     animationData={animationData}
-                    loop={true}
-                    autoPlay={true}
-                    className='max-sm:hidden mb-5'
-                    style={{
-                        height: '40vmin',
-                    }}
+                    loop autoPlay
+                    className="max-sm:hidden mb-5"
+                    style={{ height: '40vmin' }}
                 />
             </div>
 
             {/* Ministry Header */}
-            {isMaintenanceMode ? null : <header className="w-full pt-8 pb-6 px-4 relative z-20">
-                <div className="flex flex-col justify-center gap-3 items-center">
-                    <Link href="/student-portal">
-                        <Image
-                            src="/images/ministry-logo.png"
-                            alt="logo"
-                            width={60}
-                            height={60}
-                            className='object-contain'
-                            title='Imo State Ministry of Primary and Secondary Education logo'
-                        />
-                    </Link>
-                    <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                            <span className='text-2xl md:text-3xl font-bold'>
-                                <abbr title="Universal Basic Education Achievement Test" className="no-underline">UBEAT</abbr>
-                            </span>
+            {!isMaintenanceMode && (
+                <header className="w-full pt-8 pb-6 px-4 relative z-20">
+                    <div className="flex flex-col justify-center gap-3 items-center">
+                        <Link href="/student-portal">
+                            <Image
+                                src="/images/ministry-logo.png"
+                                alt="logo"
+                                width={60}
+                                height={60}
+                                className="object-contain"
+                                title="Imo State Ministry of Primary and Secondary Education logo"
+                            />
+                        </Link>
+                        <div className="text-center">
+                            <div className="flex items-center justify-center gap-2 mb-1">
+                                <span className="text-2xl md:text-3xl font-bold">
+                                    <abbr title="Universal Basic Education Achievement Test" className="no-underline">UBEAT</abbr>
+                                </span>
+                            </div>
+                            <p className="text-sm md:text-base text-gray-600 max-w-md">
+                                Universal Basic Education Achievement Test
+                            </p>
                         </div>
-                        <p className='text-sm md:text-base text-gray-600 max-w-md'>
-                            Universal Basic Education Achievement Test
-                        </p>
                     </div>
-                </div>
-            </header>}
+                </header>
+            )}
 
             <div className="flex-1 flex items-center justify-center p-4">
                 <div className="w-full max-w-md relative z-10">
                     {isMaintenanceMode ? (
-                        /* Maintenance Mode Card */
+                        /* ── Maintenance Card ── */
                         <div className="bg-white rounded-2xl shadow-xl border border-orange-200 p-8 animate-fadeIn-y">
                             <div className="text-center">
-                                <Image
-                                    src="/images/ministry-logo.png"
-                                    alt="logo"
-                                    width={50}
-                                    height={50}
-                                    className='object-contain mx-auto mb-6'
-                                    title='Imo State Ministry of Primary and Secondary Education logo'
-                                />
-                                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                                    System Maintenance
-                                </h2>
+                                <Image src="/images/ministry-logo.png" alt="logo" width={50} height={50} className="object-contain mx-auto mb-6" />
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">System Maintenance</h2>
                                 <p className="text-sm text-gray-600 mb-6">
-                                    We&apos;re currently performing scheduled maintenance to improve your experience. The student portal will be back online shortly.
+                                    We&apos;re performing scheduled maintenance. The student portal will be back online shortly.
                                 </p>
                                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                                    <p className="text-sm text-orange-800 animate-pulse">
-                                        Please check back in a few hours.
-                                    </p>
+                                    <p className="text-sm text-orange-800 animate-pulse">Please check back in a few hours.</p>
                                 </div>
                             </div>
-
-                            {/* Footer */}
                             <div className="mt-6 pt-6 border-t border-gray-200">
-                                <p className="text-xs text-center text-gray-500">
-                                    Thank you for your patience and understanding.
-                                </p>
+                                <p className="text-xs text-center text-gray-500">Thank you for your patience.</p>
                             </div>
                         </div>
                     ) : (
-                        /* Login Card */
+                        /* ── Login Card ── */
                         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 animate-fadeIn-y hover:shadow-2xl transition-all duration-300">
                             <div className="mb-6">
-                                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                                    Welcome, Student! 👋
-                                </h2>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome, Student! 👋</h2>
                                 <p className="text-sm text-gray-600">
                                     {showAlternativeForm
-                                        ? "Don't worry! You can still access your UBEAT results by providing your basic information below."
-                                        : "We're excited to share your UBEAT (Universal Basic Education Achievement Test) results with you. Simply enter your exam number below to get started."
+                                        ? "Don't worry! Access your UBEAT results by providing your basic information below."
+                                        : "Enter your exam number below to view your UBEAT results."
                                     }
                                 </p>
                             </div>
 
                             {!showAlternativeForm ? (
-                                /* Standard Exam Number Form */
-                                <form onSubmit={handleLogin} className="space-y-6">
-                                    {/* Exam Number Input */}
+                                <form onSubmit={handleLogin} className="space-y-5">
+
+                                    {/* ── Recent Accounts ── */}
+                                    <AnimatePresence>
+                                        {hasRecentAccounts && (
+                                            <motion.div
+                                                key="recent"
+                                                variants={sectionVariants}
+                                                initial="hidden"
+                                                animate="show"
+                                                exit="exit"
+                                                className="overflow-hidden px-1.5"
+                                            >
+                                                <div className="mb-2 flex items-center justify-between">
+                                                    <span className="flex items-center gap-1.5 text-xs font-medium text-gray-500 tracking-wider">
+                                                        Recent accounts
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={clearAllRecentAccounts}
+                                                        className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                                                    >
+                                                        <IoTrashOutline className="w-3 h-3" />
+                                                        Clear all
+                                                    </button>
+                                                </div>
+
+                                                {/* Visible accounts (1 by default, all when expanded) */}
+                                                <motion.div
+                                                    className="space-y-2"
+                                                    variants={listVariants}
+                                                    initial="hidden"
+                                                    animate="show"
+                                                >
+                                                    {visibleAccounts.map(account => (
+                                                        <RecentAccountCard
+                                                            key={account.examNo}
+                                                            account={account}
+                                                            onSelect={handleSelectRecent}
+                                                            onRemove={removeRecentAccount}
+                                                        />
+                                                    ))}
+                                                </motion.div>
+
+                                                {/* See more / See less toggle */}
+                                                {hasMore && (
+                                                    <motion.button
+                                                        type="button"
+                                                        onClick={() => setShowAllAccounts(v => !v)}
+                                                        className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-gray-400 hover:text-green-600 transition-colors cursor-pointer rounded-lg hover:bg-green-50"
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        transition={{ delay: 0.15 }}
+                                                    >
+                                                        {showAllAccounts ? (
+                                                            <><IoChevronUp className="w-3.5 h-3.5" />See less</>
+                                                        ) : (
+                                                            <><IoChevronDown className="w-3.5 h-3.5" />{allAccounts.length - 1} more account{allAccounts.length - 1 !== 1 ? 's' : ''}</>
+                                                        )}
+                                                    </motion.button>
+                                                )}
+
+                                                {/* Divider */}
+                                                <div className="flex items-center gap-3 my-4">
+                                                    <div className="flex-1 h-px bg-gray-100" />
+                                                    <span className="text-xs text-gray-400">or enter manually</span>
+                                                    <div className="flex-1 h-px bg-gray-100" />
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    {/* ── Exam Number Input ── */}
                                     <div className="group">
                                         <label htmlFor="examNo" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
                                             Your Exam Number
                                         </label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <IoPersonCircle className="h-5 w-5 text-gray-400 group-hover:text-green-500 group-hover:scale-110 transition-all duration-200" />
+                                                <IoPersonCircle className="h-5 w-5 text-gray-400 group-hover:text-green-500 transition-all duration-200" />
                                             </div>
                                             <input
                                                 type="text"
                                                 id="examNo"
                                                 value={examNo}
-                                                onChange={(e) => {
-                                                    setExamNo(e.target.value.toLowerCase())
-                                                    setError('')
-                                                }}
+                                                onChange={e => { setExamNo(e.target.value.toLowerCase()); setError('') }}
                                                 placeholder="e.g., ok/977/2025/001"
                                                 className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200 uppercase ${error
-                                                    ? 'border-red-300 bg-red-50'
-                                                    : debouncedExamNo && !canProceed && debouncedExamNo.length > 0
-                                                        ? 'border-yellow-300 bg-yellow-50'
-                                                        : canProceed
-                                                            ? 'border-green-300 bg-green-50'
-                                                            : 'border-gray-300'
+                                                        ? 'border-red-300 bg-red-50'
+                                                        : debouncedExamNo && !canProceed && debouncedExamNo.length > 0
+                                                            ? 'border-yellow-300 bg-yellow-50'
+                                                            : canProceed
+                                                                ? 'border-green-300 bg-green-50'
+                                                                : 'border-gray-300'
                                                     }`}
                                                 disabled={isLoading}
                                             />
@@ -413,58 +538,42 @@ export default function UBEATLoginPage() {
                                                 </div>
                                             )}
                                         </div>
+
+                                        {/* Inline validation feedback */}
                                         {error ? (
                                             <p className="mt-2 text-sm text-red-600 flex items-center gap-1 animate-fadeIn-y">
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                                </svg>
+                                                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
                                                 {error}
                                             </p>
                                         ) : debouncedExamNo && !canProceed && debouncedExamNo.length > 0 ? (
                                             <p className="mt-2 text-sm text-yellow-600 flex items-center gap-1 animate-fadeIn-y">
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                </svg>
+                                                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                                                 Invalid format (e.g., ok/977/2025/001)
                                             </p>
                                         ) : canProceed ? (
                                             <p className="mt-2 text-sm text-green-600 flex items-center gap-1 animate-fadeIn-y">
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                </svg>
+                                                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                                                 Ready to view your results!
                                             </p>
                                         ) : (
-                                            <p className="mt-2 text-xs text-gray-500">
-                                                Format: xx/xxx/xxxx/xxx (e.g., ok/977/2025/001)
-                                            </p>
+                                            <p className="mt-2 text-xs text-gray-500">Format: xx/xxx/xxxx/xxx (e.g., ok/977/2025/001)</p>
                                         )}
                                     </div>
 
-                                    {/* Login Button */}
+                                    {/* Submit */}
                                     <button
                                         type="submit"
                                         disabled={isLoading || !canProceed || isFetchingResult}
-                                        className={
-                                            `w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer group
-                                             ${isLoading || !canProceed ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_4px_rgba(0,0,0,0.25)] active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2'}
-                                             `
-                                        }
+                                        className={`w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer group ${isLoading || !canProceed ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_4px_rgba(0,0,0,0.25)] active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2'
+                                            }`}
                                     >
                                         {(isLoading || isFetchingResult) ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                                Loading your results...
-                                            </>
+                                            <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />Loading your results...</>
                                         ) : (
-                                            <>
-                                                <IoLockClosed className={`w-5 h-5 mr-2 ${(isLoading || isFetchingResult || !canProceed) ? '' : 'group-hover:animate-pulse'}`} />
-                                                View My Results
-                                            </>
+                                            <><IoLockClosed className="w-5 h-5 mr-2 group-hover:animate-pulse" />View My Results</>
                                         )}
                                     </button>
 
-                                    {/* Toggle to Alternative Form */}
                                     <div className="text-center">
                                         <button
                                             type="button"
@@ -476,28 +585,15 @@ export default function UBEATLoginPage() {
                                     </div>
                                 </form>
                             ) : (
-                                /* Alternative Form (Name, School, LGA, Year) */
+                                /* ── Alternative Form ── */
                                 <form onSubmit={handleAlternativeFormSubmit} className="space-y-4">
-                                    {/* Error Message */}
                                     {error && (
                                         <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-shake">
                                             <div className="flex gap-3">
-                                                <div className="flex-shrink-0">
-                                                    <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                                    </svg>
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-medium text-red-800">{error}</p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setError('')}
-                                                    className="flex-shrink-0 text-red-400 hover:text-red-600 transition-colors"
-                                                >
-                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                                    </svg>
+                                                <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                                                <p className="text-sm font-medium text-red-800 flex-1">{error}</p>
+                                                <button type="button" onClick={() => setError('')} className="text-red-400 hover:text-red-600">
+                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
                                                 </button>
                                             </div>
                                         </div>
@@ -505,9 +601,7 @@ export default function UBEATLoginPage() {
 
                                     {/* Full Name */}
                                     <div className="group">
-                                        <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-                                            Full Name
-                                        </label>
+                                        <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <IoPersonCircle className="h-5 w-5 text-gray-400" />
@@ -516,10 +610,7 @@ export default function UBEATLoginPage() {
                                                 type="text"
                                                 id="fullName"
                                                 value={altFormData.fullName}
-                                                onChange={(e) => {
-                                                    setAltFormData({ ...altFormData, fullName: e.target.value })
-                                                    if (error) setError('')
-                                                }}
+                                                onChange={e => { setAltFormData({ ...altFormData, fullName: e.target.value }); if (error) setError('') }}
                                                 placeholder="Enter your full name"
                                                 className="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200 capitalize"
                                                 disabled={isProcessingPayment}
@@ -529,53 +620,42 @@ export default function UBEATLoginPage() {
 
                                     {/* LGA */}
                                     <div className="group relative">
-                                        <label htmlFor="lga" className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Local Government Area (LGA) <span className="text-red-500">*</span>
                                         </label>
                                         <CustomDropdown
                                             options={lgaOptions}
                                             value={altFormData.lga}
-                                            onChange={(value) => {
-                                                setAltFormData({ ...altFormData, lga: value, schoolName: {id:'', name: ''} })
-                                                if (error) setError('')
-                                            }}
+                                            onChange={value => { setAltFormData({ ...altFormData, lga: value, schoolName: { id: '', name: '' } }); if (error) setError('') }}
                                             placeholder="Select LGA"
                                         />
                                     </div>
 
                                     {/* School Name */}
                                     <div className="group relative">
-                                        <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
                                             School Name <span className="text-red-500">*</span>
                                         </label>
                                         {(isLoadingSchoolNames || isFetching) ? (
                                             <div className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                                                    {altFormData.lga ? <span className="text-gray-500">Loading {altFormData.lga} schools...</span> : <span className="text-gray-500">Loading schools...</span>}
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600" />
+                                                    <span className="text-gray-500">{altFormData.lga ? `Loading ${altFormData.lga} schools...` : 'Loading schools...'}</span>
                                                 </div>
                                             </div>
                                         ) : !altFormData.lga ? (
-                                            <div className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-500">
-                                                Please select an LGA first
-                                            </div>
+                                            <div className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-500">Please select an LGA first</div>
                                         ) : schoolNamesList.length === 0 ? (
-                                            <div className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-500">
-                                                No schools available for the selected LGA
-                                            </div>
+                                            <div className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-500">No schools available for this LGA</div>
                                         ) : (
                                             <CustomDropdown
                                                 options={schoolNamesList.map(school => ({
                                                     value: school._id,
-                                                    label: String(school.schoolName).startsWith('"') ? String(school.schoolName).slice(1) : school.schoolName
+                                                    label: String(school.schoolName).startsWith('"') ? String(school.schoolName).slice(1) : school.schoolName,
                                                 }))}
                                                 value={altFormData.schoolName.id}
-                                                onChange={(value) => {
-                                                    console.log({school: value})
-                                                    setAltFormData({ ...altFormData, schoolName: {
-                                                        id: value,
-                                                        name: schoolNamesList.find(school => school._id === value)?.schoolName!
-                                                    } })
+                                                onChange={value => {
+                                                    setAltFormData({ ...altFormData, schoolName: { id: value, name: schoolNamesList.find(s => s._id === value)?.schoolName! } })
                                                     if (error) setError('')
                                                 }}
                                                 placeholder="Select a school"
@@ -587,9 +667,7 @@ export default function UBEATLoginPage() {
 
                                     {/* Exam Year */}
                                     <div className="group">
-                                        <label htmlFor="examYear" className="block text-sm font-medium text-gray-700 mb-2">
-                                            Exam Year
-                                        </label>
+                                        <label htmlFor="examYear" className="block text-sm font-medium text-gray-700 mb-2">Exam Year</label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <IoCalendarOutline className="h-5 w-5 text-gray-400" />
@@ -598,10 +676,7 @@ export default function UBEATLoginPage() {
                                                 type="text"
                                                 id="examYear"
                                                 value={altFormData.examYear}
-                                                onChange={(e) => {
-                                                    setAltFormData({ ...altFormData, examYear: e.target.value })
-                                                    if (error) setError('')
-                                                }}
+                                                onChange={e => { setAltFormData({ ...altFormData, examYear: e.target.value }); if (error) setError('') }}
                                                 placeholder="e.g., 2025"
                                                 maxLength={4}
                                                 className="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200"
@@ -610,46 +685,28 @@ export default function UBEATLoginPage() {
                                         </div>
                                     </div>
 
-                                    {/* Payment Info Banner */}
+                                    {/* Payment Info */}
                                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                         <div className="flex gap-3">
-                                            <div className="flex-shrink-0">
-                                                <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                                </svg>
-                                            </div>
+                                            <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
                                             <div>
                                                 <p className="text-sm font-medium text-blue-900 mb-1">Payment Required</p>
-                                                <p className="text-xs text-blue-700">
-                                                    A small fee of ₦500 is required to access your results using this method. You&apos;ll be redirected to our secure payment gateway.
-                                                </p>
+                                                <p className="text-xs text-blue-700">A fee of ₦500 is required for this method. You&apos;ll be redirected to our secure payment gateway.</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Submit Button */}
                                     <button
                                         type="submit"
                                         disabled={isProcessingPayment || !isAltFormValid}
-                                        className={
-                                            `w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer active:opacity-90
-                                             ${isProcessingPayment || !isAltFormValid ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_4px_rgba(0,0,0,0.25)] active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2'}
-                                             `
-                                        }
+                                        className={`w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer ${isProcessingPayment || !isAltFormValid ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_4px_rgba(0,0,0,0.25)] active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2'
+                                            }`}
                                     >
                                         {isProcessingPayment ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                                Finding your results...
-                                            </>
-                                        ) : (
-                                            <>
-                                                Find My Results
-                                            </>
-                                        )}
+                                            <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />Finding your results...</>
+                                        ) : 'Find My Results'}
                                     </button>
 
-                                    {/* Toggle back to Exam Number Form */}
                                     <div className="text-center">
                                         <button
                                             type="button"
@@ -667,7 +724,11 @@ export default function UBEATLoginPage() {
                             {!isMaintenanceMode && (
                                 <div className="mt-6 pt-6 border-t border-gray-200">
                                     <p className="text-xs text-center text-gray-500">
-                                        Go back to the <Link href="/student-portal" className="text-green-600 hover:text-green-700 font-medium transition-all duration-150 cursor-pointer active:scale-95 active:opacity-80">exam selection</Link> page.
+                                        Go back to the{' '}
+                                        <Link href="/student-portal" className="text-green-600 hover:text-green-700 font-medium transition-all duration-150 cursor-pointer">
+                                            exam selection
+                                        </Link>{' '}
+                                        page.
                                     </p>
                                 </div>
                             )}
@@ -675,18 +736,19 @@ export default function UBEATLoginPage() {
                     )}
 
                     {!isMaintenanceMode && !showAlternativeForm && (
-                        /* Info Box */
-                        <div className="mt-6 bg-linear-to-b from-white to-green-100 border border-green-200 rounded-2xl p-4 hover:bg-green-100 hover:border-green-300 transition-all duration-300 group">
+                        <div className="mt-6 bg-linear-to-b from-white to-green-100 border border-green-200 rounded-2xl p-4 hover:bg-green-100 hover:border-green-300 transition-all duration-300">
                             <p className="text-sm text-green-800">
                                 <strong>📝 Note:</strong> Use your official UBEAT exam number from your school.
                             </p>
                         </div>
                     )}
 
-                    {/* Copyright Footer */}
                     <div className="mt-6 text-center">
                         <p className="text-xs text-gray-600">
-                            © {new Date().getFullYear()} <Link href="/" target="_blank" className="text-gray-500 hover:text-gray-700 hover:underline">Imo State Ministry of Primary and Secondary Education</Link>
+                            © {new Date().getFullYear()}{' '}
+                            <Link href="/" target="_blank" className="text-gray-500 hover:text-gray-700 hover:underline">
+                                Imo State Ministry of Primary and Secondary Education
+                            </Link>
                         </p>
                     </div>
                 </div>
