@@ -70,7 +70,7 @@ export default function StudentsPage() {
     return (
         <div className='p-6 bg-white/50 backdrop-blur-[2px] h-full overflow-y-auto border border-black/10 m-1 mb-0 space-y-6'>
             <StudentTableHeader
-                schoolCount={schools.length || 0}
+                schoolCount={pagination.totalItems || 0}
             />
             <SearchBar
                 searchQuery={localSearch}

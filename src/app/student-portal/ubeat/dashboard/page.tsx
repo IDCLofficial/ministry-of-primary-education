@@ -13,6 +13,7 @@ import { useGetUBEATResultQuery } from '../../store/api/studentApi'
 import Lottie from 'lottie-react'
 import celebrationData from "./components/CelebrationLolo.json";
 import { useMedia } from 'react-use'
+import PortalHeader from '../../components/Portalheader'
 
 export default function UBEATDashboard() {
     const isMobile = useMedia('(max-width: 1000px)')
@@ -183,16 +184,20 @@ export default function UBEATDashboard() {
     // Show loading
     if (isLoading || !examNo) {
         return (
-            <div className="min-h-screen bg-linear-to-br from-green-50/30 via-white to-pink-50/30">
+            <div className="min-h-screen bg-gradient-to-br from-green-50/30 via-white to-blue-50/30">
                 <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center">
-                                <IoSchool className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-base font-bold text-gray-900">UBEAT Results</h1>
-                                <p className="text-xs text-gray-600">Your achievement awaits</p>
+                            <Image
+                                src={"/images/ministry-logo.png"}
+                                width={40}
+                                height={40}
+                                alt="BECE Results"
+                                className="h-10 w-auto object-contain flex-shrink-0"
+                            />
+                            <div className='pl-4 border-l border-l-gray-100 animate-pulse'>
+                                <h1 className="text-sm font-semibold text-gray-900">Loading your data</h1>
+                                <p className="text-xs text-gray-600">Please wait while we fetch your results</p>
                             </div>
                         </div>
                     </div>
@@ -206,8 +211,8 @@ export default function UBEATDashboard() {
                                     <IoSparkles className="w-6 h-6 text-green-600 animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Almost there!</h3>
-                            <p className="text-base text-gray-600">Loading your results...</p>
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">Almost there!</h3>
+                            <p className="text-base text-gray-600 animate-pulse">Loading your results...</p>
                         </div>
                     </div>
                 </main>
@@ -318,67 +323,48 @@ export default function UBEATDashboard() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50/30 via-white to-pink-50/30 print:bg-white">
             {/* Header */}
-            <header className="bg-white border-b border-gray-100 sticky top-0 z-50 print:hidden">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                    {/* Logo */}
-                    <div className="flex items-center gap-3">
-                        <Image
-                            src="/images/ministry-logo.png"
-                            width={40}
-                            height={40}
-                            alt="Ministry Logo"
-                            className="h-10 w-auto object-contain"
-                        />
-                        <div className="border-l border-gray-200 pl-3">
-                            <h1 className="text-sm font-semibold text-gray-900">Your UBEAT Results</h1>
-                            <p className="text-xs text-gray-600">Well done on your hard work!</p>
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={handlePrint}
-                            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-all cursor-pointer"
-                        >
-                            <IoPrint className="w-4 h-4" />
-                            <span className="hidden md:inline">Print Results</span>
-                        </button>
-                        <button
-                            onClick={handleDownload}
-                            disabled={isDownloading}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isDownloading ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                    <span className="hidden md:inline">Downloading FSLC...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <IoDownload className="w-4 h-4" />
-                                    <span className="hidden md:inline">Download FSLC</span>
-                                </>
-                            )}
-                        </button>
-                        <button
-                            onClick={handleChangeExam}
-                            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all cursor-pointer"
-                            title="View other exam results"
-                        >
-                            <IoSwapHorizontal className="w-4 h-4" />
-                            <span className="hidden lg:inline">Switch Exam</span>
-                        </button>
-                        <button
-                            onClick={handleLogout}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all cursor-pointer"
-                        >
-                            <IoLogOut className="w-4 h-4" />
-                            <span className="hidden md:inline">Logout</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
+            <PortalHeader
+                title="Your UBEAT Results"
+                subtitle="Well done on your hard work!"
+                actions={[
+                    {
+                        key: 'print',
+                        label: 'Print Results',
+                        shortLabel: 'Print',
+                        icon: <IoPrint className="w-4 h-4" />,
+                        onClick: handlePrint,
+                        variant: 'ghost',
+                        hideOnMobileTray: true,
+                    },
+                    {
+                        key: 'download',
+                        label: 'Download FSLC',
+                        shortLabel: 'Download',
+                        icon: <IoDownload className="w-4 h-4" />,
+                        onClick: handleDownload,
+                        variant: 'primary',
+                        loading: isDownloading,
+                        loadingLabel: 'Downloading FSLC...',
+                    },
+                    {
+                        key: 'switch',
+                        label: 'Switch Exam',
+                        icon: <IoSwapHorizontal className="w-4 h-4" />,
+                        onClick: handleChangeExam,
+                        variant: 'secondary',
+                        hideOnMobileTray: true,
+                    },
+                    {
+                        key: 'logout',
+                        label: 'Logout',
+                        icon: <IoLogOut className="w-4 h-4" />,
+                        onClick: handleLogout,
+                        variant: 'ghost',
+                        hideOnMobileTray: true,
+                    },
+                ]
+                }
+            />
 
             {/* Main Content */}
             <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:py-0">
@@ -546,7 +532,7 @@ export default function UBEATDashboard() {
                             </div>
 
                             {/* Grade Legend */}
-                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 print:hidden">
                                 <p className="text-xs font-medium text-gray-500 mb-3">Grading Scale</p>
                                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
                                     <div className="flex items-center gap-2">
@@ -580,7 +566,7 @@ export default function UBEATDashboard() {
                 </div>
 
                 {/* Info Footer */}
-                <div className="bg-gradient-to-r from-pink-50 to-green-50 border border-green-100 rounded-3xl p-6 mb-6 print:hidden">
+                <div className="bg-gradient-to-b from-white to-green-50 border border-green-100 rounded-3xl p-6 mb-6 print:hidden">
                     <div className="flex items-start gap-4">
                         <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
                             <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -611,23 +597,23 @@ export default function UBEATDashboard() {
                     <div className="flex items-center justify-center mb-4">
                         <Image
                             src="/images/ministry-logo.png"
-                            width={80}
-                            height={80}
+                            width={60}
+                            height={60}
                             alt="Ministry Logo"
-                            className="h-20 w-auto object-contain"
+                            className="h-16 w-auto object-contain"
                         />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
                         Universal Basic Education Achievement Test (UBEAT)
                     </h1>
-                    <p className="text-xl text-gray-700">Official Results Document</p>
+                    <p className="text-lg text-gray-700">Official Results Document</p>
                     <p className="text-base text-gray-600 mt-2">
                         Academic Year {student.examYear || new Date().getFullYear()}
                     </p>
                 </div>
 
                 {/* Student Information */}
-                <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                <div className="bg-gray-50 rounded-2xl p-6 mb-6 border border-slate-200">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Student Information</h2>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -652,21 +638,20 @@ export default function UBEATDashboard() {
                 </div>
 
                 {/* Overall Performance */}
-                <div className="bg-green-50 rounded-lg p-6 mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Overall Performance</h2>
+                <div className="bg-green-50 rounded-2xl p-6 mb-6 border border-green-200">
                     <div className="grid grid-cols-3 gap-4 text-center">
                         <div>
-                            <p className="text-3xl font-bold text-green-600 capitalize">
+                            <p className="text-2xl font-bold text-green-600 capitalize">
                                 {student?.grade?.toLowerCase()}
                             </p>
                             <p className="text-sm text-gray-600">Grade</p>
                         </div>
                         <div>
-                            <p className="text-3xl font-bold">{averageScore}</p>
-                            <p className="text-sm text-gray-600">Score</p>
+                            <p className="text-2xl font-bold">{Math.round(averageScore)}</p>
+                            <p className="text-sm text-gray-600">Score ({averageScore})</p>
                         </div>
                         <div>
-                            <p className="text-3xl font-bold text-gray-900">{subjectsArray.length}</p>
+                            <p className="text-2xl font-bold text-gray-900">{subjectsArray.length}</p>
                             <p className="text-sm text-gray-600">Subjects</p>
                         </div>
                     </div>
@@ -702,9 +687,8 @@ export default function UBEATDashboard() {
                 </div>
 
                 {/* Footer */}
-                <div className="mt-8 pt-6 border-t-2 border-gray-200 text-center text-sm text-gray-600">
+                <div className="pt-2 text-center text-sm text-gray-600">
                     <p className="font-semibold text-gray-900">Imo State Ministry of Primary and Secondary Education</p>
-                    <p className="mt-1">Official Results Document</p>
                     <p className="mt-2 text-xs">Downloaded on: {new Date().toLocaleDateString()} • Keep this for your records</p>
                 </div>
             </div>
