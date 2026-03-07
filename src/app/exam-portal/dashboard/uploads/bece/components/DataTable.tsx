@@ -76,8 +76,8 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
             return
         }
 
-        // Calculate estimated time: ~2.4ms per record (1600 records in 3.88s)
-        const estimatedTimeMs = data.length * 2.4
+        // Calculate estimated time: ~3.4ms per record (1600 records in 5.44s)
+        const estimatedTimeMs = data.length * 3.4
         const updateInterval = 100 // Update every 100ms
         const totalSteps = Math.ceil(estimatedTimeMs / updateInterval)
         let currentStep = 0
