@@ -43,3 +43,10 @@ export function capitalizeWords(text: string): string {
 export function uppercaseAll(text: string): string {
   return text.toUpperCase();
 }
+
+export function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+}
