@@ -1,12 +1,13 @@
 'use client'
- 
+
 import React, { Suspense } from 'react'
 import Image from 'next/image'
 import ResetPasswordForm from '@/components/ResetPasswordForm'
 import HangingTree from '../components/HangingTree'
 import { useSearchParams } from 'next/navigation'
 import { useVerifyResetTokenMutation } from '../store/api/authApi'
- 
+import Head from 'next/head'
+
 function ResetPasswordContent() {
     const searchParams = useSearchParams()
     const token = searchParams.get('token') || ''
@@ -80,43 +81,49 @@ function ResetPasswordContent() {
     // Valid token - show reset password form
     return <ResetPasswordForm token={token} />
 }
- 
+
 export default function ResetPasswordPage() {
     return (
-        <div className="min-h-screen flex flex-col bg-[#F3F3F3] relative">
-            <HangingTree type='left' />
- 
-            <header className="w-full pt-8 pb-6 px-4 relative z-20">
-                <div className="flex max-md:flex-row flex-col justify-center gap-2 items-center">
-                    <Image
-                        src="/images/ministry-logo.png"
-                        alt="logo"
-                        width={60}
-                        height={60}
-                        className='object-contain'
-                        title='Imo State Ministry of Primary and Secondary Education logo'
-                    />
-                    <span className='sm:text-2xl text-xl text-center font-bold max-md:block hidden'>
-                        <abbr title="Imo State Ministry of Primary and Secondary Education">MOPSE</abbr>
-                    </span>
-                    <span className='sm:text-2xl text-xl text-center font-bold max-md:hidden block'>Imo State Ministry of Primary and Secondary Education</span>
-                </div>
-            </header>
- 
-            <main className="flex-1 flex flex-col justify-center gap-6 w-full px-4 sm:px-6 lg:px-8 pb-8 relative z-10">
-                <div className="max-w-md w-full mx-auto">
-                    <Suspense fallback={
-                        <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg shadow-black/5 border border-black/5 p-6">
-                            <div className="text-center">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-                                <p className="text-gray-600">Loading...</p>
+        <>
+            <Head>
+                <title>Reset Password - MOPSE</title>
+                <meta name="description" content="Reset your password for MOPSE portal" />
+            </Head>
+            <div className="min-h-screen flex flex-col bg-[#F3F3F3] relative">
+                <HangingTree type='left' />
+
+                <header className="w-full pt-8 pb-6 px-4 relative z-20">
+                    <div className="flex max-md:flex-row flex-col justify-center gap-2 items-center">
+                        <Image
+                            src="/images/ministry-logo.png"
+                            alt="logo"
+                            width={60}
+                            height={60}
+                            className='object-contain'
+                            title='Imo State Ministry of Primary and Secondary Education logo'
+                        />
+                        <span className='sm:text-2xl text-xl text-center font-bold max-md:block hidden'>
+                            <abbr title="Imo State Ministry of Primary and Secondary Education">MOPSE</abbr>
+                        </span>
+                        <span className='sm:text-2xl text-xl text-center font-bold max-md:hidden block'>Imo State Ministry of Primary and Secondary Education</span>
+                    </div>
+                </header>
+
+                <main className="flex-1 flex flex-col justify-center gap-6 w-full px-4 sm:px-6 lg:px-8 pb-8 relative z-10">
+                    <div className="max-w-md w-full mx-auto">
+                        <Suspense fallback={
+                            <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg shadow-black/5 border border-black/5 p-6">
+                                <div className="text-center">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                                    <p className="text-gray-600">Loading...</p>
+                                </div>
                             </div>
-                        </div>
-                    }>
-                        <ResetPasswordContent />
-                    </Suspense>
-                </div>
-            </main>
-        </div>
+                        }>
+                            <ResetPasswordContent />
+                        </Suspense>
+                    </div>
+                </main>
+            </div>
+        </>
     )
 }

@@ -2,10 +2,13 @@ import React from 'react'
 import { AuthProvider } from '../providers/AuthProvider'
 import ProtectedRoute from '../components/ProtectedRoute'
 import NextTopLoader from 'nextjs-toploader';
+import { aeePortalMetadata } from '@/lib/metadata';
 
 interface DashboardLayoutProps {
   children: React.ReactNode
 }
+
+export const metadata = aeePortalMetadata.dashboardHome
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (

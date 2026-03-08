@@ -3,6 +3,9 @@ import Image from 'next/image'
 import RegistrationForm from '@/components/RegistrationForm'
 import Link from 'next/link'
 import HangingTree from '../components/HangingTree'
+import { aeePortalMetadata } from '@/lib/metadata'
+
+export const metadata = aeePortalMetadata.registration
 
 export default function RegisterPage() {
     return (

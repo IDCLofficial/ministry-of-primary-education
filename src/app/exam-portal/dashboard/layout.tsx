@@ -5,10 +5,13 @@ import BeceProtectedRoute from '../components/ProtectedRoute'
 import Header from './components/Header'
 import SideBar from './components/SideBar'
 import NextTopLoader from 'nextjs-toploader';
+import { examPortalMetadata } from '@/lib/metadata'
 
 interface DashboardLayoutProps {
     children: React.ReactNode
 }
+
+export const metadata = examPortalMetadata.dashboard
 
 export default function BeceDashboardLayout({ children }: DashboardLayoutProps) {
     return (

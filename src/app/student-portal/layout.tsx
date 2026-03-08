@@ -3,10 +3,13 @@ import './portal.css'
 import { Toaster } from 'react-hot-toast'
 import { ReduxProvider } from './store/provider'
 import NextTopLoader from 'nextjs-toploader'
+import { studentPortalMetadata } from '@/lib/metadata'
 
 interface StudentPortalLayoutProps {
     children: React.ReactNode
 }
+
+export const metadata = studentPortalMetadata.landing
 
 export default function StudentPortalLayout({ children }: StudentPortalLayoutProps) {
     return (

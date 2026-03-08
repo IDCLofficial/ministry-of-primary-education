@@ -1,14 +1,16 @@
-'use client'
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { IoArrowBack, IoSchoolOutline, IoPeopleOutline, IoBookOutline, IoFileTrayStackedOutline, IoCashOutline, IoBuildOutline } from 'react-icons/io5'
+import { studentPortalMetadata } from '@/lib/metadata'
 
 interface FAQItem {
     question: string
     answer: string
     category: 'general' | 'technical' | 'payment' | 'results'
 }
+
+export const metadata = studentPortalMetadata.faq
 
 const allFAQs: FAQItem[] = [
     {
