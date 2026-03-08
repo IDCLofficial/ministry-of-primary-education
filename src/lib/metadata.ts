@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import siteKeywords from './siteKeywords'
 
 // ─── Shared constants ─────────────────────────────────────────────────────────
 
@@ -21,18 +22,7 @@ export const baseMetadata: Metadata = {
     authors: [{ name: SITE_NAME, url: SITE_URL }],
     creator: "Imo Digital City Limited",
     publisher: 'Imo State Government',
-    keywords: [
-        'Imo State',
-        'Imo State Ministry of Education',
-        'Ministry of Education',
-        'Primary Education',
-        'Secondary Education',
-        'Nigeria Education',
-        'BECE',
-        'UBEAT',
-        'Student Portal',
-        'Exam Results',
-    ],
+    keywords: siteKeywords,
     icons: {
         icon:    '/images/favicon/favicon.ico',
         apple:   '/images/favicon/apple-touch-icon.png',
