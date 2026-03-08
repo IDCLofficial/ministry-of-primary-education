@@ -11,11 +11,11 @@ import { allFAQs, categoryInfo } from '../data/faqData'
 function parseAnswer(answer: string) {
     // Check if answer contains numbered list pattern like (1), (2), (3)
     const hasNumberedList = /\(\d+\)/.test(answer)
-    
+
     if (!hasNumberedList) {
         return { type: 'text' as const, content: answer }
     }
-    
+
     // Split by numbered items
     const parts = answer.split(/(?=\(\d+\))/)
     const intro = parts[0].trim()
@@ -27,23 +27,23 @@ function parseAnswer(answer: string) {
         }
         return null
     }).filter((item): item is { number: string; text: string } => item !== null)
-    
+
     return { type: 'list' as const, intro, items }
 }
 
 export default function PortalFAQPage() {
-    const router = useRouter(); 
+    const router = useRouter();
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
 
     const handleDownloadPDF = async () => {
-        setIsGeneratingPDF(true)
         try {
-            await generateFAQPDF()
+            setIsGeneratingPDF(true);
+            generateFAQPDF();
         } catch (error) {
             console.error('Error generating PDF:', error)
             alert('Failed to generate PDF. Please try again.')
         } finally {
-            setIsGeneratingPDF(false)
+            setIsGeneratingPDF(false);
         }
     }
 
@@ -104,7 +104,7 @@ export default function PortalFAQPage() {
                 {Object.entries(categoryInfo).map(([category, info]) => {
                     const categoryFAQs = allFAQs.filter(faq => faq.category === category)
                     const Icon = info.icon
-                    
+
                     return (
                         <div key={category} className="mb-12 sm:mb-16">
                             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
@@ -115,7 +115,7 @@ export default function PortalFAQPage() {
                                 {categoryFAQs.map((faq) => {
                                     const globalIndex = allFAQs.indexOf(faq)
                                     const parsedAnswer = parseAnswer(faq.answer)
-                                    
+
                                     return (
                                         <div key={globalIndex} className="space-y-3">
                                             <h3 className="text-base font-bold text-gray-900 leading-tight">

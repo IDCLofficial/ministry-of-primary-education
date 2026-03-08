@@ -3,6 +3,9 @@ import Image from 'next/image'
 import LoginForm from '@/components/LoginForm'
 import Link from 'next/link'
 import HangingTree from './components/HangingTree'
+import { aeePortalMetadata } from '@/lib/metadata'
+
+export const metadata = aeePortalMetadata.login
 
 export default function PortalPage() {
     return (

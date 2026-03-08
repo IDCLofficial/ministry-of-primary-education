@@ -3,6 +3,9 @@ import { Toaster } from 'react-hot-toast'
 import './portal.css'
 import BeceReduxProvider from './providers/ReduxProvider'
 import { BeceAuthProvider } from './providers/AuthProvider'
+import { examPortalMetadata } from '@/lib/metadata'
+
+export const metadata = examPortalMetadata.login
 
 export default function BecePortalLayout({ children }: { children: React.ReactNode }) {
     return (

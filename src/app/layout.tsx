@@ -4,13 +4,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import GlobalLoader from '@/components/GlobalLoader'
+import { publicMetadata } from "@/lib/metadata";
 
-
-
-export const metadata: Metadata = {
-  title: "Ministry of Primary and Secondary Education",
-  description: "The Ministry of Primary and Secondary Education in Imo State is transforming early childhood education.",
-};
+export const metadata: Metadata = publicMetadata.home
 
 export default function RootLayout({
   children,

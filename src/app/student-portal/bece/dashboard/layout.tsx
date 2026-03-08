@@ -1,9 +1,12 @@
+import { studentPortalMetadata } from '@/lib/metadata'
 import NextTopLoader from 'nextjs-toploader'
 import React from 'react'
 
 interface DashboardLayoutProps {
     children: React.ReactNode
 }
+
+export const metadata = studentPortalMetadata.beceDashboard
 
 export default function StudentDashboardLayout({ children }: DashboardLayoutProps) {
     return (
