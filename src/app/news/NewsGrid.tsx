@@ -2,17 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { NewsItem } from "./newsData";
+import { slugify } from "@/lib";
 
 interface NewsGridProps {
   news: NewsItem[];
   itemsPerPage?: number;
-}
-
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '');
 }
 
 export default function NewsGrid({ news, itemsPerPage = 9 }: NewsGridProps) {

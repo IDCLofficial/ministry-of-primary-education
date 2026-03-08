@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from "next/image";
 import Link from "next/link";
 import { getEventsList } from './events';
+import { slugify } from '@/lib';
 
 // Interface for Event data
 interface Event {
@@ -17,12 +18,6 @@ interface Event {
   id: string;
 }
 
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '');
-}
 
 export default function EventsListSection() {
   const [events, setEvents] = useState<Event[]>([]);
