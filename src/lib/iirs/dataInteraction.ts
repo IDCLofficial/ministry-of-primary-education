@@ -2,8 +2,14 @@ import { UserProfile } from "@/app/portal/iirs/providers/AuthProvider";
 
 export const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin`;
 
-export async function getTransactionData(token: string) {
-    const response = await fetch(`${BASE_URL}/stats`, {
+export async function getTransactionData(
+    token: string,
+    period: '1day' | '1week' | '1month' | '1year' | 'all' = 'all'
+) {
+    const params = new URLSearchParams();
+    params.append('period', period);
+    
+    const response = await fetch(`${BASE_URL}/stats?${params.toString()}`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`
@@ -41,8 +47,18 @@ export interface PaymentsData {
     pagination: Pagination;
 }
 
-export async function getPaymentsData(token: string): Promise<PaymentsData> {
-    const response = await fetch(`${BASE_URL}/payments`, {
+export async function getPaymentsData(
+    token: string, 
+    page: number = 1, 
+    limit?: number, 
+    period: '1day' | '1week' | '1month' | '1year' | 'all' = 'all'
+): Promise<PaymentsData> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    params.append('period', period);
+    
+    const response = await fetch(`${BASE_URL}/payments?${params.toString()}`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`
