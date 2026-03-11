@@ -114,6 +114,21 @@ export default function StudentDashboardPage() {
         const selectedExamType = localStorage.getItem('selected_exam_type')
 
         if (!storedExamNo || selectedExamType !== 'bece' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
+            if (!storedExamNo) {
+                toast.error('No exam number found')
+            }
+            if (selectedExamType !== 'bece') {
+                toast.error('Invalid exam type selected')
+            }
+            if (!EXAM_NO_REGEX.test(storedExamNo || '')) {
+                toast.error('Exam number failed REGEX 1 validation')
+            }
+            if (!EXAM_NO_REGEX_02.test(storedExamNo || '')) {
+                toast.error('Exam number failed REGEX 2 validation')
+            }
+            if (!EXAM_NO_REGEX_03.test(storedExamNo || '')) {
+                toast.error('Exam number failed REGEX 3 validation')
+            }
             toast.error('Invalid exam number. Please log in again.')
             router.push('/student-portal/bece')
             return
