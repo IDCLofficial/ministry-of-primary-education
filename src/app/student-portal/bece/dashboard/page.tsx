@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { IoLogOut, IoDownload, IoPrint, IoSchool, IoSparkles, IoSwapHorizontal, IoTrophy } from 'react-icons/io5'
+import { IoLogOut, IoDownload, IoPrint, IoSparkles, IoSwapHorizontal, IoTrophy } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import Paywall from './components/Paywall'
 import CertificateModal from '@/components/CertificateModal'
@@ -12,16 +12,16 @@ import jsPDF from 'jspdf'
 import { useGetBECEResultQuery } from '../../store/api/studentApi'
 import StudentInfoCard from './components/StudentInfoCard'
 import Lottie from 'lottie-react'
-import celebrationData from "./components/celebrationBirthdayEmoji.json";
+import celebrationData from "./components/celebrationBirthdayEmoji.json"
 import { useMedia } from 'react-use'
 import PortalHeader from '../../components/Portalheader'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
-const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
+const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{1,4}(\(\d\))?$/
 // Regex pattern for exam number validation (e.g., XX/000/0000/000)
-const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3,4}\/\d{4}\/\d{3,4}$/
+const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{4}\/\d{1,4}$/
 // Regex pattern for exam number validation (e.g., XX/XX/000/0000)
-const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}$/
+const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}$/
 
 export default function StudentDashboardPage() {
     const isMobile = useMedia('(max-width: 1000px)')

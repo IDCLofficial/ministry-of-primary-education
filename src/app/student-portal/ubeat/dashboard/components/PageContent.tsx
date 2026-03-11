@@ -15,6 +15,13 @@ import celebrationData from "../components/CelebrationLolo.json"
 import { useMedia } from 'react-use'
 import PortalHeader from '../../../components/Portalheader'
 
+// Regex pattern for exam number validation (e.g., XX/000/000)
+const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{1,4}(\(\d\))?$/
+// Regex pattern for exam number validation (e.g., XX/000/0000/000)
+const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{4}\/\d{1,4}$/
+// Regex pattern for exam number validation (e.g., XX/XX/000/0000)
+const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}$/
+
 export default function UBEATDashboard() {
     const isMobile = useMedia('(max-width: 1000px)')
 
@@ -41,7 +48,7 @@ export default function UBEATDashboard() {
         const storedExamNo = localStorage.getItem('student_exam_no')
         const selectedExamType = localStorage.getItem('selected_exam_type')
 
-        if (!storedExamNo || selectedExamType !== 'ubeat') {
+        if (!storedExamNo || selectedExamType !== 'ubeat' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
             router.push('/student-portal/ubeat')
             return
         }
