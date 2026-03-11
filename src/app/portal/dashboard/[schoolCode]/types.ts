@@ -135,8 +135,6 @@ export interface ExamApplication {
 }
 
 export const getExamById = (id: string): ExamType | undefined => {
-  console.log(id)
-  console.log(EXAM_TYPES)
   return EXAM_TYPES.find(exam => exam.id.toLowerCase() === id.toLowerCase())
 }
 

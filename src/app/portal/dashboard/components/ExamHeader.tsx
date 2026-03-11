@@ -55,7 +55,7 @@ export default function ExamHeader({ currentExam, isFirst }: ExamHeaderProps) {
               <div className="h-6 w-px bg-gray-300 hidden sm:block" />
               
               {/* Exam Selector with Dropdown */}
-              <div className="relative">
+              <div className="relative" ref={dropDownRef}>
                 <button
                   onClick={() => setShowExamDropdown(!showExamDropdown)}
                   className="flex items-center gap-2 px-3 py-2 rounded-3xl hover:bg-gray-100 transition-colors cursor-pointer border border-green-900/25"
@@ -87,7 +87,6 @@ export default function ExamHeader({ currentExam, isFirst }: ExamHeaderProps) {
                 {showExamDropdown && (
                   <>
                     <div
-                      ref={dropDownRef}
                       className="fixed inset-0 z-10"
                       onClick={() => setShowExamDropdown(false)}
                     />

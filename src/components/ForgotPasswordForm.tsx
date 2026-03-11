@@ -61,8 +61,6 @@ export default function ForgotPasswordForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    console.log(formData)
-
     // Validate email
     const error = validateField('email', formData.email)
     if (error) {

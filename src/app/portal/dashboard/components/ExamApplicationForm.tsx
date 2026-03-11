@@ -180,11 +180,11 @@ export default function ExamApplicationForm({ exam, onApplicationSubmit }: ExamA
       toast.success(`Application submitted successfully for ${exam.shortName}!`)
 
       // Refresh profile to get updated exam data
-      await refetchProfile()
-      await refetchSchool()
+      try { await refetchProfile() } catch (_) {}
+      try { await refetchSchool() } catch (_) {}
       onApplicationSubmit()
     } catch (error) {
-      console.error('Application error:', error)
+      console.error('Application error:', error);
       const apiError = error as { data?: { message?: string; error?: string } }
       const errorMessage = apiError.data?.message || apiError.data?.error || 'Failed to submit application. Please try again.'
       toast.error(errorMessage)
