@@ -13,10 +13,12 @@ import { AnimatePresence, motion, Variants } from 'framer-motion'
 import { useLocalStorage } from 'react-use'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
+// XX/000/000
 const EXAM_NO_REGEX    = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
-const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3,4}\/\d{4}\/\d{3,4}$/
-const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}$/
+// XX/000/0000/000
+const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3,4}\/\d{4}\/\d{1,4}$/
+// XX/XX/000/000
+const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{3,4}\/\d{1,4}$/
 
 const MAX_RECENT_ACCOUNTS = 5
 
