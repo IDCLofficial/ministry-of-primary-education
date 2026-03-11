@@ -153,7 +153,7 @@ export default function MetricsCards() {
               <FiTrendingUp className="text-white text-xl" />
             </div>
           </div>
-          <h3 className="text-xs font-semibold text-green-700 uppercase tracking-wide">TSA Processed</h3>
+          <h3 className="text-xs font-semibold text-green-700 uppercase tracking-wide">Total Processed</h3>
           <p className="text-2xl lg:text-3xl font-bold text-green-900 break-words">₦{data?.totalAmountProcessedByTsa?.toLocaleString() || 0}</p>
           <div className="flex items-center space-x-2 pt-1">
             <span className="text-xs font-medium text-green-600 bg-green-200 px-2 py-1 rounded-full">All Time</span>
