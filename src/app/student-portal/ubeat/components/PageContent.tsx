@@ -99,17 +99,19 @@ function RecentAccountCard({
     account,
     onSelect,
     onRemove,
+    isLoading,
 }: {
     account: RecentAccount
     onSelect: (examNo: string) => void
     onRemove: (examNo: string) => void
+    isLoading: boolean
 }) {
     return (
         <motion.div
             variants={itemVariants}
             layout
-            className="group relative flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-green-50 hover:border-green-200 transition-all duration-150 cursor-pointer active:scale-[0.98]"
-            onClick={() => onSelect(account.examNo)}
+            className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-green-50 hover:border-green-200 transition-all duration-150 cursor-pointer ${isLoading ? 'opacity-50 cursor-not-allowed grayscale-50' : ''}`}
+            onClick={isLoading ? () => onSelect(account.examNo) : () => { }}
         >
             {/* Avatar */}
             <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
@@ -231,6 +233,10 @@ export default function UBEATLogin() {
         }
 
         try {
+            toast.loading("Loading your results...", {
+                id: "loading-results",
+                duration: Infinity
+            })
             const result = await getUBEATResult(examNo).unwrap()
 
             if (!result?.examNumber || !result?.studentName) {
@@ -246,17 +252,35 @@ export default function UBEATLogin() {
             })
 
             localStorage.setItem('student_exam_no', examNo)
-            localStorage.setItem('selected_exam_type', 'ubeat')
+            localStorage.setItem('selected_exam_type', 'ubeat');
+
+            toast.dismiss("loading-results");
 
             toast.success(`Welcome ${result.studentName}! Loading your results... 🎉`)
             router.push('/student-portal/ubeat/dashboard')
         } catch (error: unknown) {
+            toast.dismiss("loading-results");
             const err = error as { status: string | number }
-            if (err.status === 404) setError("We couldn't find your results. Check your exam number.")
-            else if (err.status === 400) setError("This exam number doesn't look valid.")
-            else if (err.status === 500) setError("Our system is having a moment. Try again shortly.")
-            else if (err.status === 'FETCH_ERROR') setError("No internet connection. Please check and retry.")
-            else setError("Something went wrong. Please try again.")
+            if (err.status === 404) {
+                setError("We couldn't find your results. Check your exam number.");
+                toast.error("We couldn't find your results. Check your exam number.")
+            }
+            else if (err.status === 400) {
+                setError("This exam number doesn't look valid.");
+                toast.error("This exam number doesn't look valid.")
+            }
+            else if (err.status === 500) {
+                setError("Our system is having a moment. Try again shortly.");
+                toast.error("Our system is having a moment. Try again shortly.")
+            }
+            else if (err.status === 'FETCH_ERROR') {
+                setError("No internet connection. Please check and retry.");
+                toast.error("No internet connection. Please check and retry.")
+            }
+            else {
+                setError("Something went wrong. Please try again.");
+                toast.error("Something went wrong. Please try again.")
+            }
         }
     }
 
@@ -265,6 +289,10 @@ export default function UBEATLogin() {
         setError('')
 
         try {
+            toast.loading("Loading your results...", {
+                id: "loading-results",
+                duration: Infinity
+            })
             const result = await getUBEATResult(selectedExamNo).unwrap()
             if (!result?.examNumber || !result?.studentName) {
                 setError("Couldn't load results for this account.")
@@ -277,12 +305,15 @@ export default function UBEATLogin() {
                 school: result.schoolName ?? result.school ?? '',
                 lastAccessed: Date.now(),
             })
+            toast.dismiss("loading-results")
 
             localStorage.setItem('student_exam_no', selectedExamNo)
             localStorage.setItem('selected_exam_type', 'ubeat')
             toast.success(`Welcome back, ${result.studentName}! 🎉`)
             router.push('/student-portal/ubeat/dashboard')
         } catch {
+            toast.dismiss("loading-results")
+            toast.error("Couldn't load this account. Try entering the exam number manually.")
             setError("Couldn't load this account. Try entering the exam number manually.")
         }
     }
@@ -471,6 +502,7 @@ export default function UBEATLogin() {
                                                         <RecentAccountCard
                                                             key={account.examNo}
                                                             account={account}
+                                                            isLoading={isLoading || isFetchingResult}
                                                             onSelect={handleSelectRecent}
                                                             onRemove={removeRecentAccount}
                                                         />
@@ -521,12 +553,12 @@ export default function UBEATLogin() {
                                                 onChange={e => { setExamNo(e.target.value.toLowerCase()); setError('') }}
                                                 placeholder="e.g., ok/977/2025/001"
                                                 className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200 uppercase ${error
-                                                        ? 'border-red-300 bg-red-50'
-                                                        : debouncedExamNo && !canProceed && debouncedExamNo.length > 0
-                                                            ? 'border-yellow-300 bg-yellow-50'
-                                                            : canProceed
-                                                                ? 'border-green-300 bg-green-50'
-                                                                : 'border-gray-300'
+                                                    ? 'border-red-300 bg-red-50'
+                                                    : debouncedExamNo && !canProceed && debouncedExamNo.length > 0
+                                                        ? 'border-yellow-300 bg-yellow-50'
+                                                        : canProceed
+                                                            ? 'border-green-300 bg-green-50'
+                                                            : 'border-gray-300'
                                                     }`}
                                                 disabled={isLoading}
                                             />

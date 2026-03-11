@@ -14,7 +14,7 @@ import { useLocalStorage } from 'react-use'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 // XX/000/000
-const EXAM_NO_REGEX    = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
+const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
 // XX/000/0000/000
 const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3,4}\/\d{4}\/\d{1,4}$/
 // XX/XX/000/000
@@ -47,12 +47,12 @@ function getInitials(name: string) {
 }
 
 function timeAgo(ms: number) {
-    const diff  = Date.now() - ms
-    const mins  = Math.floor(diff / 60_000)
+    const diff = Date.now() - ms
+    const mins = Math.floor(diff / 60_000)
     const hours = Math.floor(diff / 3_600_000)
-    const days  = Math.floor(diff / 86_400_000)
-    if (mins < 1)   return 'Just now'
-    if (mins < 60)  return `${mins}m ago`
+    const days = Math.floor(diff / 86_400_000)
+    if (mins < 1) return 'Just now'
+    if (mins < 60) return `${mins}m ago`
     if (hours < 24) return `${hours}h ago`
     return `${days}d ago`
 }
@@ -61,20 +61,20 @@ function timeAgo(ms: number) {
 
 const listVariants: Variants = {
     hidden: {},
-    show:  { transition: { staggerChildren: 0.055 } },
-    exit:  { transition: { staggerChildren: 0.03, staggerDirection: -1 } },
+    show: { transition: { staggerChildren: 0.055 } },
+    exit: { transition: { staggerChildren: 0.03, staggerDirection: -1 } },
 }
 
 const itemVariants: Variants = {
     hidden: { opacity: 0, y: 8 },
-    show:   { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 380, damping: 28 } },
-    exit:   { opacity: 0, x: -16, transition: { duration: 0.15 } },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 380, damping: 28 } },
+    exit: { opacity: 0, x: -16, transition: { duration: 0.15 } },
 }
 
 const sectionVariants: Variants = {
     hidden: { opacity: 0, height: 0 },
-    show:   { opacity: 1, height: 'auto', transition: { type: 'spring', stiffness: 300, damping: 30 } },
-    exit:   { opacity: 0, height: 0,      transition: { duration: 0.2 } },
+    show: { opacity: 1, height: 'auto', transition: { type: 'spring', stiffness: 300, damping: 30 } },
+    exit: { opacity: 0, height: 0, transition: { duration: 0.2 } },
 }
 
 // ─── Recent Account Card ─────────────────────────────────────────────────────
@@ -83,17 +83,19 @@ function RecentAccountCard({
     account,
     onSelect,
     onRemove,
+    isLoading,
 }: {
     account: RecentAccount
     onSelect: (examNo: string) => void
     onRemove: (examNo: string) => void
+    isLoading: boolean
 }) {
     return (
         <motion.div
             variants={itemVariants}
             layout
-            className="group relative flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-green-50 hover:border-green-200 transition-all duration-150 cursor-pointer"
-            onClick={() => onSelect(account.examNo)}
+            className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-green-50 hover:border-green-200 transition-all duration-150 cursor-pointer ${isLoading ? 'opacity-50 cursor-not-allowed grayscale-50' : ''}`}
+            onClick={isLoading ? () => onSelect(account.examNo) : () => { }}
         >
             {/* Avatar */}
             <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
@@ -133,8 +135,8 @@ function RecentAccountCard({
 export default function StudentLoginPage() {
     const router = useRouter()
 
-    const [examNo, setExamNo]               = useState('')
-    const [error, setError]                 = useState('')
+    const [examNo, setExamNo] = useState('')
+    const [error, setError] = useState('')
     const [showAllAccounts, setShowAllAccounts] = useState(false)
 
     // ── Recent accounts (persisted) ───────────────────────────────────────────
@@ -158,18 +160,18 @@ export default function StudentLoginPage() {
         setRecentAccounts([])
     }, [setRecentAccounts])
 
-    const allAccounts       = recentAccounts ?? []
+    const allAccounts = recentAccounts ?? []
     const hasRecentAccounts = allAccounts.length > 0
-    const hasMore           = allAccounts.length > 1
-    const visibleAccounts   = showAllAccounts ? allAccounts : allAccounts.slice(0, 1)
+    const hasMore = allAccounts.length > 1
+    const visibleAccounts = showAllAccounts ? allAccounts : allAccounts.slice(0, 1)
 
     // ── RTK Query ─────────────────────────────────────────────────────────────
-    const [getBECEResult, { isLoading }] = useLazyGetBECEResultQuery()
+    const [getBECEResult, { isLoading, isFetching, isSuccess }] = useLazyGetBECEResultQuery()
 
     const debouncedExamNo = useDebounce(examNo, 500)
-    const canProceed      = debouncedExamNo.length >= 10 && isValidExamNo(debouncedExamNo)
+    const canProceed = debouncedExamNo.length >= 10 && isValidExamNo(debouncedExamNo)
 
-    const API_BASE_URL      = process.env.NEXT_PUBLIC_API_BASE_URL
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
     const isMaintenanceMode = !API_BASE_URL
 
     // ── Handlers ──────────────────────────────────────────────────────────────
@@ -177,6 +179,8 @@ export default function StudentLoginPage() {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
+
+        if (isSuccess || isLoading || isFetching) return;
 
         if (!examNo.trim()) {
             setError('Oops! Please enter your exam number to continue')
@@ -189,6 +193,10 @@ export default function StudentLoginPage() {
         }
 
         try {
+            toast.loading("Loading your results...", {
+                id: "loading-results",
+                duration: Infinity
+            })
             const result = await getBECEResult(examNo).unwrap()
 
             if (!result || !result.examNo || !result.name || !result.school) {
@@ -206,16 +214,21 @@ export default function StudentLoginPage() {
             localStorage.setItem('student_exam_no', examNo)
             localStorage.setItem('selected_exam_type', 'bece')
 
+            toast.dismiss("loading-results")
+
             toast.success(`Welcome ${result.name}! Loading your results... 🎉`)
             router.push('/student-portal/bece/dashboard')
         } catch (error: unknown) {
+            toast.dismiss("loading-results");
+
+            toast.error("Failed to load results. Please try again.")
             const err = error as { status: string | number }
-            if (err.status === 404)             setError("We couldn't find your results. Please check your exam number and try again.")
-            else if (err.status === 400)        setError("This exam number doesn't seem valid. Please double-check and try again.")
-            else if (err.status === 500)        setError("Our system is having a moment. Please try again in a few minutes.")
-            else if (err.status === 'FETCH_ERROR')   setError("Network error: Unable to connect to server. Please check your internet connection.")
+            if (err.status === 404) setError("We couldn't find your results. Please check your exam number and try again.")
+            else if (err.status === 400) setError("This exam number doesn't seem valid. Please double-check and try again.")
+            else if (err.status === 500) setError("Our system is having a moment. Please try again in a few minutes.")
+            else if (err.status === 'FETCH_ERROR') setError("Network error: Unable to connect to server. Please check your internet connection.")
             else if (err.status === 'PARSING_ERROR') setError("Server returned invalid data. Please try again.")
-            else                                setError("We're having trouble connecting. Please check your internet and try again.")
+            else setError("We're having trouble connecting. Please check your internet and try again.")
         }
     }
 
@@ -223,7 +236,13 @@ export default function StudentLoginPage() {
         setExamNo(selectedExamNo)
         setError('')
 
+        if (isSuccess || isLoading || isFetching) return
+
         try {
+            toast.loading("Loading your results...", {
+                id: "loading-results",
+                duration: Infinity
+            })
             const result = await getBECEResult(selectedExamNo).unwrap()
 
             if (!result || !result.examNo || !result.name || !result.school) {
@@ -240,9 +259,12 @@ export default function StudentLoginPage() {
 
             localStorage.setItem('student_exam_no', selectedExamNo)
             localStorage.setItem('selected_exam_type', 'bece')
+            toast.dismiss("loading-results")
             toast.success(`Welcome back, ${result.name}! 🎉`)
             router.push('/student-portal/bece/dashboard')
         } catch {
+            toast.dismiss("loading-results")
+            toast.error("Couldn't load this account. Try entering the exam number manually.")
             setError("Couldn't load this account. Try entering the exam number manually.")
         }
     }
@@ -345,14 +367,14 @@ export default function StudentLoginPage() {
                                                 <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 tracking-wider">
                                                     Recent accounts
                                                 </span>
-                                                <button
+                                                {!(isLoading || isFetching) && <button
                                                     type="button"
                                                     onClick={clearAllRecentAccounts}
                                                     className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
                                                 >
                                                     <IoTrashOutline className="w-3 h-3" />
                                                     Clear all
-                                                </button>
+                                                </button>}
                                             </div>
 
                                             {/* Visible accounts (1 by default, all when expanded) */}
@@ -366,6 +388,7 @@ export default function StudentLoginPage() {
                                                     <RecentAccountCard
                                                         key={account.examNo}
                                                         account={account}
+                                                        isLoading={isLoading || isFetching}
                                                         onSelect={handleSelectRecent}
                                                         onRemove={removeRecentAccount}
                                                     />
@@ -415,16 +438,15 @@ export default function StudentLoginPage() {
                                             value={examNo}
                                             onChange={e => { setExamNo(e.target.value.toLowerCase()); setError('') }}
                                             placeholder="e.g., ok/977/2025/001"
-                                            className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200 uppercase ${
-                                                error
-                                                    ? 'border-red-300 bg-red-50'
-                                                    : debouncedExamNo && !canProceed && debouncedExamNo.length > 0
-                                                        ? 'border-yellow-300 bg-yellow-50'
-                                                        : canProceed
-                                                            ? 'border-green-300 bg-green-50'
-                                                            : 'border-gray-300'
-                                            }`}
-                                            disabled={isLoading}
+                                            className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200 uppercase ${error
+                                                ? 'border-red-300 bg-red-50'
+                                                : debouncedExamNo && !canProceed && debouncedExamNo.length > 0
+                                                    ? 'border-yellow-300 bg-yellow-50'
+                                                    : canProceed
+                                                        ? 'border-green-300 bg-green-50'
+                                                        : 'border-gray-300'
+                                                }`}
+                                            disabled={isLoading || isFetching}
                                         />
                                         {canProceed && !error && (
                                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -459,15 +481,14 @@ export default function StudentLoginPage() {
                                 {/* Submit */}
                                 <button
                                     type="submit"
-                                    disabled={isLoading || !canProceed}
-                                    className={`w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer group ${
-                                        isLoading || !canProceed ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_4px_rgba(0,0,0,0.25)] active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2'
-                                    }`}
+                                    disabled={(isLoading || isFetching) || !canProceed || isSuccess}
+                                    className={`w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer group ${isLoading || !canProceed ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_4px_rgba(0,0,0,0.25)] active:shadow-[0_0px_rgba(0,0,0,1)] active:translate-y-2'
+                                        }`}
                                 >
-                                    {isLoading ? (
+                                    {(isLoading || isFetching) ? (
                                         <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />Loading your results...</>
                                     ) : (
-                                        <><IoLockClosed className={`w-5 h-5 mr-2 ${isLoading || !canProceed ? '' : 'group-hover:animate-bounce'}`} />View My Results</>
+                                        <><IoLockClosed className={`w-5 h-5 mr-2 ${(isLoading || isFetching) || !canProceed ? '' : 'group-hover:animate-bounce'}`} />View My Results</>
                                     )}
                                 </button>
                             </form>
