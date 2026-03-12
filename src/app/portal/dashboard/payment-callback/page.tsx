@@ -1,12 +1,9 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useAuth } from '../../providers/AuthProvider'
 import { useVerifyPaymentQuery } from '../../store/api/authApi'
 import { useGetProfileQuery } from '../../store/api/authApi'
-import { useSelector } from 'react-redux'
-import { RootState } from '../../store'
 
 export default function PaymentCallbackPage() {
   const searchParams = useSearchParams()
@@ -24,7 +21,9 @@ export default function PaymentCallbackPage() {
   const trxref = searchParams.get('trxref')
   const reference = searchParams.get('reference')
 
-  const paymentReturnUrl = useMemo(() => localStorage.getItem('payment-return-url'), [])
+  const paymentReturnUrl = useMemo(() => {
+    return typeof localStorage !== 'undefined' ? localStorage.getItem('payment-return-url') : '/portal/dashboard'
+  }, [])
 
   // Use query hook to verify payment
   const {

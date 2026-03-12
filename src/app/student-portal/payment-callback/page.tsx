@@ -22,7 +22,7 @@ export default function StudentPaymentCallbackPage() {
   const reference = searchParams.get('reference')
 
   const paymentReturnUrl = useMemo(() => 
-    localStorage.getItem('student-payment-return-url') || '/student-portal/dashboard', 
+    (typeof localStorage !== 'undefined' && localStorage.getItem('student-payment-return-url')) || '/student-portal/dashboard', 
     []
   )
 

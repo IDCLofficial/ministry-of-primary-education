@@ -83,9 +83,9 @@ interface CertificateSignaturesConfig {
 
 const DISTINCTION_SIGNATURES: CertificateSignaturesConfig = {
     signature1: {
-        url: '/images/FSLC/signature.png',
+        url: '/images/FSLC/signature-ed.png',
         x: 0.255,
-        y: 0.81,
+        y: 0.80,
         width: 0.15,
         height: 0.06,
         rotation: 2,
@@ -104,9 +104,9 @@ const DISTINCTION_SIGNATURES: CertificateSignaturesConfig = {
 
 const CREDIT_SIGNATURES: CertificateSignaturesConfig = {
     signature1: {
-        url: '/images/FSLC/signature.png',
+        url: '/images/FSLC/signature-ed.png',
         x: 0.27,
-        y: 0.75,
+        y: 0.74,
         width: 0.15,
         height: 0.055,
         rotation: 0,
@@ -125,9 +125,9 @@ const CREDIT_SIGNATURES: CertificateSignaturesConfig = {
 
 const PASS_SIGNATURES: CertificateSignaturesConfig = {
     signature1: {
-        url: '/images/FSLC/signature.png',
+        url: '/images/FSLC/signature-ed.png',
         x: 0.25,
-        y: 0.696,
+        y: 0.690,
         width: 0.14,
         height: 0.055,
         rotation: 4,
