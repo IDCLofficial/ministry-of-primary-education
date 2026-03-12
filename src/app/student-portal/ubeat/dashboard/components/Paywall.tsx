@@ -42,6 +42,15 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
         }
     }
 
+    const handleLogOut = () => {
+        toast('Come back soon!', {
+            icon: '👋',
+        })
+        localStorage.removeItem('student_exam_no')
+        localStorage.removeItem('selected_exam_type')
+        window.location.href = '/student-portal/ubeat'
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
             <div className="max-w-lg w-full">
@@ -122,20 +131,28 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                         </div>
 
                         {/* Payment Button - Simple */}
-                        <button
-                            onClick={handlePayment}
-                            disabled={isProcessing}
-                            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-3xl transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
-                        >
-                            {isProcessing ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                    Processing...
-                                </span>
-                            ) : (
-                                'Continue to Payment'
-                            )}
-                        </button>
+                        <div className="grid gap-1">
+                            <button
+                                onClick={handlePayment}
+                                disabled={isProcessing}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-3xl transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
+                            >
+                                {isProcessing ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                        Processing...
+                                    </span>
+                                ) : (
+                                    'Continue to Payment'
+                                )}
+                            </button>
+                            <button
+                                onClick={handleLogOut}
+                                className="w-full cursor-pointer text-center text-sm text-gray-600 py-2 hover:text-red-600 transition-colors duration-150"
+                            >
+                                I'll pay later
+                            </button>
+                        </div>
 
                         {/* Security Note - Subtle */}
                         <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-gray-400">

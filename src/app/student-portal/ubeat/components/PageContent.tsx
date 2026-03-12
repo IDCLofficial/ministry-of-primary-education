@@ -111,7 +111,7 @@ function RecentAccountCard({
             variants={itemVariants}
             layout
             className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-green-50 hover:border-green-200 transition-all duration-150 cursor-pointer ${isLoading ? 'opacity-50 cursor-not-allowed grayscale-50' : ''}`}
-            onClick={isLoading ? () => onSelect(account.examNo) : () => { }}
+            onClick={!isLoading ? () => onSelect(account.examNo) : () => { }}
         >
             {/* Avatar */}
             <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
