@@ -33,6 +33,7 @@ export interface Payment {
     paidAt: string;
     reference: string;
     iirsEarning: number;
+    idclEarning: number;
 }
 
 export interface Pagination {

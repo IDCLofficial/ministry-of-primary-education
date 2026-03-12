@@ -55,23 +55,23 @@ export default function DownloadReportButton() {
       <button
         onClick={() => setShowPeriodMenu(!showPeriodMenu)}
         disabled={isDownloading}
-        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md cursor-pointer"
+        className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md cursor-pointer w-full sm:w-auto"
       >
         {isDownloading ? (
           <>
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-            <span className="text-sm font-medium">Generating...</span>
+            <span className="text-xs sm:text-sm font-medium">Generating...</span>
           </>
         ) : (
           <>
-            <FiDownload className="text-lg" />
-            <span className="text-sm font-medium">Download Report</span>
+            <FiDownload className="text-base sm:text-lg" />
+            <span className="text-xs sm:text-sm font-medium">Download Report</span>
           </>
         )}
       </button>
 
       {showPeriodMenu && !isDownloading && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg border border-gray-200 shadow-lg z-20">
+        <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-full sm:w-48 bg-white rounded-lg border border-gray-200 shadow-lg z-20">
           <div className="p-2">
             <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
               Select Period

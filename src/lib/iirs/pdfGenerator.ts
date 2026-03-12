@@ -14,6 +14,7 @@ interface PaymentData {
   paidAt: string;
   reference: string;
   iirsEarning: number;
+  idclEarning: number;
 }
 
 interface StatsData {
@@ -56,20 +57,10 @@ export async function generatePaymentReportPDF(
   doc.addFont('CustomFont.ttf', 'CustomFont', 'normal');
   doc.setFont('CustomFont');
   
-  // Categorize payments based on settlement status
-  const settledPayments = payments.filter(p => isPaymentSettled(p.paidAt));
-  const pendingPayments = payments.filter(p => !isPaymentSettled(p.paidAt));
-  
-  // Calculate settled amounts
-  const settledAmount = settledPayments.reduce((sum, p) => sum + p.amount, 0);
-  const settledEarnings = settledPayments.reduce((sum, p) => sum + p.iirsEarning, 0);
-  const pendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
-  const pendingEarnings = pendingPayments.reduce((sum, p) => sum + p.iirsEarning, 0);
-  
   // Add header
   doc.setFontSize(20);
   doc.setTextColor(40, 40, 40);
-  doc.text('IIRS Payment Report', 14, 22);
+  doc.text('Payments Report', 14, 22);
   
   // Add period info
   doc.setFontSize(10);
@@ -116,21 +107,30 @@ export async function generatePaymentReportPDF(
   doc.setTextColor(40, 40, 40);
   doc.text('Settlement Breakdown', 14, summaryY + 12);
   
+  // Calculate settled payments
+  const settledPayments = payments.filter(payment => isPaymentSettled(payment.paidAt));
+  const totalSettledTransactions = settledPayments.length;
+  const totalSettledAmount = settledPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  const totalSettledTsaAmount = settledPayments.reduce((sum, payment) => sum + payment.iirsEarning, 0);
+  const totalSettledIdclAmount = settledPayments.reduce((sum, payment) => sum + payment.idclEarning, 0);
+  const pendingPayments = payments.length - totalSettledTransactions;
+  const pendingAmount = payments.reduce((sum, payment) => sum + payment.amount, 0) - totalSettledAmount;
+  
   const settlementData = [
-    ['Settled Payments', settledPayments.length.toLocaleString()],
-    ['Settled Amount', `₦${settledAmount.toLocaleString()}`],
-    ['Settled Earnings', `₦${settledEarnings.toLocaleString()}`],
-    ['Pending Payments', pendingPayments.length.toLocaleString()],
+    ['Settled Transactions', totalSettledTransactions.toLocaleString()],
+    ['Settled Amount', `₦${totalSettledAmount.toLocaleString()}`],
+    ['Settled TSA Amount', `₦${totalSettledTsaAmount.toLocaleString()}`],
+    ['Settled IDCL Amount', `₦${totalSettledIdclAmount.toLocaleString()}`],
+    ['Pending Transactions', pendingPayments.toLocaleString()],
     ['Pending Amount', `₦${pendingAmount.toLocaleString()}`],
-    ['Pending Earnings', `₦${pendingEarnings.toLocaleString()}`],
   ];
   
   autoTable(doc, {
     startY: summaryY + 16,
-    head: [['Category', 'Value']],
+    head: [['Status', 'Value']],
     body: settlementData,
     theme: 'grid',
-    headStyles: { fillColor: [59, 130, 246], font: 'CustomFont' },
+    headStyles: { fillColor: [168, 85, 247], font: 'CustomFont' },
     margin: { left: 14 },
     styles: { 
       fontSize: 9,
@@ -165,7 +165,7 @@ export async function generatePaymentReportPDF(
   
   autoTable(doc, {
     startY: finalY + 16,
-    head: [['School Name', 'Code', 'Amount', 'Students', 'IIRS Earning', 'Date', 'Time', 'Settlement']],
+    head: [['School Name', 'Code', 'Amount', 'Students', 'TSA Earning', 'Date', 'Time', 'Settlement']],
     body: paymentTableData,
     theme: 'striped',
     headStyles: { fillColor: [34, 197, 94], font: 'CustomFont' },
@@ -214,8 +214,10 @@ export async function generatePaymentReportPDF(
       { align: 'center' }
     );
   }
+
+  doc.text('Powered by Imo Digital City Limited', doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
   
   // Save the PDF
-  const fileName = `IIRS_Payment_Report_${period.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+  const fileName = `MOE_Payment_Report_${period.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(fileName);
 }
