@@ -16,13 +16,13 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
 
     const handlePayment = async () => {
         setIsProcessing(true)
-        
+
         try {
             // Store return URL for redirect after payment
             localStorage.setItem('student-payment-return-url', '/student-portal/bece/dashboard')
-            
+
             const response = await createPayment(examNo, ExamTypeEnum.BECE);
-            
+
             if (response.authorizationUrl) {
                 toast.success('Redirecting to payment gateway...')
                 // Redirect to Paystack payment page
@@ -38,11 +38,11 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="min-h-screen overflow-y-auto py-8 bg-gray-50 flex items-center justify-center p-6">
             <div className="max-w-lg w-full">
                 {/* Main Card */}
                 <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
-                    
+
                     {/* Header - Minimal */}
                     <div className="px-8 pt-8 pb-6 text-center border-b border-gray-100">
                         <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 mb-4">
@@ -52,13 +52,13 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                             Results Access Required
                         </h1>
                         <p className="text-sm text-gray-500">
-                            Complete payment to view your BECE results
+                            Complete this <span className="font-bold">One Time Payment</span> payment to view your BECE results
                         </p>
                     </div>
 
                     {/* Content */}
                     <div className="px-8 py-6">
-                        
+
                         {/* Student Info - Cleaner */}
                         <div className="mb-6 space-y-2.5">
                             <div className="flex justify-between text-sm">

@@ -4,6 +4,7 @@ import { IoLockClosedOutline, IoShieldCheckmarkOutline } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import { createPayment } from '@/app/student-portal/utils/api'
 import { ExamTypeEnum } from '@/app/portal/store/api/authApi'
+import { useTopLoader } from "nextjs-toploader"
 
 interface PaywallProps {
     examNo: string
@@ -13,6 +14,7 @@ interface PaywallProps {
 
 export default function Paywall({ examNo, studentName, school }: PaywallProps) {
     const [isProcessing, setIsProcessing] = useState(false);
+    const topLoader = useTopLoader()
 
     const handlePayment = async () => {
         if (isProcessing) return;
@@ -25,6 +27,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
             
             if (response.authorizationUrl) {
                 toast.success('Redirecting to payment gateway...')
+                topLoader.start()
                 // Redirect to Paystack payment page
                 window.location.href = response.authorizationUrl
             } else {
@@ -34,6 +37,8 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
             console.error('Payment error:', error)
             toast.error('Failed to initiate payment. Please try again.')
             setIsProcessing(false)
+        }finally {
+            topLoader.done()
         }
     }
 
@@ -52,7 +57,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                             Results Access Required
                         </h1>
                         <p className="text-sm text-gray-500">
-                            Complete payment to view your UBEAT results
+                            Complete this <span className="font-bold">One Time Payment</span> payment to view your UBEAT results
                         </p>
                     </div>
 
@@ -104,7 +109,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                             <div className="space-y-2.5">
                                 {[
                                     'Complete UBEAT results',
-                                    'Official certificate download',
+                                    'Official First School Leaving Certificate (FSLC) download',
                                     'Print-ready format',
                                     'Unlimited access'
                                 ].map((feature, index) => (
