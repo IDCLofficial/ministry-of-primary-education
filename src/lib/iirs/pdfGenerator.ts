@@ -14,6 +14,7 @@ interface PaymentData {
   paidAt: string;
   reference: string;
   iirsEarning: number;
+  idclEarning: number;
 }
 
 interface StatsData {
@@ -110,12 +111,16 @@ export async function generatePaymentReportPDF(
   const settledPayments = payments.filter(payment => isPaymentSettled(payment.paidAt));
   const totalSettledTransactions = settledPayments.length;
   const totalSettledAmount = settledPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  const totalSettledTsaAmount = settledPayments.reduce((sum, payment) => sum + payment.iirsEarning, 0);
+  const totalSettledIdclAmount = settledPayments.reduce((sum, payment) => sum + payment.idclEarning, 0);
   const pendingPayments = payments.length - totalSettledTransactions;
   const pendingAmount = payments.reduce((sum, payment) => sum + payment.amount, 0) - totalSettledAmount;
   
   const settlementData = [
     ['Settled Transactions', totalSettledTransactions.toLocaleString()],
     ['Settled Amount', `₦${totalSettledAmount.toLocaleString()}`],
+    ['Settled TSA Amount', `₦${totalSettledTsaAmount.toLocaleString()}`],
+    ['Settled IDCL Amount', `₦${totalSettledIdclAmount.toLocaleString()}`],
     ['Pending Transactions', pendingPayments.toLocaleString()],
     ['Pending Amount', `₦${pendingAmount.toLocaleString()}`],
   ];
