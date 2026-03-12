@@ -34,6 +34,18 @@ export default function MetricsCards() {
   const [selectedPeriod, setSelectedPeriod] = useState<'1day' | '1week' | '1month' | '1year' | 'all'>('all');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   
+  // Helper function to get period label
+  const getPeriodLabel = () => {
+    switch(selectedPeriod) {
+      case '1day': return '1 Day';
+      case '1week': return '1 Week';
+      case '1month': return '1 Month';
+      case '1year': return '1 Year';
+      case 'all': return 'All Time';
+      default: return 'All Time';
+    }
+  };
+  
   useEffect(() => {
     // if(!token || token === null) return;
     async function getData(tokenKey: string, period: '1day' | '1week' | '1month' | '1year' | 'all'){
@@ -140,7 +152,7 @@ export default function MetricsCards() {
           <h3 className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Total Payments</h3>
           <p className="text-2xl lg:text-3xl font-bold text-blue-900 break-words">{data?.totalPayments?.toLocaleString() || 0}</p>
           <div className="flex items-center space-x-2 pt-1">
-            <span className="text-xs font-medium text-blue-600 bg-blue-200 px-2 py-1 rounded-full">All Time</span>
+            <span className="text-xs font-medium text-blue-600 bg-blue-200 px-2 py-1 rounded-full">{getPeriodLabel()}</span>
           </div>
         </div>
       </div>
@@ -156,7 +168,7 @@ export default function MetricsCards() {
           <h3 className="text-xs font-semibold text-green-700 uppercase tracking-wide">Total Processed</h3>
           <p className="text-2xl lg:text-3xl font-bold text-green-900 break-words">₦{data?.totalAmountProcessedByTsa?.toLocaleString() || 0}</p>
           <div className="flex items-center space-x-2 pt-1">
-            <span className="text-xs font-medium text-green-600 bg-green-200 px-2 py-1 rounded-full">All Time</span>
+            <span className="text-xs font-medium text-green-600 bg-green-200 px-2 py-1 rounded-full">{getPeriodLabel()}</span>
           </div>
         </div>
       </div>
@@ -172,7 +184,7 @@ export default function MetricsCards() {
           <h3 className="text-xs font-semibold text-purple-700 uppercase tracking-wide">TSA Earnings</h3>
           <p className="text-2xl lg:text-3xl font-bold text-purple-900 break-words">₦{data?.totalTsaEarnings?.toLocaleString() || 0}</p>
           <div className="flex items-center space-x-2 pt-1">
-            <span className="text-xs font-medium text-purple-600 bg-purple-200 px-2 py-1 rounded-full">All Time</span>
+            <span className="text-xs font-medium text-purple-600 bg-purple-200 px-2 py-1 rounded-full">{getPeriodLabel()}</span>
           </div>
         </div>
       </div>
@@ -188,7 +200,7 @@ export default function MetricsCards() {
           <h3 className="text-xs font-semibold text-amber-700 uppercase tracking-wide">IDCL Earnings</h3>
           <p className="text-2xl lg:text-3xl font-bold text-amber-900 break-words">₦{data?.totalIdclEarnings?.toLocaleString() || 0}</p>
           <div className="flex items-center space-x-2 pt-1">
-            <span className="text-xs font-medium text-amber-600 bg-amber-200 px-2 py-1 rounded-full">All Time</span>
+            <span className="text-xs font-medium text-amber-600 bg-amber-200 px-2 py-1 rounded-full">{getPeriodLabel()}</span>
           </div>
         </div>
       </div>
@@ -204,7 +216,7 @@ export default function MetricsCards() {
           <h3 className="text-xs font-semibold text-rose-700 uppercase tracking-wide">Paystack Charges</h3>
           <p className="text-2xl lg:text-3xl font-bold text-rose-900 break-words">₦{data?.totalPaystackCharge?.toLocaleString() || 0}</p>
           <div className="flex items-center space-x-2 pt-1">
-            <span className="text-xs font-medium text-rose-600 bg-rose-200 px-2 py-1 rounded-full">All Time</span>
+            <span className="text-xs font-medium text-rose-600 bg-rose-200 px-2 py-1 rounded-full">{getPeriodLabel()}</span>
           </div>
         </div>
       </div>
