@@ -191,18 +191,18 @@ export default function InvoiceTable() {
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border h-full overflow-y-auto border-gray-100 ">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">All Transactions</h2>
-        <div className="flex items-center space-x-3">
-          <div className="relative">
+    <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border h-full overflow-y-auto border-gray-100">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">All Transactions</h2>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1 sm:flex-initial">
             <FaMagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
             <input
               type="text"
               placeholder="Search transactions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
           
@@ -262,8 +262,8 @@ export default function InvoiceTable() {
         <InvoiceDetails transaction={invoiceData} onClose={() => closeInvoiceDetails()} />
       )}
 
-      <div className="">
-        <table className="w-full">
+      <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <table className="w-full min-w-[640px]">
           <thead>
             <tr className="border-b border-gray-200">
               <th className="text-left py-3 px-4 font-medium text-gray-600 text-sm">School Name</th>
@@ -317,36 +317,36 @@ export default function InvoiceTable() {
 
       {/* Pagination Controls */}
       {totalPages >= 1 && (
-        <div className="flex items-center justify-between mt-6 px-4">
-          <div className="text-sm text-gray-600">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 px-0 sm:px-4">
+          <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
             Showing {startIndex + 1} to {Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} results
             {searchTerm && (
-              <span className="text-green-600 ml-1">
+              <span className="text-green-600 ml-1 block sm:inline mt-1 sm:mt-0">
                 (filtered from {transactions.length} total)
               </span>
             )}
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             {/* Previous Button */}
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${currentPage === 1
+              className={`flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors ${currentPage === 1
                   ? 'text-gray-400 cursor-not-allowed'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
             >
-              <FaChevronLeft className="w-4 h-4 mr-1" />
-              Previous
+              <FaChevronLeft className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Previous</span>
             </button>
 
             {/* Page Numbers */}
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-0.5 sm:space-x-1">
               {getPageNumbers().map((pageNum, index) => {
                 if (pageNum === '...') {
                   return (
-                    <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-400">
+                    <span key={`ellipsis-${index}`} className="px-1 sm:px-3 py-2 text-gray-400 text-xs sm:text-sm">
                       ...
                     </span>
                   );
@@ -356,7 +356,7 @@ export default function InvoiceTable() {
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum as number)}
-                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${currentPage === pageNum
+                    className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors ${currentPage === pageNum
                         ? 'bg-green-600 text-white'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       }`}
@@ -371,13 +371,13 @@ export default function InvoiceTable() {
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${currentPage === totalPages
+              className={`flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors ${currentPage === totalPages
                   ? 'text-gray-400 cursor-not-allowed'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
             >
-              Next
-              <FaChevronRight className="w-4 h-4 ml-1" />
+              <span className="hidden sm:inline">Next</span>
+              <FaChevronRight className="w-3 h-3 sm:w-4 sm:h-4 sm:ml-1" />
             </button>
           </div>
         </div>

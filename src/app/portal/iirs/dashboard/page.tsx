@@ -21,11 +21,16 @@ export default function Dashboard() {
     }
     
     return (
-        <div className="h-full w-full overflow-y-auto px-6">
-            <div className="w-full mt-10">
+        <div className="h-full w-full overflow-y-auto px-4 sm:px-6 lg:px-8">
+            <div className="w-full mt-6 sm:mt-8 lg:mt-10 pb-6">
                 {/* Header */}
-                <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">IIRS Dashboard <span className="text-gray-500 text-base">{role === "admin" ? "" : "(View Only)"}</span></h1>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                        IIRS Dashboard 
+                        <span className="text-gray-500 text-sm sm:text-base block sm:inline mt-1 sm:mt-0">
+                            {role === "admin" ? "" : "(View Only)"}
+                        </span>
+                    </h1>
                     <DownloadReportButton />
                 </div>
 
@@ -45,6 +50,8 @@ export default function Dashboard() {
                         Transaction Overview Skeleton
                     </div> */}
                 </div>
+
+                <p className="text-center text-gray-500 text-sm mt-4">Powered by Imo Digital City Limited</p>
             </div>
         </div>
     );

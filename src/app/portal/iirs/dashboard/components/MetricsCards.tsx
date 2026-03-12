@@ -128,7 +128,7 @@ export default function MetricsCards() {
       </div>
 
       {/* Metrics Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6">
       {/* Total Payments Card */}
       <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg border border-blue-200 hover:shadow-xl transition-all duration-300 group">
         <div className="flex flex-col space-y-3">

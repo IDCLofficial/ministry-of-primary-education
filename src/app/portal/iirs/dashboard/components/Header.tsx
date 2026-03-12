@@ -58,24 +58,25 @@ export default function Header(){
 
     return(
         <>
-            <header className="w-full flex sticky top-0 py-4 px-6 items-center justify-center bg-white/30 backdrop-blur-[25px] z-50">
-                <div className="w-full flex items-center justify-between backdrop-blur-[25px] rounded-[100px] py-4 px-4 border border-gray-200 bg-white/50">
+            <header className="w-full flex sticky top-0 py-2 sm:py-4 px-3 sm:px-6 items-center justify-center bg-white/30 backdrop-blur-[25px] z-50">
+                <div className="w-full flex items-center justify-between backdrop-blur-[25px] rounded-full sm:rounded-[100px] py-2 sm:py-4 px-3 sm:px-4 border border-gray-200 bg-white/50">
                     <Image 
                         src="/images/iirs/logo.png" 
                         alt="IIRS Logo"
                         width={100}
                         priority
                         height={100}
+                        className="w-24 h-16 sm:w-28 sm:h-20 md:w-32 md:h-24 object-contain"
                     />
                     
                     {/* User Menu */}
                     <div className="relative" ref={dropdownRef}>
                         <button
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 px-4 py-2 rounded-full transition-all duration-200 border border-gray-200"
+                            className="flex items-center gap-1 sm:gap-2 cursor-pointer hover:bg-gray-100 px-2 sm:px-4 py-2 rounded-full transition-all duration-200 border border-gray-200"
                         >
-                            <PiUserCircleFill size={28} color="#121212"/>
-                            <div className="flex flex-col items-start">
+                            <PiUserCircleFill size={24} className="sm:w-7 sm:h-7" color="#121212"/>
+                            <div className="hidden sm:flex flex-col items-start">
                                 <p className="font-semibold text-gray-800 text-sm">{userProfile.name}</p>
                                 <p className="text-xs text-gray-500">{userProfile.adminType}</p>
                             </div>
