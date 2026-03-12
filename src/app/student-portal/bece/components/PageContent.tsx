@@ -131,7 +131,6 @@ function RecentAccountCard({
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function StudentLoginPage() {
     const router = useRouter()
 
@@ -175,7 +174,6 @@ export default function StudentLoginPage() {
     const isMaintenanceMode = !API_BASE_URL
 
     // ── Handlers ──────────────────────────────────────────────────────────────
-
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
@@ -196,10 +194,12 @@ export default function StudentLoginPage() {
             toast.loading("Loading your results...", {
                 id: "loading-results",
                 duration: Infinity
-            })
+            });
             const result = await getBECEResult(examNo).unwrap()
 
             if (!result || !result.examNo || !result.name || !result.school) {
+                toast.dismiss("loading-results")
+                toast.error("Couldn't load results for this account.")
                 setError("We couldn't load your results. Please try again or contact support.")
                 return
             }
@@ -246,6 +246,8 @@ export default function StudentLoginPage() {
             const result = await getBECEResult(selectedExamNo).unwrap()
 
             if (!result || !result.examNo || !result.name || !result.school) {
+                toast.dismiss("loading-results")
+                toast.error("Couldn't load results for this account.")
                 setError("Couldn't load results for this account.")
                 return
             }
@@ -270,7 +272,6 @@ export default function StudentLoginPage() {
     }
 
     // ── Render ────────────────────────────────────────────────────────────────
-
     return (
         <div className="min-h-screen bg-[#F3F3F3] flex flex-col relative overflow-hidden">
             <div className="absolute h-full w-full inset-0 z-[0]">

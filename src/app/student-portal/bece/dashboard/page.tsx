@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { IoLogOut, IoDownload, IoPrint, IoSparkles, IoSwapHorizontal, IoTrophy } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import Paywall from './components/Paywall'
-import CertificateModal from '@/components/CertificateModal'
 import Image from 'next/image'
+import { generateBECECertificate } from '@/app/exam-portal/dashboard/schools/[schoolId]/bece/utils/certificateGenerator'
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
 import { useGetBECEResultQuery } from '../../store/api/studentApi'
@@ -28,7 +28,7 @@ export default function StudentDashboardPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const certificateRef = useRef<HTMLDivElement>(null)
-    const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
+    const [isDownloadingCertificate, setIsDownloadingCertificate] = useState(false)
     const [isPrinting, setIsPrinting] = useState(false)
     const [examNo, setExamNo] = useState<string | null>(null)
 
@@ -148,8 +148,38 @@ export default function StudentDashboardPage() {
         router.push('/student-portal')
     }
 
-    const handleDownload = () => {
-        setIsCertificateModalOpen(true)
+    const handleDownload = async () => {
+        if (!student) {
+            toast.error('Results not ready')
+            return
+        }
+        try {
+            setIsDownloadingCertificate(true)
+            toast.loading('Preparing certificate...', { id: 'cert-download' })
+            await generateBECECertificate(
+                {
+                    name: student.name,
+                    schoolName: student.schoolName || student.school,
+                    lga: student.lga,
+                    subjectCount: student.subjects.length,
+                    courses: student.subjects.map((s) => ({
+                        subject: s.name ?? '—',
+                        grade: (s.grade != null && String(s.grade).trim() !== '') ? String(s.grade).trim() : calculateGradeFromScore(s.exam ?? 0),
+                    })),
+                    examNumber: student.examNo,
+                    serialNumber: (student as { serialNumber?: string }).serialNumber != null
+                        ? String((student as { serialNumber?: string }).serialNumber)
+                        : undefined,
+                },
+                { filename: `BECE_Certificate_${(student.examNo || '').replace(/\//g, '_')}.png` }
+            )
+            toast.success('Certificate downloaded', { id: 'cert-download' })
+        } catch (err) {
+            console.error('Certificate download failed:', err)
+            toast.error('Failed to download certificate', { id: 'cert-download' })
+        } finally {
+            setIsDownloadingCertificate(false)
+        }
     }
 
     const handlePrint = async () => {
@@ -299,6 +329,7 @@ export default function StudentDashboardPage() {
         )
     }
 
+    // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50/30 via-white to-blue-50/30 print:bg-white">
             {/* Header */}
@@ -319,7 +350,7 @@ export default function StudentDashboardPage() {
                     },
                     {
                         key: 'download',
-                        loading: isCertificateModalOpen,
+                        loading: isDownloadingCertificate,
                         label: 'Download your Certificate',
                         shortLabel: 'Certificate',
                         loadingLabel: 'Downloading...',
@@ -663,15 +694,6 @@ export default function StudentDashboardPage() {
                 </div>
             </div>
 
-            {/* Certificate Modal (used by handleDownload) */}
-            {student && (
-                <CertificateModal
-                    isOpen={isCertificateModalOpen}
-                    onClose={() => setIsCertificateModalOpen(false)}
-                    student={student}
-                    schoolName={student.school}
-                />
-            )}
         </div>
     )
 }

@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { IoArrowBack, IoSchool, IoLocationOutline, IoPeopleOutline, IoCalendarOutline } from 'react-icons/io5'
+import toast from 'react-hot-toast'
 import SchoolStudentsTable from '../../components/SchoolStudentsTable'
 import StudentModal from '../../components/StudentModal'
-import CertificateModal from '@/components/CertificateModal'
 import SearchBar from '../../components/SearchBar'
 import { Student } from '../../types/student.types'
 import { updateSearchParam } from '@/app/exam-portal/utils'
 import { useDebounce } from '../../hooks/useDebounce'
+import { generateBECECertificate, studentToBECECertificateData } from './utils/certificateGenerator'
 
 interface School {
     _id: string
@@ -53,9 +54,6 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
     const debouncedSearch = useDebounce(localSearch, 500)
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
-    const [certificateStudent, setCertificateStudent] = useState<Student | null>(null)
-
     // Extract unique years from students
     const availableYears = React.useMemo(() => {
         const years = students
@@ -98,14 +96,19 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
         router.push(`/exam-portal/dashboard/schools/${schoolId}`)
     }
 
-    const handleGenerateCertificate = (student: Student) => {
-        setCertificateStudent(student)
-        setIsCertificateModalOpen(true)
-    }
-
-    const handleCloseCertificateModal = () => {
-        setIsCertificateModalOpen(false)
-        setCertificateStudent(null)
+    const handleGenerateCertificate = async (student: Student) => {
+        try {
+            const data = studentToBECECertificateData(student)
+            const lgaVal = typeof school.lga === 'string' ? school.lga : (school.lga as { name?: string })?.name ?? ''
+            await generateBECECertificate(
+                { ...data, schoolName: school.schoolName, lga: lgaVal || data.lga },
+                { filename: `BECE_Certificate_${(student.examNo || student.name).replace(/[/\\?*]/g, '_')}.png` }
+            )
+            toast.success('Certificate downloaded')
+        } catch (err) {
+            console.error('Certificate generation failed:', err)
+            toast.error('Failed to generate certificate')
+        }
     }
 
     const handleYearChange = (year: string) => {
@@ -215,15 +218,6 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
                 onUpdate={handleUpdateStudent}
                 onGenerateCertificate={handleGenerateCertificate}
             />
-
-            {certificateStudent && (
-                <CertificateModal
-                    isOpen={isCertificateModalOpen}
-                    onClose={handleCloseCertificateModal}
-                    student={certificateStudent}
-                    schoolName={school.schoolName}
-                />
-            )}
         </React.Fragment>
     )
 }
