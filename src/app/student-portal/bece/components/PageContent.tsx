@@ -1,6 +1,6 @@
 'use client'
-import React, { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState, useCallback, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { IoPersonCircle, IoLockClosed, IoTimeOutline, IoTrashOutline, IoChevronForward, IoClose, IoChevronDown, IoChevronUp } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
@@ -133,10 +133,19 @@ function RecentAccountCard({
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function StudentLoginPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
 
     const [examNo, setExamNo] = useState('')
     const [error, setError] = useState('')
     const [showAllAccounts, setShowAllAccounts] = useState(false)
+
+    // Autofill exam number from verify URL or direct link (e.g. /student-portal/bece?examNo=...)
+    useEffect(() => {
+        const fromUrl = searchParams.get('examNo')
+        if (fromUrl && typeof fromUrl === 'string' && fromUrl.trim()) {
+            setExamNo(fromUrl.trim())
+        }
+    }, [searchParams])
 
     // ── Recent accounts (persisted) ───────────────────────────────────────────
     const [recentAccounts, setRecentAccounts] = useLocalStorage<RecentAccount[]>(

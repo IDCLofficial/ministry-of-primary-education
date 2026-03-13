@@ -1,4 +1,9 @@
 import { UBEATStudent } from '../../../types/student.types'
+import {
+    generateUBEATCertificateQR,
+    loadImageFromDataUrl,
+    embedSteganographicId,
+} from './certificateSecurity'
 
 export interface CertificateData {
     student: UBEATStudent
@@ -598,24 +603,40 @@ export const generateUBEATCertificate = async (
 
         const img = new Image()
         img.crossOrigin = 'anonymous'
-        
-        img.onload = () => {
-            canvas.width  = img.width
+
+        img.onload = async () => {
+            canvas.width = img.width
             canvas.height = img.height
+            const cw = canvas.width
+            const ch = canvas.height
             ctx.drawImage(img, 0, 0)
 
+            let qrImg: HTMLImageElement | null = null
+            try {
+                const qrDataUrl = await generateUBEATCertificateQR(data, { size: 280, margin: 4 })
+                qrImg = await loadImageFromDataUrl(qrDataUrl)
+            } catch {
+                // continue without QR if signing/QR fails
+            }
+
             // ── Text fields ──────────────────────────────────────────────────
+
+            const examYear = student.examYear ?? new Date().getFullYear()
+            const serialDisplay =
+                student.serialNumber != null && String(student.serialNumber).trim() !== ''
+                    ? String(student.serialNumber).trim()
+                    : (student.examNumber ? `${examYear}-${student.examNumber.replace(/\//g, '-')}` : '')
 
             // Draw Student Name
             const studentNameConfig = fields.studentName
             setFont(ctx, studentNameConfig)
-            ctx.textAlign  = studentNameConfig.align as CanvasTextAlign
-            ctx.fillStyle  = studentNameConfig.color || '#000000'
+            ctx.textAlign = studentNameConfig.align as CanvasTextAlign
+            ctx.fillStyle = studentNameConfig.color || '#000000'
             drawRotatedText(
                 ctx,
                 applyTransform(student.studentName, studentNameConfig.transform),
-                calculatePosition(studentNameConfig.x, canvas.width),
-                calculatePosition(studentNameConfig.y, canvas.height),
+                calculatePosition(studentNameConfig.x, cw),
+                calculatePosition(studentNameConfig.y, ch),
                 studentNameConfig.rotation
             )
 
@@ -627,8 +648,8 @@ export const generateUBEATCertificate = async (
             drawRotatedText(
                 ctx,
                 applyTransform(schoolName, schoolNameConfig.transform),
-                calculatePosition(schoolNameConfig.x, canvas.width),
-                calculatePosition(schoolNameConfig.y, canvas.height),
+                calculatePosition(schoolNameConfig.x, cw),
+                calculatePosition(schoolNameConfig.y, ch),
                 schoolNameConfig.rotation
             )
 
@@ -638,12 +659,12 @@ export const generateUBEATCertificate = async (
                 setFont(ctx, examNumberConfig)
                 ctx.textAlign = examNumberConfig.align as CanvasTextAlign
                 ctx.fillStyle = examNumberConfig.color || '#000000'
-                const examText =`${student.examNumber}`
+                const examText = `${student.examNumber}`
                 drawRotatedText(
                     ctx,
                     applyTransform(examText, examNumberConfig.transform),
-                    calculatePosition(examNumberConfig.x, canvas.width),
-                    calculatePosition(examNumberConfig.y, canvas.height),
+                    calculatePosition(examNumberConfig.x, cw),
+                    calculatePosition(examNumberConfig.y, ch),
                     examNumberConfig.rotation
                 )
             }
@@ -654,81 +675,99 @@ export const generateUBEATCertificate = async (
                 setFont(ctx, yearConfig)
                 ctx.textAlign = yearConfig.align as CanvasTextAlign
                 ctx.fillStyle = yearConfig.color || '#000000'
-                const examYear = student.examYear || new Date().getFullYear()
                 const yearText = examYear.toString().slice(-2)
                 drawRotatedText(
                     ctx,
                     applyTransform(yearText, yearConfig.transform),
-                    calculatePosition(yearConfig.x, canvas.width),
-                    calculatePosition(yearConfig.y, canvas.height),
+                    calculatePosition(yearConfig.x, cw),
+                    calculatePosition(yearConfig.y, ch),
                     yearConfig.rotation
                 )
             }
 
-            // Draw Year
+            // Draw grade level year (pass type)
             if (customFields?.gradeLevel !== null && certificateType === 'pass') {
                 const gradeLevelConfig = fields.gradeLevel
                 setFont(ctx, gradeLevelConfig)
                 ctx.textAlign = gradeLevelConfig.align as CanvasTextAlign
                 ctx.fillStyle = gradeLevelConfig.color || '#000000'
-                const examYear = student.examYear || new Date().getFullYear()
                 const yearText = examYear.toString().slice(-2)
                 drawRotatedText(
                     ctx,
                     applyTransform(yearText, gradeLevelConfig.transform),
-                    calculatePosition(gradeLevelConfig.x, canvas.width),
-                    calculatePosition(gradeLevelConfig.y, canvas.height),
+                    calculatePosition(gradeLevelConfig.x, cw),
+                    calculatePosition(gradeLevelConfig.y, ch),
                     gradeLevelConfig.rotation
                 )
             }
 
-            // Draw Date
+            // Draw Date (display; issue date for integrity is in QR payload)
             const dateConfig = fields.date
             setFont(ctx, dateConfig)
             ctx.textAlign = dateConfig.align as CanvasTextAlign
             ctx.fillStyle = dateConfig.color || '#000000'
-            const examYear = student.examYear || new Date().getFullYear()
             const dateStr = new Date().toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: 'long',
                 year: undefined
-            }).replace(/\d{4}/, examYear.toString())
+            }).replace(/\d{4}/, String(examYear))
             drawRotatedText(
                 ctx,
                 applyTransform(dateStr, dateConfig.transform),
-                calculatePosition(dateConfig.x, canvas.width),
-                calculatePosition(dateConfig.y, canvas.height),
+                calculatePosition(dateConfig.x, cw),
+                calculatePosition(dateConfig.y, ch),
                 dateConfig.rotation
             )
 
-            // Draw Serial Number (optional)
+            // Draw Serial Number (optional; fallback to year-examNo when serial missing)
             if (customFields?.serialNumber !== null) {
                 const serialConfig = fields.serialNumber
                 setFont(ctx, serialConfig)
                 ctx.textAlign = serialConfig.align as CanvasTextAlign
                 ctx.fillStyle = serialConfig.color || '#000000'
-                const serialExamYear = student.examYear || new Date().getFullYear()
                 const serialText = certificateType === 'pass'
-                    ? `S/N: ${student.serialNumber}`
-                    : serialExamYear.toString().slice(-2)
-                drawRotatedText(
-                    ctx,
-                    applyTransform(serialText, serialConfig.transform),
-                    calculatePosition(serialConfig.x, canvas.width),
-                    calculatePosition(serialConfig.y, canvas.height),
-                    serialConfig.rotation
-                )
+                    ? (serialDisplay ? `S/N: ${serialDisplay}` : '')
+                    : examYear.toString().slice(-2)
+                if (serialText) {
+                    drawRotatedText(
+                        ctx,
+                        applyTransform(serialText, serialConfig.transform),
+                        calculatePosition(serialConfig.x, cw),
+                        calculatePosition(serialConfig.y, ch),
+                        serialConfig.rotation
+                    )
+                }
             }
 
             // ── Signature images ─────────────────────────────────────────────
 
             if (sig1Img && customFields?.signature1 !== null) {
-                drawSignature(ctx, sig1Img, signatures.signature1, canvas.width, canvas.height)
+                drawSignature(ctx, sig1Img, signatures.signature1, cw, ch)
             }
 
             if (sig2Img && customFields?.signature2 !== null) {
-                drawSignature(ctx, sig2Img, signatures.signature2, canvas.width, canvas.height)
+                drawSignature(ctx, sig2Img, signatures.signature2, cw, ch)
             }
+
+            // ── QR code (verify URL + HMAC-signed payload) ────────────────────
+
+            if (qrImg) {
+                const qrFraction = 0.14
+                const qrSizePx = Math.min(
+                    calculatePosition(qrFraction, cw),
+                    calculatePosition(qrFraction, ch)
+                )
+                const qrX = calculatePosition(0.853, cw)
+                const qrY = calculatePosition(0.87, ch)
+                ctx.imageSmoothingEnabled = true
+                ctx.imageSmoothingQuality = 'high'
+                ctx.drawImage(qrImg, qrX, qrY, qrSizePx, qrSizePx)
+            }
+
+            // ── Invisible steganographic watermark ────────────────────────────
+
+            const stegoId = (serialDisplay || student.examNumber || student.studentName || '').slice(0, 32)
+            if (stegoId) embedSteganographicId(ctx, stegoId, cw, ch)
 
             // ── Export ───────────────────────────────────────────────────────
 

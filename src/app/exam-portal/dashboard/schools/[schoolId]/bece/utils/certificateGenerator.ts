@@ -1,6 +1,11 @@
 import { capitalize, capitalizeWords } from '@/lib'
 import { Student, Subject } from '../../../types/student.types'
 import { toWordBracket, toYearPhrase, toYearWord } from '@/lib/numberToWords'
+import {
+    generateCertificateQR,
+    loadImageFromDataUrl,
+    embedSteganographicId,
+} from './certificateSecurity'
 
 export interface BECECertificateData {
     /** Student name (displayed after "This is to certify that") */
@@ -17,8 +22,10 @@ export interface BECECertificateData {
     courses: Array<{ subject: string; grade: string }>
     /** Exam number (e.g. IMS/JSC/...) */
     examNumber?: string
-    /** Certificate / serial number */
+    /** Certificate / serial number (fallback to examNumber when missing) */
     serialNumber?: string
+    /** Issue date (e.g. ISO "2025-03-12" or formatted); included in integrity check */
+    issueDate?: string
 }
 
 /** Normalize grade for display (never show undefined). */
@@ -57,6 +64,11 @@ export function studentToBECECertificateData(student: Student): BECECertificateD
         ? (typeof raw.lga === 'string' ? raw.lga : raw.lga?.name ?? '')
         : undefined
     const year = (student as { examYear?: number }).examYear ?? new Date().getFullYear()
+    const serial =
+        raw.serialNumber != null && String(raw.serialNumber).trim() !== ''
+            ? String(raw.serialNumber).trim()
+            : (student.examNo ? `${year}-${student.examNo.replace(/\//g, '-')}` : undefined)
+    const issueDate = new Date().toISOString().slice(0, 10)
     return {
         name: student.name,
         schoolName: student.schoolName ?? student.school ?? '',
@@ -65,7 +77,8 @@ export function studentToBECECertificateData(student: Student): BECECertificateD
         subjectCount: student.subjects.length,
         courses,
         examNumber: student.examNo,
-        serialNumber: raw.serialNumber != null ? String(raw.serialNumber) : undefined
+        serialNumber: serial,
+        issueDate,
     }
 }
 
@@ -132,6 +145,7 @@ export interface BECECertificateFieldsConfig {
     subjectCount?: Partial<FieldConfig>
     examNumber?: Partial<FieldConfig>
     serialNumber?: Partial<FieldConfig>
+    issueDate?: Partial<FieldConfig>
     signature1?: Partial<SignatureConfig>
     signature2?: Partial<SignatureConfig>
     tables?: Partial<TablesConfig>
@@ -206,16 +220,29 @@ const DEFAULT_EXAM_NUMBER: FieldConfig = {
 }
 
 const DEFAULT_SERIAL_NUMBER: FieldConfig = {
-    x: 0.79,
-    y: 0.76,
-    fontSize: 54,
-    fontWeight: 'bold',
+    x: 0.885,
+    y: 0.219,
+    fontSize: 48,
+    fontWeight: 'normal',
     fontStyle: 'normal',
     fontFamily: 'Times New Roman',
     align: 'right',
     color: '#000000',
     transform: 'none',
-    rotation: -0.2
+    rotation: 0.1
+}
+
+const DEFAULT_ISSUE_DATE: FieldConfig = {
+    x: 0.5,
+    y: 0.87,
+    fontSize: 42,
+    fontWeight: 'normal',
+    fontStyle: 'normal',
+    fontFamily: 'Times New Roman',
+    align: 'left',
+    color: '#000000',
+    transform: 'none',
+    rotation: 0
 }
 
 const DEFAULT_SIGNATURES = {
@@ -425,6 +452,7 @@ export async function generateBECECertificate(
     const subjectCount = mergeField(DEFAULT_SUBJECT_COUNT, custom.subjectCount)
     const examNumber = mergeField(DEFAULT_EXAM_NUMBER, custom.examNumber)
     const serialNumber = mergeField(DEFAULT_SERIAL_NUMBER, custom.serialNumber)
+    const issueDateConfig = mergeField(DEFAULT_ISSUE_DATE, custom.issueDate)
     const tables = mergeField(DEFAULT_TABLES, custom.tables)
     // SN column is only on the certificate table (always show for BECE cert)
     const tablesWithSn = { ...tables, showSn: true } as typeof tables
@@ -449,12 +477,20 @@ export async function generateBECECertificate(
 
         const img = new Image()
         img.crossOrigin = 'anonymous'
-        img.onload = () => {
+        img.onload = async () => {
             canvas.width = img.width
             canvas.height = img.height
             const cw = canvas.width
             const ch = canvas.height
             ctx.drawImage(img, 0, 0)
+
+            let qrImg: HTMLImageElement | null = null
+            try {
+                const qrDataUrl = await generateCertificateQR(data, { size: 280, margin: 4 })
+                qrImg = await loadImageFromDataUrl(qrDataUrl)
+            } catch {
+                throw new Error('Failed to generate Certificate.');
+            }
 
             // ── Name ──
             setFont(ctx, studentName)
@@ -523,17 +559,33 @@ export async function generateBECECertificate(
                 )
             }
 
-            // ── Cert / serial number ──
-            if (data.serialNumber != null && data.serialNumber !== '') {
+            // ── Cert / serial number (fallback to exam number when serial missing) ──
+            const serialDisplay = (data.serialNumber ?? data.examNumber ?? '').trim()
+            if (serialDisplay) {
                 setFont(ctx, serialNumber)
                 ctx.textAlign = (serialNumber.align ?? 'right') as CanvasTextAlign
                 ctx.fillStyle = serialNumber.color ?? '#000000'
                 drawRotatedText(
                     ctx,
-                    applyTransform(data.serialNumber, serialNumber.transform),
+                    applyTransform(serialDisplay, serialNumber.transform),
                     toPx(serialNumber.x, cw),
                     toPx(serialNumber.y, ch),
                     serialNumber.rotation ?? 0
+                )
+            }
+
+            // ── Issue date ──
+            if (data.issueDate != null && data.issueDate !== '') {
+                const issueStr = typeof data.issueDate === 'string' ? data.issueDate : new Date().toISOString().slice(0, 10)
+                setFont(ctx, issueDateConfig)
+                ctx.textAlign = (issueDateConfig.align ?? 'left') as CanvasTextAlign
+                ctx.fillStyle = issueDateConfig.color ?? '#000000'
+                drawRotatedText(
+                    ctx,
+                    applyTransform(issueStr, issueDateConfig.transform),
+                    toPx(issueDateConfig.x, cw),
+                    toPx(issueDateConfig.y, ch),
+                    issueDateConfig.rotation ?? 0
                 )
             }
 
@@ -544,6 +596,21 @@ export async function generateBECECertificate(
             // ── Signatures ──
             if (sig1Img) drawSignature(ctx, sig1Img, sig1, cw, ch)
             if (sig2Img) drawSignature(ctx, sig2Img, sig2, cw, ch)
+
+            // ── QR code (perfect square, verify URL + HMAC-signed payload for document integrity) ──
+            if (qrImg) {
+                const qrFraction = 0.14
+                const qrSizePx = Math.min(toPx(qrFraction, cw), toPx(qrFraction, ch))
+                const qrX = toPx(0.853, cw)
+                const qrY = toPx(0.87, ch)
+                ctx.imageSmoothingEnabled = true
+                ctx.imageSmoothingQuality = 'high'
+                ctx.drawImage(qrImg, qrX, qrY, qrSizePx, qrSizePx)
+            }
+
+            // ── Invisible steganographic watermark (survives screenshots) ──
+            const stegoId = (data.serialNumber ?? data.examNumber ?? data.name ?? '').slice(0, 32)
+            if (stegoId) embedSteganographicId(ctx, stegoId, cw, ch)
 
             // ── Export ──
             canvas.toBlob((blob) => {

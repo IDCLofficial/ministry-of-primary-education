@@ -156,21 +156,28 @@ export default function StudentDashboardPage() {
         try {
             setIsDownloadingCertificate(true)
             toast.loading('Preparing certificate...', { id: 'cert-download' })
+            const certYear = (student as { examYear?: number }).examYear ?? new Date().getFullYear()
+            const serial =
+                (student as { serialNumber?: string }).serialNumber != null &&
+                String((student as { serialNumber?: string }).serialNumber).trim() !== ''
+                    ? String((student as { serialNumber?: string }).serialNumber).trim()
+                    : student.examNo
+                        ? `${certYear}-${student.examNo.replace(/\//g, '-')}`
+                        : undefined
             await generateBECECertificate(
                 {
                     name: student.name,
                     schoolName: student.schoolName || student.school,
                     lga: student.lga,
-                    year: (student as { examYear?: number }).examYear ?? new Date().getFullYear(),
+                    year: certYear,
                     subjectCount: student.subjects.length,
                     courses: student.subjects.map((s) => ({
                         subject: s.name ?? '—',
                         grade: (s.grade != null && String(s.grade).trim() !== '') ? String(s.grade).trim() : calculateGradeFromScore(s.exam ?? 0),
                     })),
                     examNumber: student.examNo,
-                    serialNumber: (student as { serialNumber?: string }).serialNumber != null
-                        ? String((student as { serialNumber?: string }).serialNumber)
-                        : undefined,
+                    serialNumber: serial ?? student.examNo,
+                    issueDate: new Date().toISOString().slice(0, 10),
                 },
                 { filename: `BECE_Certificate_${(student.examNo || '').replace(/\//g, '_')}.png` }
             )

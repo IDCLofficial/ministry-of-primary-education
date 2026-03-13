@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { IoPersonCircle, IoLockClosed, IoCalendarOutline, IoSwapHorizontal, IoChevronForward, IoClose, IoTrashOutline, IoChevronDown, IoChevronUp } from 'react-icons/io5'
 import toast from 'react-hot-toast'
@@ -155,6 +155,14 @@ export default function UBEATLogin() {
     const [examNo, setExamNo] = useState('')
     const [error, setError] = useState('')
     const [showAllAccounts, setShowAllAccounts] = useState(false)
+
+    // Autofill exam number from verify URL or direct link (e.g. /student-portal/ubeat?examNo=...)
+    useEffect(() => {
+        const fromUrl = searchParams.get('examNo')
+        if (fromUrl && typeof fromUrl === 'string' && fromUrl.trim()) {
+            setExamNo(fromUrl.trim())
+        }
+    }, [searchParams])
 
     const showAlternativeForm = searchParams.get('form') === 'alternative'
 
