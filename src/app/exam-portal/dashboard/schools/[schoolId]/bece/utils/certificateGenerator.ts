@@ -1,13 +1,16 @@
 import { capitalize, capitalizeWords } from '@/lib'
 import { Student, Subject } from '../../../types/student.types'
+import { toWordBracket, toYearPhrase, toYearWord } from '@/lib/numberToWords'
 
 export interface BECECertificateData {
     /** Student name (displayed after "This is to certify that") */
     name: string
-    /** School name */
+    /** School name (used with LGA in the combined LGA line) */
     schoolName: string
-    /** LGA (Local Government Area) */
+    /** LGA (Local Government Area); displayed with school name on cert */
     lga?: string
+    /** Exam year (e.g. 2025) */
+    year?: number | string
     /** Number of subjects (e.g. "9") - displayed in "following _____ subjects" */
     subjectCount: number
     /** Courses to show in the two vertical tables: [{ subject, grade }, ...] */
@@ -53,10 +56,12 @@ export function studentToBECECertificateData(student: Student): BECECertificateD
     const lgaVal = raw.lga != null
         ? (typeof raw.lga === 'string' ? raw.lga : raw.lga?.name ?? '')
         : undefined
+    const year = (student as { examYear?: number }).examYear ?? new Date().getFullYear()
     return {
         name: student.name,
         schoolName: student.schoolName ?? student.school ?? '',
         lga: lgaVal || undefined,
+        year,
         subjectCount: student.subjects.length,
         courses,
         examNumber: student.examNo,
@@ -122,7 +127,7 @@ export interface TablesConfig {
 
 export interface BECECertificateFieldsConfig {
     studentName?: Partial<FieldConfig>
-    schoolName?: Partial<FieldConfig>
+    year?: Partial<FieldConfig>
     lga?: Partial<FieldConfig>
     subjectCount?: Partial<FieldConfig>
     examNumber?: Partial<FieldConfig>
@@ -147,7 +152,8 @@ const DEFAULT_STUDENT_NAME: FieldConfig = {
     rotation: 0
 }
 
-const DEFAULT_SCHOOL_NAME: FieldConfig = {
+/** Year field: uses same config as the old schoolName position (school name is now welded with LGA). */
+const DEFAULT_YEAR: FieldConfig = {
     x: 0.64,
     y: 0.475,
     fontSize: 54,
@@ -414,7 +420,7 @@ export async function generateBECECertificate(
     const subjectCountText = String(data.subjectCount)
 
     const studentName = mergeField(DEFAULT_STUDENT_NAME, custom.studentName)
-    const schoolName = mergeField(DEFAULT_SCHOOL_NAME, custom.schoolName)
+    const year = mergeField(DEFAULT_YEAR, custom.year)
     const lga = mergeField(DEFAULT_LGA, custom.lga)
     const subjectCount = mergeField(DEFAULT_SUBJECT_COUNT, custom.subjectCount)
     const examNumber = mergeField(DEFAULT_EXAM_NUMBER, custom.examNumber)
@@ -462,26 +468,29 @@ export async function generateBECECertificate(
                 studentName.rotation ?? 0
             )
 
-            // ── School name ──
-            setFont(ctx, schoolName)
-            ctx.textAlign = (schoolName.align ?? 'center') as CanvasTextAlign
-            ctx.fillStyle = schoolName.color ?? '#000000'
-            drawRotatedText(
-                ctx,
-                applyTransform(capitalizeWords(data.schoolName ?? ''), schoolName.transform),
-                toPx(schoolName.x, cw),
-                toPx(schoolName.y, ch),
-                schoolName.rotation ?? 0
-            )
+            // ── Year (schoolName config applied to year; school name is welded with LGA below) ──
+            if (data.year != null && data.year !== '') {
+                const yearText = toYearPhrase(Number(data.year ?? 0), "in the year")
+                setFont(ctx, year)
+                ctx.textAlign = (year.align ?? 'center') as CanvasTextAlign
+                ctx.fillStyle = year.color ?? '#000000'
+                drawRotatedText(
+                    ctx,
+                    applyTransform(yearText, year.transform),
+                    toPx(year.x, cw),
+                    toPx(year.y, ch),
+                    year.rotation ?? 0
+                )
+            }
 
-            // ── LGA ──
+            // ── LGA (school name + LGA combined) ──
             if (data.lga != null && data.lga !== '') {
                 setFont(ctx, lga)
                 ctx.textAlign = (lga.align ?? 'center') as CanvasTextAlign
                 ctx.fillStyle = lga.color ?? '#000000'
                 drawRotatedText(
                     ctx,
-                    applyTransform(`LGA: ${data.lga}`, lga.transform),
+                    applyTransform(`${capitalizeWords(data.schoolName ?? '')}, ${capitalizeWords(data.lga ?? '')}`, lga.transform),
                     toPx(lga.x, cw),
                     toPx(lga.y, ch),
                     lga.rotation ?? 0
@@ -494,7 +503,7 @@ export async function generateBECECertificate(
             ctx.fillStyle = subjectCount.color ?? '#000000'
             drawRotatedText(
                 ctx,
-                applyTransform(subjectCountText, subjectCount.transform),
+                applyTransform(capitalize(toWordBracket(Number(subjectCountText))), subjectCount.transform),
                 toPx(subjectCount.x, cw),
                 toPx(subjectCount.y, ch),
                 subjectCount.rotation ?? 0

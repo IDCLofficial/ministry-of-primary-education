@@ -161,6 +161,7 @@ export default function StudentDashboardPage() {
                     name: student.name,
                     schoolName: student.schoolName || student.school,
                     lga: student.lga,
+                    year: (student as { examYear?: number }).examYear ?? new Date().getFullYear(),
                     subjectCount: student.subjects.length,
                     courses: student.subjects.map((s) => ({
                         subject: s.name ?? '—',
