@@ -481,7 +481,7 @@ export default function UBEATDashboard() {
                                         </p>
                                         <p className="text-xs text-gray-500">Score</p>
                                     </div>
-                                    <div className="text-center">
+                                    <div className="text-center max-md:hidden">
                                         <p className="text-2xl font-semibold text-gray-900 mb-1">
                                             {subjectsArray.length}
                                         </p>
@@ -494,7 +494,7 @@ export default function UBEATDashboard() {
                         {/* Detailed Results Table */}
                         <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
                             <div className="border-b border-gray-100 px-6 py-4">
-                                <h3 className="text-sm font-semibold text-gray-900">Subject Results</h3>
+                                <h3 className="text-sm font-semibold text-gray-900">Subject Results <span className='text-gray-500'>({subjectsArray.length})</span></h3>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="min-w-full">
