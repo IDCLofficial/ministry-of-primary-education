@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { verifyPayment } from '../utils/api'
+import { getSecureItem } from '@/app/student-portal/utils/secureStorage'
 
 export default function StudentPaymentCallbackPage() {
   const searchParams = useSearchParams()
@@ -21,10 +22,12 @@ export default function StudentPaymentCallbackPage() {
   const trxref = searchParams.get('trxref')
   const reference = searchParams.get('reference')
 
-  const paymentReturnUrl = useMemo(() => 
-    (typeof localStorage !== 'undefined' && localStorage.getItem('student-payment-return-url')) || '/student-portal/dashboard', 
-    []
-  )
+  const [paymentReturnUrl, setPaymentReturnUrl] = useState('/student-portal/dashboard')
+  useEffect(() => {
+    getSecureItem('student-payment-return-url').then((url) => {
+      if (url) setPaymentReturnUrl(url)
+    })
+  }, [])
 
   // Verify payment on mount
   useEffect(() => {

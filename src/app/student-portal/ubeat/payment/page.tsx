@@ -37,6 +37,7 @@ import animationData from '../../assets/students.json'
 import { verifyPayment } from '../../utils/api'
 import { useFindUBEATResultMutation } from '../../store/api/studentApi'
 import { capitalizeWords } from '@/lib'
+import { getSecureItem, setSecureItem, removeSecureItem } from '@/app/student-portal/utils/secureStorage'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -101,7 +102,7 @@ interface PaystackResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Storage helpers (centralised localStorage access)
+// Storage helpers (encrypted localStorage)
 // ---------------------------------------------------------------------------
 
 const STORAGE_KEYS = {
@@ -114,34 +115,31 @@ const STORAGE_KEYS = {
 } as const
 
 const storage = {
-    getFormData(): StudentFormData | null {
+    async getFormData(): Promise<StudentFormData | null> {
         try {
-            const raw = localStorage.getItem(STORAGE_KEYS.FORM_DATA)
+            const raw = await getSecureItem(STORAGE_KEYS.FORM_DATA)
             return raw ? (JSON.parse(raw) as StudentFormData) : null
         } catch {
             return null
         }
     },
-    getPaymentUrl(): string {
-        return localStorage.getItem(STORAGE_KEYS.PAYMENT_URL) ?? ''
+    async getPaymentUrl(): Promise<string> {
+        return (await getSecureItem(STORAGE_KEYS.PAYMENT_URL)) ?? ''
     },
-    getPaymentRef(): string {
-        return localStorage.getItem(STORAGE_KEYS.PAYMENT_REF) ?? ''
+    async getPaymentRef(): Promise<string> {
+        return (await getSecureItem(STORAGE_KEYS.PAYMENT_REF)) ?? ''
     },
-    getReturnUrl(): string {
-        return (
-            localStorage.getItem(STORAGE_KEYS.RETURN_URL) ??
-            '/student-portal/ubeat/dashboard'
-        )
+    async getReturnUrl(): Promise<string> {
+        return (await getSecureItem(STORAGE_KEYS.RETURN_URL)) ?? '/student-portal/ubeat/dashboard'
     },
-    saveExamAccess(examNumber: string): void {
-        localStorage.setItem(STORAGE_KEYS.EXAM_NO, examNumber)
-        localStorage.setItem(STORAGE_KEYS.EXAM_TYPE, 'ubeat')
+    async saveExamAccess(examNumber: string): Promise<void> {
+        await setSecureItem(STORAGE_KEYS.EXAM_NO, examNumber)
+        await setSecureItem(STORAGE_KEYS.EXAM_TYPE, 'ubeat')
     },
     clearPaymentData(): void {
-        localStorage.removeItem(STORAGE_KEYS.PAYMENT_URL)
-        localStorage.removeItem(STORAGE_KEYS.PAYMENT_REF)
-        localStorage.removeItem(STORAGE_KEYS.FORM_DATA)
+        removeSecureItem(STORAGE_KEYS.PAYMENT_URL)
+        removeSecureItem(STORAGE_KEYS.PAYMENT_REF)
+        removeSecureItem(STORAGE_KEYS.FORM_DATA)
     },
 }
 
@@ -204,42 +202,44 @@ function usePaymentSetup(isCallback: boolean) {
     useEffect(() => {
         if (isCallback) return
 
-        const formData = storage.getFormData()
-
-        if (!formData) {
-            toast.error('No payment data found. Please try again.')
-            router.replace('/student-portal/ubeat')
-            return
-        }
-
-        setStudentData(formData);
-        setIsLoadingUrl(true);
-
-        const fetchUrl = async () => {
-            try {
-                const result = await findUBEATResult({
-                    schoolId: formData.school.id,
-                    examYear: parseInt(formData.examYear, 10),
-                    studentName: formData.fullName,
-                    lga: formData.lga,
-                }).unwrap()
-
-                const { paymentUrl, paymentReference } = result as {
-                    paymentUrl: string
-                    paymentReference: string
-                }
-
-                setPaymentUrl(paymentUrl)
-                setPaymentReference(paymentReference)
-            } catch (err) {
-                console.error('Failed to fetch payment URL:', err)
-                setSetupError('Unable to initialise payment. Please go back and try again.')
-            } finally {
-                setIsLoadingUrl(false)
+        let cancelled = false
+        storage.getFormData().then((formData) => {
+            if (cancelled) return
+            if (!formData) {
+                toast.error('No payment data found. Please try again.')
+                router.replace('/student-portal/ubeat')
+                return
             }
-        }
+            setStudentData(formData)
+            setIsLoadingUrl(true)
 
-        fetchUrl()
+            const fetchUrl = async () => {
+                try {
+                    const result = await findUBEATResult({
+                        schoolId: formData.school.id,
+                        examYear: parseInt(formData.examYear, 10),
+                        studentName: formData.fullName,
+                        lga: formData.lga,
+                    }).unwrap()
+
+                    if (cancelled) return
+                    const { paymentUrl: url, paymentReference: ref } = result as {
+                        paymentUrl: string
+                        paymentReference: string
+                    }
+                    setPaymentUrl(url)
+                    setPaymentReference(ref)
+                } catch (err) {
+                    if (cancelled) return
+                    console.error('Failed to fetch payment URL:', err)
+                    setSetupError('Unable to initialise payment. Please go back and try again.')
+                } finally {
+                    if (!cancelled) setIsLoadingUrl(false)
+                }
+            }
+            fetchUrl()
+        })
+        return () => { cancelled = true }
     }, [isCallback]) // eslint-disable-line react-hooks/exhaustive-deps
 
     return {
@@ -309,7 +309,7 @@ function usePaymentVerification(
                         }
 
                         if (response.examNumber) {
-                            storage.saveExamAccess(response.examNumber)
+                            await storage.saveExamAccess(response.examNumber)
                         }
                         storage.clearPaymentData()
 
@@ -986,7 +986,10 @@ function PaymentContent() {
     const trxref = searchParams.get('trxref')
     const isCallback = !!reference
 
-    const returnUrl = useMemo(() => storage.getReturnUrl(), [])
+    const [returnUrl, setReturnUrl] = useState('/student-portal/ubeat/dashboard')
+    useEffect(() => {
+        storage.getReturnUrl().then(setReturnUrl)
+    }, [])
 
     // Pending flow
     const { studentData, paymentUrl, paymentReference, setupError, isLoadingUrl } =

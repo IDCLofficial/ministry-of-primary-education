@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useCallback, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { setSecureItem, removeSecureItem, useSecureLocalStorage } from '@/app/student-portal/utils/secureStorage'
 import { IoPersonCircle, IoLockClosed, IoTimeOutline, IoTrashOutline, IoChevronForward, IoClose, IoChevronDown, IoChevronUp } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
@@ -10,8 +11,6 @@ import { useDebounce } from '../../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
 import { useLazyGetBECEResultQuery } from '../../store/api/studentApi'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
-import { useLocalStorage } from 'react-use'
-
 // ─── Constants ────────────────────────────────────────────────────────────────
 // XX/000/000
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
@@ -147,8 +146,8 @@ export default function StudentLoginPage() {
         }
     }, [searchParams])
 
-    // ── Recent accounts (persisted) ───────────────────────────────────────────
-    const [recentAccounts, setRecentAccounts] = useLocalStorage<RecentAccount[]>(
+    // ── Recent accounts (persisted, encrypted) ───────────────────────────────
+    const [recentAccounts, setRecentAccounts] = useSecureLocalStorage<RecentAccount[]>(
         'bece_recent_accounts',
         [],
     )
@@ -220,8 +219,8 @@ export default function StudentLoginPage() {
                 lastAccessed: Date.now(),
             })
 
-            localStorage.setItem('student_exam_no', examNo)
-            localStorage.setItem('selected_exam_type', 'bece')
+            setSecureItem('student_exam_no', examNo)
+            setSecureItem('selected_exam_type', 'bece')
 
             toast.dismiss("loading-results")
 
@@ -268,8 +267,8 @@ export default function StudentLoginPage() {
                 lastAccessed: Date.now(),
             })
 
-            localStorage.setItem('student_exam_no', selectedExamNo)
-            localStorage.setItem('selected_exam_type', 'bece')
+            setSecureItem('student_exam_no', selectedExamNo).then(() => {})
+            setSecureItem('selected_exam_type', 'bece').then(() => {})
             toast.dismiss("loading-results")
             toast.success(`Welcome back, ${result.name}! 🎉`)
             router.push('/student-portal/bece/dashboard')

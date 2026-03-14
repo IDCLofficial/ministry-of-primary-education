@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getPortalToken } from '@/app/student-portal/utils/secureStorage';
 
 interface PaymentData {
   id: string;
@@ -43,7 +44,7 @@ export default function TransactionView() {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem('token')}`
+            "Authorization": `Bearer ${getPortalToken() ?? ''}`
           }
         });
         

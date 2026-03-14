@@ -23,4 +23,5 @@ export const endpoints = {
     VERIFY_RESET_CODE: "/auth/verify-reset-code",
     RESET_PASSWORD: "/auth/reset-password",
     VERIFY_RESET_TOKEN: "/auth/validate-reset-token",
+    LOAD_EXAMS_DATA: "/exams"
 } as const

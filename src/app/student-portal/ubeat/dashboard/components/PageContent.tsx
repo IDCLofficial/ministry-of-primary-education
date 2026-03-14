@@ -11,6 +11,7 @@ import { UBEATStudent } from '@/app/exam-portal/dashboard/schools/types/student.
 import { generateUBEATCertificate } from '@/app/exam-portal/dashboard/schools/[schoolId]/ubeat/utils/certificateGenerator'
 import { useGetUBEATResultQuery } from '../../../store/api/studentApi'
 import Lottie from 'lottie-react'
+import { getSecureItem, removeSecureItem } from '@/app/student-portal/utils/secureStorage'
 import celebrationData from "../components/CelebrationLolo.json"
 import { useMedia } from 'react-use'
 import PortalHeader from '../../../components/Portalheader'
@@ -43,20 +44,23 @@ export default function UBEATDashboard() {
         }
     }, [searchParams])
 
-    // Get exam number from localStorage
+    // Get exam number from encrypted localStorage
     useEffect(() => {
-        const storedExamNo = localStorage.getItem('student_exam_no')
-        const selectedExamType = localStorage.getItem('selected_exam_type')
-
-        if (!storedExamNo || selectedExamType !== 'ubeat' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
-            toast.error('Invalid exam number. Please log in again.')
-            router.push('/student-portal/ubeat')
-            return
-        }
-
-        // Format exam number: replace "/" with "-"
-        const formattedExamNo = storedExamNo.replace(/\//g, '-')
-        setExamNo(formattedExamNo)
+        let cancelled = false
+        Promise.all([
+            getSecureItem('student_exam_no'),
+            getSecureItem('selected_exam_type'),
+        ]).then(([storedExamNo, selectedExamType]) => {
+            if (cancelled) return
+            if (!storedExamNo || selectedExamType !== 'ubeat' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
+                toast.error('Invalid exam number. Please log in again.')
+                router.push('/student-portal/ubeat')
+                return
+            }
+            const formattedExamNo = storedExamNo.replace(/\//g, '-')
+            setExamNo(formattedExamNo)
+        })
+        return () => { cancelled = true }
     }, [router])
 
     // Fetch student data using RTK Query
@@ -70,14 +74,14 @@ export default function UBEATDashboard() {
     })
 
     const handleLogout = () => {
-        localStorage.removeItem('student_exam_no')
-        localStorage.removeItem('selected_exam_type')
+        removeSecureItem('student_exam_no')
+        removeSecureItem('selected_exam_type')
         toast.success('Logged out successfully')
         router.push('/student-portal/ubeat')
     }
 
     const handleChangeExam = () => {
-        localStorage.removeItem('selected_exam_type')
+        removeSecureItem('selected_exam_type')
         toast('Returning to exam selection...', { icon: '🔄' })
         router.push('/student-portal')
     }

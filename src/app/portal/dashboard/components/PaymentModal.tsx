@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useCreateStudentPaymentMutation, ExamTypeEnum, SchoolByCodeResponse } from '../../store/api/authApi'
 import toast from 'react-hot-toast'
+import { setSecureItem } from '@/app/student-portal/utils/secureStorage'
 
 interface PaymentModalProps {
   isOpen: boolean
@@ -120,8 +121,8 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
         throw new Error('Payment authorization URL not found. Please try again.')
       }
 
-      // Save current URL to localStorage for payment callback to return to
-      localStorage.setItem('payment-return-url', window.location.href)
+      // Save current URL for payment callback (encrypted)
+      await setSecureItem('payment-return-url', window.location.href)
       window.location.href = response.authorizationUrl
     } catch (error) {
       setIsProcessing(false)

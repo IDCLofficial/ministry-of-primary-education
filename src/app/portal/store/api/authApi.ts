@@ -1,5 +1,6 @@
 import { API_BASE_URL, endpoints } from '../../utils/constants/Api.const'
 import { apiSlice } from './apiSlice'
+import { getPortalToken } from '@/app/student-portal/utils/secureStorage'
 
 // School name response type
 interface SchoolName {
@@ -322,7 +323,7 @@ export const authApi = apiSlice.injectEndpoints({
       query: (schoolCode) => `${API_BASE_URL}${endpoints.GET_SCHOOL_BY_CODE(schoolCode)}`,
       providesTags: ['School'],
     }),
-    
+
     // Get LGAs
     getLGAs: builder.query<string[], void>({
       query: () => `${API_BASE_URL}${endpoints.GET_LGAS}`,
@@ -406,7 +407,7 @@ export const authApi = apiSlice.injectEndpoints({
         url: `${API_BASE_URL}${endpoints.PROFILE}`,
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
           'Content-Type': 'application/json',
         },
       }),
@@ -430,7 +431,7 @@ export const authApi = apiSlice.injectEndpoints({
           url: `${API_BASE_URL}${endpoints.GET_STUDENTS_BY_SCHOOL(examType, schoolId)}/?${params.toString()}`,
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+            'Authorization': `Bearer ${getPortalToken() ?? ''}`,
             'Content-Type': 'application/json',
           },
         };
@@ -445,7 +446,7 @@ export const authApi = apiSlice.injectEndpoints({
         method: 'POST',
         body: paymentData,
         headers: {
-          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
           'Content-Type': 'application/json',
         },
       }),
@@ -458,7 +459,7 @@ export const authApi = apiSlice.injectEndpoints({
         url: `${API_BASE_URL}${endpoints.VERIFY_PAYMENT}/${reference}`,
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
           'Content-Type': 'application/json',
         },
       }),
@@ -472,7 +473,7 @@ export const authApi = apiSlice.injectEndpoints({
         method: 'POST',
         body: { ...studentData },
         headers: {
-          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
           'Content-Type': 'application/json',
         },
       }),
@@ -486,7 +487,7 @@ export const authApi = apiSlice.injectEndpoints({
         method: 'PATCH',
         body: data,
         headers: {
-          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
           'Content-Type': 'application/json',
         },
       }),
@@ -500,7 +501,7 @@ export const authApi = apiSlice.injectEndpoints({
         method: 'PATCH',
         body: data,
         headers: {
-          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
           'Content-Type': 'application/json',
         },
       }),
@@ -514,7 +515,7 @@ export const authApi = apiSlice.injectEndpoints({
         method: 'PATCH',
         body: data,
         headers: {
-          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
           'Content-Type': 'application/json',
         },
       }),
@@ -526,7 +527,7 @@ export const authApi = apiSlice.injectEndpoints({
         url: `${API_BASE_URL}${endpoints.DELETE_ACCOUNT}`,
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('access_token') : ''}`,
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
           'Content-Type': 'application/json',
         },
       }),
@@ -568,6 +569,17 @@ export const authApi = apiSlice.injectEndpoints({
         },
       }),
     }),
+
+    // Load exams data
+    loadExamsData: builder.query<unknown, void>({
+      query: () => ({
+        url: `${API_BASE_URL}${endpoints.LOAD_EXAMS_DATA}`,
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+    }),
   }),
   overrideExisting: true,
 })
@@ -594,6 +606,7 @@ export const {
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useVerifyResetTokenMutation,
+  useLoadExamsDataQuery,
 } = authApi
 
 // Export types for use in components

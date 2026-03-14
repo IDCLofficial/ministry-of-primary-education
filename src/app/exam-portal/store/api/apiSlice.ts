@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { API_BASE_URL } from '../../utils/constants/Api.const'
+import { getExamPortalToken } from '@/app/student-portal/utils/secureStorage'
 
 // Base API slice for BECE portal
 export const apiSlice = createApi({
@@ -7,8 +8,7 @@ export const apiSlice = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
     prepareHeaders: (headers) => {
-      // Get token from localStorage or state
-      const token = localStorage.getItem('bece_access_token')
+      const token = getExamPortalToken()
       if (token) {
         headers.set('authorization', `Bearer ${token}`)
       }

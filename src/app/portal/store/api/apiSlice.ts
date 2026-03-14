@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { getPortalToken } from '@/app/student-portal/utils/secureStorage'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://moe-backend-production-3842.up.railway.app'
 
@@ -8,7 +9,7 @@ export const apiSlice = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl: API_BASE_URL,
         prepareHeaders: (headers, { endpoint } ) => {
-            const token = localStorage.getItem('access_token');
+            const token = getPortalToken();
             // Add ngrok header for external API calls
             const skipAuthEndpoints = [
                 'login', 

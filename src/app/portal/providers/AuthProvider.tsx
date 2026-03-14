@@ -6,6 +6,12 @@ import { useGetProfileQuery, useLogoutMutation } from '../store/api/authApi'
 import toast from 'react-hot-toast'
 import { useDispatch } from 'react-redux'
 import { massInvalidateTags } from '../store/api/apiSlice'
+import {
+  getSecureItem,
+  setSecureItem,
+  removeSecureItem,
+  setPortalToken,
+} from '@/app/student-portal/utils/secureStorage'
 
 interface School {
   id: string
@@ -79,15 +85,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // ─── Shared auth-clear helper ───────────────────────────────────────────────
   const clearAuth = useCallback(() => {
-    fetchWasRequested.current = false  // invalidate any in-flight or cached fetch for this session
+    fetchWasRequested.current = false
     setToken(null)
     setSchool(null)
     setIsAuthenticated(false)
     setSkipProfileQuery(true)
-    setSessionId(null)  // nulled here; login() sets a fresh ID so the next query has a new cache key
+    setSessionId(null)
     dispatch(massInvalidateTags(['School', 'Students']))
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('school')
+    removeSecureItem('access_token')
+    removeSecureItem('school')
+    setPortalToken(null)
   }, [dispatch])
 
   // ─── Logout side-effects ────────────────────────────────────────────────────
@@ -114,47 +121,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, 100)
   }, [isLogoutSuccess, clearAuth, router, dispatch])
 
-  // ─── Initial auth check ─────────────────────────────────────────────────────
+  // ─── Initial auth check (encrypted storage) ───────────────────────────────────
   useEffect(() => {
     if (path.includes(IIRS_PATH)) {
       setLocalAuthChecked(true)
       return
     }
 
-    try {
-      const storedToken = localStorage.getItem('access_token')
-      const storedSchool = localStorage.getItem('school')
+    let cancelled = false
+    Promise.all([
+      getSecureItem('access_token'),
+      getSecureItem('school'),
+    ])
+      .then(([storedToken, storedSchool]) => {
+        if (cancelled) return
+        if (storedToken && storedToken !== 'undefined' && storedToken !== 'null') {
+          const restoredSessionId = crypto.randomUUID()
+          setSessionId(restoredSessionId)
+          setToken(storedToken)
+          setPortalToken(storedToken)
+          setSkipProfileQuery(false)
+          fetchWasRequested.current = true
 
-      if (storedToken && storedToken !== 'undefined' && storedToken !== 'null') {
-        const restoredSessionId = crypto.randomUUID()
-        setSessionId(restoredSessionId)
-        setToken(storedToken)
-        setSkipProfileQuery(false)
-        fetchWasRequested.current = true
-
-        if (storedSchool && storedSchool !== 'undefined' && storedSchool !== 'null') {
-          try {
-            const parsedSchool = JSON.parse(storedSchool) as School
-            if (parsedSchool && typeof parsedSchool === 'object') {
-              setSchool(parsedSchool)
-              setIsAuthenticated(true)
-            } else {
-              throw new Error('Invalid school data format')
+          if (storedSchool && storedSchool !== 'undefined' && storedSchool !== 'null') {
+            try {
+              const parsedSchool = JSON.parse(storedSchool) as School
+              if (parsedSchool && typeof parsedSchool === 'object') {
+                setSchool(parsedSchool)
+                setIsAuthenticated(true)
+              } else {
+                throw new Error('Invalid school data format')
+              }
+            } catch {
+              removeSecureItem('school')
             }
-          } catch (parseError) {
-            localStorage.removeItem('school')
           }
+        } else {
+          removeSecureItem('access_token')
+          removeSecureItem('school')
+          setPortalToken(null)
         }
-      } else {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('school')
-      }
-    } catch (error) {
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('school')
-    } finally {
-      setLocalAuthChecked(true)
-    }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          removeSecureItem('access_token')
+          removeSecureItem('school')
+          setPortalToken(null)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLocalAuthChecked(true)
+      })
+    return () => { cancelled = true }
   }, [path])
 
   // ─── Logout action ──────────────────────────────────────────────────────────
@@ -182,7 +200,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (profileData && token) {
       setSchool(profileData)
       setIsAuthenticated(true)
-      localStorage.setItem('school', JSON.stringify(profileData))
+      setSecureItem('school', JSON.stringify(profileData)).then(() => {})
       setIsLoading(false)
       return
     }
@@ -209,13 +227,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // ─── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback((newToken: string, newSchool: School) => {
-    try {
-      localStorage.setItem('access_token', newToken)
-      localStorage.setItem('school', JSON.stringify(newSchool))
-
-      setToken(newToken)
-      setSchool(newSchool)
-      setIsAuthenticated(true)
+    setSecureItem('access_token', newToken).then(() => {})
+    setSecureItem('school', JSON.stringify(newSchool)).then(() => {})
+    setPortalToken(newToken)
+    setToken(newToken)
+    setSchool(newSchool)
+    setIsAuthenticated(true)
 
       setLocalAuthChecked(true)
       setIsLoading(true)
@@ -242,10 +259,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         router.push('/portal/dashboard')
         setIsNavigating(false)
       }, 600)
-    } catch (error) {
-      console.error('[AuthProvider] login error:', error)
-      setIsNavigating(false)
-    }
   }, [router])
 
   // ─── Refresh helper ─────────────────────────────────────────────────────────

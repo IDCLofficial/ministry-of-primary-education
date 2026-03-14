@@ -2,7 +2,13 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getProfile } from '@/lib/iirs/dataInteraction';
+import { getProfile } from '@/lib/iirs/dataInteraction'
+import {
+  getSecureItem,
+  setSecureItem,
+  removeSecureItem,
+  setPortalToken,
+} from '@/app/student-portal/utils/secureStorage'
 
 export interface UserProfile {
   id: string
@@ -43,36 +49,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Profile query - only runs when we have a token
 
-  // Check for existing authentication on mount
+  // Check for existing authentication on mount (encrypted storage)
   useEffect(() => {
-    const checkAuth = () => {
-      setIsLoading(true)
-      try {
-        const storedToken = localStorage.getItem('access_token') || 'empty'
-
-        if (storedToken) {
+    setIsLoading(true)
+    let cancelled = false
+    getSecureItem('access_token')
+      .then((storedToken) => {
+        if (cancelled) return
+        if (storedToken && storedToken !== 'empty') {
           setToken(storedToken)
+          setPortalToken(storedToken)
+        } else {
+          setIsLoading(false)
         }
-      } catch (error) {
-        console.error('Error checking authentication:', error)
-        // Clear invalid data
-        localStorage.removeItem('access_token')
-      }
-    }
-
-    checkAuth()
+      })
+      .catch(() => {
+        if (!cancelled) {
+          removeSecureItem('access_token')
+          setIsLoading(false)
+        }
+      })
+    return () => { cancelled = true }
   }, [])
 
   const logout = useCallback(() => {
-    try {
-      localStorage.removeItem('access_token')
-      setToken(null)
-      setIsAuthenticated(false)
-      console.log("logging out from AuthProvider->user")
-      router.replace('/portal/iirs')
-    } catch (error) {
-      console.error('Error during logout:', error)
-    }
+    removeSecureItem('access_token')
+    setPortalToken(null)
+    setToken(null)
+    setIsAuthenticated(false)
+    router.replace('/portal/iirs')
   }, [router])
 
   const getUserProfile = useCallback(async () => {
@@ -108,14 +113,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 
   const login = (newToken: string) => {
-    try {
-      localStorage.setItem('access_token', newToken)
-      setToken(newToken)
-      setIsAuthenticated(true)
-      router.push('/portal/iirs/dashboard')
-    } catch (error) {
-      console.error('Error storing authentication data:', error)
-    }
+    setSecureItem('access_token', newToken).then(() => {})
+    setPortalToken(newToken)
+    setToken(newToken)
+    setIsAuthenticated(true)
+    router.push('/portal/iirs/dashboard')
   }
 
 

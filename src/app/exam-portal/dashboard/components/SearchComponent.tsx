@@ -3,6 +3,7 @@ import useShortcuts from '@useverse/useshortcuts';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { IoSchoolOutline, IoPeopleOutline, IoDocumentTextOutline, IoTimeOutline, IoStatsChartOutline, IoCloseCircle } from 'react-icons/io5';
+import { getSecureItem, setSecureItem, removeSecureItem } from '@/app/student-portal/utils/secureStorage';
 
 type SearchCategory = 'pages' | 'actions' | 'schools' | 'students';
 
@@ -115,13 +116,13 @@ export default function SearchComponent() {
         return groups;
     }, [filteredItems]);
 
-    // Load recent searches from localStorage
+    // Load recent searches from encrypted storage
     React.useEffect(() => {
-        const stored = localStorage.getItem('recentSearches');
-        if (stored) {
+        let cancelled = false;
+        getSecureItem('recentSearches').then((stored) => {
+            if (cancelled || !stored) return;
             try {
                 const parsed: StoredSearchItem[] = JSON.parse(stored);
-                // Reconstruct full items from stored data
                 const reconstructed = parsed
                     .map(storedItem => allItems.find(item => item.id === storedItem.id))
                     .filter((item): item is SearchItem => item !== undefined)
@@ -130,7 +131,8 @@ export default function SearchComponent() {
             } catch (e) {
                 console.error('Failed to parse recent searches', e);
             }
-        }
+        });
+        return () => { cancelled = true };
     }, [allItems]);
 
     // Save to recent searches
@@ -142,14 +144,14 @@ export default function SearchComponent() {
         
         setRecentSearches(updated);
         
-        // Store only serializable data
+        // Store only serializable data (encrypted)
         const toStore: StoredSearchItem[] = updated.map(({ id, title, description, category }) => ({
             id,
             title,
             description,
             category
         }));
-        localStorage.setItem('recentSearches', JSON.stringify(toStore));
+        setSecureItem('recentSearches', JSON.stringify(toStore)).then(() => {});
     };
 
     // Handle item selection
@@ -341,7 +343,7 @@ export default function SearchComponent() {
                                             <button
                                                 onClick={() => {
                                                     setRecentSearches([]);
-                                                    localStorage.removeItem('recentSearches');
+                                                    removeSecureItem('recentSearches');
                                                 }}
                                                 className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
                                             >

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { createPayment } from '@/app/student-portal/utils/api'
 import { ExamTypeEnum } from '@/app/portal/store/api/authApi'
 import { useTopLoader } from "nextjs-toploader"
+import { setSecureItem, removeSecureItem } from '@/app/student-portal/utils/secureStorage'
 
 interface PaywallProps {
     examNo: string
@@ -20,9 +21,9 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
         if (isProcessing) return;
         try {
             setIsProcessing(true)
-            // Store return URL for redirect after payment
-            localStorage.setItem('student-payment-return-url', '/student-portal/ubeat/dashboard')
-            
+            // Store return URL for redirect after payment (encrypted)
+            await setSecureItem('student-payment-return-url', '/student-portal/ubeat/dashboard')
+
             const response = await createPayment(examNo, ExamTypeEnum.UBEAT);
             
             if (response.authorizationUrl) {
@@ -46,8 +47,8 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
         toast('Come back soon!', {
             icon: '👋',
         })
-        localStorage.removeItem('student_exam_no')
-        localStorage.removeItem('selected_exam_type')
+        removeSecureItem('student_exam_no')
+        removeSecureItem('selected_exam_type')
         window.location.href = '/student-portal/ubeat'
     }
 

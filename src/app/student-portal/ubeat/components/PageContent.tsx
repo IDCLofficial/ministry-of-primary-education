@@ -12,7 +12,7 @@ import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
 import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation } from '../../store/api/studentApi'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
-import { useLocalStorage } from 'react-use'
+import { setSecureItem, useSecureLocalStorage } from '@/app/student-portal/utils/secureStorage'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -173,8 +173,8 @@ export default function UBEATLogin() {
         examYear: new Date().getFullYear().toString(),
     })
 
-    // ── Recent accounts (persisted) ───────────────────────────────────────────
-    const [recentAccounts, setRecentAccounts] = useLocalStorage<RecentAccount[]>(
+    // ── Recent accounts (persisted, encrypted) ───────────────────────────────
+    const [recentAccounts, setRecentAccounts] = useSecureLocalStorage<RecentAccount[]>(
         'ubeat_recent_accounts',
         [],
     )
@@ -259,8 +259,8 @@ export default function UBEATLogin() {
                 lastAccessed: Date.now(),
             })
 
-            localStorage.setItem('student_exam_no', examNo)
-            localStorage.setItem('selected_exam_type', 'ubeat');
+            setSecureItem('student_exam_no', examNo).then(() => {})
+            setSecureItem('selected_exam_type', 'ubeat').then(() => {})
 
             toast.dismiss("loading-results");
 
@@ -315,8 +315,8 @@ export default function UBEATLogin() {
             })
             toast.dismiss("loading-results")
 
-            localStorage.setItem('student_exam_no', selectedExamNo)
-            localStorage.setItem('selected_exam_type', 'ubeat')
+            setSecureItem('student_exam_no', selectedExamNo).then(() => {})
+            setSecureItem('selected_exam_type', 'ubeat').then(() => {})
             toast.success(`Welcome back, ${result.studentName}! 🎉`)
             router.push('/student-portal/ubeat/dashboard')
         } catch {
@@ -351,13 +351,13 @@ export default function UBEATLogin() {
                 setError(msg); toast.error(msg); return
             }
 
-            localStorage.setItem('ubeat_alt_form_data', JSON.stringify({
+            setSecureItem('ubeat_alt_form_data', JSON.stringify({
                 fullName: altFormData.fullName,
                 school: altFormData.schoolName,
                 lga: altFormData.lga,
                 examYear: altFormData.examYear,
-            }))
-            localStorage.setItem('selected_exam_type', 'ubeat')
+            })).then(() => {})
+            setSecureItem('selected_exam_type', 'ubeat').then(() => {})
 
             toast.success('Data retrieved successfully!')
 

@@ -3,6 +3,12 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGetAdminProfileQuery } from '../store/api/authApi'
+import {
+  getSecureItem,
+  setSecureItem,
+  removeSecureItem,
+  setExamPortalToken,
+} from '@/app/student-portal/utils/secureStorage'
 
 interface Admin {
   _id: string
@@ -46,49 +52,54 @@ export function BeceAuthProvider({ children }: BeceAuthProviderProps) {
     skip: skipProfileQuery || !token,
   })
 
-  // Check for existing authentication on mount
+  // Check for existing authentication on mount (encrypted storage)
   useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const storedToken = localStorage.getItem('bece_access_token')
-        const storedAdmin = localStorage.getItem('bece_admin')
-
+    let cancelled = false
+    Promise.all([
+      getSecureItem('bece_access_token'),
+      getSecureItem('bece_admin'),
+    ])
+      .then(([storedToken, storedAdmin]) => {
+        if (cancelled) return
         if (storedToken) {
           setToken(storedToken)
-          setSkipProfileQuery(false) // Enable profile query
-          
+          setExamPortalToken(storedToken)
+          setSkipProfileQuery(false)
           if (storedAdmin) {
-            const parsedAdmin = JSON.parse(storedAdmin) as Admin
-            setAdmin(parsedAdmin)
-            setIsAuthenticated(true)
+            try {
+              const parsedAdmin = JSON.parse(storedAdmin) as Admin
+              setAdmin(parsedAdmin)
+              setIsAuthenticated(true)
+            } catch {
+              // ignore parse error
+            }
           }
         }
-      } catch (error) {
-        console.error('Error checking BECE authentication:', error)
-        // Clear invalid data
-        localStorage.removeItem('bece_access_token')
-        localStorage.removeItem('bece_admin')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    checkAuth()
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Error checking BECE authentication:', error)
+          removeSecureItem('bece_access_token')
+          removeSecureItem('bece_admin')
+          setExamPortalToken(null)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+    return () => { cancelled = true }
   }, [])
 
   const logout = useCallback(() => {
-    try {
-      localStorage.removeItem('bece_access_token')
-      localStorage.removeItem('bece_admin')
-      setToken(null)
-      setAdmin(null)
-      setIsAuthenticated(false)
-      setSkipProfileQuery(true) // Disable profile query
-      setHasHandledProfileError(false) // Reset error flag
-      router.replace('/exam-portal')
-    } catch (error) {
-      console.error('Error during BECE logout:', error)
-    }
+    removeSecureItem('bece_access_token')
+    removeSecureItem('bece_admin')
+    setExamPortalToken(null)
+    setToken(null)
+    setAdmin(null)
+    setIsAuthenticated(false)
+    setSkipProfileQuery(true)
+    setHasHandledProfileError(false)
+    router.replace('/exam-portal')
   }, [router])
 
   // Handle profile data updates
@@ -97,8 +108,8 @@ export function BeceAuthProvider({ children }: BeceAuthProviderProps) {
       setAdmin(profileData.admin)
       setIsAuthenticated(true)
       setHasHandledProfileError(false) // Reset error flag on success
-      // Update localStorage with fresh profile data
-      localStorage.setItem('bece_admin', JSON.stringify(profileData.admin))
+      // Update encrypted storage with fresh profile data
+      setSecureItem('bece_admin', JSON.stringify(profileData.admin)).then(() => {})
     } else if (profileError && token && !hasHandledProfileError) {
       // Only handle profile errors once and if we actually have a token
       setHasHandledProfileError(true)
@@ -118,17 +129,14 @@ export function BeceAuthProvider({ children }: BeceAuthProviderProps) {
   }, [profileData, profileError, token, logout, hasHandledProfileError])
 
   const login = (newToken: string, newAdmin: Admin) => {
-    try {
-      localStorage.setItem('bece_access_token', newToken)
-      localStorage.setItem('bece_admin', JSON.stringify(newAdmin))
-      setToken(newToken)
-      setAdmin(newAdmin)
-      setIsAuthenticated(true)
-      setSkipProfileQuery(false) // Enable profile query for future updates
-      setHasHandledProfileError(false) // Reset error flag
-    } catch (error) {
-      console.error('Error storing BECE authentication data:', error)
-    }
+    setSecureItem('bece_access_token', newToken).then(() => {})
+    setSecureItem('bece_admin', JSON.stringify(newAdmin)).then(() => {})
+    setExamPortalToken(newToken)
+    setToken(newToken)
+    setAdmin(newAdmin)
+    setIsAuthenticated(true)
+    setSkipProfileQuery(false)
+    setHasHandledProfileError(false)
   }
 
   const refreshProfile = () => {
