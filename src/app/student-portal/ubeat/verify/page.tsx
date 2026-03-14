@@ -9,6 +9,7 @@ import {
     verifyPayloadClient,
     type CertificateVerifyPayload,
 } from '@/app/exam-portal/dashboard/schools/[schoolId]/bece/utils/certificateSecurity'
+import { AnimatePresence, motion } from 'framer-motion'
 
 export default function UBEATVerifyPage() {
     const searchParams = useSearchParams()
@@ -68,7 +69,7 @@ export default function UBEATVerifyPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-white to-emerald-50/30 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 max-w-md w-full">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 max-w-md w-full relative">
                 <div className="flex justify-center mb-6">
                     <Image src="/images/ministry-logo.png" alt="Ministry" width={56} height={56} className="object-contain" />
                 </div>
@@ -107,7 +108,7 @@ export default function UBEATVerifyPage() {
                                 <button
                                     type="button"
                                     onClick={handleVerify}
-                                    className="w-full py-2.5 px-4 rounded-xl border border-green-200 bg-green-50 text-green-800 font-medium hover:bg-green-100 transition-colors"
+                                    className="w-full py-2.5 px-4 rounded-xl border border-green-200 bg-green-50 text-green-800 font-medium hover:bg-green-100 transition-colors cursor-pointer"
                                 >
                                     Verify authenticity
                                 </button>
@@ -134,6 +135,25 @@ export default function UBEATVerifyPage() {
                             No digital signature — authenticity cannot be verified.
                         </p>
                     )}
+                    <AnimatePresence mode="wait">
+                        {!verified && (
+                            <motion.div
+                                initial={{ opacity: 1 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0, transition: { duration: 0.8 } }}
+                                className='h-fit w-fit absolute -bottom-8 left-1/2 -translate-x-1/2 group'
+                            >
+                                <Image
+                                    src="/images/hand.png"
+                                    alt="Hand"
+                                    width={80}
+                                    height={80}
+                                    onContextMenu={(e) => e.preventDefault()}
+                                    className="object-contain select-none group-hover:-rotate-6 transition-transform duration-200 origin-bottom-left pointer-events-none"
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {verified && <>
