@@ -468,7 +468,7 @@ export default function UBEATDashboard() {
                                 <h3 className="text-sm font-semibold text-gray-900">Overall Performance</h3>
                             </div>
                             <div className="p-6">
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     <div className="text-center">
                                         <p className="text-2xl font-semibold text-green-600 mb-1 capitalize">
                                             {student?.grade?.toLowerCase()}
