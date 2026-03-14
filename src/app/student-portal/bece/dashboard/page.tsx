@@ -683,7 +683,7 @@ export default function StudentDashboardPage() {
                                         <td className="border border-gray-300 px-4 py-2 text-sm">{subject.name}</td>
                                         <td className="border border-gray-300 px-4 py-2 text-center text-sm font-semibold">{subject.exam}</td>
                                         <td className="border border-gray-300 px-4 py-2 text-center">
-                                            <span className={`inline-flex items-center gap-1 ${hasA1(calculatedGrade) ? 'px-2 py-0.5 rounded shadow-sm' : ''} text-sm font-bold ${getGradeColor(calculatedGrade)}`}>
+                                            <span className={`inline-flex items-center gap-1 ${hasA1(calculatedGrade) ? 'px-2 py-0.5 rounded' : ''} text-sm font-bold ${getGradeColor(calculatedGrade)}`}>
                                                 {hasA1(calculatedGrade) && <IoTrophy className="w-3.5 h-3.5" />}
                                                 {calculatedGrade}
                                             </span>
