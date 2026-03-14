@@ -475,7 +475,7 @@ export default function UBEATDashboard() {
                                         </p>
                                         <p className="text-xs text-gray-500">Grade</p>
                                     </div>
-                                    <div className="text-center border-l border-r border-gray-200">
+                                    <div className="text-center border-l md:border-r border-gray-200">
                                         <p className="text-2xl font-semibold text-purple-600 mb-1">
                                             {averageScore}
                                         </p>
