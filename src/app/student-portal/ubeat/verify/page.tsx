@@ -40,8 +40,8 @@ export default function UBEATVerifyPage() {
 
     if (!dataParam) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-green-50/50 via-white to-emerald-50/30 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 max-w-md w-full text-center">
+            <div className="min-h-screen bg-gradient-to-b from-white to-emerald-50/30 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 max-w-md w-full text-center">
                     <h1 className="text-xl font-bold text-gray-900 mb-2">Invalid link</h1>
                     <p className="text-gray-600 mb-6">No certificate data was provided. Scan the QR code on an official UBEAT certificate to verify.</p>
                     <Link href="/student-portal/ubeat" className="text-green-600 font-medium hover:underline">
@@ -54,8 +54,8 @@ export default function UBEATVerifyPage() {
 
     if (!payload) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-green-50/50 via-white to-emerald-50/30 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 max-w-md w-full text-center">
+            <div className="min-h-screen bg-gradient-to-b from-white to-emerald-50/30 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 max-w-md w-full text-center">
                     <h1 className="text-xl font-bold text-gray-900 mb-2">Certificate data could not be read</h1>
                     <p className="text-gray-600 mb-6">The link is broken, expired, or corrupted. Use the QR code on an official UBEAT certificate.</p>
                     <Link href="/student-portal/ubeat" className="text-green-600 font-medium hover:underline">
@@ -67,8 +67,8 @@ export default function UBEATVerifyPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-green-50/50 via-white to-emerald-50/30 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 max-w-md w-full">
+        <div className="min-h-screen bg-gradient-to-b from-white to-emerald-50/30 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 max-w-md w-full">
                 <div className="flex justify-center mb-6">
                     <Image src="/images/ministry-logo.png" alt="Ministry" width={56} height={56} className="object-contain" />
                 </div>
@@ -100,7 +100,7 @@ export default function UBEATVerifyPage() {
                     )}
                 </dl>
 
-                <div className="mb-6">
+                <div className={verified ? "mb-6" : ""}>
                     {payload.sig ? (
                         <>
                             {verified === null && !verifying && (
@@ -109,40 +109,44 @@ export default function UBEATVerifyPage() {
                                     onClick={handleVerify}
                                     className="w-full py-2.5 px-4 rounded-xl border border-green-200 bg-green-50 text-green-800 font-medium hover:bg-green-100 transition-colors"
                                 >
-                                    Verify signature
+                                    Verify authenticity
                                 </button>
                             )}
                             {verifying && (
-                                <p className="text-sm text-gray-600 text-center font-medium">Checking signature…</p>
+                                <p className="text-sm text-gray-600 text-center font-medium">
+                                    Authenticating certificate…
+                                </p>
                             )}
                             {verified === true && (
                                 <p className="text-sm text-green-700 font-medium text-center flex items-center justify-center gap-1.5">
                                     <span className="inline-block w-2 h-2 rounded-full bg-green-500" aria-hidden />
-                                    Signature is valid. This certificate has not been altered.
+                                    Authentic &amp; unaltered — this certificate is genuine.
                                 </p>
                             )}
                             {verified === false && (
                                 <p className="text-sm text-red-700 font-medium text-center">
-                                    Signature is invalid. This certificate may have been altered.
+                                    Authenticity failed — this certificate may be counterfeit or tampered with.
                                 </p>
                             )}
                         </>
                     ) : (
                         <p className="text-sm text-amber-700 font-medium text-center">
-                            This certificate has no digital signature. Signature verification is not available.
+                            No digital signature — authenticity cannot be verified.
                         </p>
                     )}
                 </div>
 
-                <Link
-                    href={loginUrl}
-                    className="block w-full py-3 px-4 rounded-lg font-medium text-white text-center transition-all duration-200 bg-green-600 hover:bg-green-700 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                >
-                    View result / Login with this exam number
-                </Link>
-                <p className="text-xs text-gray-500 text-center mt-4">
-                    You will be taken to the UBEAT login page with your exam number prefilled.
-                </p>
+                {verified && <>
+                    <Link
+                        href={loginUrl}
+                        className="block w-full py-3 px-4 rounded-lg font-medium text-white text-center transition-all duration-200 bg-green-600 hover:bg-green-700 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                    >
+                        View result / Login with this exam number
+                    </Link>
+                    <p className="text-xs text-gray-500 text-center mt-4">
+                        You will be taken to the UBEAT login page with your exam number prefilled.
+                    </p>
+                </>}
             </div>
         </div>
     )

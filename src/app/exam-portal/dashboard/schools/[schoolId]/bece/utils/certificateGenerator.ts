@@ -233,8 +233,8 @@ const DEFAULT_SERIAL_NUMBER: FieldConfig = {
 }
 
 const DEFAULT_ISSUE_DATE: FieldConfig = {
-    x: 0.5,
-    y: 0.87,
+    x: 0.45,
+    y: 0.99,
     fontSize: 42,
     fontWeight: 'normal',
     fontStyle: 'normal',
