@@ -16,8 +16,8 @@ const IV_BYTES = 12
 const GCM_TAG_BITS = 128
 
 function getSecret(): string {
-    if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_STORAGE_SECRET) {
-        return process.env.NEXT_PUBLIC_STORAGE_SECRET
+    if (typeof process !== 'undefined' && process.env?.STORAGE_SECRET) {
+        return process.env.STORAGE_SECRET
     }
     return 'mope-student-portal-default-secret'
 }
