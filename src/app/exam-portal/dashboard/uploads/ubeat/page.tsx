@@ -8,12 +8,33 @@ import { ExamModalProvider, useExamModal } from './contexts/ExamModalContext'
 import toast from 'react-hot-toast'
 import { parseCSVFile, UBEATStudentRecord, extractExamYearFromFilename } from './utils/csvParser'
 import { IoChevronDown, IoChevronUp, IoInformationCircle } from 'react-icons/io5'
+import { capitalizeWords } from '@/lib'
 
 interface FileOverride {
     fileName: string
     recordCount: number
     examYear: string
     lga: string
+}
+
+function getBaseFileName(fileName: string): string {
+    return fileName.includes(' - ') ? fileName.split(' - ').slice(0, -1).join(' - ') : fileName
+}
+
+function getSheetLabel(fileName: string): string | null {
+    if (!fileName.includes(' - ')) return null
+    const parts = fileName.split(' - ')
+    return parts.length > 1 ? parts[parts.length - 1]!.trim() : null
+}
+
+function groupFileOverridesByBaseFile(fileOverrides: FileOverride[]): Map<string, FileOverride[]> {
+    const map = new Map<string, FileOverride[]>()
+    for (const fo of fileOverrides) {
+        const base = getBaseFileName(fo.fileName)
+        if (!map.has(base)) map.set(base, [])
+        map.get(base)!.push(fo)
+    }
+    return map
 }
 
 function UploadContent() {
@@ -31,6 +52,8 @@ function UploadContent() {
     const [fileOverrides, setFileOverrides] = useState<FileOverride[]>([])
     const [bulkExamYear, setBulkExamYear] = useState('')
     const [bulkLga, setBulkLga] = useState('')
+    const [expandedBaseFiles, setExpandedBaseFiles] = useState<Set<string>>(new Set())
+    const [clusterBulkValues, setClusterBulkValues] = useState<Record<string, { examYear: string; lga: string }>>({})
     const { isModalOpen, selectedStudent, closeModal, updateStudent } = useExamModal()
 
     const warningMessage = "Unsaved data will be lost. Continue?"
@@ -54,7 +77,6 @@ function UploadContent() {
         const allRecords: UBEATStudentRecord[] = []
         let totalNewRecords = 0
         let totalDuplicates = 0
-        const fileOverrideData: FileOverride[] = []
 
         try {
             for (let i = 0; i < files.length; i++) {
@@ -108,17 +130,6 @@ function UploadContent() {
                     const fileType = isXLSX ? 'XLSX' : 'CSV'
                     const examYear = extractExamYearFromFilename(file.name)
                     
-                    // Extract LGA from first record
-                    const lga = records[0]?.lga || ''
-                    
-                    // Add to file override data with extracted values pre-filled
-                    fileOverrideData.push({
-                        fileName: file.name,
-                        recordCount: records.length,
-                        examYear: examYear.toString(),
-                        lga: lga
-                    })
-                    
                     // Step 5: File processed successfully
                     setUploadProgress({ 
                         current: i + 1, 
@@ -141,6 +152,21 @@ function UploadContent() {
             }
 
             if (allRecords.length > 0) {
+                const fileGroupsFromRecords = allRecords.reduce((acc, record) => {
+                    const fileName = record.file.name
+                    if (!acc[fileName]) {
+                        acc[fileName] = {
+                            fileName,
+                            recordCount: 0,
+                            examYear: record.examYear.toString(),
+                            lga: record.lga
+                        }
+                    }
+                    acc[fileName].recordCount++
+                    return acc
+                }, {} as Record<string, FileOverride>)
+                const fileOverrideData = Object.values(fileGroupsFromRecords)
+
                 setStudentData(prev => {
                     const existingExamNos = new Set(prev.map(record => record.examNumber))
                     const newRecords = allRecords.filter(record => !existingExamNos.has(record.examNumber))
@@ -156,8 +182,8 @@ function UploadContent() {
                     )
                 }
 
-                // Set file overrides and open modal automatically
                 setFileOverrides(fileOverrideData)
+                setExpandedBaseFiles(new Set(groupFileOverridesByBaseFile(fileOverrideData).keys()))
                 setShowOverrideModal(true)
             }
         } catch (error) {
@@ -184,7 +210,7 @@ function UploadContent() {
 
     const handleUpdateFileOverride = (index: number, field: 'examYear' | 'lga', value: string) => {
         const updated = [...fileOverrides]
-        updated[index][field] = value
+        updated[index][field] = field === 'lga' ? capitalizeWords(value.toLowerCase() || '') : value
         setFileOverrides(updated)
     }
 
@@ -193,14 +219,18 @@ function UploadContent() {
             const updated = fileOverrides.map(fo => ({ ...fo, examYear: bulkExamYear }))
             setFileOverrides(updated)
             toast.success(`Exam year ${bulkExamYear} applied to all ${fileOverrides.length} files`)
+        } else {
+            toast.error('Please enter a valid exam year')
         }
     }
 
     const handleApplyBulkLga = () => {
         if (bulkLga) {
-            const updated = fileOverrides.map(fo => ({ ...fo, lga: bulkLga }))
+            const updated = fileOverrides.map(fo => ({ ...fo, lga: capitalizeWords(bulkLga.toLowerCase() || '') }))
             setFileOverrides(updated)
-            toast.success(`LGA "${bulkLga}" applied to all ${fileOverrides.length} files`)
+            toast.success(`LGA "${capitalizeWords(bulkLga.toLowerCase() || '')}" applied to all ${fileOverrides.length} files`)
+        } else {
+            toast.error('Please enter a valid LGA')
         }
     }
 
@@ -228,7 +258,6 @@ function UploadContent() {
     }
 
     const handleOpenOverrideModal = () => {
-        // Group data by file and create initial override state with current values
         const fileGroups = studentData.reduce((acc, record) => {
             const fileName = record.file.name
             if (!acc[fileName]) {
@@ -243,8 +272,47 @@ function UploadContent() {
             return acc
         }, {} as Record<string, FileOverride>)
 
-        setFileOverrides(Object.values(fileGroups))
+        const overrides = Object.values(fileGroups)
+        setFileOverrides(overrides)
+        setExpandedBaseFiles(new Set(groupFileOverridesByBaseFile(overrides).keys()))
         setShowOverrideModal(true)
+    }
+
+    const handleApplySingleFileOverride = (fileName: string) => {
+        const fileOverride = fileOverrides.find(fo => fo.fileName === fileName)
+        if (!fileOverride) return
+        const updatedData = studentData.map(student =>
+            student.file.name === fileName
+                ? {
+                    ...student,
+                    examYear: fileOverride.examYear ? parseInt(fileOverride.examYear) : student.examYear,
+                    lga: fileOverride.lga || student.lga
+                }
+                : student
+        )
+        setStudentData(updatedData)
+        const count = studentData.filter(s => s.file.name === fileName).length
+        toast.success(`Applied to ${count} record${count !== 1 ? 's' : ''} (${getSheetLabel(fileName) ?? fileName})`)
+    }
+
+    const handleApplyClusterOverrides = (baseName: string) => {
+        const group = groupFileOverridesByBaseFile(fileOverrides).get(baseName) ?? []
+        const values = clusterBulkValues[baseName] ?? { examYear: '', lga: '' }
+        const fileNamesInGroup = new Set(group.map(fo => fo.fileName))
+        setFileOverrides(prev => prev.map(fo => {
+            if (getBaseFileName(fo.fileName) !== baseName) return fo
+            return { ...fo, examYear: values.examYear, lga: values.lga }
+        }))
+        setStudentData(prev => prev.map(s => {
+            if (!fileNamesInGroup.has(s.file.name)) return s
+            return {
+                ...s,
+                examYear: values.examYear ? parseInt(values.examYear) : s.examYear,
+                lga: values.lga || s.lga
+            }
+        }))
+        const count = studentData.filter(s => fileNamesInGroup.has(s.file.name)).length
+        toast.success(`Applied to ${count} record${count !== 1 ? 's' : ''} across ${group.length} sheet${group.length !== 1 ? 's' : ''} in this file`)
     }
 
     const hasData = studentData.length > 0
@@ -492,47 +560,111 @@ function UploadContent() {
                                 </div>
                             )}
 
-                            <div className="space-y-4">
-                                {fileOverrides.map((fileOverride, index) => (
-                                    <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex-1">
-                                                <h4 className="font-medium text-gray-900 truncate" title={fileOverride.fileName}>
-                                                    {fileOverride.fileName}
-                                                </h4>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {fileOverride.recordCount} record{fileOverride.recordCount !== 1 ? 's' : ''}
-                                                </p>
-                                            </div>
+                            <div className="space-y-2">
+                                {Array.from(groupFileOverridesByBaseFile(fileOverrides).entries()).map(([baseName, overridesInGroup]) => {
+                                    const isExpanded = expandedBaseFiles.has(baseName)
+                                    const toggle = () => setExpandedBaseFiles(prev => {
+                                        const next = new Set(prev)
+                                        if (next.has(baseName)) next.delete(baseName)
+                                        else next.add(baseName)
+                                        return next
+                                    })
+                                    return (
+                                        <div key={baseName} className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                                            <button
+                                                type="button"
+                                                onClick={toggle}
+                                                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                                            >
+                                                <span className="font-medium text-gray-900 truncate" title={baseName}>{baseName}</span>
+                                                <span className="text-xs text-gray-500 ml-2">
+                                                    {overridesInGroup.length} sheet{overridesInGroup.length !== 1 ? 's' : ''}
+                                                </span>
+                                                <svg className={`w-5 h-5 text-gray-500 flex-shrink-0 ml-2 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+                                            {isExpanded && (
+                                                <div className="border-t border-gray-200 p-3 space-y-3">
+                                                    {/* Quick apply to all sheets in this file */}
+                                                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                                        <p className="text-xs font-semibold text-green-900 mb-2">Quick apply to all {overridesInGroup.length} sheet{overridesInGroup.length !== 1 ? 's' : ''} in this file</p>
+                                                        <div className="flex flex-wrap gap-2 items-center">
+                                                            <input
+                                                                type="number"
+                                                                placeholder="Exam Year"
+                                                                value={clusterBulkValues[baseName]?.examYear ?? overridesInGroup[0]?.examYear ?? ''}
+                                                                onChange={(e) => setClusterBulkValues(prev => ({ ...prev, [baseName]: { ...(prev[baseName] ?? { examYear: '', lga: '' }), examYear: e.target.value } }))}
+                                                                className="w-24 px-2 py-1.5 border border-green-300 rounded-md text-sm focus:ring-1 focus:ring-green-500"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                placeholder="LGA"
+                                                                value={clusterBulkValues[baseName]?.lga ?? overridesInGroup[0]?.lga ?? ''}
+                                                                onChange={(e) => setClusterBulkValues(prev => ({ ...prev, [baseName]: { ...(prev[baseName] ?? { examYear: '', lga: '' }), lga: e.target.value } }))}
+                                                                className="min-w-[120px] flex-1 px-2 py-1.5 border border-green-300 rounded-md text-sm focus:ring-1 focus:ring-green-500"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleApplyClusterOverrides(baseName)}
+                                                                className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors cursor-pointer whitespace-nowrap"
+                                                            >
+                                                                Apply to all sheets in this file
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    {overridesInGroup.map((fileOverride) => {
+                                                        const index = fileOverrides.findIndex(fo => fo.fileName === fileOverride.fileName)
+                                                        const sheetLabel = getSheetLabel(fileOverride.fileName)
+                                                        return (
+                                                            <div key={fileOverride.fileName} className="border border-gray-200 rounded-lg p-3 bg-white">
+                                                                <div className="flex items-center justify-between gap-2 mb-2">
+                                                                    <div className="min-w-0">
+                                                                        <p className="text-sm font-medium text-gray-900 truncate" title={fileOverride.fileName}>
+                                                                            {sheetLabel ?? fileOverride.fileName}
+                                                                        </p>
+                                                                        <p className="text-xs text-gray-500">
+                                                                            {fileOverride.recordCount} record{fileOverride.recordCount !== 1 ? 's' : ''}
+                                                                        </p>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleApplySingleFileOverride(fileOverride.fileName)}
+                                                                        className="px-2 py-1.5 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors whitespace-nowrap cursor-pointer"
+                                                                    >
+                                                                        Quick apply this file
+                                                                    </button>
+                                                                </div>
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Exam Year</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            placeholder="e.g. 2024"
+                                                                            value={fileOverride.examYear}
+                                                                            onChange={(e) => index >= 0 && handleUpdateFileOverride(index, 'examYear', e.target.value)}
+                                                                            className="block w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-gray-700 mb-0.5">LGA</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            placeholder="e.g. Owerri Municipal"
+                                                                            value={fileOverride.lga}
+                                                                            onChange={(e) => index >= 0 && handleUpdateFileOverride(index, 'lga', e.target.value)}
+                                                                            className="block w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                    Exam Year
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    placeholder="e.g. 2024"
-                                                    value={fileOverride.examYear}
-                                                    onChange={(e) => handleUpdateFileOverride(index, 'examYear', e.target.value)}
-                                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                    LGA
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="e.g. Owerri Municipal"
-                                                    value={fileOverride.lga}
-                                                    onChange={(e) => handleUpdateFileOverride(index, 'lga', e.target.value)}
-                                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         </div>
 

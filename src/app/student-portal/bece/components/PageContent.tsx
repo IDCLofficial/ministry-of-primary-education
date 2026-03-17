@@ -211,7 +211,9 @@ export default function StudentLoginPage() {
                 setError("We couldn't load your results. Please try again or contact support.")
                 return
             }
-
+            toast.dismiss("loading-results")
+            toast.success(`Welcome ${result.name}! Loading your results... 🎉`)
+            
             syncRecentAccount({
                 examNo,
                 studentName: result.name,
@@ -224,9 +226,6 @@ export default function StudentLoginPage() {
                 setSecureItem('selected_exam_type', 'bece'),
             ])
 
-            toast.dismiss("loading-results")
-
-            toast.success(`Welcome ${result.name}! Loading your results... 🎉`)
             setTimeout(() => router.push('/student-portal/bece/dashboard'), 0)
         } catch (error: unknown) {
             toast.dismiss("loading-results");

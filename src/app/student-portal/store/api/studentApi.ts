@@ -1,4 +1,5 @@
-import { API_BASE_URL } from '@/app/portal/utils/constants/Api.const';
+import { API_BASE_URL } from '@/app/portal/utils/constants/Api.const'
+import { decryptApiResponseFrom, isApiResponseDecryptConfigured } from '@/lib/apiResponseFunnel'
 import { apiSlice } from './apiSlice'
 
 // TypeScript interfaces for API responses
@@ -87,18 +88,40 @@ export const studentApi = apiSlice.injectEndpoints({
                 url: `${API_BASE_URL}/ubeat/result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}`,
                 method: 'GET',
             }),
+            transformResponse: async (response: unknown) => {
+                const raw = response as { data?: unknown }
+                if (typeof raw?.data !== 'string') return response as UBEATStudentResult
+                if (!(await isApiResponseDecryptConfigured())) return response as UBEATStudentResult
+                try {
+                    return await decryptApiResponseFrom<UBEATStudentResult>(raw as { data: string }, 'data')
+                } catch (e) {
+                    console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                    return response as UBEATStudentResult
+                }
+            },
             providesTags: (result, error, examNo) => [
                 { type: 'Students', id: `UBEAT-${examNo}` }
             ],
         }),
 
         // Find UBEAT result by student details
-        findUBEATResult: builder.mutation<{paymentUrl: string, paymentReference: string}, FindUBEATResultRequest>({
+        findUBEATResult: builder.mutation<{ paymentUrl: string; paymentReference: string }, FindUBEATResultRequest>({
             query: (data) => ({
                 url: `${API_BASE_URL}/ubeat/find-my-result`,
                 method: 'POST',
                 body: data,
             }),
+            transformResponse: async (response: unknown) => {
+                const raw = response as { data?: unknown }
+                if (typeof raw?.data !== 'string') return response as { paymentUrl: string; paymentReference: string }
+                if (!(await isApiResponseDecryptConfigured())) return response as { paymentUrl: string; paymentReference: string }
+                try {
+                    return await decryptApiResponseFrom<{ paymentUrl: string; paymentReference: string }>(raw as { data: string }, 'data')
+                } catch (e) {
+                    console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                    return response as { paymentUrl: string; paymentReference: string }
+                }
+            },
         }),
 
         // Get BECE student result by exam number
@@ -107,6 +130,17 @@ export const studentApi = apiSlice.injectEndpoints({
                 url: `${API_BASE_URL}/bece-student/check-result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}`,
                 method: 'GET',
             }),
+            transformResponse: async (response: unknown) => {
+                const raw = response as { data?: unknown }
+                if (typeof raw?.data !== 'string') return response as BECEStudentResult
+                if (!(await isApiResponseDecryptConfigured())) return response as BECEStudentResult
+                try {
+                    return await decryptApiResponseFrom<BECEStudentResult>(raw as { data: string }, 'data')
+                } catch (e) {
+                    console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                    return response as BECEStudentResult
+                }
+            },
             providesTags: (result, error, examNo) => [
                 { type: 'Students', id: `BECE-${examNo}` }
             ],

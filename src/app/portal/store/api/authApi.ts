@@ -1,3 +1,4 @@
+import { decryptApiResponseFrom, isApiResponseDecryptConfigured } from '@/lib/apiResponseFunnel'
 import { API_BASE_URL, endpoints } from '../../utils/constants/Api.const'
 import { apiSlice } from './apiSlice'
 import { getPortalToken } from '@/app/student-portal/utils/secureStorage'
@@ -379,6 +380,17 @@ export const authApi = apiSlice.injectEndpoints({
           'Content-Type': 'application/json',
         },
       }),
+      transformResponse: async (response: unknown) => {
+        const raw = response as { data?: unknown }
+        if (typeof raw?.data !== 'string') return response as LoginResponse
+        if (!(await isApiResponseDecryptConfigured())) return response as LoginResponse
+        try {
+          return await decryptApiResponseFrom<LoginResponse>(raw as { data: string }, 'data')
+        } catch (e) {
+          console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+          return response as LoginResponse
+        }
+      },
     }),
 
     // Logout
@@ -411,6 +423,17 @@ export const authApi = apiSlice.injectEndpoints({
           'Content-Type': 'application/json',
         },
       }),
+      transformResponse: async (response: unknown) => {
+        const raw = response as { data?: unknown }
+        if (typeof raw?.data !== 'string') return response as LoginResponse['aee']
+        if (!(await isApiResponseDecryptConfigured())) return response as LoginResponse['aee']
+        try {
+          return await decryptApiResponseFrom<LoginResponse['aee']>(raw as { data: string }, 'data')
+        } catch (e) {
+          console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+          return response as LoginResponse['aee']
+        }
+      },
     }),
 
     // Get students by school ID

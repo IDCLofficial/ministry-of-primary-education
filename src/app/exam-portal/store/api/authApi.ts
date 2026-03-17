@@ -1,3 +1,4 @@
+import { decryptApiResponseFrom, isApiResponseDecryptConfigured } from '@/lib/apiResponseFunnel'
 import { ResultsResponse, Student, UBEATResultsResponse } from '../../dashboard/schools/types/student.types'
 import { apiSlice } from './apiSlice'
 
@@ -31,7 +32,7 @@ interface ProfileResponse {
 }
 
 
-export interface BeceResultUpload{
+export interface BeceResultUpload {
   schoolName: string
   lga: string
   examYear: number
@@ -40,7 +41,7 @@ export interface BeceResultUpload{
 
 interface BeceResultUploadRequest {
   result: BeceResultUpload[]
-  file: {fileName: string, fileSize: number, students: number}[]
+  file: { fileName: string, fileSize: number, students: number }[]
 }
 
 interface BeceResultUploadResponse {
@@ -182,12 +183,34 @@ export const authApi = apiSlice.injectEndpoints({
         method: 'POST',
         body: credentials,
       }),
+      transformResponse: async (response: unknown) => {
+        const raw = response as { data?: unknown }
+        if (typeof raw?.data !== 'string') return response as LoginResponse
+        if (!(await isApiResponseDecryptConfigured())) return response as LoginResponse
+        try {
+          return await decryptApiResponseFrom<LoginResponse>(raw as { data: string }, 'data')
+        } catch (e) {
+          console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+          return response as LoginResponse
+        }
+      },
       invalidatesTags: ['Admin'],
     }),
 
     // Get admin profile
     getAdminProfile: builder.query<ProfileResponse, void>({
       query: () => '/admin/profile',
+      transformResponse: async (response: unknown) => {
+        const raw = response as { data?: unknown }
+        if (typeof raw?.data !== 'string') return response as ProfileResponse
+        if (!(await isApiResponseDecryptConfigured())) return response as ProfileResponse
+        try {
+          return await decryptApiResponseFrom<ProfileResponse>(raw as { data: string }, 'data')
+        } catch (e) {
+          console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+          return response as ProfileResponse
+        }
+      },
       providesTags: ['Admin'],
     }),
 
@@ -209,7 +232,7 @@ export const authApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Admin', { type: 'Admin', id: 'UPLOAD_LOGS' }, { type: 'Admin', id: 'SUMMARY' }],
     }),
-    
+
     // Upload BECE EXAMS Results
     uploadBeceExamResults: builder.mutation<BeceResultUploadResponse, BeceResultUploadRequest>({
       query: (data) => ({
@@ -229,7 +252,7 @@ export const authApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Admin', { type: 'Admin', id: 'UPLOAD_LOGS' }, { type: 'Admin', id: 'SUMMARY' }],
     }),
-    
+
     // Fetch Results 
     getResults: builder.query<ResultsResponse, {
       schoolId: string;
@@ -321,7 +344,7 @@ export const authApi = apiSlice.injectEndpoints({
         if (params && params.search) queryParams.append('search', params.search)
         if (params && params.status) queryParams.append('status', params.status)
         if (params && params.type) queryParams.append('type', params.type)
-        
+
         const queryString = queryParams.toString()
         return `/bece-result/upload-logs${queryString ? `?${queryString}` : ''}`
       },
