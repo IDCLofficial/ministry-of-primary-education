@@ -4,7 +4,7 @@ import { useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import { useDispatch } from 'react-redux'
-import { useGetSchoolByCodeQuery } from '@/app/portal/store/api/authApi'
+import { useGetSchoolByCodeQuery, useLoadExamsDataQuery } from '@/app/portal/store/api/authApi'
 import { setSelectedSchool } from '@/app/portal/store/slices/schoolSlice'
 import ExamHeader from '../components/ExamHeader'
 import SchoolPageSkeleton from './components/SchoolPageSkeleton'
@@ -19,6 +19,8 @@ export default function DashboardPage() {
   const { data: school, isLoading, error } = useGetSchoolByCodeQuery(rawSchoolCode, {
     skip: !rawSchoolCode
   })
+
+  const { data: examsData, isLoading: examsLoading, error: examsError } = useLoadExamsDataQuery();
 
   // Store school data in Redux when fetched
   useEffect(() => {
@@ -70,7 +72,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || examsLoading) {
     return (
       <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
         <ExamHeader isFirst={true} />
@@ -79,7 +81,7 @@ export default function DashboardPage() {
     )
   }
 
-  if (error) {
+  if (error || examsError) {
     return (
       <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
         <ExamHeader isFirst={true} />
@@ -105,6 +107,32 @@ export default function DashboardPage() {
     )
   }
 
+  if (!examsData) {
+    return (
+      <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
+        <ExamHeader isFirst={true} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto p-6">
+            <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Exams Found</h3>
+            <p className="text-sm text-gray-600 mb-4">An Error Occured while retrieving the Exams Data, Please Reload the Page.</p>
+            <Link
+              href="/portal/dashboard"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  
   if (!school) {
     return (
       <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
@@ -134,6 +162,11 @@ export default function DashboardPage() {
   return (
     <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
       <ExamHeader isFirst={true} />
+
+      {/* Working Progress */}
+      <pre>
+        {JSON.stringify(examsData, null, 2)}
+      </pre>
       
       <div className="flex-1 mt-4 sm:mt-6">
         <div className="max-w-7xl mx-auto">

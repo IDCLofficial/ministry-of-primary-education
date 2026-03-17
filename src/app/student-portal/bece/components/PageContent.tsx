@@ -219,13 +219,15 @@ export default function StudentLoginPage() {
                 lastAccessed: Date.now(),
             })
 
-            setSecureItem('student_exam_no', examNo)
-            setSecureItem('selected_exam_type', 'bece')
+            await Promise.all([
+                setSecureItem('student_exam_no', examNo),
+                setSecureItem('selected_exam_type', 'bece'),
+            ])
 
             toast.dismiss("loading-results")
 
             toast.success(`Welcome ${result.name}! Loading your results... 🎉`)
-            router.push('/student-portal/bece/dashboard')
+            setTimeout(() => router.push('/student-portal/bece/dashboard'), 0)
         } catch (error: unknown) {
             toast.dismiss("loading-results");
 
@@ -267,11 +269,14 @@ export default function StudentLoginPage() {
                 lastAccessed: Date.now(),
             })
 
-            setSecureItem('student_exam_no', selectedExamNo).then(() => {})
-            setSecureItem('selected_exam_type', 'bece').then(() => {})
+            await Promise.all([
+                setSecureItem('student_exam_no', selectedExamNo),
+                setSecureItem('selected_exam_type', 'bece'),
+            ])
+
             toast.dismiss("loading-results")
             toast.success(`Welcome back, ${result.name}! 🎉`)
-            router.push('/student-portal/bece/dashboard')
+            setTimeout(() => router.push('/student-portal/bece/dashboard'), 0)
         } catch {
             toast.dismiss("loading-results")
             toast.error("Couldn't load this account. Try entering the exam number manually.")

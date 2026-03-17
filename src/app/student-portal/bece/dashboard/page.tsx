@@ -119,7 +119,7 @@ export default function StudentDashboardPage() {
             if (cancelled) return
             if (!storedExamNo || selectedExamType !== 'bece' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
                 toast.error('Invalid exam number. Please log in again.')
-                router.push('/student-portal/bece')
+                setTimeout(() => router.push('/student-portal/bece'), 0)
                 return
             }
             const formattedExamNo = storedExamNo.replace(/\//g, '-')
@@ -142,13 +142,13 @@ export default function StudentDashboardPage() {
         removeSecureItem('student_exam_no')
         removeSecureItem('selected_exam_type')
         toast.success('Logged out successfully')
-        router.push('/student-portal/bece')
+        setTimeout(() => router.push('/student-portal/bece'), 0)
     }
 
     const handleChangeExam = () => {
         removeSecureItem('selected_exam_type')
         toast('Returning to exam selection...', { icon: '🔄' })
-        router.push('/student-portal')
+        setTimeout(() => router.push('/student-portal'), 0)
     }
 
     const handleDownload = async () => {

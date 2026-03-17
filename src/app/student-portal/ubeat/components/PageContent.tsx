@@ -259,13 +259,15 @@ export default function UBEATLogin() {
                 lastAccessed: Date.now(),
             })
 
-            setSecureItem('student_exam_no', examNo).then(() => {})
-            setSecureItem('selected_exam_type', 'ubeat').then(() => {})
+            await Promise.all([
+                setSecureItem('student_exam_no', examNo),
+                setSecureItem('selected_exam_type', 'ubeat'),
+            ])
 
             toast.dismiss("loading-results");
 
             toast.success(`Welcome ${result.studentName}! Loading your results... 🎉`)
-            router.push('/student-portal/ubeat/dashboard')
+            setTimeout(() => router.push('/student-portal/ubeat/dashboard'), 0)
         } catch (error: unknown) {
             toast.dismiss("loading-results");
             const err = error as { status: string | number }
@@ -315,10 +317,12 @@ export default function UBEATLogin() {
             })
             toast.dismiss("loading-results")
 
-            setSecureItem('student_exam_no', selectedExamNo).then(() => {})
-            setSecureItem('selected_exam_type', 'ubeat').then(() => {})
+            await Promise.all([
+                setSecureItem('student_exam_no', selectedExamNo),
+                setSecureItem('selected_exam_type', 'ubeat'),
+            ])
             toast.success(`Welcome back, ${result.studentName}! 🎉`)
-            router.push('/student-portal/ubeat/dashboard')
+            setTimeout(() => router.push('/student-portal/ubeat/dashboard'), 0)
         } catch {
             toast.dismiss("loading-results")
             toast.error("Couldn't load this account. Try entering the exam number manually.")
@@ -351,21 +355,23 @@ export default function UBEATLogin() {
                 setError(msg); toast.error(msg); return
             }
 
-            setSecureItem('ubeat_alt_form_data', JSON.stringify({
-                fullName: altFormData.fullName,
-                school: altFormData.schoolName,
-                lga: altFormData.lga,
-                examYear: altFormData.examYear,
-            })).then(() => {})
-            setSecureItem('selected_exam_type', 'ubeat').then(() => {})
+            await Promise.all([
+                setSecureItem('ubeat_alt_form_data', JSON.stringify({
+                    fullName: altFormData.fullName,
+                    school: altFormData.schoolName,
+                    lga: altFormData.lga,
+                    examYear: altFormData.examYear,
+                })),
+                setSecureItem('selected_exam_type', 'ubeat'),
+            ])
 
             toast.success('Data retrieved successfully!')
 
             if (fullResult.paymentUrl.toLowerCase().includes('ubeat')) {
-                router.push(`${fullResult.paymentUrl}?trxref=${fullResult.paymentReference}&reference=${fullResult.paymentReference}`)
+                setTimeout(() => router.push(`${fullResult.paymentUrl}?trxref=${fullResult.paymentReference}&reference=${fullResult.paymentReference}`), 0)
                 return
             }
-            router.push('/student-portal/ubeat/payment')
+            setTimeout(() => router.push('/student-portal/ubeat/payment'), 0)
         } catch (error: unknown) {
             const err = error as { status: string | number; data?: { message?: string } }
             let msg = ''
@@ -382,7 +388,7 @@ export default function UBEATLogin() {
         const params = new URLSearchParams(searchParams.toString())
         if (showAlternativeForm) params.delete('form')
         else params.set('form', 'alternative')
-        router.push(`?${params.toString()}`)
+        setTimeout(() => router.push(`?${params.toString()}`), 0)
         setError(''); setExamNo('')
         setAltFormData({ fullName: '', schoolName: { id: '', name: '' }, lga: '', examYear: new Date().getFullYear().toString() })
     }
