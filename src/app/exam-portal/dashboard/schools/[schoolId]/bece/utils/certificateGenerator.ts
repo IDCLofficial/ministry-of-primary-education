@@ -255,6 +255,15 @@ const DEFAULT_SIGNATURES = {
         rotation: 0,
         opacity: 1
     } as SignatureConfig,
+    signature3: {
+        url: '/images/FSLC/edc-signature-2024.png',
+        x: 0.28,
+        y: 0.82,
+        width: 0.14,
+        height: 0.055,
+        rotation: 0,
+        opacity: 1
+    } as SignatureConfig,
     signature2: {
         url: '/images/FSLC/signature.png',
         x: 0.70,
@@ -460,7 +469,7 @@ export async function generateBECECertificate(
     const { left: leftRows, right: rightRows } = splitCourses(data.courses, maxPerTable)
 
     const sig1 = mergeField(DEFAULT_SIGNATURES.signature1, custom.signature1)
-    const sig2 = mergeField(DEFAULT_SIGNATURES.signature2, custom.signature2)
+    const sig2 = data.year === 2024 ? mergeField(DEFAULT_SIGNATURES.signature3, custom.signature2) : mergeField(DEFAULT_SIGNATURES.signature2, custom.signature2)
 
     let sig1Img: HTMLImageElement | null = null
     let sig2Img: HTMLImageElement | null = null
