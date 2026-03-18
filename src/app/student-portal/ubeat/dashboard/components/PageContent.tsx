@@ -21,7 +21,7 @@ const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
 // Regex pattern for exam number validation (e.g., XX/000/0000/000)
 const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{4}\/\d{1,4}$/
 // Regex pattern for exam number validation (e.g., XX/XX/000/0000)
-const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}$/
+const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{1,2}\/\d{1,4}\/\d{1,4}$/
 
 export default function UBEATDashboard() {
     const isMobile = useMedia('(max-width: 1000px)')

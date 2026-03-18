@@ -169,7 +169,7 @@ export default function StudentPaymentCallbackPage() {
               <div className="flex justify-between">
                 <span className="text-green-700">Amount:</span>
                 <span className="font-medium text-green-900">
-                  ₦500
+                  ₦1,000
                 </span>
               </div>
               <div className="flex justify-between">
