@@ -15,10 +15,9 @@ import { AnimatePresence, motion, Variants } from 'framer-motion'
 import { setSecureItem, useSecureLocalStorage } from '@/app/student-portal/utils/secureStorage'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}(\(\d\))?$/
-const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{3,4}\/\d{4}\/\d{3,4}$/
-const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{3,4}\/\d{3,4}$/
+const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
+const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}\/\d{1,4}$/
+const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}$/
 
 const MAX_RECENT_ACCOUNTS = 5
 
@@ -214,7 +213,7 @@ export default function UBEATLogin() {
     const lgaOptions = useMemo(() => IMO_STATE_LGAS.map(lga => ({ value: lga, label: lga })), [])
 
     const debouncedExamNo = useDebounce(examNo, 500)
-    const canProceed = debouncedExamNo.length >= 10 && isValidExamNo(debouncedExamNo)
+    const canProceed = debouncedExamNo.length >= 6 && isValidExamNo(debouncedExamNo)
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
     const isMaintenanceMode = !API_BASE_URL

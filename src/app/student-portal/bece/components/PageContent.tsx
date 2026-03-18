@@ -176,7 +176,7 @@ export default function StudentLoginPage() {
     const [getBECEResult, { isLoading, isFetching, isSuccess }] = useLazyGetBECEResultQuery()
 
     const debouncedExamNo = useDebounce(examNo, 500)
-    const canProceed = debouncedExamNo.length >= 10 && isValidExamNo(debouncedExamNo)
+    const canProceed = debouncedExamNo.length >= 6 && isValidExamNo(debouncedExamNo)
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
     const isMaintenanceMode = !API_BASE_URL
