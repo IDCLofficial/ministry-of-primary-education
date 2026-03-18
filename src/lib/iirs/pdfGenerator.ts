@@ -13,8 +13,8 @@ interface PaymentData {
   paymentMethod: string;
   paidAt: string;
   reference: string;
-  iirsEarning: number;
-  idclEarning: number;
+  tsaEarnings: number;
+  idclEarnings: number;
 }
 
 interface StatsData {
@@ -23,73 +23,55 @@ interface StatsData {
   totalTsaEarnings: number;
   totalIdclEarnings: number;
   totalPaystackCharge: number;
-}
-
-// Helper function to determine if a payment is settled
-// Settlement Rule: Payments made before 12:00 AM (midnight) are settled at 6:00 AM the next day
-function isPaymentSettled(paymentDate: string): boolean {
-  const payment = new Date(paymentDate);
-  const now = new Date();
-  
-  // Get midnight of the day AFTER the payment was made
-  const nextDayMidnight = new Date(payment);
-  nextDayMidnight.setHours(0, 0, 0, 0);
-  nextDayMidnight.setDate(nextDayMidnight.getDate() + 1);
-  
-  // Get the settlement time (6 AM of the day after payment)
-  const settlementTime = new Date(nextDayMidnight);
-  settlementTime.setHours(6, 0, 0, 0);
-  
-  // Payment is settled if current time is past 6 AM of the day after payment
-  // Example: Payment at 25/02/2026 08:43 PM -> Settles at 26/02/2026 06:00 AM
-  return now >= settlementTime;
+  recentPayments: PaymentData[];
+  totalLatestPayout: number;
+  totalLatestIdclPayout: number;
+  totalLatestTsaPayout: number;
 }
 
 export async function generatePaymentReportPDF(
-  payments: PaymentData[],
   stats: StatsData,
-  period: string = 'All Time'
+  date: string
 ) {
   const doc = new jsPDF();
-  
+
   // Add custom font to fix character spacing issues
   doc.addFileToVFS('CustomFont.ttf', customFont);
   doc.addFont('CustomFont.ttf', 'CustomFont', 'normal');
   doc.setFont('CustomFont');
-  
+
   // Add header
   doc.setFontSize(20);
   doc.setTextColor(40, 40, 40);
   doc.text('Payments Report', 14, 22);
-  
+
   // Add period info
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
-  doc.text(`Period: ${period}`, 14, 30);
+  doc.text(`Period: ${date}`, 14, 30);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 36);
-  doc.text('Settlement Rule: Payments before midnight settle at 6:00 AM next day', 14, 42);
-  
+
   // Add summary statistics
   doc.setFontSize(12);
   doc.setTextColor(40, 40, 40);
-  doc.text('Summary Statistics', 14, 54);
-  
+  doc.text('Summary Statistics', 14, 48);
+
   const summaryData = [
     ['Total Payments', stats.totalPayments.toLocaleString()],
     ['Total Amount Processed', `₦${stats.totalAmountProcessedByTsa.toLocaleString()}`],
-    ['TSA Earnings', `₦${stats.totalTsaEarnings.toLocaleString()}`],
-    ['IDCL Earnings', `₦${stats.totalIdclEarnings.toLocaleString()}`],
-    ['Paystack Charges', `₦${stats.totalPaystackCharge.toLocaleString()}`],
+    ['TSA Earnings', `₦${stats.totalTsaEarnings?.toLocaleString()}`],
+    ['IDCL Earnings', `₦${stats.totalIdclEarnings?.toLocaleString()}`],
+    ['Paystack Charges', `₦${stats.totalPaystackCharge?.toLocaleString()}`],
   ];
-  
+
   autoTable(doc, {
-    startY: 58,
+    startY: 52,
     head: [['Metric', 'Value']],
     body: summaryData,
     theme: 'grid',
     headStyles: { fillColor: [34, 197, 94], font: 'CustomFont' },
     margin: { left: 14 },
-    styles: { 
+    styles: {
       fontSize: 9,
       cellPadding: 3,
       overflow: 'linebreak',
@@ -100,77 +82,34 @@ export async function generatePaymentReportPDF(
       1: { halign: 'right' }
     }
   });
-  
-  // Add settlement breakdown
-  const summaryY = (doc as any).lastAutoTable.finalY || 58;
+
+  // Add payment details table
+  const summaryY = (doc as any).lastAutoTable.finalY || 52;
   doc.setFontSize(12);
   doc.setTextColor(40, 40, 40);
-  doc.text('Settlement Breakdown', 14, summaryY + 12);
-  
-  // Calculate settled payments
-  const settledPayments = payments.filter(payment => isPaymentSettled(payment.paidAt));
-  const totalSettledTransactions = settledPayments.length;
-  const totalSettledAmount = settledPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  const totalSettledTsaAmount = settledPayments.reduce((sum, payment) => sum + payment.iirsEarning, 0);
-  const totalSettledIdclAmount = settledPayments.reduce((sum, payment) => sum + payment.idclEarning, 0);
-  const pendingPayments = payments.length - totalSettledTransactions;
-  const pendingAmount = payments.reduce((sum, payment) => sum + payment.amount, 0) - totalSettledAmount;
-  
-  const settlementData = [
-    ['Settled Transactions', totalSettledTransactions.toLocaleString()],
-    ['Settled Amount', `₦${totalSettledAmount.toLocaleString()}`],
-    ['Settled TSA Amount', `₦${totalSettledTsaAmount.toLocaleString()}`],
-    ['Settled IDCL Amount', `₦${totalSettledIdclAmount.toLocaleString()}`],
-    ['Pending Transactions', pendingPayments.toLocaleString()],
-    ['Pending Amount', `₦${pendingAmount.toLocaleString()}`],
-  ];
-  
-  autoTable(doc, {
-    startY: summaryY + 16,
-    head: [['Status', 'Value']],
-    body: settlementData,
-    theme: 'grid',
-    headStyles: { fillColor: [168, 85, 247], font: 'CustomFont' },
-    margin: { left: 14 },
-    styles: { 
-      fontSize: 9,
-      cellPadding: 3,
-      overflow: 'linebreak',
-      cellWidth: 'wrap',
-      font: 'CustomFont'
-    },
-    columnStyles: {
-      1: { halign: 'right' }
-    }
-  });
-  
-  // Add payment details table
-  const finalY = (doc as any).lastAutoTable.finalY || 52;
-  doc.setFontSize(12);
-  doc.text('Payment Details', 14, finalY + 12);
-  
-  const paymentTableData = payments.map((payment) => {
-    const settled = isPaymentSettled(payment.paidAt);
+  doc.text('Payment Details', 14, summaryY + 12);
+
+  const paymentTableData = stats.recentPayments.map((payment) => {
     return [
       payment.schoolName,
       payment.schoolCode,
-      `₦${payment.amount.toLocaleString()}`,
-      payment.numberOfStudents.toString(),
-      `₦${payment.iirsEarning.toLocaleString()}`,
+      `₦${payment.amount?.toLocaleString()}`,
+      payment.numberOfStudents?.toString() || '0',
+      `₦${payment.tsaEarnings?.toLocaleString()}`,
+      `₦${payment.idclEarnings?.toLocaleString()}`,
       new Date(payment.paidAt).toLocaleDateString(),
       new Date(payment.paidAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      settled ? 'Settled' : 'Pending',
     ];
   });
-  
+
   autoTable(doc, {
-    startY: finalY + 16,
-    head: [['School Name', 'Code', 'Amount', 'Students', 'TSA Earning', 'Date', 'Time', 'Settlement']],
+    startY: summaryY + 16,
+    head: [['School Name', 'Code', 'Amount', 'Students', 'TSA Earning', 'IDCL Earning', 'Date', 'Time']],
     body: paymentTableData,
     theme: 'striped',
     headStyles: { fillColor: [34, 197, 94], font: 'CustomFont' },
     margin: { left: 14, right: 14 },
-    styles: { 
+    styles: {
       fontSize: 7,
       cellPadding: 2,
       overflow: 'linebreak',
@@ -178,29 +117,17 @@ export async function generatePaymentReportPDF(
       font: 'CustomFont'
     },
     columnStyles: {
-      0: { cellWidth: 38 },
-      1: { cellWidth: 22 },
-      2: { cellWidth: 24, halign: 'right' },
+      0: { cellWidth: 35 },
+      1: { cellWidth: 20 },
+      2: { cellWidth: 22, halign: 'right' },
       3: { cellWidth: 16, halign: 'center' },
-      4: { cellWidth: 24, halign: 'right' },
-      5: { cellWidth: 20, halign: 'center' },
-      6: { cellWidth: 18, halign: 'center' },
-      7: { cellWidth: 20, halign: 'center' },
-    },
-    didParseCell: function(data: any) {
-      // Color code settlement status
-      if (data.column.index === 7 && data.section === 'body') {
-        if (data.cell.text[0] === 'Settled') {
-          data.cell.styles.textColor = [34, 197, 94]; // Green
-          data.cell.styles.fontStyle = 'bold';
-        } else if (data.cell.text[0] === 'Pending') {
-          data.cell.styles.textColor = [234, 179, 8]; // Yellow/Amber
-          data.cell.styles.fontStyle = 'bold';
-        }
-      }
+      4: { cellWidth: 22, halign: 'right' },
+      5: { cellWidth: 22, halign: 'right' },
+      6: { cellWidth: 20, halign: 'center' },
+      7: { cellWidth: 18, halign: 'center' },
     }
   });
-  
+
   // Add footer
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
@@ -213,11 +140,15 @@ export async function generatePaymentReportPDF(
       doc.internal.pageSize.getHeight() - 10,
       { align: 'center' }
     );
+    doc.text(
+      'Powered by Imo Digital City Limited',
+      doc.internal.pageSize.getWidth() / 2,
+      doc.internal.pageSize.getHeight() - 5,
+      { align: 'center' }
+    );
   }
 
-  doc.text('Powered by Imo Digital City Limited', doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
-  
   // Save the PDF
-  const fileName = `MOE_Payment_Report_${period.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+  const fileName = `MOE_Payment_Report_${date.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(fileName);
 }

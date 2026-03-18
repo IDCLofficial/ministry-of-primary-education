@@ -59,7 +59,7 @@ export default function Header(){
     return(
         <>
             <header className="w-full flex sticky top-0 py-2 sm:py-4 px-3 sm:px-6 items-center justify-center bg-white/30 backdrop-blur-[25px] z-50">
-                <div className="w-full flex items-center justify-between backdrop-blur-[25px] rounded-full sm:rounded-[100px] py-2 sm:py-4 px-3 sm:px-4 border border-gray-200 bg-white/50">
+                <div className="w-full flex items-center justify-between backdrop-blur-[25px] rounded-full sm:rounded-[100px] px-3 sm:px-4 border border-gray-200 bg-white/50">
                     <Image 
                         src="/images/iirs/logo.png" 
                         alt="IIRS Logo"
