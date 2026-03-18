@@ -102,7 +102,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                         {/* Pricing - Clean */}
                         <div className="mb-6 text-center py-4">
                             <div className="flex items-baseline justify-center gap-1 mb-1">
-                                <span className="text-4xl font-semibold text-green-800">₦3,000</span>
+                                <span className="text-4xl font-semibold text-green-800">₦1,000</span>
                             </div>
                             <p className="text-xs text-gray-500">
                                 One-time payment · Lifetime access
