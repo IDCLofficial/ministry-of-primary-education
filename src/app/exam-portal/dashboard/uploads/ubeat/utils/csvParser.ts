@@ -158,8 +158,8 @@ export const parseXLSXFile = (file: File, examYear: number): Promise<UBEATStuden
 export const parseCSVText = (csvText: string, file: { name: string; size: number }, examYear: number): UBEATStudentRecord[] => {
   const lines = csvText.trim().split('\n').filter(line => line.trim() !== '')
 
-  if (lines.length < 3) {
-    throw new Error(`File "${file.name}" must have at least 2 header rows and one data row. Found ${lines.length} rows.`)
+  if (lines.length < 2) {
+    throw new Error(`File "${file.name}" must have at least 1 header row and one data row. Found ${lines.length} rows.`)
   }
 
   // Parse CSV line handling quoted fields
@@ -186,11 +186,31 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
 
   const records: UBEATStudentRecord[] = []
 
-  // CSV Structure:
-  // Header Row 1: S/NO.,LGA,ZONE,SCHOOL NAME,CODE NO.,CANDIDATE'S NAME,EXAM NO.,SEX,AGE,ATTENDANCE,MATHEMATICS,,,ENGLISH LANGUAGE,,,GENERAL KNOWLEDGE,,,IGBO,,
-  // Header Row 2: ,,,,,,,,,,CAS-30%,CAS-70%,TOTAL,CAS-30%,CAS-70%,TOTAL,CAS-30%,CAS-70%,TOTAL,CAS-30%,CAS-70%,TOTAL
+  const parseLineSafe = (idx: number) => (idx >= 0 && idx < lines.length ? parseLine(lines[idx]) : [])
+  const isNumeric = (v?: string) => {
+    const s = (v ?? '').trim()
+    if (!s) return false
+    return !Number.isNaN(Number(s))
+  }
 
-  const columnIndices = {
+  const row0 = parseLineSafe(0)
+  const row1 = parseLineSafe(1)
+  const row2 = parseLineSafe(2)
+
+  // Auto-detect CSV layout by row/column shape (do NOT rely on header titles).
+  // - Legacy layout: 2 header rows, data starts at line index 2, first column is numeric serial.
+  // - New layout: 1 header row, data starts at line index 1, first column is candidate name (non-numeric),
+  //   and columns are [name, examNo, sex, age, math(3), eng(3), gk(3), igbo(3)].
+  const hasLegacyDataRow = row2.length > 0 && isNumeric(row2[0])
+  const isLegacy = hasLegacyDataRow
+  const dataStartRow = isLegacy ? 2 : 1
+  if (isLegacy && lines.length < 3) {
+    throw new Error(`File "${file.name}" appears to be the legacy UBEAT format but is missing the second header row.`)
+  }
+
+  const inferredSchoolName = isLegacy ? null : getSchoolNameFromFileMeta(file.name)
+
+  const legacyIndices = {
     serialNo: 0,
     lga: 1,
     zone: 2,
@@ -201,79 +221,84 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
     sex: 7,
     age: 8,
     attendance: 9,
-    math: {
-      ca30: 10,
-      ca70: 11,
-      total: 12
-    },
-    english: {
-      ca30: 13,
-      ca70: 14,
-      total: 15
-    },
-    generalKnowledge: {
-      ca30: 16,
-      ca70: 17,
-      total: 18
-    },
-    igbo: {
-      ca30: 19,
-      ca70: 20,
-      total: 21
-    }
+    math: { ca30: 10, ca70: 11, total: 12 },
+    english: { ca30: 13, ca70: 14, total: 15 },
+    generalKnowledge: { ca30: 16, ca70: 17, total: 18 },
+    igbo: { ca30: 19, ca70: 20, total: 21 },
   }
 
-  // Parse data rows (skip first 2 header rows)
-  for (let i = 2; i < lines.length; i++) {
+  const newFormatIndices = {
+    candidateName: 0,
+    examNo: 1,
+    sex: 2,
+    age: 3,
+    math: { ca30: 4, ca70: 5, total: 6 },
+    english: { ca30: 7, ca70: 8, total: 9 },
+    generalKnowledge: { ca30: 10, ca70: 11, total: 12 },
+    igbo: { ca30: 13, ca70: 14, total: 15 },
+  }
+
+  // Parse data rows (skip detected header rows)
+  for (let i = dataStartRow; i < lines.length; i++) {
     const values = parseLine(lines[i])
 
-    // delete the column if the candidate name includes 20
-    if (values[5].includes('20')) {
-      values.splice(5, 1)
+    if (isLegacy) {
+      // Legacy cleanup: some exports insert an extra column before candidate name.
+      // Keep the heuristic but scope it to legacy only.
+      if ((values[legacyIndices.candidateName] ?? '').includes('20')) {
+        values.splice(legacyIndices.candidateName, 1)
+      }
     }
   
 
     // Skip empty rows
-    const isEmptyRow = !values[columnIndices.serialNo]?.trim() &&
-      !values[columnIndices.candidateName]?.trim() &&
-      !values[columnIndices.examNo]?.trim()
+    const indices = isLegacy ? legacyIndices : newFormatIndices
+    const serialIdx = isLegacy ? legacyIndices.serialNo : -1
+    const isEmptyRow =
+      (serialIdx === -1 || !values[serialIdx]?.trim()) &&
+      !values[indices.candidateName]?.trim() &&
+      !values[indices.examNo]?.trim()
 
     if (isEmptyRow) {
       continue
     }
 
     try {
-      const sexValue = values[columnIndices.sex]?.trim().toUpperCase()
+      const sexValue = values[indices.sex]?.trim().toUpperCase()
       const sex = sexValue === 'F' || sexValue === 'FEMALE' ? 'female' : 'male'
 
       const record: UBEATStudentRecord = {
-        serialNumber: getNumberValue(values, columnIndices.serialNo, i - 1),
-        examNumber: getStringValue(values, columnIndices.examNo, `UBEAT/${i - 1}`),
-        studentName: getStringValue(values, columnIndices.candidateName, 'Unknown'),
-        age: getNumberValue(values, columnIndices.age, 0),
+        serialNumber: isLegacy
+          ? getNumberValue(values, legacyIndices.serialNo, i - (dataStartRow - 1))
+          : (i - dataStartRow + 1),
+        examNumber: getStringValue(values, indices.examNo, `UBEAT/${i - dataStartRow + 1}`),
+        studentName: getStringValue(values, indices.candidateName, 'Unknown'),
+        age: getNumberValue(values, indices.age, 0),
         sex,
-        lga: getStringValue(values, columnIndices.lga, 'Unknown LGA'),
-        zone: getStringValue(values, columnIndices.zone, 'Unknown Zone'),
-        schoolName: getStringValue(values, columnIndices.schoolName, 'Unknown School'),
-        codeNo: getStringValue(values, columnIndices.codeNo, ''),
-        attendance: getAttendanceValue(values, columnIndices.attendance),
+        lga: isLegacy ? getStringValue(values, legacyIndices.lga, 'Unknown LGA') : 'Unknown LGA',
+        zone: isLegacy ? getStringValue(values, legacyIndices.zone, 'Unknown Zone') : 'Unknown Zone',
+        schoolName: isLegacy
+          ? getStringValue(values, legacyIndices.schoolName, 'Unknown School')
+          : (inferredSchoolName || 'Unknown School'),
+        codeNo: isLegacy ? getStringValue(values, legacyIndices.codeNo, '') : '',
+        attendance: isLegacy ? getAttendanceValue(values, legacyIndices.attendance) : 0,
         examYear,
         subjects: {
           mathematics: {
-            ca: getStringValue(values, columnIndices.math.ca30, '0'),
-            exam: getNumberValue(values, columnIndices.math.ca70, 0)
+            ca: getStringValue(values, indices.math.ca30, '0'),
+            exam: getNumberValue(values, indices.math.ca70, 0)
           },
           english: {
-            ca: getStringValue(values, columnIndices.english.ca30, '0'),
-            exam: getNumberValue(values, columnIndices.english.ca70, 0)
+            ca: getStringValue(values, indices.english.ca30, '0'),
+            exam: getNumberValue(values, indices.english.ca70, 0)
           },
           generalKnowledge: {
-            ca: getStringValue(values, columnIndices.generalKnowledge.ca30, '0'),
-            exam: getNumberValue(values, columnIndices.generalKnowledge.ca70, 0)
+            ca: getStringValue(values, indices.generalKnowledge.ca30, '0'),
+            exam: getNumberValue(values, indices.generalKnowledge.ca70, 0)
           },
           igbo: {
-            ca: getStringValue(values, columnIndices.igbo.ca30, '0'),
-            exam: getNumberValue(values, columnIndices.igbo.ca70, 0)
+            ca: getStringValue(values, indices.igbo.ca30, '0'),
+            exam: getNumberValue(values, indices.igbo.ca70, 0)
           }
         },
         file
@@ -322,6 +347,16 @@ const getAttendanceValue = (values: string[], index: number): string | number =>
   // Return as string if it's not a number (Variation 1: text values like "PRESENT", "ABSENT")
   // This handles both CSV format variations automatically
   return value
+}
+
+const getSchoolNameFromFileMeta = (fileName: string): string => {
+  // XLSX sheets are passed in as: "<original file> - Sheet: <sheetName>"
+  const sheetMarker = ' - Sheet: '
+  const sheetIdx = fileName.indexOf(sheetMarker)
+  const raw = sheetIdx >= 0 ? fileName.slice(sheetIdx + sheetMarker.length) : fileName
+
+  // If it's a plain filename, strip extension.
+  return raw.replace(/\.(csv|xlsx|xls)$/i, '').trim()
 }
 
 export type { UBEATStudentRecord as StudentRecord }
