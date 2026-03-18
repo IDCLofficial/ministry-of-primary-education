@@ -166,7 +166,7 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
                         </div>
 
                         {availableYears.length > 0 && (
-                            <div className="flex items-center gap-2 flex-1">
+                            <div className="flex items-center gap-2">
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
                                     Filter by Year
                                 </label>
