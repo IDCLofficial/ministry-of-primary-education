@@ -16,6 +16,46 @@ interface DataTableProps {
     className?: string
 }
 
+function exportRecycleBinCsv(records: StudentRecord[]) {
+    if (records.length === 0) return
+    const headers = [
+        'Serial No', 'Name', 'Exam No', 'School Name', 'LGA',
+        'English Studies', 'Mathematics', 'Basic Science',
+        'Christian Religious Studies', 'National Values',
+        'Cultural and Creative Arts', 'Business Studies',
+        'Igbo Language', 'Pre-Vocational Studies',
+        'Exam Year', 'File Name'
+    ]
+
+    const rows = records.map(r => [
+        r.serialNo,
+        r.name,
+        r.examNo,
+        r.schoolName,
+        r.lga ?? '',
+        r.englishStudies ?? '',
+        r.mathematics ?? '',
+        r.basicScience ?? '',
+        r.christianReligiousStudies ?? '',
+        r.nationalValues ?? '',
+        r.culturalAndCreativeArts ?? '',
+        r.businessStudies ?? '',
+        r.igbo ?? '',
+        r.preVocationalStudies ?? '',
+        r.examYear ?? '',
+        r.file.name
+    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`))
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `bece-recycle-bin-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+}
+
 export default function DataTable({ data, onDataChange, onOpenOverrideModal, className = "" }: DataTableProps) {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
@@ -33,10 +73,18 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     const [uploadingCount, setUploadingCount] = useState<number | null>(null)
     const uploadingCountRef = useRef<number | null>(null)
     const [mounted, setMounted] = useState(false)
+    const [recycleBin, setRecycleBin] = useState<StudentRecord[]>([])
+    const [recycleBinExported, setRecycleBinExported] = useState(true)
     const { openModal } = useExamModal()
     React.useEffect(() => setMounted(true), [])
     const router = useRouter()
     const [uploadBeceExamResults] = useUploadBeceExamResultsMutation()
+
+    // If recycle bin changes, require export again before next upload.
+    React.useEffect(() => {
+        if (recycleBin.length > 0) setRecycleBinExported(false)
+        if (recycleBin.length === 0) setRecycleBinExported(true)
+    }, [recycleBin])
 
     const filteredData = useMemo(() => {
         return data.filter(record =>
@@ -120,7 +168,7 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                 progress = Math.min(95, (currentStep / totalSteps) * 95)
             } else {
                 // Slow crawl from 95% to 99%
-                const extraSteps = currentStep - totalSteps
+                const extraSteps = currentStep - totalSteps;
                 progress = Math.min(99, 95 + (extraSteps * 0.5))
             }
 
@@ -195,6 +243,12 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     }
 
     const handleSaveToDb = async () => {
+        // Safety: if recycle bin has records and hasn't been exported since it changed, export now.
+        if (recycleBin.length > 0 && !recycleBinExported) {
+            exportRecycleBinCsv(recycleBin)
+            setRecycleBinExported(true)
+        }
+
         const recordsToUpload: StudentRecord[] =
             selectedRows.size > 0
                 ? Array.from(selectedRows)

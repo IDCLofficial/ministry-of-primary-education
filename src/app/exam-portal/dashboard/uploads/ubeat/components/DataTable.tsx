@@ -16,6 +16,55 @@ interface DataTableProps {
     className?: string
 }
 
+function recordKey(r: UBEATStudentRecord) {
+    return `${r.examNumber}\0${r.file.name}`
+}
+
+function exportRecycleBinCsv(records: UBEATStudentRecord[]) {
+    if (records.length === 0) return
+    const headers = [
+        'Serial No', 'Candidate Name', 'Exam Number', 'Sex', 'Age',
+        'School Name', 'LGA', 'Zone', 'Code No', 'Attendance',
+        'Mathematics CA', 'Mathematics Exam',
+        'English CA', 'English Exam',
+        'General Knowledge CA', 'General Knowledge Exam',
+        'Igbo CA', 'Igbo Exam',
+        'Exam Year', 'File Name'
+    ]
+
+    const rows = records.map(r => [
+        r.serialNumber,
+        r.studentName,
+        r.examNumber,
+        r.sex,
+        r.age,
+        r.schoolName,
+        r.lga,
+        r.zone,
+        r.codeNo,
+        r.attendance,
+        r.subjects?.mathematics?.ca ?? '',
+        r.subjects?.mathematics?.exam ?? '',
+        r.subjects?.english?.ca ?? '',
+        r.subjects?.english?.exam ?? '',
+        r.subjects?.generalKnowledge?.ca ?? '',
+        r.subjects?.generalKnowledge?.exam ?? '',
+        r.subjects?.igbo?.ca ?? '',
+        r.subjects?.igbo?.exam ?? '',
+        r.examYear ?? '',
+        r.file.name
+    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`))
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ubeat-recycle-bin-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+}
+
 export default function DataTable({ data, onDataChange, onOpenOverrideModal, className = "" }: DataTableProps) {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
@@ -33,10 +82,18 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     const [uploadingCount, setUploadingCount] = useState<number | null>(null)
     const uploadingCountRef = useRef<number | null>(null)
     const [mounted, setMounted] = useState(false)
+    const [recycleBin, setRecycleBin] = useState<UBEATStudentRecord[]>([])
+    const [showRecycleBin, setShowRecycleBin] = useState(false)
+    const [recycleBinExported, setRecycleBinExported] = useState(true)
     const { openModal } = useExamModal()
     const router = useRouter()
     const [uploadUBEATResults] = useUploadUBEATResultsMutation()
     React.useEffect(() => setMounted(true), [])
+
+    React.useEffect(() => {
+        if (recycleBin.length > 0) setRecycleBinExported(false)
+        if (recycleBin.length === 0) setRecycleBinExported(true)
+    }, [recycleBin])
 
     const filteredData = useMemo(() => {
         return data.filter(record =>
@@ -172,6 +229,52 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         setSelectedRows(new Set())
     }
 
+    const handleMoveToRecycleBin = (globalIndex: number) => {
+        const record = sortedData[globalIndex]
+        if (!record) return
+        const key = recordKey(record)
+        if (recycleBin.some(r => recordKey(r) === key)) {
+            toast('Already in recycle bin', { icon: '🗑️' })
+            return
+        }
+        setRecycleBin(prev => [...prev, record])
+        onDataChange(data.filter(r => recordKey(r) !== key))
+        setSelectedRows(new Set())
+        toast.success('Moved to recycle bin')
+    }
+
+    const handleMoveSelectedToRecycleBin = () => {
+        if (selectedRows.size === 0) return
+        const records = Array.from(selectedRows).sort((a, b) => a - b).map(i => sortedData[i])
+        const existingKeys = new Set(recycleBin.map(recordKey))
+        const newBinRecords = records.filter(r => !existingKeys.has(recordKey(r)))
+        const keysToRemove = new Set(records.map(recordKey))
+        setRecycleBin(prev => [...prev, ...newBinRecords])
+        onDataChange(data.filter(r => !keysToRemove.has(recordKey(r))))
+        setSelectedRows(new Set())
+        toast.success(`Moved ${records.length} record${records.length !== 1 ? 's' : ''} to recycle bin`)
+    }
+
+    const handleRestoreFromBin = (key: string) => {
+        const record = recycleBin.find(r => recordKey(r) === key)
+        if (!record) return
+        setRecycleBin(prev => prev.filter(r => recordKey(r) !== key))
+        onDataChange([...data, record])
+        toast.success('Record restored to table')
+    }
+
+    const handleRestoreAll = () => {
+        onDataChange([...data, ...recycleBin])
+        setRecycleBin([])
+        toast.success(`Restored ${recycleBin.length} records`)
+    }
+
+    const handleEmptyRecycleBin = () => {
+        if (!window.confirm(`Permanently delete all ${recycleBin.length} records in the recycle bin? This cannot be undone.`)) return
+        setRecycleBin([])
+        toast.success('Recycle bin emptied')
+    }
+
     const handleViewExam = (student: UBEATStudentRecord) => {
         openModal(student)
     }
@@ -192,6 +295,12 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     }
 
     const handleSaveToDb = async () => {
+        // Safety: if recycle bin has records and hasn't been exported since it changed, export now.
+        if (recycleBin.length > 0 && !recycleBinExported) {
+            exportRecycleBinCsv(recycleBin)
+            setRecycleBinExported(true)
+        }
+
         const recordsToUpload: UBEATStudentRecord[] =
             selectedRows.size > 0
                 ? Array.from(selectedRows)
@@ -276,9 +385,12 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
             setSelectedRows(new Set())
             setFailedSchools([])
 
-            if (newData.length > 0) {
+            const binHasContent = recycleBin.length > 0
+            const tableHasRemaining = newData.length > 0
+
+            if (tableHasRemaining || binHasContent) {
                 toast.success(
-                    `Uploaded ${recordsToUpload.length.toLocaleString()} records in ${elapsedTime}s. ${newData.length.toLocaleString()} record${newData.length !== 1 ? 's' : ''} remaining.`
+                    `Uploaded ${recordsToUpload.length.toLocaleString()} records in ${elapsedTime}s.${tableHasRemaining ? ` ${newData.length.toLocaleString()} record${newData.length !== 1 ? 's' : ''} remaining in table.` : ''}${binHasContent ? ` ${recycleBin.length.toLocaleString()} record${recycleBin.length !== 1 ? 's' : ''} in recycle bin.` : ''}`
                 )
             } else {
                 toast.success(`Successfully saved ${recordsToUpload.length.toLocaleString()} UBEAT records to database in ${elapsedTime}s`)
@@ -315,6 +427,24 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                             </p>
                         </div>
                         <div className="flex items-center space-x-3">
+                            {/* Recycle Bin button */}
+                            <button
+                                onClick={() => setShowRecycleBin(true)}
+                                title="Open recycle bin"
+                                className={`relative inline-flex items-center gap-2 px-3 py-2 border text-sm font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${recycleBin.length > 0
+                                    ? 'border-orange-300 text-orange-700 bg-orange-50 hover:bg-orange-100 focus:ring-orange-500 cursor-pointer'
+                                    : 'border-gray-200 text-gray-400 bg-white cursor-pointer hover:bg-gray-50'
+                                    }`}
+                            >
+                                <span className="text-base">🗑️</span>
+                                <span className="hidden sm:inline">Recycle Bin</span>
+                                {recycleBin.length > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-orange-500 text-white text-[11px] font-bold leading-none">
+                                        {recycleBin.length > 99 ? '99+' : recycleBin.length}
+                                    </span>
+                                )}
+                            </button>
+
                             <button
                                 onClick={handleSaveToDb}
                                 disabled={isSaving}
@@ -356,17 +486,31 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                 <IoRefresh className="w-4 h-4" />
                             </button>
                             {selectedRows.size > 0 && (
-                                <button
-                                    onClick={handleDeleteSelected}
-                                    disabled={isSaving}
-                                    className={`inline-flex items-center transition-all duration-200 px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSaving
-                                        ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
-                                        : 'border-red-300 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500 cursor-pointer active:scale-90 active:rotate-1'
-                                        }`}
-                                >
-                                    <IoTrash className="w-4 h-4 mr-2" />
-                                    Delete ({selectedRows.size})
-                                </button>
+                                <>
+                                    <button
+                                        onClick={handleMoveSelectedToRecycleBin}
+                                        disabled={isSaving}
+                                        title={`Move ${selectedRows.size} selected to recycle bin`}
+                                        className={`inline-flex items-center gap-2 transition-all duration-200 px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSaving
+                                            ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
+                                            : 'border-orange-300 text-orange-700 bg-white hover:bg-orange-50 focus:ring-orange-500 cursor-pointer active:scale-90 active:rotate-1'
+                                            }`}
+                                    >
+                                        <span>🗑️</span>
+                                        <span>Bin ({selectedRows.size})</span>
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteSelected}
+                                        disabled={isSaving}
+                                        className={`inline-flex items-center transition-all duration-200 px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSaving
+                                            ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
+                                            : 'border-red-300 text-red-700 bg-white hover:bg-red-50 focus:ring-red-500 cursor-pointer active:scale-90 active:rotate-1'
+                                            }`}
+                                    >
+                                        <IoTrash className="w-4 h-4 mr-2" />
+                                        Delete ({selectedRows.size})
+                                    </button>
+                                </>
                             )}
                         </div>
                     </div>
@@ -508,22 +652,30 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                         {record.lga.toLowerCase()}
                                     </td>
                                     <td className=" py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <button
-                                            onClick={() => handleViewExam(record)}
-                                            disabled={isSaving}
-                                            className={`px-6 flex items-center justify-center w-full ${isSaving ? 'cursor-not-allowed' : 'cursor-pointer'
-                                                }`}
-                                            title={isSaving ? 'Saving in progress...' : 'View Exam Details'}
-                                        >
-                                            <div
-                                                className={`text-center p-1 transition-all duration-200 rounded border border-transparent ${isSaving
-                                                    ? 'text-gray-400'
-                                                    : 'text-green-600 hover:text-green-800 active:scale-90 active:rotate-1 hover:bg-green-50 hover:border-green-100'
+                                        <div className="flex items-center gap-1 px-3">
+                                            <button
+                                                onClick={() => handleViewExam(record)}
+                                                disabled={isSaving}
+                                                className={`p-1.5 rounded border border-transparent transition-all duration-200 ${isSaving
+                                                    ? 'text-gray-400 cursor-not-allowed'
+                                                    : 'text-green-600 hover:text-green-800 active:scale-90 active:rotate-1 hover:bg-green-50 hover:border-green-100 cursor-pointer'
                                                     }`}
+                                                title={isSaving ? 'Saving in progress...' : 'View Exam Details'}
                                             >
                                                 <IoEye className="text-xl" />
-                                            </div>
-                                        </button>
+                                            </button>
+                                            <button
+                                                onClick={() => handleMoveToRecycleBin(globalIndex)}
+                                                disabled={isSaving}
+                                                className={`p-1.5 rounded border border-transparent transition-all duration-200 ${isSaving
+                                                    ? 'text-gray-400 cursor-not-allowed'
+                                                    : 'text-orange-500 hover:text-orange-700 active:scale-90 active:rotate-1 hover:bg-orange-50 hover:border-orange-100 cursor-pointer'
+                                                    }`}
+                                                title="Move to recycle bin"
+                                            >
+                                                <span className="text-base leading-none">🗑️</span>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             )})}
@@ -706,6 +858,119 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                             </span>
                                         ))}
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Recycle Bin modal */}
+                    {showRecycleBin && (
+                        <div
+                            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
+                            onClick={() => setShowRecycleBin(false)}
+                            role="dialog" aria-modal="true" aria-labelledby="ubeat-recycle-bin-title"
+                        >
+                            <div
+                                className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-2xl">🗑️</span>
+                                        <div>
+                                            <h3 id="ubeat-recycle-bin-title" className="text-lg font-semibold text-gray-900">
+                                                Recycle Bin
+                                            </h3>
+                                            <p className="text-xs text-gray-500">
+                                                {recycleBin.length} record{recycleBin.length !== 1 ? 's' : ''} — these will NOT be uploaded
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRecycleBin(false)}
+                                        className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                        aria-label="Close"
+                                    >
+                                        <span className="text-xl leading-none">&times;</span>
+                                    </button>
+                                </div>
+
+                                {recycleBin.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-2 px-5 py-3 bg-orange-50 border-b border-orange-100">
+                                        <button
+                                            onClick={() => { exportRecycleBinCsv(recycleBin); setRecycleBinExported(true) }}
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 active:scale-95 transition-all duration-150 cursor-pointer"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                            </svg>
+                                            Download CSV ({recycleBin.length})
+                                        </button>
+                                        <button
+                                            onClick={handleRestoreAll}
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-blue-300 text-blue-700 bg-white text-sm font-medium hover:bg-blue-50 active:scale-95 transition-all duration-150 cursor-pointer"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                            Restore All
+                                        </button>
+                                        <button
+                                            onClick={handleEmptyRecycleBin}
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-red-300 text-red-700 bg-white text-sm font-medium hover:bg-red-50 active:scale-95 transition-all duration-150 cursor-pointer ml-auto"
+                                        >
+                                            <IoTrash className="w-4 h-4" />
+                                            Empty Bin
+                                        </button>
+                                    </div>
+                                )}
+
+                                <div className="flex-1 overflow-y-auto">
+                                    {recycleBin.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                                            <span className="text-5xl mb-3">🗑️</span>
+                                            <p className="text-sm font-medium">Recycle bin is empty</p>
+                                            <p className="text-xs mt-1">Records moved here won&apos;t be uploaded</p>
+                                        </div>
+                                    ) : (
+                                        <table className="min-w-full divide-y divide-gray-100">
+                                            <thead className="bg-gray-50 sticky top-0">
+                                                <tr>
+                                                    {['S/NO', 'Name', 'Exam No.', 'School', ''].map(h => (
+                                                        <th key={h} className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-100">
+                                                {recycleBin.map(record => {
+                                                    const key = recordKey(record)
+                                                    return (
+                                                        <tr key={key} className="hover:bg-orange-50 transition-colors">
+                                                            <td className="px-4 py-3 text-sm text-gray-500">{record.serialNumber}</td>
+                                                            <td className="px-4 py-3 text-sm font-medium text-gray-800">{record.studentName}</td>
+                                                            <td className="px-4 py-3 text-sm text-gray-600">{record.examNumber}</td>
+                                                            <td className="px-4 py-3 text-sm text-gray-600">
+                                                                <div className="max-w-[160px] truncate" title={record.schoolName}>{record.schoolName}</div>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-sm">
+                                                                <button
+                                                                    onClick={() => handleRestoreFromBin(key)}
+                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-blue-200 text-blue-600 text-xs font-medium hover:bg-blue-50 active:scale-95 transition-all cursor-pointer"
+                                                                    title="Restore to table"
+                                                                >
+                                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                    </svg>
+                                                                    Restore
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    )}
                                 </div>
                             </div>
                         </div>
