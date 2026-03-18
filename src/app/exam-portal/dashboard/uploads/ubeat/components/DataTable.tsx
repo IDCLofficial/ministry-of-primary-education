@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { IoSearch, IoEye, IoTrash, IoCloudUpload, IoRefresh } from 'react-icons/io5'
 import { useExamModal } from '../contexts/ExamModalContext'
 import toast from 'react-hot-toast'
@@ -28,9 +29,14 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     const [uploadProgress, setUploadProgress] = useState(0)
     const [progressMessage, setProgressMessage] = useState('')
     const [failedSchools, setFailedSchools] = useState<string[]>([])
+    const [showFilesModal, setShowFilesModal] = useState(false)
+    const [uploadingCount, setUploadingCount] = useState<number | null>(null)
+    const uploadingCountRef = useRef<number | null>(null)
+    const [mounted, setMounted] = useState(false)
     const { openModal } = useExamModal()
     const router = useRouter()
     const [uploadUBEATResults] = useUploadUBEATResultsMutation()
+    React.useEffect(() => setMounted(true), [])
 
     const filteredData = useMemo(() => {
         return data.filter(record =>
@@ -57,6 +63,16 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         })
     }, [filteredData, sortConfig])
 
+    // Files/sheets in data (for "remove whole file" and batch context)
+    const filesList = useMemo(() => {
+        const map = new Map<string, number>()
+        data.forEach(record => {
+            const name = record.file.name
+            map.set(name, (map.get(name) ?? 0) + 1)
+        })
+        return Array.from(map.entries()).map(([fileName, count]) => ({ fileName, count }))
+    }, [data])
+
     // Pagination logic
     const totalPages = Math.ceil(sortedData.length / itemsPerPage)
     const startIndex = (currentPage - 1) * itemsPerPage
@@ -68,16 +84,18 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         setCurrentPage(1)
     }, [searchTerm])
 
-    // Optimistic progress simulation based on data length
+    // Optimistic progress simulation based on count being uploaded
     React.useEffect(() => {
         if (!isSaving) {
             setUploadProgress(0)
             setProgressMessage('')
+            setUploadingCount(null)
             return
         }
 
+        const count = uploadingCountRef.current ?? uploadingCount ?? data.length
         // Calculate estimated time: ~3.4ms per record (1600 records in 5.44s)
-        const estimatedTimeMs = data.length * 3.4
+        const estimatedTimeMs = count * 3.4
         const updateInterval = 100 // Update every 100ms
         const totalSteps = Math.ceil(estimatedTimeMs / updateInterval)
         let currentStep = 0
@@ -118,7 +136,7 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         }, updateInterval)
 
         return () => clearInterval(interval)
-    }, [isSaving, data.length])
+    }, [isSaving, data.length, uploadingCount])
 
     const handleSort = (key: keyof UBEATStudentRecord) => {
         setSortConfig(prev => ({
@@ -146,14 +164,11 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     }
 
     const handleDeleteSelected = () => {
-        const indicesToDelete = Array.from(selectedRows).sort((a, b) => b - a)
-        const newData = [...data]
-
-        indicesToDelete.forEach(index => {
-            newData.splice(index, 1)
-        })
-
-        onDataChange(newData)
+        const recordsToRemove = Array.from(selectedRows)
+            .sort((a, b) => a - b)
+            .map(i => sortedData[i])
+        const keysToRemove = new Set(recordsToRemove.map(r => `${r.examNumber}\0${r.file.name}`))
+        onDataChange(data.filter(r => !keysToRemove.has(`${r.examNumber}\0${r.file.name}`)))
         setSelectedRows(new Set())
     }
 
@@ -168,15 +183,45 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         }
     }
 
+    const handleRemoveFile = (fileName: string) => {
+        const count = data.filter(r => r.file.name === fileName).length
+        if (!window.confirm(`Remove the entire sheet/file "${fileName}"? This will remove ${count} record${count !== 1 ? 's' : ''} from the table.`)) return
+        onDataChange(data.filter(r => r.file.name !== fileName))
+        setSelectedRows(new Set())
+        toast.success(`Removed ${count} record${count !== 1 ? 's' : ''} (${fileName})`)
+    }
+
     const handleSaveToDb = async () => {
+        const recordsToUpload: UBEATStudentRecord[] =
+            selectedRows.size > 0
+                ? Array.from(selectedRows)
+                    .sort((a, b) => a - b)
+                    .map(i => sortedData[i])
+                : data
+
+        if (recordsToUpload.length === 0) {
+            toast.error('No records to upload. Select rows or add data.')
+            return
+        }
+
+        const isPartialUpload = recordsToUpload.length < data.length
+        const remainingCount = data.length - recordsToUpload.length
+
+        if (isPartialUpload && !window.confirm(
+            `Upload ${recordsToUpload.length.toLocaleString()} selected record${recordsToUpload.length !== 1 ? 's' : ''}?\n\n${remainingCount.toLocaleString()} record${remainingCount !== 1 ? 's' : ''} will remain in the table for a later upload.`
+        )) return
+
         const startTime = performance.now()
-        setIsSaving(true);
+        const countToUpload = recordsToUpload.length
+        uploadingCountRef.current = countToUpload
+        setUploadingCount(countToUpload)
+        setIsSaving(true)
 
         try {
-            toast.loading('Saving UBEAT data to database...')
+            toast.loading(isPartialUpload ? `Saving ${recordsToUpload.length} selected records...` : 'Saving UBEAT data to database...')
 
-            // Group students by school
-            const schoolGroups = data.reduce((groups, student) => {
+            // Group students by school (from recordsToUpload only)
+            const schoolGroups = recordsToUpload.reduce((groups, student) => {
                 const schoolName = student.schoolName
                 if (!groups[schoolName]) {
                     groups[schoolName] = []
@@ -216,41 +261,37 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                     }
                 }))
             }));
-            
+
             await uploadUBEATResults({ result: results }).unwrap()
 
-            const endTime = performance.now()
-            const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
-
+            const elapsedTime = ((performance.now() - startTime) / 1000).toFixed(2)
             toast.dismiss()
-
-            // Set to 100% before clearing
             setUploadProgress(100)
             setProgressMessage('Upload complete!')
+            await new Promise(r => setTimeout(r, 300))
 
-            // Small delay to show 100% completion
-            await new Promise(resolve => setTimeout(resolve, 300))
-
-            // Clear data and show success message
-            onDataChange([])
+            const uploadedKeys = new Set(recordsToUpload.map(r => `${r.examNumber}\0${r.file.name}`))
+            const newData = data.filter(r => !uploadedKeys.has(`${r.examNumber}\0${r.file.name}`))
+            onDataChange(newData)
+            setSelectedRows(new Set())
             setFailedSchools([])
-            toast.success(
-                `Successfully saved ${data.length} UBEAT records to database in ${elapsedTime}s`
-            )
 
-            router.push('/exam-portal/dashboard/schools')
-
+            if (newData.length > 0) {
+                toast.success(
+                    `Uploaded ${recordsToUpload.length.toLocaleString()} records in ${elapsedTime}s. ${newData.length.toLocaleString()} record${newData.length !== 1 ? 's' : ''} remaining.`
+                )
+            } else {
+                toast.success(`Successfully saved ${recordsToUpload.length.toLocaleString()} UBEAT records to database in ${elapsedTime}s`)
+                router.push('/exam-portal/dashboard/schools')
+            }
         } catch (error) {
-            const endTime = performance.now()
-            const elapsedTime = ((endTime - startTime) / 1000).toFixed(2)
-
             console.error('Error saving UBEAT data:', error)
-
             toast.dismiss()
-            toast.error(`Failed to save UBEAT data to database (${elapsedTime}s)`)
-            toast.error('Please check your connection and try again.')
+            toast.error('Failed to save UBEAT data to database. Please check your connection and try again.')
         } finally {
             setIsSaving(false)
+            setUploadingCount(null)
+            uploadingCountRef.current = null
         }
     }
 
@@ -277,22 +318,30 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                             <button
                                 onClick={handleSaveToDb}
                                 disabled={isSaving}
-                                title={isSaving ? 'Saving to Database...' : 'Save to Database'}
-                                className={`inline-flex items-center transition-all duration-200 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSaving
+                                title={selectedRows.size > 0 ? `Upload ${selectedRows.size} selected` : 'Upload all to database'}
+                                className={`inline-flex items-center gap-2 transition-all duration-200 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSaving
                                     ? 'bg-gray-400 cursor-not-allowed'
                                     : 'bg-green-600 hover:bg-green-700 focus:ring-green-500 cursor-pointer active:scale-90 active:rotate-1'
                                     }`}
                             >
                                 {isSaving ? (
                                     <>
-                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
                                         Saving...
                                     </>
+                                ) : selectedRows.size > 0 ? (
+                                    <>
+                                        <IoCloudUpload className="w-4 h-4 flex-shrink-0" />
+                                        <span>Upload selected ({selectedRows.size})</span>
+                                    </>
                                 ) : (
-                                    <IoCloudUpload className="w-4 h-4" />
+                                    <>
+                                        <IoCloudUpload className="w-4 h-4 flex-shrink-0" />
+                                        <span>Upload all</span>
+                                    </>
                                 )}
                             </button>
                             <button
@@ -321,6 +370,26 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                             )}
                         </div>
                     </div>
+                    {selectedRows.size > 0 && (
+                        <div className="mt-3 px-4 py-2 rounded-md bg-green-50 border border-green-200">
+                            <p className="text-sm font-medium text-green-800">
+                                <span className="font-semibold">{selectedRows.size} rows selected</span>
+                                {' — green button will upload only these. Clear selection to upload all.'}
+                            </p>
+                        </div>
+                    )}
+                    {/* Sheets / files: open in modal to save space */}
+                    {filesList.length > 0 && (
+                        <div className="mt-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowFilesModal(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-sm font-medium text-gray-800 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1"
+                            >
+                                📁 Sheets / files in this upload ({filesList.length} file{filesList.length !== 1 ? 's' : ''})
+                            </button>
+                        </div>
+                    )}
                     {/* Search and Filters */}
                     <div className="mt-4 flex items-center justify-between space-x-4">
                         <div className="flex-1 max-w-md">
@@ -407,13 +476,15 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {paginatedData.map((record, index) => (
-                                <tr key={`${record.examNumber}-${index}`} className="hover:bg-gray-50">
+                            {paginatedData.map((record, pageIndex) => {
+                                const globalIndex = startIndex + pageIndex
+                                return (
+                                <tr key={`${record.examNumber}-${globalIndex}`} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <input
                                             type="checkbox"
-                                            checked={selectedRows.has(index)}
-                                            onChange={(e) => handleSelectRow(index, e.target.checked)}
+                                            checked={selectedRows.has(globalIndex)}
+                                            onChange={(e) => handleSelectRow(globalIndex, e.target.checked)}
                                             disabled={isSaving}
                                             className={`rounded text-green-600 focus:ring-green-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
                                                 }`}
@@ -455,7 +526,7 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                         </button>
                                     </td>
                                 </tr>
-                            ))}
+                            )})}
                         </tbody>
                     </table>
                 </div>
@@ -538,54 +609,110 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                     </div>
                 )}
 
-                {/* Loading Overlay with Progress Bar */}
-                {isSaving && (
-                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
-                        <div className="bg-white p-8 rounded-lg shadow-xl border border-gray-200 max-w-md w-full mx-4">
-                            <div className="flex items-center justify-center mb-4">
-                                <svg className="animate-spin h-12 w-12 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </div>
-                            <div className="text-center">
-                                <p className="text-xl font-semibold text-gray-900 mb-2">Saving to Database</p>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    Processing {data.length.toLocaleString()} UBEAT records...
-                                </p>
-                                
-                                {/* Progress Bar */}
-                                <div className="mb-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium text-green-700">{progressMessage}</span>
-                                        <span className="text-sm font-semibold text-green-600">{uploadProgress}%</span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                        <div 
-                                            className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-300 ease-out relative overflow-hidden"
-                                            style={{ width: `${uploadProgress}%` }}
-                                        >
-                                            {/* Animated shimmer effect */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+            </div>
+
+            {/* Modals portaled outside the table */}
+            {mounted && createPortal(
+                <>
+                    {isSaving && (
+                        <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div className="bg-white p-8 rounded-lg shadow-xl border border-gray-200 max-w-md w-full mx-4">
+                                <div className="flex items-center justify-center mb-4">
+                                    <svg className="animate-spin h-12 w-12 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-xl font-semibold text-gray-900 mb-2">Saving to Database</p>
+                                    <p className="text-sm text-gray-600 mb-4">
+                                        Processing {(uploadingCountRef.current ?? uploadingCount ?? data.length).toLocaleString()} UBEAT records...
+                                    </p>
+                                    <div className="mb-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium text-green-700">{progressMessage}</span>
+                                            <span className="text-sm font-semibold text-green-600">{uploadProgress}%</span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                            <div
+                                                className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-300 ease-out relative overflow-hidden"
+                                                style={{ width: `${uploadProgress}%` }}
+                                            >
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                {/* Status Info */}
-                                <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                                    <p className="text-xs text-blue-800 flex items-center justify-center">
-                                        <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                        </svg>
-                                        Please don&apos;t close this window
-                                    </p>
+                                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                                        <p className="text-xs text-blue-800 flex items-center justify-center">
+                                            <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                            </svg>
+                                            Please don&apos;t close this window
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
-
-            </div>
+                    )}
+                    {showFilesModal && filesList.length > 0 && (
+                        <div
+                            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
+                            onClick={() => setShowFilesModal(false)}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="ubeat-files-modal-title"
+                        >
+                            <div
+                                className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                                    <h3 id="ubeat-files-modal-title" className="text-lg font-semibold text-gray-900">
+                                        Sheets / files in this upload ({filesList.length})
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowFilesModal(false)}
+                                        className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        aria-label="Close"
+                                    >
+                                        <span className="text-xl leading-none">&times;</span>
+                                    </button>
+                                </div>
+                                <p className="px-4 pt-2 text-xs text-gray-500">
+                                    Remove an entire sheet/file from the table with the trash icon. Use checkboxes to upload only selected rows.
+                                </p>
+                                <div className="flex-1 overflow-y-auto p-4">
+                                    <div className="flex flex-wrap gap-2">
+                                        {filesList.map(({ fileName, count }) => (
+                                            <span
+                                                key={fileName}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-sm"
+                                            >
+                                                <span className="max-w-[240px] truncate text-gray-800" title={fileName}>{fileName}</span>
+                                                <span className="text-amber-700 text-xs font-medium">({count})</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        handleRemoveFile(fileName)
+                                                        if (filesList.length <= 1) setShowFilesModal(false)
+                                                    }}
+                                                    disabled={isSaving}
+                                                    className="p-1 rounded-md text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                                    title="Remove this entire sheet/file"
+                                                >
+                                                    <IoTrash className="w-4 h-4" />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </>,
+                document.body
+            )}
         </React.Fragment>
     )
 }
