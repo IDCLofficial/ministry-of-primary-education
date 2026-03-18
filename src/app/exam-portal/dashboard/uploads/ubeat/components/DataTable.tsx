@@ -16,6 +16,24 @@ interface DataTableProps {
     className?: string
 }
 
+type SearchMode = 'contains' | 'startsWith' | 'exact'
+type SearchField = 'all' | 'name' | 'examNo' | 'school'
+
+function parseSearchQuery(raw: string): { mode: SearchMode; field: SearchField; term: string } {
+    const q = (raw ?? '').trim()
+    const lower = q.toLowerCase()
+
+    const take = (prefix: string) => q.slice(prefix.length).trim()
+
+    if (lower.startsWith('st:')) return { mode: 'startsWith', field: 'all', term: take('st:') }
+    if (lower.startsWith('ex:')) return { mode: 'exact', field: 'all', term: take('ex:') }
+    if (lower.startsWith('nm:')) return { mode: 'contains', field: 'name', term: take('nm:') }
+    if (lower.startsWith('exm:')) return { mode: 'contains', field: 'examNo', term: take('exm:') }
+    if (lower.startsWith('sch:')) return { mode: 'contains', field: 'school', term: take('sch:') }
+
+    return { mode: 'contains', field: 'all', term: q }
+}
+
 function recordKey(r: UBEATStudentRecord) {
     return `${r.examNumber}\0${r.file.name}`
 }
@@ -67,7 +85,10 @@ function exportRecycleBinCsv(records: UBEATStudentRecord[]) {
 
 export default function DataTable({ data, onDataChange, onOpenOverrideModal, className = "" }: DataTableProps) {
     const [searchTerm, setSearchTerm] = useState('')
-    const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+    // selectedKeys: Set of recordKey strings — stable across sort/filter/page changes
+    const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
+    // Anchor is the recordKey of the last directly-clicked row (for shift-range)
+    const lastSelectedKeyRef = useRef<string | null>(null)
     const [sortConfig, setSortConfig] = useState<{
         key: keyof UBEATStudentRecord | null
         direction: 'asc' | 'desc'
@@ -96,11 +117,27 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     }, [recycleBin])
 
     const filteredData = useMemo(() => {
-        return data.filter(record =>
-            record.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            record.examNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            record.schoolName.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+        const { mode, field, term } = parseSearchQuery(searchTerm)
+        const t = term.toLowerCase()
+        if (!t) return data
+
+        const match = (value: string) => {
+            const v = (value ?? '').toLowerCase()
+            if (mode === 'startsWith') return v.startsWith(t)
+            if (mode === 'exact') return v === t
+            return v.includes(t)
+        }
+
+        return data.filter(record => {
+            const name = record.studentName ?? ''
+            const examNo = record.examNumber ?? ''
+            const school = record.schoolName ?? ''
+
+            if (field === 'name') return match(name)
+            if (field === 'examNo') return match(examNo)
+            if (field === 'school') return match(school)
+            return match(name) || match(examNo) || match(school)
+        })
     }, [data, searchTerm])
 
     const sortedData = useMemo(() => {
@@ -110,12 +147,8 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
             const aValue = a[sortConfig.key!]
             const bValue = b[sortConfig.key!]
 
-            if (aValue < bValue) {
-                return sortConfig.direction === 'asc' ? -1 : 1
-            }
-            if (aValue > bValue) {
-                return sortConfig.direction === 'asc' ? 1 : -1
-            }
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
             return 0
         })
     }, [filteredData, sortConfig])
@@ -141,6 +174,16 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         setCurrentPage(1)
     }, [searchTerm])
 
+    // Prune selectedKeys that no longer exist in sortedData (e.g. after data change)
+    const sortedDataKeys = useMemo(() => new Set(sortedData.map(recordKey)), [sortedData])
+    React.useEffect(() => {
+        setSelectedKeys(prev => {
+            const pruned = new Set<string>()
+            prev.forEach(k => { if (sortedDataKeys.has(k)) pruned.add(k) })
+            return pruned.size === prev.size ? prev : pruned
+        })
+    }, [sortedDataKeys])
+
     // Optimistic progress simulation based on count being uploaded
     React.useEffect(() => {
         if (!isSaving) {
@@ -151,9 +194,8 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         }
 
         const count = uploadingCountRef.current ?? uploadingCount ?? data.length
-        // Calculate estimated time: ~3.4ms per record (1600 records in 5.44s)
         const estimatedTimeMs = count * 3.4
-        const updateInterval = 100 // Update every 100ms
+        const updateInterval = 100
         const totalSteps = Math.ceil(estimatedTimeMs / updateInterval)
         let currentStep = 0
 
@@ -169,27 +211,19 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
 
         const interval = setInterval(() => {
             currentStep++
-            
-            // Optimistic progress: reaches ~95% by estimated time, then slows down
             let progress
             if (currentStep < totalSteps) {
-                // Smooth curve to 95%
                 progress = Math.min(95, (currentStep / totalSteps) * 95)
             } else {
-                // Slow crawl from 95% to 99%
                 const extraSteps = currentStep - totalSteps
                 progress = Math.min(99, 95 + (extraSteps * 0.5))
             }
-
             setUploadProgress(Math.floor(progress))
-
-            // Update message based on progress
             const messageIndex = Math.min(
                 Math.floor((progress / 100) * progressMessages.length),
                 progressMessages.length - 1
             )
             setProgressMessage(progressMessages[messageIndex])
-
         }, updateInterval)
 
         return () => clearInterval(interval)
@@ -204,54 +238,98 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            setSelectedRows(new Set(sortedData.map((_, index) => index)))
+            setSelectedKeys(new Set(sortedData.map(recordKey)))
         } else {
-            setSelectedRows(new Set())
+            setSelectedKeys(new Set())
         }
     }
 
-    const handleSelectRow = (index: number, checked: boolean) => {
-        const newSelected = new Set(selectedRows)
-        if (checked) {
-            newSelected.add(index)
+    /**
+     * Handles row checkbox clicks with shift-range support.
+     * Uses stable recordKeys and sortedData positions for range calculation,
+     * so shift-select works correctly across pages, sorts, and filter changes.
+     */
+    const handleSelectRow = (key: string, checked: boolean, shiftKey?: boolean) => {
+        const newSelected = new Set(selectedKeys)
+        const anchorKey = lastSelectedKeyRef.current
+
+        if (shiftKey && anchorKey !== null) {
+            // Find positions of anchor and current row in sortedData
+            const anchorPos = sortedData.findIndex(r => recordKey(r) === anchorKey)
+            const currentPos = sortedData.findIndex(r => recordKey(r) === key)
+
+            if (anchorPos !== -1 && currentPos !== -1) {
+                const start = Math.min(anchorPos, currentPos)
+                const end = Math.max(anchorPos, currentPos)
+                for (let i = start; i <= end; i++) {
+                    const k = recordKey(sortedData[i])
+                    if (checked) newSelected.add(k)
+                    else newSelected.delete(k)
+                }
+            } else {
+                // Fallback: just toggle the clicked row
+                if (checked) newSelected.add(key)
+                else newSelected.delete(key)
+            }
         } else {
-            newSelected.delete(index)
+            if (checked) newSelected.add(key)
+            else newSelected.delete(key)
         }
-        setSelectedRows(newSelected)
+
+        // Only update anchor on direct (non-shift) clicks so the anchor
+        // stays stable across a shift-extended selection
+        if (!shiftKey) lastSelectedKeyRef.current = key
+        setSelectedKeys(newSelected)
+    }
+
+    const applyBulkSelection = (action: 'none' | 'page' | 'filtered' | 'invert') => {
+        if (action === 'none') {
+            setSelectedKeys(new Set())
+            return
+        }
+        if (action === 'filtered') {
+            setSelectedKeys(new Set(sortedData.map(recordKey)))
+            return
+        }
+        if (action === 'page') {
+            setSelectedKeys(new Set(paginatedData.map(recordKey)))
+            return
+        }
+        // invert
+        const inverted = new Set<string>()
+        sortedData.forEach(r => {
+            const k = recordKey(r)
+            if (!selectedKeys.has(k)) inverted.add(k)
+        })
+        setSelectedKeys(inverted)
     }
 
     const handleDeleteSelected = () => {
-        const recordsToRemove = Array.from(selectedRows)
-            .sort((a, b) => a - b)
-            .map(i => sortedData[i])
-        const keysToRemove = new Set(recordsToRemove.map(r => `${r.examNumber}\0${r.file.name}`))
-        onDataChange(data.filter(r => !keysToRemove.has(`${r.examNumber}\0${r.file.name}`)))
-        setSelectedRows(new Set())
+        onDataChange(data.filter(r => !selectedKeys.has(recordKey(r))))
+        setSelectedKeys(new Set())
     }
 
-    const handleMoveToRecycleBin = (globalIndex: number) => {
-        const record = sortedData[globalIndex]
+    const handleMoveToRecycleBin = (key: string) => {
+        const record = sortedData.find(r => recordKey(r) === key)
         if (!record) return
-        const key = recordKey(record)
         if (recycleBin.some(r => recordKey(r) === key)) {
             toast('Already in recycle bin', { icon: '🗑️' })
             return
         }
         setRecycleBin(prev => [...prev, record])
         onDataChange(data.filter(r => recordKey(r) !== key))
-        setSelectedRows(new Set())
+        setSelectedKeys(new Set())
         toast.success('Moved to recycle bin')
     }
 
     const handleMoveSelectedToRecycleBin = () => {
-        if (selectedRows.size === 0) return
-        const records = Array.from(selectedRows).sort((a, b) => a - b).map(i => sortedData[i])
+        if (selectedKeys.size === 0) return
+        const records = sortedData.filter(r => selectedKeys.has(recordKey(r)))
         const existingKeys = new Set(recycleBin.map(recordKey))
         const newBinRecords = records.filter(r => !existingKeys.has(recordKey(r)))
-        const keysToRemove = new Set(records.map(recordKey))
         setRecycleBin(prev => [...prev, ...newBinRecords])
-        onDataChange(data.filter(r => !keysToRemove.has(recordKey(r))))
-        setSelectedRows(new Set())
+        onDataChange(data.filter(r => !selectedKeys.has(recordKey(r))))
+        setSelectedKeys(new Set())
         toast.success(`Moved ${records.length} record${records.length !== 1 ? 's' : ''} to recycle bin`)
     }
 
@@ -290,22 +368,19 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         const count = data.filter(r => r.file.name === fileName).length
         if (!window.confirm(`Remove the entire sheet/file "${fileName}"? This will remove ${count} record${count !== 1 ? 's' : ''} from the table.`)) return
         onDataChange(data.filter(r => r.file.name !== fileName))
-        setSelectedRows(new Set())
+        setSelectedKeys(new Set())
         toast.success(`Removed ${count} record${count !== 1 ? 's' : ''} (${fileName})`)
     }
 
     const handleSaveToDb = async () => {
-        // Safety: if recycle bin has records and hasn't been exported since it changed, export now.
         if (recycleBin.length > 0 && !recycleBinExported) {
             exportRecycleBinCsv(recycleBin)
             setRecycleBinExported(true)
         }
 
         const recordsToUpload: UBEATStudentRecord[] =
-            selectedRows.size > 0
-                ? Array.from(selectedRows)
-                    .sort((a, b) => a - b)
-                    .map(i => sortedData[i])
+            selectedKeys.size > 0
+                ? sortedData.filter(r => selectedKeys.has(recordKey(r)))
                 : data
 
         if (recordsToUpload.length === 0) {
@@ -329,17 +404,13 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         try {
             toast.loading(isPartialUpload ? `Saving ${recordsToUpload.length} selected records...` : 'Saving UBEAT data to database...')
 
-            // Group students by school (from recordsToUpload only)
             const schoolGroups = recordsToUpload.reduce((groups, student) => {
                 const schoolName = student.schoolName
-                if (!groups[schoolName]) {
-                    groups[schoolName] = []
-                }
+                if (!groups[schoolName]) groups[schoolName] = []
                 groups[schoolName].push(student)
                 return groups
-            }, {} as Record<string, UBEATStudentRecord[]>);
+            }, {} as Record<string, UBEATStudentRecord[]>)
 
-            // Transform data according to API structure
             const results = Object.entries(schoolGroups).map(([schoolName, students]) => ({
                 lga: students[0]?.lga,
                 examYear: students[0]?.examYear || new Date().getFullYear(),
@@ -369,7 +440,7 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                         }
                     }
                 }))
-            }));
+            }))
 
             await uploadUBEATResults({ result: results }).unwrap()
 
@@ -379,10 +450,10 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
             setProgressMessage('Upload complete!')
             await new Promise(r => setTimeout(r, 300))
 
-            const uploadedKeys = new Set(recordsToUpload.map(r => `${r.examNumber}\0${r.file.name}`))
-            const newData = data.filter(r => !uploadedKeys.has(`${r.examNumber}\0${r.file.name}`))
+            const uploadedKeys = new Set(recordsToUpload.map(recordKey))
+            const newData = data.filter(r => !uploadedKeys.has(recordKey(r)))
             onDataChange(newData)
-            setSelectedRows(new Set())
+            setSelectedKeys(new Set())
             setFailedSchools([])
 
             const binHasContent = recycleBin.length > 0
@@ -448,7 +519,7 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                             <button
                                 onClick={handleSaveToDb}
                                 disabled={isSaving}
-                                title={selectedRows.size > 0 ? `Upload ${selectedRows.size} selected` : 'Upload all to database'}
+                                title={selectedKeys.size > 0 ? `Upload ${selectedKeys.size} selected` : 'Upload all to database'}
                                 className={`inline-flex items-center gap-2 transition-all duration-200 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSaving
                                     ? 'bg-gray-400 cursor-not-allowed'
                                     : 'bg-green-600 hover:bg-green-700 focus:ring-green-500 cursor-pointer active:scale-90 active:rotate-1'
@@ -462,10 +533,10 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                         </svg>
                                         Saving...
                                     </>
-                                ) : selectedRows.size > 0 ? (
+                                ) : selectedKeys.size > 0 ? (
                                     <>
                                         <IoCloudUpload className="w-4 h-4 flex-shrink-0" />
-                                        <span>Upload selected ({selectedRows.size})</span>
+                                        <span>Upload selected ({selectedKeys.size})</span>
                                     </>
                                 ) : (
                                     <>
@@ -485,19 +556,19 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                             >
                                 <IoRefresh className="w-4 h-4" />
                             </button>
-                            {selectedRows.size > 0 && (
+                            {selectedKeys.size > 0 && (
                                 <>
                                     <button
                                         onClick={handleMoveSelectedToRecycleBin}
                                         disabled={isSaving}
-                                        title={`Move ${selectedRows.size} selected to recycle bin`}
+                                        title={`Move ${selectedKeys.size} selected to recycle bin`}
                                         className={`inline-flex items-center gap-2 transition-all duration-200 px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSaving
                                             ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
                                             : 'border-orange-300 text-orange-700 bg-white hover:bg-orange-50 focus:ring-orange-500 cursor-pointer active:scale-90 active:rotate-1'
                                             }`}
                                     >
                                         <span>🗑️</span>
-                                        <span>Bin ({selectedRows.size})</span>
+                                        <span>Bin ({selectedKeys.size})</span>
                                     </button>
                                     <button
                                         onClick={handleDeleteSelected}
@@ -508,16 +579,16 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                             }`}
                                     >
                                         <IoTrash className="w-4 h-4 mr-2" />
-                                        Delete ({selectedRows.size})
+                                        Delete ({selectedKeys.size})
                                     </button>
                                 </>
                             )}
                         </div>
                     </div>
-                    {selectedRows.size > 0 && (
+                    {selectedKeys.size > 0 && (
                         <div className="mt-3 px-4 py-2 rounded-md bg-green-50 border border-green-200">
                             <p className="text-sm font-medium text-green-800">
-                                <span className="font-semibold">{selectedRows.size} rows selected</span>
+                                <span className="font-semibold">{selectedKeys.size} rows selected</span>
                                 {' — green button will upload only these. Clear selection to upload all.'}
                             </p>
                         </div>
@@ -541,7 +612,7 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                 <IoSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                 <input
                                     type="text"
-                                    placeholder="Search by name, exam no, or school..."
+                                    placeholder="Search... (st: starts-with, ex: exact, nm:/exm:/sch:)"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     disabled={isSaving}
@@ -577,20 +648,40 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                         </p>
                     </div>
                 )}
+
                 {/* Table */}
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
                                 <th className="px-6 py-3 text-left">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedRows.size === sortedData.length && sortedData.length > 0}
-                                        onChange={(e) => handleSelectAll(e.target.checked)}
-                                        disabled={isSaving}
-                                        className={`rounded text-green-600 focus:ring-green-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
-                                            }`}
-                                    />
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedKeys.size === sortedData.length && sortedData.length > 0}
+                                            onChange={(e) => handleSelectAll(e.target.checked)}
+                                            disabled={isSaving}
+                                            className={`rounded text-green-600 focus:ring-green-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'}`}
+                                        />
+                                        <select
+                                            defaultValue=""
+                                            onChange={(e) => {
+                                                const v = e.target.value as '' | 'none' | 'page' | 'filtered' | 'invert'
+                                                if (!v) return
+                                                applyBulkSelection(v)
+                                                e.currentTarget.value = ''
+                                            }}
+                                            disabled={isSaving || sortedData.length === 0}
+                                            className="border border-gray-200 rounded px-2 py-1 text-xs bg-white text-gray-700 disabled:opacity-50"
+                                            title="Bulk selection"
+                                        >
+                                            <option value="">Select…</option>
+                                            <option value="page">This page</option>
+                                            <option value="filtered">All filtered</option>
+                                            <option value="invert">Invert</option>
+                                            <option value="none">None</option>
+                                        </select>
+                                    </div>
                                 </th>
                                 {[
                                     { key: 'serialNumber', label: 'S/NO' },
@@ -620,68 +711,69 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {paginatedData.map((record, pageIndex) => {
-                                const globalIndex = startIndex + pageIndex
+                            {paginatedData.map((record) => {
+                                const key = recordKey(record)
                                 return (
-                                <tr key={`${record.examNumber}-${globalIndex}`} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedRows.has(globalIndex)}
-                                            onChange={(e) => handleSelectRow(globalIndex, e.target.checked)}
-                                            disabled={isSaving}
-                                            className={`rounded text-green-600 focus:ring-green-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
-                                                }`}
-                                        />
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {record.serialNumber}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">
-                                        {record.studentName.toLowerCase()}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {record.examNumber}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        <div className="max-w-32 truncate capitalize" title={record.schoolName}>
-                                            {record.schoolName.toLowerCase()}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
-                                        {record.lga.toLowerCase()}
-                                    </td>
-                                    <td className=" py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <div className="flex items-center gap-1 px-3">
-                                            <button
-                                                onClick={() => handleViewExam(record)}
+                                    <tr key={key} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedKeys.has(key)}
+                                                onChange={(e) => handleSelectRow(key, e.target.checked, (e.nativeEvent as MouseEvent).shiftKey)}
                                                 disabled={isSaving}
-                                                className={`p-1.5 rounded border border-transparent transition-all duration-200 ${isSaving
-                                                    ? 'text-gray-400 cursor-not-allowed'
-                                                    : 'text-green-600 hover:text-green-800 active:scale-90 active:rotate-1 hover:bg-green-50 hover:border-green-100 cursor-pointer'
-                                                    }`}
-                                                title={isSaving ? 'Saving in progress...' : 'View Exam Details'}
-                                            >
-                                                <IoEye className="text-xl" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleMoveToRecycleBin(globalIndex)}
-                                                disabled={isSaving}
-                                                className={`p-1.5 rounded border border-transparent transition-all duration-200 ${isSaving
-                                                    ? 'text-gray-400 cursor-not-allowed'
-                                                    : 'text-orange-500 hover:text-orange-700 active:scale-90 active:rotate-1 hover:bg-orange-50 hover:border-orange-100 cursor-pointer'
-                                                    }`}
-                                                title="Move to recycle bin"
-                                            >
-                                                <span className="text-base leading-none">🗑️</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )})}
+                                                className={`rounded text-green-600 focus:ring-green-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'}`}
+                                            />
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {record.serialNumber}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">
+                                            {record.studentName.toLowerCase()}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {record.examNumber}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            <div className="max-w-32 truncate capitalize" title={record.schoolName}>
+                                                {record.schoolName.toLowerCase()}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                                            {record.lga.toLowerCase()}
+                                        </td>
+                                        <td className="py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <div className="flex items-center gap-1 px-3">
+                                                <button
+                                                    onClick={() => handleViewExam(record)}
+                                                    disabled={isSaving}
+                                                    className={`p-1.5 rounded border border-transparent transition-all duration-200 ${isSaving
+                                                        ? 'text-gray-400 cursor-not-allowed'
+                                                        : 'text-green-600 hover:text-green-800 active:scale-90 active:rotate-1 hover:bg-green-50 hover:border-green-100 cursor-pointer'
+                                                        }`}
+                                                    title={isSaving ? 'Saving in progress...' : 'View Exam Details'}
+                                                >
+                                                    <IoEye className="text-xl" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleMoveToRecycleBin(key)}
+                                                    disabled={isSaving}
+                                                    className={`p-1.5 rounded border border-transparent transition-all duration-200 ${isSaving
+                                                        ? 'text-gray-400 cursor-not-allowed'
+                                                        : 'text-orange-500 hover:text-orange-700 active:scale-90 active:rotate-1 hover:bg-orange-50 hover:border-orange-100 cursor-pointer'
+                                                        }`}
+                                                    title="Move to recycle bin"
+                                                >
+                                                    <span className="text-base leading-none">🗑️</span>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>
+
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200">
@@ -705,62 +797,46 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                         </div>
 
                         <div className="flex items-center space-x-1">
-                            <button
-                                onClick={() => setCurrentPage(1)}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 active:rotate-1 transition-all duration-200 cursor-pointer"
-                            >
+                            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}
+                                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 active:rotate-1 transition-all duration-200 cursor-pointer">
                                 First
                             </button>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 active:rotate-1 transition-all duration-200 cursor-pointer"
-                            >
+                            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}
+                                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 active:rotate-1 transition-all duration-200 cursor-pointer">
                                 Previous
                             </button>
 
-                            {/* Page numbers */}
                             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                 const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i
                                 if (pageNum > totalPages) return null
                                 return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
+                                    <button key={pageNum} onClick={() => setCurrentPage(pageNum)}
                                         className={`px-3 py-1 text-sm border rounded active:scale-90 active:rotate-1 transition-all duration-200 cursor-pointer ${currentPage === pageNum
                                             ? 'bg-green-600 text-white border-green-600'
                                             : 'border-gray-300 hover:bg-gray-100'
-                                            }`}
-                                    >
+                                            }`}>
                                         {pageNum}
                                     </button>
                                 )
                             })}
 
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 active:rotate-1 transition-all duration-200 cursor-pointer"
-                            >
+                            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}
+                                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 active:rotate-1 transition-all duration-200 cursor-pointer">
                                 Next
                             </button>
-                            <button
-                                onClick={() => setCurrentPage(totalPages)}
-                                disabled={currentPage === totalPages}
-                                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 active:rotate-1 transition-all duration-200 cursor-pointer"
-                            >
+                            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}
+                                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed active:scale-90 active:rotate-1 transition-all duration-200 cursor-pointer">
                                 Last
                             </button>
                         </div>
                     </div>
                 )}
+
                 {sortedData.length === 0 && (
                     <div className="text-center py-12">
                         <p className="text-gray-500">No records found</p>
                     </div>
                 )}
-
             </div>
 
             {/* Modals portaled outside the table */}
@@ -806,28 +882,20 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                             </div>
                         </div>
                     )}
+
                     {showFilesModal && filesList.length > 0 && (
                         <div
                             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
                             onClick={() => setShowFilesModal(false)}
-                            role="dialog"
-                            aria-modal="true"
-                            aria-labelledby="ubeat-files-modal-title"
+                            role="dialog" aria-modal="true" aria-labelledby="ubeat-files-modal-title"
                         >
-                            <div
-                                className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col"
-                                onClick={e => e.stopPropagation()}
-                            >
+                            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
                                     <h3 id="ubeat-files-modal-title" className="text-lg font-semibold text-gray-900">
                                         Sheets / files in this upload ({filesList.length})
                                     </h3>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowFilesModal(false)}
-                                        className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        aria-label="Close"
-                                    >
+                                    <button type="button" onClick={() => setShowFilesModal(false)}
+                                        className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Close">
                                         <span className="text-xl leading-none">&times;</span>
                                     </button>
                                 </div>
@@ -837,22 +905,14 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                 <div className="flex-1 overflow-y-auto p-4">
                                     <div className="flex flex-wrap gap-2">
                                         {filesList.map(({ fileName, count }) => (
-                                            <span
-                                                key={fileName}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-sm"
-                                            >
+                                            <span key={fileName} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-sm">
                                                 <span className="max-w-[240px] truncate text-gray-800" title={fileName}>{fileName}</span>
                                                 <span className="text-amber-700 text-xs font-medium">({count})</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        handleRemoveFile(fileName)
-                                                        if (filesList.length <= 1) setShowFilesModal(false)
-                                                    }}
+                                                <button type="button"
+                                                    onClick={() => { handleRemoveFile(fileName); if (filesList.length <= 1) setShowFilesModal(false) }}
                                                     disabled={isSaving}
                                                     className="p-1 rounded-md text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                                                    title="Remove this entire sheet/file"
-                                                >
+                                                    title="Remove this entire sheet/file">
                                                     <IoTrash className="w-4 h-4" />
                                                 </button>
                                             </span>
@@ -863,63 +923,47 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                         </div>
                     )}
 
-                    {/* Recycle Bin modal */}
                     {showRecycleBin && (
                         <div
                             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
                             onClick={() => setShowRecycleBin(false)}
                             role="dialog" aria-modal="true" aria-labelledby="ubeat-recycle-bin-title"
                         >
-                            <div
-                                className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col"
-                                onClick={e => e.stopPropagation()}
-                            >
+                            <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
                                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                                     <div className="flex items-center gap-2">
                                         <span className="text-2xl">🗑️</span>
                                         <div>
-                                            <h3 id="ubeat-recycle-bin-title" className="text-lg font-semibold text-gray-900">
-                                                Recycle Bin
-                                            </h3>
+                                            <h3 id="ubeat-recycle-bin-title" className="text-lg font-semibold text-gray-900">Recycle Bin</h3>
                                             <p className="text-xs text-gray-500">
                                                 {recycleBin.length} record{recycleBin.length !== 1 ? 's' : ''} — these will NOT be uploaded
                                             </p>
                                         </div>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowRecycleBin(false)}
-                                        className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                                        aria-label="Close"
-                                    >
+                                    <button type="button" onClick={() => setShowRecycleBin(false)}
+                                        className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400" aria-label="Close">
                                         <span className="text-xl leading-none">&times;</span>
                                     </button>
                                 </div>
 
                                 {recycleBin.length > 0 && (
                                     <div className="flex flex-wrap items-center gap-2 px-5 py-3 bg-orange-50 border-b border-orange-100">
-                                        <button
-                                            onClick={() => { exportRecycleBinCsv(recycleBin); setRecycleBinExported(true) }}
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 active:scale-95 transition-all duration-150 cursor-pointer"
-                                        >
+                                        <button onClick={() => { exportRecycleBinCsv(recycleBin); setRecycleBinExported(true) }}
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 active:scale-95 transition-all duration-150 cursor-pointer">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                             </svg>
                                             Download CSV ({recycleBin.length})
                                         </button>
-                                        <button
-                                            onClick={handleRestoreAll}
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-blue-300 text-blue-700 bg-white text-sm font-medium hover:bg-blue-50 active:scale-95 transition-all duration-150 cursor-pointer"
-                                        >
+                                        <button onClick={handleRestoreAll}
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-blue-300 text-blue-700 bg-white text-sm font-medium hover:bg-blue-50 active:scale-95 transition-all duration-150 cursor-pointer">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                             </svg>
                                             Restore All
                                         </button>
-                                        <button
-                                            onClick={handleEmptyRecycleBin}
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-red-300 text-red-700 bg-white text-sm font-medium hover:bg-red-50 active:scale-95 transition-all duration-150 cursor-pointer ml-auto"
-                                        >
+                                        <button onClick={handleEmptyRecycleBin}
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-red-300 text-red-700 bg-white text-sm font-medium hover:bg-red-50 active:scale-95 transition-all duration-150 cursor-pointer ml-auto">
                                             <IoTrash className="w-4 h-4" />
                                             Empty Bin
                                         </button>
@@ -954,11 +998,9 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                                                 <div className="max-w-[160px] truncate" title={record.schoolName}>{record.schoolName}</div>
                                                             </td>
                                                             <td className="px-4 py-3 text-sm">
-                                                                <button
-                                                                    onClick={() => handleRestoreFromBin(key)}
+                                                                <button onClick={() => handleRestoreFromBin(key)}
                                                                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-blue-200 text-blue-600 text-xs font-medium hover:bg-blue-50 active:scale-95 transition-all cursor-pointer"
-                                                                    title="Restore to table"
-                                                                >
+                                                                    title="Restore to table">
                                                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                                                     </svg>

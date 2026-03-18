@@ -16,6 +16,24 @@ interface DataTableProps {
     className?: string
 }
 
+type SearchMode = 'contains' | 'startsWith' | 'exact'
+type SearchField = 'all' | 'name' | 'examNo' | 'school'
+
+function parseSearchQuery(raw: string): { mode: SearchMode; field: SearchField; term: string } {
+    const q = (raw ?? '').trim()
+    const lower = q.toLowerCase()
+
+    const take = (prefix: string) => q.slice(prefix.length).trim()
+
+    if (lower.startsWith('st:')) return { mode: 'startsWith', field: 'all', term: take('st:') }
+    if (lower.startsWith('ex:')) return { mode: 'exact', field: 'all', term: take('ex:') }
+    if (lower.startsWith('nm:')) return { mode: 'contains', field: 'name', term: take('nm:') }
+    if (lower.startsWith('exm:')) return { mode: 'contains', field: 'examNo', term: take('exm:') }
+    if (lower.startsWith('sch:')) return { mode: 'contains', field: 'school', term: take('sch:') }
+
+    return { mode: 'contains', field: 'all', term: q }
+}
+
 function exportRecycleBinCsv(records: StudentRecord[]) {
     if (records.length === 0) return
     const headers = [
@@ -59,6 +77,7 @@ function exportRecycleBinCsv(records: StudentRecord[]) {
 export default function DataTable({ data, onDataChange, onOpenOverrideModal, className = "" }: DataTableProps) {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+    const lastSelectedIndexRef = useRef<number | null>(null)
     const [sortConfig, setSortConfig] = useState<{
         key: keyof StudentRecord | null
         direction: 'asc' | 'desc'
@@ -87,11 +106,28 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     }, [recycleBin])
 
     const filteredData = useMemo(() => {
-        return data.filter(record =>
-            record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            record.examNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            record.schoolName.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+        const { mode, field, term } = parseSearchQuery(searchTerm)
+        const t = term.toLowerCase()
+        if (!t) return data
+
+        const match = (value: string) => {
+            const v = (value ?? '').toLowerCase()
+            if (mode === 'startsWith') return v.startsWith(t)
+            if (mode === 'exact') return v === t
+            return v.includes(t)
+        }
+
+        return data.filter(record => {
+            const name = record.name ?? ''
+            const examNo = record.examNo ?? ''
+            const school = record.schoolName ?? ''
+
+            if (field === 'name') return match(name)
+            if (field === 'examNo') return match(examNo)
+            if (field === 'school') return match(school)
+
+            return match(name) || match(examNo) || match(school)
+        })
     }, [data, searchTerm])
 
     const sortedData = useMemo(() => {
@@ -201,14 +237,46 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         }
     }
 
-    const handleSelectRow = (index: number, checked: boolean) => {
+    const handleSelectRow = (index: number, checked: boolean, shiftKey?: boolean) => {
         const newSelected = new Set(selectedRows)
-        if (checked) {
-            newSelected.add(index)
+        const anchor = lastSelectedIndexRef.current
+
+        if (shiftKey && anchor !== null) {
+            const start = Math.min(anchor, index)
+            const end = Math.max(anchor, index)
+            for (let i = start; i <= end; i++) {
+                if (checked) newSelected.add(i)
+                else newSelected.delete(i)
+            }
         } else {
-            newSelected.delete(index)
+            if (checked) newSelected.add(index)
+            else newSelected.delete(index)
         }
+
+        lastSelectedIndexRef.current = index
         setSelectedRows(newSelected)
+    }
+
+    const applyBulkSelection = (action: 'none' | 'page' | 'filtered' | 'invert') => {
+        if (action === 'none') {
+            setSelectedRows(new Set())
+            return
+        }
+        if (action === 'filtered') {
+            setSelectedRows(new Set(sortedData.map((_, index) => index)))
+            return
+        }
+        if (action === 'page') {
+            const indices = new Set<number>()
+            for (let i = startIndex; i < Math.min(endIndex, sortedData.length); i++) indices.add(i)
+            setSelectedRows(indices)
+            return
+        }
+        const inverted = new Set<number>()
+        for (let i = 0; i < sortedData.length; i++) {
+            if (!selectedRows.has(i)) inverted.add(i)
+        }
+        setSelectedRows(inverted)
     }
 
     const handleDeleteSelected = () => {
@@ -432,7 +500,7 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                 <IoSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                 <input
                                     type="text"
-                                    placeholder="Search by name, exam no, or school..."
+                                    placeholder="Search... (st: starts-with, ex: exact, nm:/exm:/sch:)"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     disabled={isSaving}
@@ -486,14 +554,34 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                         <thead className="bg-gray-50">
                             <tr>
                                 <th className="px-6 py-3 text-left">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedRows.size === sortedData.length && sortedData.length > 0}
-                                        onChange={(e) => handleSelectAll(e.target.checked)}
-                                        disabled={isSaving}
-                                        className={`rounded text-green-600 focus:ring-green-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
-                                            }`}
-                                    />
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedRows.size === sortedData.length && sortedData.length > 0}
+                                            onChange={(e) => handleSelectAll(e.target.checked)}
+                                            disabled={isSaving}
+                                            className={`rounded text-green-600 focus:ring-green-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
+                                                }`}
+                                        />
+                                        <select
+                                            defaultValue=""
+                                            onChange={(e) => {
+                                                const v = e.target.value as '' | 'none' | 'page' | 'filtered' | 'invert'
+                                                if (!v) return
+                                                applyBulkSelection(v)
+                                                e.currentTarget.value = ''
+                                            }}
+                                            disabled={isSaving || sortedData.length === 0}
+                                            className="border border-gray-200 rounded px-2 py-1 text-xs bg-white text-gray-700 disabled:opacity-50"
+                                            title="Bulk selection"
+                                        >
+                                            <option value="">Select…</option>
+                                            <option value="page">This page</option>
+                                            <option value="filtered">All filtered</option>
+                                            <option value="invert">Invert</option>
+                                            <option value="none">None</option>
+                                        </select>
+                                    </div>
                                 </th>
                                 {[
                                     { key: 'serialNo', label: 'S/NO' },
@@ -522,13 +610,15 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {paginatedData.map((record, index) => (
-                                <tr key={`${record.examNo}-${index}`} className="hover:bg-gray-50">
+                            {paginatedData.map((record, pageIndex) => {
+                                const globalIndex = startIndex + pageIndex
+                                return (
+                                <tr key={`${record.examNo}-${globalIndex}`} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <input
                                             type="checkbox"
-                                            checked={selectedRows.has(index)}
-                                            onChange={(e) => handleSelectRow(index, e.target.checked)}
+                                            checked={selectedRows.has(globalIndex)}
+                                            onChange={(e) => handleSelectRow(globalIndex, e.target.checked, (e.nativeEvent as MouseEvent).shiftKey)}
                                             disabled={isSaving}
                                             className={`rounded text-green-600 focus:ring-green-500 ${isSaving ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300'
                                                 }`}
@@ -567,7 +657,7 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                         </button>
                                     </td>
                                 </tr>
-                            ))}
+                            )})}
                         </tbody>
                     </table>
                 </div>

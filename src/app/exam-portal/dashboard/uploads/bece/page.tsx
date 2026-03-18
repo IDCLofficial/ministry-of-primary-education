@@ -9,6 +9,36 @@ import toast from 'react-hot-toast'
 import { parseCSVFile, StudentRecord } from './utils/csvParser'
 import { capitalize, capitalizeWords } from '@/lib'
 
+const IMO_STATE_LGAS = [
+    'Aboh Mbaise',
+    'Ahiazu Mbaise',
+    'Ehime Mbano',
+    'Ezinihitte',
+    'Ideato North',
+    'Ideato South',
+    'Ihitte/Uboma',
+    'Ikeduru',
+    'Isiala Mbano',
+    'Isu',
+    'Mbaitoli',
+    'Ngor Okpala',
+    'Njaba',
+    'Nkwerre',
+    'Nwangele',
+    'Obowo',
+    'Oguta',
+    'Ohaji/Egbema',
+    'Okigwe',
+    'Onuimo',
+    'Orlu',
+    'Orsu',
+    'Oru East',
+    'Oru West',
+    'Owerri Municipal',
+    'Owerri North',
+    'Owerri West'
+]
+
 interface FileOverride {
     fileName: string
     recordCount: number
@@ -246,7 +276,7 @@ function UploadContent() {
 
     const handleUpdateFileOverride = (index: number, field: 'examYear' | 'lga', value: string) => {
         const updated = [...fileOverrides]
-        updated[index][field] = field === 'lga' ? capitalizeWords(value.toLowerCase() || '') : value
+        updated[index][field] = value
         setFileOverrides(updated)
     }
 
@@ -262,9 +292,9 @@ function UploadContent() {
 
     const handleApplyBulkLga = () => {
         if (bulkLga) {
-            const updated = fileOverrides.map(fo => ({ ...fo, lga: capitalizeWords(bulkLga.toLowerCase() || '') }))
+            const updated = fileOverrides.map(fo => ({ ...fo, lga: bulkLga }))
             setFileOverrides(updated)
-            toast.success(`LGA "${capitalizeWords(bulkLga.toLowerCase() || '')}" applied to all ${fileOverrides.length} files`)
+            toast.success(`LGA "${bulkLga}" applied to all ${fileOverrides.length} files`)
         } else {
             toast.error('Please enter a valid LGA')
         }
@@ -524,13 +554,16 @@ function UploadContent() {
                                             </button>
                                         </div>
                                         <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="LGA (e.g. Owerri Municipal)"
+                                            <select
                                                 value={bulkLga}
                                                 onChange={(e) => setBulkLga(e.target.value)}
-                                                className="flex-1 px-3 py-2 border border-green-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                                            />
+                                                className="flex-1 px-3 py-2 border border-green-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white"
+                                            >
+                                                <option value="">Select LGA</option>
+                                                {IMO_STATE_LGAS.map(lga => (
+                                                    <option key={lga} value={lga}>{lga}</option>
+                                                ))}
+                                            </select>
                                             <button
                                                 onClick={handleApplyBulkLga}
                                                 disabled={!bulkLga}
@@ -583,13 +616,16 @@ function UploadContent() {
                                                                 onChange={(e) => setClusterBulkValues(prev => ({ ...prev, [baseName]: { ...(prev[baseName] ?? { examYear: '', lga: '' }), examYear: e.target.value } }))}
                                                                 className="w-24 px-2 py-1.5 border border-green-300 rounded-md text-sm focus:ring-1 focus:ring-green-500"
                                                             />
-                                                            <input
-                                                                type="text"
-                                                                placeholder="LGA"
+                                                            <select
                                                                 value={clusterBulkValues[baseName]?.lga ?? overridesInGroup[0]?.lga ?? ''}
                                                                 onChange={(e) => setClusterBulkValues(prev => ({ ...prev, [baseName]: { ...(prev[baseName] ?? { examYear: '', lga: '' }), lga: e.target.value } }))}
-                                                                className="min-w-[120px] flex-1 px-2 py-1.5 border border-green-300 rounded-md text-sm focus:ring-1 focus:ring-green-500"
-                                                            />
+                                                                className="min-w-[160px] flex-1 px-2 py-1.5 border border-green-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 bg-white"
+                                                            >
+                                                                <option value="">Select LGA</option>
+                                                                {IMO_STATE_LGAS.map(lga => (
+                                                                    <option key={lga} value={lga}>{lga}</option>
+                                                                ))}
+                                                            </select>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleApplyClusterOverrides(baseName)}
@@ -634,13 +670,16 @@ function UploadContent() {
                                                                     </div>
                                                                     <div>
                                                                         <label className="block text-xs font-medium text-gray-700 mb-0.5">LGA</label>
-                                                                        <input
-                                                                            type="text"
-                                                                            placeholder="e.g. Owerri Municipal"
+                                                                        <select
                                                                             value={fileOverride.lga}
                                                                             onChange={(e) => index >= 0 && handleUpdateFileOverride(index, 'lga', e.target.value)}
-                                                                            className="block w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                                                                        />
+                                                                            className="block w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white"
+                                                                        >
+                                                                            <option value="">Select LGA</option>
+                                                                            {IMO_STATE_LGAS.map(lga => (
+                                                                                <option key={lga} value={lga}>{lga}</option>
+                                                                            ))}
+                                                                        </select>
                                                                     </div>
                                                                 </div>
                                                             </div>
