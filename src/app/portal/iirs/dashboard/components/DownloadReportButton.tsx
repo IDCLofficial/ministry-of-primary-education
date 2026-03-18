@@ -23,8 +23,14 @@ export default function DownloadReportButton() {
   React.useEffect(() => {
     async function fetchReportData() {
       setIsLoadingData(true)
+      console.log(selectedDate)
       try {
-        const data = await getTransactionData(token!, 'all', selectedDate?.toISOString().split('T')[0])
+        const data = await getTransactionData(
+          token!,
+          'all',
+          selectedDate?.toISOString().split('T')[0],
+          'report'
+        );
         setTransactionData(data)
       } catch (error) {
         console.error('Error fetching report data:', error)
@@ -57,25 +63,25 @@ export default function DownloadReportButton() {
         <div className='absolute w-full h-full' onClick={() => setShowReportTable(false)}></div>
         {/* Report Table Content */}
         <div className="absolute bg-white rounded-lg max-w-5xl h-5/6 overflow-y-auto w-full mx-4 z-20 ">
-          <div className="flex justify-between items-center relative border-b border-b-gray-200  p-4 sticky top-0 bg-white ">
+          <div className="flex justify-between items-center border-b border-b-gray-200  p-4 top-0 bg-white ">
             <h2 className='text-lg font-semibold'>Report Table</h2>
-            <div className=''>
+            <div className='relative'>
               <div className='flex items-center gap-2 relative'>
                 <button className='border border-gray-100 p-1 rounded-md cursor-pointer' onClick={() => setOpenCalendar(s => !s)}>
                   <span>{selectedDate?.toLocaleDateString().split(',')[0] || ''}</span>
                 </button>
                 <button className='px-2 py-1 flex items-center gap-2 border border-green-500 rounded-md cursor-pointer'
-                  onClick={()=>generatePaymentReportPDF(transactionData, selectedDate?.toLocaleDateString().split(',')[0] || '')}
+                  onClick={() => generatePaymentReportPDF(transactionData, selectedDate?.toLocaleDateString().split(',')[0] || '')}
                 >
                   <BsDownload />
                   Download
                 </button>
               </div>
-              <div className={`absolute right-0 mt-4 z-20 ${openCalendar ? 'opacity-100 transition-all ease-in pointer-events-auto' : 'opacity-0 transition-all ease-out pointer-events-none'}`}>
+              <div className={`bg-white absolute right-0 mt-4 z-20 ${openCalendar ? 'opacity-100 transition-all ease-in pointer-events-auto' : 'opacity-0 transition-all ease-out pointer-events-none'}`}>
                 <Calendar onChange={(value) => {
                   setSelectedDate(value as Date);
                   setOpenCalendar(false);
-                }} value={selectedDate} maxDate={new Date()} />
+                }} value={selectedDate} maxDate={new Date()} className='w-full rounded-md bg-white/20' />
               </div>
             </div>
             {/* <button

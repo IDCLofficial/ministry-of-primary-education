@@ -39,8 +39,6 @@ export default function MetricsCards() {
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<PaymentSummary | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | '1week' | '1month' | '1year' | 'all'>('all');
-  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
   const { selectedDate } = useDate()
 
   // Helper function to get period label
@@ -60,7 +58,12 @@ export default function MetricsCards() {
     async function getData(tokenKey: string, date: string | undefined) {
       try {
         setIsLoading(true);
-        const result = await getTransactionData(tokenKey, 'all', date);
+        const result = await getTransactionData(
+          token!,
+          'all',
+          selectedDate?.toISOString().split('T')[0],
+          'dashboard'
+        );
         setData(result)
         setIsLoading(false);
       } catch (e) {
@@ -190,7 +193,7 @@ export default function MetricsCards() {
             <p className="text-2xl lg:text-3xl font-bold text-green-900 break-words">₦{data?.totalAmountProcessedByTsa?.toLocaleString() || 0}</p>
             <div className="flex items-center justify-between space-x-2 pt-1">
               <span className="text-xs font-medium text-green-600 bg-green-200 px-2 py-1 rounded-full">{getPeriodLabel()}</span>
-              <p className="text-sm text-blue-600 flex items-center">Total Payout Today: <FaNairaSign className='text-sm'/>{data?.totalLatestPayout?.toLocaleString() || 0}</p>
+              <p className="text-sm text-blue-600 flex items-center">Total Payout Today: <FaNairaSign className='text-sm' />{data?.totalLatestPayout?.toLocaleString() || 0}</p>
             </div>
           </div>
         </div>
@@ -207,7 +210,7 @@ export default function MetricsCards() {
             <p className="text-2xl lg:text-3xl font-bold text-purple-900 break-words">₦{data?.totalTsaEarnings?.toLocaleString() || 0}</p>
             <div className="flex items-center justify-between space-x-2 pt-1">
               <span className="text-xs font-medium text-purple-600 bg-purple-200 px-2 py-1 rounded-full">{getPeriodLabel()}</span>
-              <p className="text-sm text-blue-600 flex items-center">TSA Payout Today: <FaNairaSign className='text-sm'/>{data?.totalLatestTsaPayout?.toLocaleString() || 0}</p>
+              <p className="text-sm text-blue-600 flex items-center">TSA Payout Today: <FaNairaSign className='text-sm' />{data?.totalLatestTsaPayout?.toLocaleString() || 0}</p>
             </div>
           </div>
         </div>
@@ -224,7 +227,7 @@ export default function MetricsCards() {
             <p className="text-2xl lg:text-3xl font-bold text-amber-900 break-words">₦{data?.totalIdclEarnings?.toLocaleString() || 0}</p>
             <div className="flex items-center justify-between space-x-2 pt-1">
               <span className="text-xs font-medium text-amber-600 bg-amber-200 px-2 py-1 rounded-full">{getPeriodLabel()}</span>
-              <p className="text-sm text-blue-600 flex items-center">IDCL Payout Today: <FaNairaSign className='text-sm'/>{data?.totalLatestIdclPayout?.toLocaleString() || 0}</p>
+              <p className="text-sm text-blue-600 flex items-center">IDCL Payout Today: <FaNairaSign className='text-sm' />{data?.totalLatestIdclPayout?.toLocaleString() || 0}</p>
             </div>
           </div>
         </div>
