@@ -164,9 +164,9 @@ export default function DashboardPage() {
       <ExamHeader isFirst={true} />
 
       {/* Working Progress */}
-      <pre>
+      {/* <pre>
         {JSON.stringify(examsData, null, 2)}
-      </pre>
+      </pre> */}
       
       <div className="flex-1 mt-4 sm:mt-6">
         <div className="max-w-7xl mx-auto">
