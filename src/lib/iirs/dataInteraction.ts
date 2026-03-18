@@ -42,25 +42,33 @@ export interface statsData {
 }
 
 export async function getTransactionData(
-    token: string,
-    period: 'today' | '1week' | '1month' | '1year' | 'all' = 'all',
-    date?: string
+  token: string,
+  period: 'today' | '1week' | '1month' | '1year' | 'all' = 'all',
+  date?: string,
+  mode: 'dashboard' | 'report' = 'dashboard'
 ): Promise<statsData> {
-    const params = new URLSearchParams();
-    params.append('period', period);
-    if (date) {
-        params.append('date', date)
-        console.log("Date:", date)
-    };
-    
 
-    const response = await fetch(`${BASE_URL}/stats?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }
-    });
-    return response.json();
+  const params = new URLSearchParams();
+
+  params.append('period', period);
+
+  if (date) {
+    params.append('date', date);
+  }
+
+  params.append('mode', mode);
+
+  const response = await fetch(
+    `${BASE_URL}/stats?${params.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.json();
 }
 
 export interface PaymentsData {
