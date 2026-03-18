@@ -468,7 +468,7 @@ export async function generateBECECertificate(
     const maxPerTable = tablesWithSn.maxRowsPerTable ?? 10
     const { left: leftRows, right: rightRows } = splitCourses(data.courses, maxPerTable)
 
-    const sig1 = data.year === 2024 ? mergeField(DEFAULT_SIGNATURES.signature3, custom.signature2) : mergeField(DEFAULT_SIGNATURES.signature1, custom.signature1)
+    const sig1 = Number(data.year) <= 2024 ? mergeField(DEFAULT_SIGNATURES.signature3, custom.signature2) : mergeField(DEFAULT_SIGNATURES.signature1, custom.signature1)
     const sig2 = mergeField(DEFAULT_SIGNATURES.signature2, custom.signature2)
 
     let sig1Img: HTMLImageElement | null = null

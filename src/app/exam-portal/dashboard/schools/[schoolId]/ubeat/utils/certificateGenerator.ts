@@ -604,7 +604,7 @@ export const generateUBEATCertificate = async (
 
     // Merge custom signature configs with certificate-type defaults
     const signatures = {
-        signature1: student.examYear === 2024 ? mergeSignatureConfig(baseSignatures.signature3, customFields?.signature3) : mergeSignatureConfig(baseSignatures.signature1, customFields?.signature1),
+        signature1: Number(student.examYear) <= 2024 ? mergeSignatureConfig(baseSignatures.signature3, customFields?.signature3) : mergeSignatureConfig(baseSignatures.signature1, customFields?.signature1),
         signature2: mergeSignatureConfig(baseSignatures.signature2, customFields?.signature2),
     }
 
