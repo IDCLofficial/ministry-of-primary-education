@@ -1,3 +1,4 @@
+import { decryptApiResponseFrom, isApiResponseDecryptConfigured } from '@/lib/apiResponseFunnel'
 import { ExamTypeEnum } from "@/app/portal/store/api/authApi"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://moe-backend-production-3842.up.railway.app'
@@ -184,7 +185,23 @@ export async function checkStudentResult(examNo: string): Promise<StudentData> {
         throw new Error(errorMessage)
     }
 
-    const data: StudentResult = await response.json()
+    const raw = await response.json() as unknown
+    let data: StudentResult
+    const rawObj = raw as { data?: unknown }
+    if (typeof rawObj?.data === 'string') {
+        if (!(await isApiResponseDecryptConfigured())) {
+            data = raw as StudentResult
+        } else {
+            try {
+                data = await decryptApiResponseFrom<StudentResult>(raw as { data: string }, 'data')
+            } catch (e) {
+                console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                data = raw as StudentResult
+            }
+        }
+    } else {
+        data = raw as StudentResult
+    }
 
     if (!data || !data.examNo) {
         throw new Error('Invalid response from server')
