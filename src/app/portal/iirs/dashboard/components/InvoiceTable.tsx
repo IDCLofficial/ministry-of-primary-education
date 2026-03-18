@@ -7,6 +7,7 @@ import { FiChevronDown } from "react-icons/fi";
 import InvoiceDetails from "./InvoiceDetails";
 import { getPaymentsData, Payment } from "@/lib/iirs/dataInteraction";
 import { useAuth } from '@/app/portal/iirs/providers/AuthProvider';
+import { useDate } from "../../context/dateContext";
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -31,14 +32,15 @@ export default function InvoiceTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState<'1day' | '1week' | '1month' | '1year' | 'all'>('all');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const {selectedDate} = useDate()
   const itemsPerPage = 10;
 
   useEffect(() => {
     if(!token) return;
-    async function fetchData(tokenKey: string, period: '1day' | '1week' | '1month' | '1year' | 'all') {
+    async function fetchData(tokenKey: string, date?: string, period: '1day' | '1week' | '1month' | '1year' | 'all' = 'all') {
       try {
         setLoading(true);
-        const result = await getPaymentsData(tokenKey, 1, undefined, period);
+        const result = await getPaymentsData(tokenKey, 1, undefined, date, period);
         console.log(result.payments.length);
         setTransactions(result.payments);
         setLoading(false);
@@ -47,9 +49,9 @@ export default function InvoiceTable() {
         setLoading(false);
       }
     }
-    fetchData(token, selectedPeriod);
+    fetchData(token, selectedDate?.toISOString(), selectedPeriod);
 
-  }, [token, selectedPeriod]);
+  }, [token, selectedDate, selectedPeriod]);
   
   // const router = useRouter();
   // const id = useSearchParams().get('transactionId');
@@ -194,68 +196,7 @@ export default function InvoiceTable() {
     <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border h-full overflow-y-auto border-gray-100">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900">All Transactions</h2>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative flex-1 sm:flex-initial">
-            <FaMagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
-            <input
-              type="text"
-              placeholder="Search transactions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-          
-          {/* Period Filter Dropdown */}
-          <div className="relative">
-            <button 
-              onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors min-w-[120px]"
-            >
-              <span className="text-gray-700 font-medium">
-                {selectedPeriod === '1day' && '1 Day'}
-                {selectedPeriod === '1week' && '1 Week'}
-                {selectedPeriod === '1month' && '1 Month'}
-                {selectedPeriod === '1year' && '1 Year'}
-                {selectedPeriod === 'all' && 'All Time'}
-              </span>
-              <FiChevronDown className={`text-gray-400 transition-transform ${showPeriodDropdown ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {showPeriodDropdown && (
-              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg border border-gray-200 shadow-lg z-10">
-                <div className="p-2">
-                  {[
-                    { value: '1day' as const, label: '1 Day' },
-                    { value: '1week' as const, label: '1 Week' },
-                    { value: '1month' as const, label: '1 Month' },
-                    { value: '1year' as const, label: '1 Year' },
-                    { value: 'all' as const, label: 'All Time' }
-                  ].map((period) => (
-                    <button
-                      key={period.value}
-                      onClick={() => {
-                        setSelectedPeriod(period.value);
-                        setShowPeriodDropdown(false);
-                        setCurrentPage(1);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                        selectedPeriod === period.value
-                          ? 'bg-green-600 text-white font-medium'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      {period.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          {/* <button className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600 transition-colors">
-            + Request Payment
-          </button> */}
-        </div>
+        
       </div>
 
       {invoiceData && (
