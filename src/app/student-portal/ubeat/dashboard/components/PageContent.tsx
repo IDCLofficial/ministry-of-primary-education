@@ -17,7 +17,7 @@ import { useMedia } from 'react-use'
 import PortalHeader from '../../../components/Portalheader'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
-const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{3,4}\/\d{1,4}(\(\d\))?$/
+const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
 // Regex pattern for exam number validation (e.g., XX/000/0000/000)
 const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{4}\/\d{1,4}$/
 // Regex pattern for exam number validation (e.g., XX/XX/000/0000)
