@@ -157,11 +157,13 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
 
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="flex-1 flex items-center justify-between gap-3">
-                        <SearchBar
-                            searchQuery={localSearch}
-                            onSearchChange={setLocalSearch}
-                            isSearching={isSearching}
-                        />
+                        <div className="flex-1">
+                            <SearchBar
+                                searchQuery={localSearch}
+                                onSearchChange={setLocalSearch}
+                                isSearching={isSearching}
+                            />
+                        </div>
 
                         {availableYears.length > 0 && (
                             <div className="flex items-center gap-2 flex-1">
