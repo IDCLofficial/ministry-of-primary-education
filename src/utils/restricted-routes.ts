@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 export function blockInProduction() {
-    if (process.env.NODE_ENVS === "production") {
+    if (process.env.NODE_ENV === "production") {
         redirect("/");
     }
 }
