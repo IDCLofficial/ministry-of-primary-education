@@ -114,7 +114,7 @@ export default function CertificatePreviewModal({
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
 
       pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight)
-      pdf.save(`WAEC_Approval_Certificate_${schoolName.replace(/[^a-z0-9]/gi, '_')}.pdf`)
+      pdf.save(`${examTypeToName[examType]}_Approval_Certificate_${schoolName.replace(/[^a-z0-9]/gi, '_')}.pdf`)
 
       toast.success('PDF downloaded successfully!', { id: 'pdf-gen' })
       onClose()
