@@ -4,10 +4,12 @@ import './portal.css'
 import BeceReduxProvider from './providers/ReduxProvider'
 import { BeceAuthProvider } from './providers/AuthProvider'
 import { examPortalMetadata } from '@/lib/metadata'
+import { blockInProduction } from '@/utils/restricted-routes'
 
 export const metadata = examPortalMetadata.login
 
 export default function BecePortalLayout({ children }: { children: React.ReactNode }) {
+    blockInProduction();
     return (
         <BeceReduxProvider>
             <BeceAuthProvider>
