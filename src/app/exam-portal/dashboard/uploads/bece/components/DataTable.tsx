@@ -78,6 +78,8 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
     const lastSelectedIndexRef = useRef<number | null>(null)
+    const [editingKey, setEditingKey] = useState<string | null>(null)
+    const [editDraft, setEditDraft] = useState<{ name: string; examNo: string; schoolName: string } | null>(null)
     const [sortConfig, setSortConfig] = useState<{
         key: keyof StudentRecord | null
         direction: 'asc' | 'desc'
@@ -293,6 +295,39 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
 
     const handleViewExam = (student: StudentRecord) => {
         openModal(student)
+    }
+
+    const rowKey = (r: StudentRecord) => `${r.examNo}\0${r.file.name}`
+
+    const startEditing = (record: StudentRecord) => {
+        setEditingKey(rowKey(record))
+        setEditDraft({
+            name: record.name ?? '',
+            examNo: record.examNo ?? '',
+            schoolName: record.schoolName ?? '',
+        })
+    }
+
+    const cancelEditing = () => {
+        setEditingKey(null)
+        setEditDraft(null)
+    }
+
+    const saveEditing = (record: StudentRecord) => {
+        if (!editDraft) return
+        const key = rowKey(record)
+        const next = data.map(r => {
+            if (rowKey(r) !== key) return r
+            return {
+                ...r,
+                name: editDraft.name,
+                examNo: editDraft.examNo,
+                schoolName: editDraft.schoolName,
+            }
+        })
+        onDataChange(next)
+        cancelEditing()
+        toast.success('Row updated')
     }
 
     const handleClearData = () => {
@@ -612,6 +647,8 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                         <tbody className="bg-white divide-y divide-gray-200">
                             {paginatedData.map((record, pageIndex) => {
                                 const globalIndex = startIndex + pageIndex
+                                const key = rowKey(record)
+                                const isEditing = editingKey === key
                                 return (
                                 <tr key={`${record.examNo}-${globalIndex}`} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -628,33 +665,92 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                         {record.serialNo}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {record.name}
+                                        {isEditing ? (
+                                            <input
+                                                value={editDraft?.name ?? ''}
+                                                onChange={(e) => setEditDraft(prev => ({ ...(prev ?? { name: '', examNo: '', schoolName: '' }), name: e.target.value }))}
+                                                disabled={isSaving}
+                                                className="w-full max-w-[240px] px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                                            />
+                                        ) : (
+                                            record.name
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {record.examNo}
+                                        {isEditing ? (
+                                            <input
+                                                value={editDraft?.examNo ?? ''}
+                                                onChange={(e) => setEditDraft(prev => ({ ...(prev ?? { name: '', examNo: '', schoolName: '' }), examNo: e.target.value }))}
+                                                disabled={isSaving}
+                                                className="w-full max-w-[200px] px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                                            />
+                                        ) : (
+                                            record.examNo
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        <div className="max-w-32 truncate" title={record.schoolName}>
-                                            {record.schoolName}
-                                        </div>
+                                        {isEditing ? (
+                                            <input
+                                                value={editDraft?.schoolName ?? ''}
+                                                onChange={(e) => setEditDraft(prev => ({ ...(prev ?? { name: '', examNo: '', schoolName: '' }), schoolName: e.target.value }))}
+                                                disabled={isSaving}
+                                                className="w-full max-w-[240px] px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                                            />
+                                        ) : (
+                                            <div className="max-w-32 truncate" title={record.schoolName}>
+                                                {record.schoolName}
+                                            </div>
+                                        )}
                                     </td>
                                     <td className=" py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <button
-                                            onClick={() => handleViewExam(record)}
-                                            disabled={isSaving}
-                                            className={`px-6 flex items-center justify-center w-full ${isSaving ? 'cursor-not-allowed' : 'cursor-pointer'
-                                                }`}
-                                            title={isSaving ? 'Saving in progress...' : 'View CA Details'}
-                                        >
-                                            <div
-                                                className={`text-center p-1 transition-all duration-200 rounded border border-transparent ${isSaving
-                                                    ? 'text-gray-400'
-                                                    : 'text-green-600 hover:text-green-800 active:scale-90 active:rotate-1 hover:bg-green-50 hover:border-green-100'
-                                                    }`}
-                                            >
-                                                <IoEye className="text-xl" />
-                                            </div>
-                                        </button>
+                                        <div className="flex items-center justify-end gap-2 px-6">
+                                            {isEditing ? (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => saveEditing(record)}
+                                                        disabled={isSaving}
+                                                        className="px-2 py-1 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={cancelEditing}
+                                                        disabled={isSaving}
+                                                        className="px-2 py-1 text-xs font-medium rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleViewExam(record)}
+                                                        disabled={isSaving}
+                                                        className={`p-1.5 rounded border border-transparent transition-all duration-200 ${isSaving
+                                                            ? 'text-gray-400 cursor-not-allowed'
+                                                            : 'text-green-600 hover:text-green-800 active:scale-90 active:rotate-1 hover:bg-green-50 hover:border-green-100 cursor-pointer'
+                                                            }`}
+                                                        title={isSaving ? 'Saving in progress...' : 'View / edit details'}
+                                                    >
+                                                        <IoEye className="text-xl" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => startEditing(record)}
+                                                        disabled={isSaving}
+                                                        className={`px-2 py-1 text-xs font-medium rounded-md border border-gray-300 ${isSaving
+                                                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                                                            : 'text-gray-700 bg-white hover:bg-gray-50 cursor-pointer'
+                                                            }`}
+                                                        title="Edit row"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             )})}

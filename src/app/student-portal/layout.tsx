@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast'
 import { ReduxProvider } from './store/provider'
 import NextTopLoader from 'nextjs-toploader'
 import { studentPortalMetadata } from '@/lib/metadata'
+import { blockInProduction } from '@/utils/restricted-routes'
 
 interface StudentPortalLayoutProps {
     children: React.ReactNode
@@ -12,6 +13,8 @@ interface StudentPortalLayoutProps {
 export const metadata = studentPortalMetadata.landing
 
 export default function StudentPortalLayout({ children }: StudentPortalLayoutProps) {
+    blockInProduction();
+    
     return (
         <ReduxProvider>
             <div className="min-h-screen satoshi-font">
