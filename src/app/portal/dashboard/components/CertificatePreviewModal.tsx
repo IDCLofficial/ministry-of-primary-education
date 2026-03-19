@@ -202,7 +202,7 @@ export default function CertificatePreviewModal({
                   <div className="recipient-name" style={{ fontSize: '3.2vmin', fontWeight: 'bold', color: '#1e3a5f', margin: '1.5vmin 0', padding: '1.2vmin 3vmin', borderBottom: '0.25vmin solid #d4af37', display: 'inline-block', textTransform: 'capitalize' }}>{schoolName}</div>
 
                   <p className="achievement-text" style={{ fontSize: '1.2vmin', color: '#5d6d7e', lineHeight: 1.6, maxWidth: '900px', margin: '2vmin auto', padding: '0 2vmin' }}>
-                    For successful submission and approval of <strong>{examTypeToName[examType]} Student Registration</strong> for the upcoming examination. The Ministry hereby certifies that all submitted student records have been reviewed, verified, and approved for registration with the West African Examinations Council (WAEC).
+                    For successful submission and approval of <strong>{examTypeToName[examType]} Student Registration</strong> for the upcoming examination. The Ministry hereby certifies that all submitted student records have been reviewed, verified, and approved for registration with the West African Examinations Council ({examTypeToName[examType]}).
                   </p>
 
                   <div className="completion-details" style={{ display: 'flex', justifyContent: 'center', gap: '4vmin', marginTop: '2vmin' }}>

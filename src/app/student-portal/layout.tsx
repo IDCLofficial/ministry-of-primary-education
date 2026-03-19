@@ -5,6 +5,7 @@ import { ReduxProvider } from './store/provider'
 import NextTopLoader from 'nextjs-toploader'
 import { studentPortalMetadata } from '@/lib/metadata'
 import { blockInProduction } from '@/utils/restricted-routes'
+import SupportWidget from './components/SupportWidget'
 
 interface StudentPortalLayoutProps {
     children: React.ReactNode
@@ -46,6 +47,7 @@ export default function StudentPortalLayout({ children }: StudentPortalLayoutPro
                         },
                     }}
                 />
+                <SupportWidget />
                 {children}
             </div>
         </ReduxProvider>
