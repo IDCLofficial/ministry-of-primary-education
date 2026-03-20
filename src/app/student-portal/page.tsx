@@ -7,6 +7,7 @@ import { FaCheckCircle, FaGrinStars, FaInfoCircle, FaQuestionCircle, FaSpinner }
 import FAQ from './components/FAQ'
 import Link from 'next/link'
 import { IoHappyOutline } from 'react-icons/io5'
+import { LgaEnum } from '../portal/dashboard/[schoolCode]/types'
 
 interface ExamType {
     id: string

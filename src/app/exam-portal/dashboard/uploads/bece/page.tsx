@@ -7,37 +7,9 @@ import ExamModal from './components/ExamModal'
 import { ExamModalProvider, useExamModal } from './contexts/ExamModalContext'
 import toast from 'react-hot-toast'
 import { parseCSVFile, StudentRecord } from './utils/csvParser'
-import { capitalize, capitalizeWords } from '@/lib'
+import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
 
-const IMO_STATE_LGAS = [
-    'Aboh Mbaise',
-    'Ahiazu Mbaise',
-    'Ehime Mbano',
-    'Ezinihitte',
-    'Ideato North',
-    'Ideato South',
-    'Ihitte/Uboma',
-    'Ikeduru',
-    'Isiala Mbano',
-    'Isu',
-    'Mbaitoli',
-    'Ngor Okpala',
-    'Njaba',
-    'Nkwerre',
-    'Nwangele',
-    'Obowo',
-    'Oguta',
-    'Ohaji/Egbema',
-    'Okigwe',
-    'Onuimo',
-    'Orlu',
-    'Orsu',
-    'Oru East',
-    'Oru West',
-    'Owerri Municipal',
-    'Owerri North',
-    'Owerri West'
-]
+const IMO_STATE_LGAS = Object.values(LgaEnum)
 
 interface FileOverride {
     fileName: string

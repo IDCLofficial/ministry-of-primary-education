@@ -32,16 +32,10 @@ import { SchoolName, useGetSchoolNamesQuery } from "@/app/portal/store/api/authA
 import CustomDropdown from "@/app/portal/dashboard/components/CustomDropdown";
 import { useSearchParams } from "next/navigation";
 import { removeSearchParam } from "@/lib";
+import { LgaEnum } from "@/app/portal/dashboard/[schoolCode]/types";
 
 /* ── Data ── */
-const IMO_STATE_LGAS = [
-    'Aboh Mbaise', 'Ahiazu Mbaise', 'Ehime Mbano', 'Ezinihitte',
-    'Ideato North', 'Ideato South', 'Ihitte/Uboma', 'Ikeduru',
-    'Isiala Mbano', 'Isu', 'Mbaitoli', 'Ngor Okpala', 'Njaba',
-    'Nkwerre', 'Nwangele', 'Obowo', 'Oguta', 'Ohaji/Egbema',
-    'Okigwe', 'Onuimo', 'Orlu', 'Orsu', 'Oru East', 'Oru West',
-    'Owerri Municipal', 'Owerri North', 'Owerri West',
-].sort();
+const IMO_STATE_LGAS = Object.values(LgaEnum).sort();
 
 const EXAM_TYPES = [
     { value: "BECE", label: "BECE — Basic Education Certificate Examination" },

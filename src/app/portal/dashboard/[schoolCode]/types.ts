@@ -117,7 +117,7 @@ export const EXAM_TYPES: ExamType[] = [
     iconPath: '/images/ministry-logo.png',
     color: 'pink'
   }
-].map((i)=>({
+].map((i) => ({
   ...i,
   fee: i.fee + 1500,
   lateFee: i.lateFee + 1500,
@@ -144,4 +144,34 @@ export const formatCurrency = (amount: number): string => {
     currency: 'NGN',
     minimumFractionDigits: 0
   }).format(amount)
+}
+
+export enum LgaEnum {
+  ABOH_MBAISE = "Aboh Mbaise",
+  AHIAZU_MBAISE = "Ahiazu Mbaise",
+  EHIME_MBANO = "Ehime Mbano",
+  EZINIHITTE_MBAISE = "Ezinihitte Mbaise",
+  IDEATO_NORTH = "Ideato North",
+  IDEATO_SOUTH = "Ideato South",
+  IHITTE_UBOMA = "Ihitte/Uboma",
+  IKEDURU = "Ikeduru",
+  ISIALA_MBANO = "Isiala Mbano",
+  ISU = "Isu",
+  MBAITOLI = "Mbaitoli",
+  NGOR_OKPALA = "Ngor Okpala",
+  NJABA = "Njaba",
+  NKWERE = "Nkwerre",
+  NWANGELE = "Nwangele",
+  OBOWO = "Obowo",
+  OGUTA = "Oguta",
+  OHAJI_EGBEMA = "Ohaji/Egbema",
+  OKIGWE = "Okigwe",
+  ONUIMO = "Onuimo",
+  ORLU = "Orlu",
+  ORSU = "Orsu",
+  ORU_EAST = "Oru East",
+  ORU_WEST = "Oru West",
+  OWERRI_MUNICIPAL = "Owerri Municipal",
+  OWERRI_NORTH = "Owerri North",
+  OWERRI_WEST = "Owerri West"
 }

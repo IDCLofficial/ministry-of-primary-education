@@ -4,9 +4,10 @@ import React, { useState, useEffect, useMemo } from 'react'
 import FormInput from './FormInput'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
-import { RegistrationRequest, useGetLGAsQuery, useGetSchoolNamesQuery, useRegisterSchoolMutation } from '@/app/portal/store/api/authApi'
+import { RegistrationRequest, useGetLGAsQuery, useRegisterSchoolMutation } from '@/app/portal/store/api/authApi'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
+import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
 
 interface RegistrationData {
   fullName: string
@@ -22,35 +23,7 @@ interface FormErrors {
   phone?: string
 }
 
-const IMO_STATE_LGAS = [
-  'Aboh Mbaise',
-  'Ahiazu Mbaise',
-  'Ehime Mbano',
-  'Ezinihitte',
-  'Ideato North',
-  'Ideato South',
-  'Ihitte/Uboma',
-  'Ikeduru',
-  'Isiala Mbano',
-  'Isu',
-  'Mbaitoli',
-  'Ngor Okpala',
-  'Njaba',
-  'Nkwerre',
-  'Nwangele',
-  'Obowo',
-  'Oguta',
-  'Ohaji/Egbema',
-  'Okigwe',
-  'Onuimo',
-  'Orlu',
-  'Orsu',
-  'Oru East',
-  'Oru West',
-  'Owerri Municipal',
-  'Owerri North',
-  'Owerri West'
-]
+const IMO_STATE_LGAS = Object.values(LgaEnum);
 
 export default function RegistrationForm() {
   const [formData, setFormData] = useState<RegistrationData>({
@@ -90,7 +63,7 @@ export default function RegistrationForm() {
 
       case 'lga':
         if (!sanitizedValue) return 'LGA is required'
-        if (!IMO_STATE_LGAS.includes(sanitizedValue)) return 'Please select a valid LGA'
+        if (!IMO_STATE_LGAS.includes(sanitizedValue as LgaEnum)) return 'Please select a valid LGA'
         break
 
       case 'email':
