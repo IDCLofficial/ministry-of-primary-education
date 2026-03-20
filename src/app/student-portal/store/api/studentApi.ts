@@ -1,6 +1,8 @@
 import { API_BASE_URL } from '@/app/portal/utils/constants/Api.const'
 import { decryptApiResponseFrom, isApiResponseDecryptConfigured } from '@/lib/apiResponseFunnel'
 import { apiSlice } from './apiSlice'
+import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types';
+import { ExamTypeEnum } from '@/app/portal/store/api/authApi';
 
 // TypeScript interfaces for API responses
 
@@ -79,6 +81,17 @@ export interface FindUBEATResultRequest {
     lga: string
 }
 
+export interface CustomerSupport {
+    fullName: string,
+    lga: LgaEnum,
+    schoolName: string,
+    year: number,
+    exam: ExamTypeEnum,
+    reasonForContact: string,
+    examNo?: string,
+    email: string
+}
+
 // Extend the apiSlice with student portal endpoints
 export const studentApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
@@ -124,6 +137,15 @@ export const studentApi = apiSlice.injectEndpoints({
             },
         }),
 
+        // Find UBEAT result by student details
+        customerSupport: builder.mutation<{ reference: string }, CustomerSupport>({
+            query: (data) => ({
+                url: `${API_BASE_URL}/customer-support/complain`,
+                method: 'POST',
+                body: data,
+            }),
+        }),
+
         // Get BECE student result by exam number
         getBECEResult: builder.query<BECEStudentResult, string>({
             query: (examNo) => ({
@@ -156,4 +178,5 @@ export const {
     useLazyGetUBEATResultQuery,
     useLazyGetBECEResultQuery,
     useFindUBEATResultMutation,
+    useCustomerSupportMutation
 } = studentApi

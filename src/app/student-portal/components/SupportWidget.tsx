@@ -28,22 +28,24 @@ import {
     useTransform,
     PanInfo,
 } from "framer-motion";
-import { SchoolName, useGetSchoolNamesQuery } from "@/app/portal/store/api/authApi";
+import { ExamTypeEnum, SchoolName, useGetSchoolNamesQuery } from "@/app/portal/store/api/authApi";
 import CustomDropdown from "@/app/portal/dashboard/components/CustomDropdown";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { removeSearchParam } from "@/lib";
 import { LgaEnum } from "@/app/portal/dashboard/[schoolCode]/types";
+import { CustomerSupport, useCustomerSupportMutation } from "../store/api/studentApi";
+import ClickCopy from "@/components/ClickCopy";
 
 /* ── Data ── */
 const IMO_STATE_LGAS = Object.values(LgaEnum).sort();
 
 const EXAM_TYPES = [
-    { value: "BECE", label: "BECE — Basic Education Certificate Examination" },
-    { value: "UBEAT", label: "UBEAT — Universal Basic Education Achievement Test" },
-    { value: "COMMON_ENTRANCE", label: "Common Entrance Examination" },
-    { value: "NECO", label: "NECO — National Examinations Council" },
-    { value: "NABTEB", label: "NABTEB — National Business & Technical Examinations" },
-    { value: "JAMB", label: "JAMB — Joint Admissions and Matriculation Board" },
+    { value: ExamTypeEnum.BECE, label: "BECE — Basic Education Certificate Examination" },
+    { value: ExamTypeEnum.UBEAT, label: "UBEAT — Universal Basic Education Achievement Test" },
+    { value: ExamTypeEnum.COMMON_ENTRANCE, label: "Common Entrance Examination" },
+    // { value:  ExamTypeEnum., label: "NECO — National Examinations Council" },
+    // { value: "NABTEB", label: "NABTEB — National Business & Technical Examinations" },
+    // { value: "JAMB", label: "JAMB — Joint Admissions and Matriculation Board" },
 ];
 
 const SUPPORT_REASONS = [
@@ -59,9 +61,9 @@ const SUPPORT_REASONS = [
 interface FormState {
     fullName: string;
     school: string;
-    lga: string;
+    lga: LgaEnum | "";
     examYear: string;
-    examType: string;
+    examType: ExamTypeEnum | "";
     examNumber: string;
     email: string;
     reason: string;
@@ -252,7 +254,7 @@ function FormContent({
                                         placeholder="e.g. Chukwuemeka Okonkwo"
                                         value={form.fullName}
                                         onChange={set("fullName")}
-                                        className={`text-[13.5px] h-10 ${errors.fullName ? "border-red-400 focus-visible:ring-red-200" : "focus-visible:ring-green-200 focus-visible:border-green-500"}`}
+                                        className={`text-[13.5px] capitalize h-10 ${errors.fullName ? "border-red-400 focus-visible:ring-red-200" : "focus-visible:ring-green-200 focus-visible:border-green-500"}`}
                                     />
                                     <AnimatePresence><FieldError message={errors.fullName} /></AnimatePresence>
                                 </div>
@@ -308,7 +310,7 @@ function FormContent({
 
                                         {schoolNames && <CustomDropdown
                                             options={schoolNames.map(school => ({
-                                                value: school._id,
+                                                value: school.schoolName,
                                                 label: String(school.schoolName).startsWith('"') ? String(school.schoolName).slice(1) : school.schoolName,
                                             }))}
                                             value={form.school}
@@ -316,6 +318,7 @@ function FormContent({
                                             onChange={value => {
                                                 set("school")(value)
                                             }}
+                                            className="capitalize"
                                             placeholder="Select a school"
                                             searchable
                                             searchPlaceholder="Search school name..."
@@ -567,7 +570,9 @@ function FormContent({
                         className="bg-[#e8f5ee] border border-dashed border-[#a8d8b9] rounded-xl px-6 py-3 mt-1"
                     >
                         <p className="text-[10.5px] text-[#1a8a3c] font-semibold uppercase tracking-widest mb-1">Reference Number</p>
-                        <p className="font-mono text-[15px] font-bold text-[#1a6630] tracking-widest">{ticketRef}</p>
+                        <p className="font-mono text-[15px] font-bold text-[#1a6630] tracking-widest">
+                            <ClickCopy text={ticketRef} onCopied={() => { }} ><>{ticketRef}</></ClickCopy>
+                        </p>
                     </motion.div>
 
                     <motion.p
@@ -611,7 +616,7 @@ function PanelHeader({ onClose }: { onClose: () => void }) {
             </div>
             <button
                 onClick={onClose}
-                className="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors flex-shrink-0"
+                className="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors flex-shrink-0 cursor-pointer"
                 aria-label="Close support panel"
             >
                 <X size={14} />
@@ -782,10 +787,12 @@ function Widget() {
     const searchParams = useSearchParams();
     const [open, setOpen] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const [loading, setLoading] = useState(false);
     const [ticketRef, setTicketRef] = useState("");
     const [errors, setErrors] = useState<FormErrors>({});
     const isMobile = useIsMobile(640);
+    const pathName = usePathname();
+
+    const [contactSupport, { isLoading, isError, isSuccess }] = useCustomerSupportMutation();
 
     const isOpen = searchParams.get("contacting-support");
 
@@ -815,6 +822,22 @@ function Widget() {
         { lga: form.lga },
         { skip: !form.lga },
     );
+
+    useEffect(() => {
+        if (!pathName) return;
+        const endsWith = pathName.split("/")[pathName.split("/").length - 1]
+
+        switch (endsWith) {
+            case "bece":
+                setForm(prev => ({ ...prev, examType: ExamTypeEnum.BECE}));
+                break;
+            case "ubeat":
+                setForm(prev => ({ ...prev, examType: ExamTypeEnum.UBEAT}));
+                break;
+            default:
+                break;
+        }
+    }, [pathName]);
 
     useScrollLock(open);
     useFocusTrap(panelRef, open);
@@ -877,22 +900,26 @@ function Widget() {
         const errs = validate();
         if (Object.keys(errs).length) { setErrors(errs); return; }
 
-        setLoading(true);
-        const ref = genRef();
-        const payload = { ref, submittedAt: new Date().toISOString(), ...form };
+        const payload: CustomerSupport = {
+            email: form.email,
+            exam: form.examType as ExamTypeEnum,
+            fullName: form.fullName,
+            lga: form.lga as LgaEnum,
+            reasonForContact: form.reason === "other" ? form.reasonOther : form.reason,
+            schoolName: form.school,
+            year: Number(form.examYear),
+            examNo: form.examNumber
+        };
 
-        // 🔒 Replace with your real endpoint:
-        // await fetch("https://your-backend.com/api/support", {
-        //   method: "POST",
-        //   headers: { "Content-Type": "application/json" },
-        //   body: JSON.stringify(payload),
-        // });
-        console.log("📬 Support ticket:", payload);
-        await new Promise((r) => setTimeout(r, 1600));
-
-        setTicketRef(ref);
-        setLoading(false);
-        setSubmitted(true);
+        try {
+            const request = await contactSupport(payload).unwrap();
+            const ref = request.reference;
+            setTicketRef(ref);
+            setSubmitted(true);
+        } catch (e) {
+            console.error(e);
+            throw new Error("An unexpected Error occured!");
+        }
     }
 
     function reset() {
@@ -914,7 +941,7 @@ function Widget() {
                 form={form}
                 errors={errors}
                 lgaOptions={lgaOptions}
-                loading={loading}
+                loading={isLoading}
                 submitted={submitted}
                 ticketRef={ticketRef}
                 set={set}
