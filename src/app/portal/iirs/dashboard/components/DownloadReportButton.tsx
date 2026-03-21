@@ -10,6 +10,7 @@ import { BsDownload } from 'react-icons/bs';
 import Calendar from 'react-calendar';
 import PayoutReportTable from './PayoutReportTable';
 import { generatePaymentReportPDF } from '@/lib/iirs/pdfGenerator';
+import CalendarComponent from './Calendar';
 
 export default function DownloadReportButton() {
   const { token } = useAuth();
@@ -39,7 +40,7 @@ export default function DownloadReportButton() {
       }
     }
     fetchReportData();
-  }, [selectedDate])
+  }, [selectedDate, showReportTable])
 
   React.useEffect(() => {
     if (showReportTable) {
@@ -78,10 +79,7 @@ export default function DownloadReportButton() {
                 </button>
               </div>
               <div className={`bg-white absolute right-0 mt-4 z-20 ${openCalendar ? 'opacity-100 transition-all ease-in pointer-events-auto' : 'opacity-0 transition-all ease-out pointer-events-none'}`}>
-                <Calendar onChange={(value) => {
-                  setSelectedDate(value as Date);
-                  setOpenCalendar(false);
-                }} value={selectedDate} maxDate={new Date()} className='w-full rounded-md bg-white/20' />
+                <CalendarComponent />
               </div>
             </div>
             {/* <button
