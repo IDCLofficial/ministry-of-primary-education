@@ -13,6 +13,7 @@ import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
 import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation } from '../../store/api/studentApi'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import { setSecureItem, useSecureLocalStorage } from '@/app/student-portal/utils/secureStorage'
+import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
@@ -21,14 +22,7 @@ const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}$/
 
 const MAX_RECENT_ACCOUNTS = 5
 
-const IMO_STATE_LGAS = [
-    'Aboh Mbaise', 'Ahiazu Mbaise', 'Ehime Mbano', 'Ezinihitte',
-    'Ideato North', 'Ideato South', 'Ihitte/Uboma', 'Ikeduru',
-    'Isiala Mbano', 'Isu', 'Mbaitoli', 'Ngor Okpala', 'Njaba',
-    'Nkwerre', 'Nwangele', 'Obowo', 'Oguta', 'Ohaji/Egbema',
-    'Okigwe', 'Onuimo', 'Orlu', 'Orsu', 'Oru East', 'Oru West',
-    'Owerri Municipal', 'Owerri North', 'Owerri West',
-]
+const IMO_STATE_LGAS = Object.values(LgaEnum)
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
