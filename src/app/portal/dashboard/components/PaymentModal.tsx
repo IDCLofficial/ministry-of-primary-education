@@ -12,7 +12,7 @@ if (process.env.NEXT_PUBLIC_MODE === undefined){
 
 const PAYMENT_MAINTENANCE_MODE = process.env.NEXT_PUBLIC_MODE && process.env.NEXT_PUBLIC_MODE === "maintenance";
 
-const MAINTENANCE_ETA: string | null = "2026-03-24T10:00:00Z"
+const MAINTENANCE_ETA: string | null = "2026-03-24T12:00:00Z"
 
 // ─── MaintenanceOverlay ────────────────────────────────────────────────────
 function MaintenanceOverlay({ onClose }: { onClose: () => void }) {
