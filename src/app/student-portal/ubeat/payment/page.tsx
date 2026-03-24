@@ -193,8 +193,7 @@ function usePaymentSetup(isCallback: boolean) {
     const [setupError, setSetupError] = useState<string | null>(null)
     const [isLoadingUrl, setIsLoadingUrl] = useState(false)
 
-    const [findUBEATResult, { isLoading: isFindingResult }] =
-        useFindUBEATResultMutation()
+    const [findUBEATResult, { isLoading: isFindingResult }] = useFindUBEATResultMutation();
 
     const router = useRouter()
 
@@ -411,8 +410,8 @@ function DetailCard({
     return (
         <div
             className={`rounded-lg p-4 border ${highlight
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-gray-50 border-gray-200'
+                ? 'bg-green-50 border-green-200'
+                : 'bg-gray-50 border-gray-200'
                 }`}
         >
             <p className="text-xs text-gray-500 mb-1 uppercase tracking-wide">{label}</p>
