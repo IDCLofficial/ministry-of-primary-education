@@ -156,9 +156,6 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
   const [selectedStudentCount, setSelectedStudentCount] = useState(numberOfStudents);
   const [customInput, setCustomInput] = useState('');
 
-  // ── Bail early with maintenance screen ──
-  if (!isOpen) return null
-  if (PAYMENT_MAINTENANCE_MODE) return <MaintenanceOverlay onClose={onClose} />
 
   const currentExamData = school?.exams?.find(e => e.name === examType);
   const examPoints = currentExamData?.availablePoints || 0;
@@ -249,6 +246,10 @@ export default function PaymentModal({ isOpen, onClose, onPaymentSuccess, number
       toast.error(errorMessage)
     }
   }
+
+  // ── Bail early with maintenance screen ──
+  if (!isOpen) return null
+  if (PAYMENT_MAINTENANCE_MODE) return <MaintenanceOverlay onClose={onClose} />
 
   return (
     <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
