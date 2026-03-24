@@ -12,7 +12,7 @@ if (process.env.NEXT_PUBLIC_MODE === undefined){
 
 const PAYMENT_MAINTENANCE_MODE = process.env.NEXT_PUBLIC_MODE && process.env.NEXT_PUBLIC_MODE === "maintenance";
 
-const MAINTENANCE_ETA: string | null = "2026-03-24T12:00:00Z"
+const MAINTENANCE_ETA: string | null = "2026-03-24T17:00:00Z"
 
 // ─── MaintenanceOverlay ────────────────────────────────────────────────────
 function MaintenanceOverlay({ onClose }: { onClose: () => void }) {
@@ -46,8 +46,6 @@ function MaintenanceOverlay({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
       <div className="maintenance-card bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-100">
-
-        {process.env.NEXT_PUBLIC_MODE}
         {/* ── Header strip ── */}
         <div className="hex-grid px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
