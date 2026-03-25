@@ -374,7 +374,7 @@ function MinistryHeader({ subtitle }: { subtitle: string }) {
                 />
                 <div className="text-center">
                     <h1 className="text-2xl md:text-3xl font-bold">
-                        <abbr title="Universal Basic Education Achievement Test" className="no-underline">
+                        <abbr title="Universal Basic Education Assessment Test" className="no-underline">
                             UBEAT
                         </abbr>{' '}
                         Payment
@@ -711,7 +711,7 @@ function SuccessView({
                                 <h1 className="text-2xl font-bold text-gray-900">Payment Receipt</h1>
                                 <p className="text-sm text-gray-600">Imo State Ministry of Primary and Secondary Education</p>
                                 <p className="text-xs text-gray-500">
-                                    <abbr title="Universal Basic Education Achievement Test" className="no-underline">UBEAT</abbr> Examination — {details.examYear ?? new Date().getFullYear()}
+                                    <abbr title="Universal Basic Education Assessment Test" className="no-underline">UBEAT</abbr> Examination — {details.examYear ?? new Date().getFullYear()}
                                 </p>
                             </div>
                         </div>
@@ -724,7 +724,7 @@ function SuccessView({
                     {details.examNumber && (
                         <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6 text-center relative overflow-hidden">
                             <span className="absolute top-2 right-2 bg-white/20 text-white text-xs px-3 py-1 rounded-full border border-white/30 no-print">
-                                <abbr title="Universal Basic Education Achievement Test" className="no-underline">UBEAT</abbr>
+                                <abbr title="Universal Basic Education Assessment Test" className="no-underline">UBEAT</abbr>
                             </span>
 
                             <p className="text-sm uppercase tracking-widest mb-2 opacity-90">Your Exam Number</p>

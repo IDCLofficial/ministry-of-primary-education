@@ -417,7 +417,7 @@ export default function UBEATDashboard() {
                 {/* Print Header (Only visible when printing) */}
                 <div className="hidden print:block mb-8 text-center border-b-2 border-gray-200 pb-6">
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        Universal Basic Education Achievement Test (UBEAT)
+                        Universal Basic Education Assessment Test (UBEAT)
                     </h1>
                     <p className="text-lg text-gray-700">Official Results - Well Done!</p>
                     <p className="text-sm text-gray-600 mt-2">
@@ -616,7 +616,7 @@ export default function UBEATDashboard() {
                         />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        Universal Basic Education Achievement Test (UBEAT)
+                        Universal Basic Education Assessment Test (UBEAT)
                     </h1>
                     <p className="text-lg text-gray-700">Official Results Document</p>
                     <p className="text-base text-gray-600 mt-2">

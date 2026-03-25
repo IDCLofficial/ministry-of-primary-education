@@ -427,11 +427,11 @@ export default function UBEATLogin() {
                         <div className="text-center">
                             <div className="flex items-center justify-center gap-2 mb-1">
                                 <span className="text-2xl md:text-3xl font-bold">
-                                    <abbr title="Universal Basic Education Achievement Test" className="no-underline">UBEAT</abbr>
+                                    <abbr title="Universal Basic Education Assessment Test" className="no-underline">UBEAT</abbr>
                                 </span>
                             </div>
                             <p className="text-sm md:text-base text-gray-600 max-w-md">
-                                Universal Basic Education Achievement Test
+                                Universal Basic Education Assessment Test
                             </p>
                         </div>
                     </div>

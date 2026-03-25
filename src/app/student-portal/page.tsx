@@ -32,7 +32,7 @@ export default function StudentPortalLanding() {
         {
             id: 'ubeat',
             name: 'UBEAT',
-            fullName: 'Universal Basic Education Achievement Test',
+            fullName: 'Universal Basic Education Accessment Test',
             description: 'Check your scores and get your First School Leaving Certificate (FSLC)',
             available: true,
             route: '/student-portal/ubeat'

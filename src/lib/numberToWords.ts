@@ -81,7 +81,6 @@ export function toWord(n: number): string {
  * @example toYearWord(1100)  → "eleven hundred"
  */
 export function toYearWord(n: number): string {
-  console.log("triggering toYearWord", n);
   if (!Number.isInteger(n)) throw new TypeError(`toYearWord expects an integer, got ${n}`);
 
   const abs = Math.abs(n);

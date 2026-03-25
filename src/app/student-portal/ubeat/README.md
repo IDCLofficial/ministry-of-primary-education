@@ -1,6 +1,6 @@
 # UBEAT Student Portal
 
-This directory contains the UBEAT (Universal Basic Education Achievement Test) student portal with an alternative access method for students without exam numbers.
+This directory contains the UBEAT (Universal Basic Education Assessment Test) student portal with an alternative access method for students without exam numbers.
 
 ## Features
 

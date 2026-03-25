@@ -603,6 +603,17 @@ export const authApi = apiSlice.injectEndpoints({
         },
       }),
     }),
+
+    // Load exams data
+    getMyPaidSchools: builder.query<unknown, void>({
+      query: () => ({
+        url: `${API_BASE_URL}${endpoints.GET_MY_PAID_SCHOOLS}`,
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+    }),
   }),
   overrideExisting: true,
 })
@@ -630,6 +641,7 @@ export const {
   useResetPasswordMutation,
   useVerifyResetTokenMutation,
   useLoadExamsDataQuery,
+  useGetMyPaidSchoolsQuery
 } = authApi
 
 // Export types for use in components

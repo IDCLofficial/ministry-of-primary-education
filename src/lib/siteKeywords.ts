@@ -48,7 +48,7 @@ const siteKeywords = [
     'Check BECE Result',
     'BECE Exam Number',
     'UBEAT',
-    'Universal Basic Education Achievement Test',
+    'Universal Basic Education Assessment Test',
     'UBEAT Results',
     'UBEAT Results 2024',
     'UBEAT Results 2025',

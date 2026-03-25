@@ -41,7 +41,7 @@ const IMO_STATE_LGAS = Object.values(LgaEnum).sort();
 
 const EXAM_TYPES = [
     { value: ExamTypeEnum.BECE, label: "BECE — Basic Education Certificate Examination" },
-    { value: ExamTypeEnum.UBEAT, label: "UBEAT — Universal Basic Education Achievement Test" },
+    { value: ExamTypeEnum.UBEAT, label: "UBEAT — Universal Basic Education Assessment Test" },
     { value: ExamTypeEnum.COMMON_ENTRANCE, label: "Common Entrance Examination" },
     // { value:  ExamTypeEnum., label: "NECO — National Examinations Council" },
     // { value: "NABTEB", label: "NABTEB — National Business & Technical Examinations" },

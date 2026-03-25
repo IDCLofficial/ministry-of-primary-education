@@ -6,6 +6,7 @@ import {
     loadImageFromDataUrl,
     embedSteganographicId,
 } from './certificateSecurity'
+import { COMMISSIONERS_SIGNATURES, DIRECTORS_SIGNATURES } from '../../../constants'
 
 export interface BECECertificateData {
     /** Student name (displayed after "This is to certify that") */
@@ -98,7 +99,6 @@ export interface FieldConfig {
 }
 
 export interface SignatureConfig {
-    url: string
     x: number
     y: number
     width: number
@@ -247,27 +247,16 @@ const DEFAULT_ISSUE_DATE: FieldConfig = {
 
 const DEFAULT_SIGNATURES = {
     signature1: {
-        url: '/images/FSLC/signature-ed.png',
         x: 0.28,
-        y: 0.82,
-        width: 0.14,
-        height: 0.055,
-        rotation: 0,
-        opacity: 1
-    } as SignatureConfig,
-    signature3: {
-        url: '/images/FSLC/edc-signature-2024.png',
-        x: 0.28,
-        y: 0.82,
+        y: 0.805,
         width: 0.14,
         height: 0.055,
         rotation: 0,
         opacity: 1
     } as SignatureConfig,
     signature2: {
-        url: '/images/FSLC/signature.png',
         x: 0.70,
-        y: 0.82,
+        y: 0.805,
         width: 0.14,
         height: 0.055,
         rotation: 0,
@@ -468,13 +457,24 @@ export async function generateBECECertificate(
     const maxPerTable = tablesWithSn.maxRowsPerTable ?? 10
     const { left: leftRows, right: rightRows } = splitCourses(data.courses, maxPerTable)
 
-    const sig1 = Number(data.year) <= 2024 ? mergeField(DEFAULT_SIGNATURES.signature3, custom.signature2) : mergeField(DEFAULT_SIGNATURES.signature1, custom.signature1)
+    const sig1 = mergeField(DEFAULT_SIGNATURES.signature1, custom.signature1)
     const sig2 = mergeField(DEFAULT_SIGNATURES.signature2, custom.signature2)
 
     let sig1Img: HTMLImageElement | null = null
     let sig2Img: HTMLImageElement | null = null
-    try { sig1Img = await loadImage(sig1.url) } catch { /* optional */ }
-    try { sig2Img = await loadImage(sig2.url) } catch { /* optional */ }
+    try {
+        const signaturePng = DIRECTORS_SIGNATURES[Number(data.year)]
+        sig1Img = await loadImage(signaturePng);
+    } catch (error) {
+        console.warn('Could not load signature 1:', error)
+    }
+    
+    try {
+        const signaturePng = COMMISSIONERS_SIGNATURES[Number(data.year)]
+        sig2Img = await loadImage(signaturePng);
+    } catch (error) {
+        console.warn('Could not load signature 1:', error)
+    }
 
     return new Promise((resolve, reject) => {
         const canvas = document.createElement('canvas')

@@ -41,7 +41,7 @@ Each exam card now displays:
 All major Nigerian examinations are now listed (except WAEC as requested):
 
 1. **BECE** - Basic Education Certificate Examination (Active ✓)
-2. **UBEAT** - Universal Basic Education Achievement Test (Active ✓)
+2. **UBEAT** - Universal Basic Education Assessment Test (Active ✓)
 3. **Common Entrance** - Common Entrance Examination (Coming Soon)
 4. **NECO** - National Examinations Council (Coming Soon)
 5. **NABTEB** - National Business and Technical Examinations (Coming Soon)

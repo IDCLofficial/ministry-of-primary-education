@@ -22,7 +22,7 @@ Each examination type in the student portal has its own dedicated dashboard with
 - **Login:** `/student-portal/ubeat`
 - **Payment:** `/student-portal/ubeat/payment`
 - **Color Scheme:** Purple
-- **Description:** Universal Basic Education Achievement Test results dashboard
+- **Description:** Universal Basic Education Assessment Test results dashboard
 - **Features:**
   - Alternative login method (Name, School, LGA) with payment
   - Direct exam number login (free)

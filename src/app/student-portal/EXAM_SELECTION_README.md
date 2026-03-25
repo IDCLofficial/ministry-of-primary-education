@@ -31,7 +31,7 @@ View Results
   - Print results
   - Payment verification
 
-### 2. UBEAT (Universal Basic Education Achievement Test)
+### 2. UBEAT (Universal Basic Education Assessment Test)
 - **Status**: 🔜 Coming Soon
 - **Portal**: `/student-portal/dashboard?exam=ubeat`
 - **Features**: Will be similar to BECE portal

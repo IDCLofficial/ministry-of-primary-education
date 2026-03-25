@@ -1,3 +1,4 @@
+import { COMMISSIONERS_SIGNATURES, DIRECTORS_SIGNATURES } from '../../../constants'
 import { UBEATStudent } from '../../../types/student.types'
 import {
     generateUBEATCertificateQR,
@@ -59,7 +60,6 @@ export interface FieldConfig {
 
 // Signature image configuration interface
 export interface SignatureConfig {
-    url: string        // Path to signature image (e.g., '/images/FSLC/signature.png')
     x: number          // X position as percentage (0-1) or pixels (>1)
     y: number          // Y position as percentage (0-1) or pixels (>1)
     width: number      // Width as percentage (0-1) or pixels (>1)
@@ -78,39 +78,26 @@ export interface CertificateFieldsConfig {
     gradeLevel?: Partial<FieldConfig>
     signature1?: Partial<SignatureConfig>
     signature2?: Partial<SignatureConfig>
-    signature3?: Partial<SignatureConfig>
 }
 
 // Certificate type specific signature configurations
 interface CertificateSignaturesConfig {
     signature1: SignatureConfig
     signature2: SignatureConfig
-    signature3: SignatureConfig
 }
 
 const DISTINCTION_SIGNATURES: CertificateSignaturesConfig = {
     signature1: {
-        url: '/images/FSLC/signature-ed.png',
         x: 0.255,
-        y: 0.80,
-        width: 0.15,
-        height: 0.06,
-        rotation: 2,
-        opacity: 1
-    },
-    signature3: {
-        url: '/images/FSLC/edc-signature-2024.png',
-        x: 0.255,
-        y: 0.80,
+        y: 0.785,
         width: 0.15,
         height: 0.06,
         rotation: 2,
         opacity: 1
     },
     signature2: {
-        url: '/images/FSLC/signature.png',
         x: 0.72,
-        y: 0.81,
+        y: 0.79,
         width: 0.15,
         height: 0.06,
         rotation: 2,
@@ -120,27 +107,16 @@ const DISTINCTION_SIGNATURES: CertificateSignaturesConfig = {
 
 const CREDIT_SIGNATURES: CertificateSignaturesConfig = {
     signature1: {
-        url: '/images/FSLC/signature-ed.png',
         x: 0.27,
-        y: 0.74,
-        width: 0.15,
-        height: 0.055,
-        rotation: 0,
-        opacity: 1
-    },
-    signature3: {
-        url: '/images/FSLC/edc-signature-2024.png',
-        x: 0.27,
-        y: 0.74,
+        y: 0.725,
         width: 0.15,
         height: 0.055,
         rotation: 0,
         opacity: 1
     },
     signature2: {
-        url: '/images/FSLC/signature.png',
         x: 0.73,
-        y: 0.75,
+        y: 0.73,
         width: 0.15,
         height: 0.055,
         rotation: 0,
@@ -150,27 +126,16 @@ const CREDIT_SIGNATURES: CertificateSignaturesConfig = {
 
 const PASS_SIGNATURES: CertificateSignaturesConfig = {
     signature1: {
-        url: '/images/FSLC/signature-ed.png',
         x: 0.25,
-        y: 0.690,
-        width: 0.14,
-        height: 0.055,
-        rotation: 4,
-        opacity: 1
-    },
-    signature3: {
-        url: '/images/FSLC/edc-signature-2024.png',
-        x: 0.25,
-        y: 0.690,
+        y: 0.675,
         width: 0.14,
         height: 0.055,
         rotation: 4,
         opacity: 1
     },
     signature2: {
-        url: '/images/FSLC/signature.png',
         x: 0.71,
-        y: 0.696,
+        y: 0.676,
         width: 0.14,
         height: 0.055,
         rotation: 4,
@@ -268,7 +233,6 @@ const DISTINCTION_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldCo
     // These are never used for text rendering
     signature1: { x: 0, y: 0, fontSize: 0 },
     signature2: { x: 0, y: 0, fontSize: 0 },
-    signature3: { x: 0, y: 0, fontSize: 0 }
 }
 
 const CREDIT_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> = {
@@ -357,7 +321,6 @@ const CREDIT_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>
         rotation: 0
     },
     signature1: { x: 0, y: 0, fontSize: 0 },
-    signature3: { x: 0, y: 0, fontSize: 0 },
     signature2: { x: 0, y: 0, fontSize: 0 }
 }
 
@@ -448,7 +411,6 @@ const PASS_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> 
     },
     signature1: { x: 0, y: 0, fontSize: 0 },
     signature2: { x: 0, y: 0, fontSize: 0 },
-    signature3: { x: 0, y: 0, fontSize: 0 }
 }
 
 // Helper to merge custom config with defaults
@@ -604,7 +566,7 @@ export const generateUBEATCertificate = async (
 
     // Merge custom signature configs with certificate-type defaults
     const signatures = {
-        signature1: Number(student.examYear) <= 2024 ? mergeSignatureConfig(baseSignatures.signature3, customFields?.signature3) : mergeSignatureConfig(baseSignatures.signature1, customFields?.signature1),
+        signature1: mergeSignatureConfig(baseSignatures.signature1, customFields?.signature1),
         signature2: mergeSignatureConfig(baseSignatures.signature2, customFields?.signature2),
     }
 
@@ -613,14 +575,16 @@ export const generateUBEATCertificate = async (
     let sig2Img: HTMLImageElement | null = null
 
     try {
-        sig1Img = await loadImage(signatures.signature1.url)
+        const signaturePng = DIRECTORS_SIGNATURES[Number(student.examYear)]
+        sig1Img = await loadImage(signaturePng);
     } catch (error) {
         console.warn('Could not load signature 1:', error)
     }
-
+    
     try {
-        sig2Img = await loadImage(signatures.signature2.url)
-    } catch (error) {
+        const signaturePng = COMMISSIONERS_SIGNATURES[Number(student.examYear)]
+
+        sig2Img = await loadImage(signaturePng);    } catch (error) {
         console.warn('Could not load signature 2:', error)
     }
 

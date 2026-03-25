@@ -5,7 +5,7 @@ import { useAuth } from '../providers/AuthProvider'
 import Header from './components/Header'
 import DashboardStats from './components/DashboardStats'
 import SchoolsList from './components/SchoolsList'
-import { useGetSchoolNamesQuery } from '../store/api/authApi'
+import { useGetMyPaidSchoolsQuery, useGetSchoolNamesQuery } from '../store/api/authApi'
 import Link from 'next/link'
 import { IoArrowForward } from 'react-icons/io5'
 
@@ -23,6 +23,8 @@ export default function DashboardPage() {
     { lga },
     { skip: !lga }
   )
+  
+  const { data: Paidschools = [], isLoading: isPaidLoading } = useGetMyPaidSchoolsQuery();
 
   return (
     <div className='sm:p-4 p-2 bg-[#F3F3F3] min-h-screen relative w-full flex flex-col'>
@@ -61,7 +63,10 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-
+          {/* <pre>
+            {JSON.stringify(Paidschools)}
+          </pre> */}
+          {/* <SchoolsList schools={Paidschools} isLoading={isPaidLoading} /> */}
           <SchoolsList schools={schools} isLoading={isLoading} />
         </div>
       </div>

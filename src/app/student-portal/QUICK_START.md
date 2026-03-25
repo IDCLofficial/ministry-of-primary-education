@@ -10,7 +10,7 @@ All exam names now have:
 
 **Example:**
 ```tsx
-<abbr title="Universal Basic Education Achievement Test" className="no-underline">
+<abbr title="Universal Basic Education Assessment Test" className="no-underline">
   UBEAT
 </abbr>
 ```

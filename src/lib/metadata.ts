@@ -190,10 +190,10 @@ export const studentPortalMetadata = {
     
     ubeatLogin: {
         title:       'UBEAT Login',
-        description: 'Enter your UBEAT exam number to view your Universal Basic Education Achievement Test results.',
+        description: 'Enter your UBEAT exam number to view your Universal Basic Education Assessment Test results.',
         openGraph: {
             title:       'UBEAT Results Login | Imo State Student Portal',
-            description: 'View your Universal Basic Education Achievement Test results.',
+            description: 'View your Universal Basic Education Assessment Test results.',
             url:         `${STUDENT_PORTAL_BASE}/ubeat`,
             images: [{
                 url:    `${SITE_URL}/images/og/ubeat.png`,
@@ -207,7 +207,7 @@ export const studentPortalMetadata = {
 
     ubeatDashboard: {
         title:       'My UBEAT Results',
-        description: 'Your Universal Basic Education Achievement Test results — Imo State Student Portal.',
+        description: 'Your Universal Basic Education Assessment Test results — Imo State Student Portal.',
         openGraph: {
             title: 'My UBEAT Results',
             url:   `${STUDENT_PORTAL_BASE}/ubeat/dashboard`,
