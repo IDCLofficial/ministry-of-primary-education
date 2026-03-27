@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { API_BASE_URL } from '../../utils/constants/Api.const'
-import { getExamPortalToken } from '@/app/student-portal/utils/secureStorage'
+import { getExamPortalToken } from '@/app/result-checking/utils/secureStorage'
 
 // Base API slice for BECE portal
 export const apiSlice = createApi({

@@ -1,20 +1,20 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useVerifyPaymentQuery } from '../../store/api/authApi'
-import { useGetProfileQuery } from '../../store/api/authApi'
+import { verifyPayment } from '../utils/api'
 import { getSecureItem } from '@/app/result-checking/utils/secureStorage'
 
-export default function PaymentCallbackPage() {
+export default function StudentPaymentCallbackPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
+  const [verificationStatus, setVerificationStatus] = useState<'processing' | 'success' | 'failed'>('processing')
   const [paymentDetails, setPaymentDetails] = useState<{
     reference: string
     trxref: string
-    amount?: number
-    numberOfStudents?: number
+    studentName?: string
+    school?: string
   } | null>(null)
   const [countdown, setCountdown] = useState<number | null>(null)
 
@@ -22,71 +22,63 @@ export default function PaymentCallbackPage() {
   const trxref = searchParams.get('trxref')
   const reference = searchParams.get('reference')
 
-  const [paymentReturnUrl, setPaymentReturnUrl] = useState('/portal/dashboard')
+  const [paymentReturnUrl, setPaymentReturnUrl] = useState('/result-checking/dashboard')
   useEffect(() => {
-    getSecureItem('payment-return-url').then((url) => {
+    getSecureItem('student-payment-return-url').then((url) => {
       if (url) setPaymentReturnUrl(url)
     })
   }, [])
 
-  // Use query hook to verify payment
-  const {
-    data: verificationResponse,
-    isLoading,
-    isSuccess,
-    error
-  } = useVerifyPaymentQuery(reference || '', {
-    skip: !reference // Skip query if no reference
-  });
-
-  const {
-    refetch
-  } = useGetProfileQuery();
-
+  // Verify payment on mount
   useEffect(() => {
-    if (isSuccess) {
-      refetch();
-    }
-  }, [isSuccess, refetch]);
+    const verifyStudentPayment = async () => {
+      if (!reference) {
+        setVerificationStatus('failed')
+        return
+      }
 
+      try {
+        const response = await verifyPayment(reference)
+
+        if (response.statusCode !==200) {
+          throw new Error("Failed to verify this payment reference ID!");
+        }
+        
+        if (response.paymentStatus === 'successful') {
+          setVerificationStatus('success')
+          setPaymentDetails({
+            reference,
+            trxref: trxref || '',
+            studentName: response.studentName,
+            school: response.school
+          })
+        } else {
+          setVerificationStatus('failed')
+        }
+      } catch (error) {
+        console.error('Payment verification error:', error)
+        setVerificationStatus('failed')
+      }
+    }
+
+    verifyStudentPayment()
+  }, [reference, trxref])
+
+  // Set initial payment details from URL
   useEffect(() => {
-    if (!trxref || !reference) {
-      return
+    if (trxref && reference) {
+      setPaymentDetails(prev => ({
+        reference,
+        trxref,
+        studentName: prev?.studentName,
+        school: prev?.school
+      }))
     }
-
-    setPaymentDetails({
-      reference,
-      trxref
-    })
   }, [trxref, reference])
 
-  // Update payment details when verification response is received
+  // Auto-redirect after 3 seconds when result is obtained
   useEffect(() => {
-    if (verificationResponse?.success && verificationResponse.data.paymentStatus === 'successful') {
-      setPaymentDetails(prev => prev ? {
-        ...prev,
-        amount: verificationResponse.data.totalAmount,
-        numberOfStudents: verificationResponse.data.numberOfStudents
-      } : null)
-    }
-  }, [verificationResponse])
-
-  // Determine current status
-  const getStatus = () => {
-    if (!reference || !trxref) return 'failed'
-    if (isLoading) return 'processing'
-    if (error) return 'failed'
-    if (verificationResponse?.success && verificationResponse.data.paymentStatus === 'successful') {
-      return 'success'
-    }
-    return 'failed'
-  }
-
-  const status = getStatus()
-
-  // Auto-redirect after 5 seconds when result is obtained
-  useEffect(() => {
-    if (status === 'success' || status === 'failed') {
+    if (verificationStatus === 'success' || verificationStatus === 'failed') {
       setCountdown(3)
 
       const timer = setInterval(() => {
@@ -101,30 +93,28 @@ export default function PaymentCallbackPage() {
 
       return () => clearInterval(timer)
     }
-  }, [status])
+  }, [verificationStatus])
 
   // Separate effect for handling redirect when countdown reaches 0
   useEffect(() => {
     if (countdown === 0) {
-      if (status === 'success') {
-        router.replace(`${paymentReturnUrl ? paymentReturnUrl : "/portal/dashboard"}?payment=success`);
+      if (verificationStatus === 'success') {
+        router.replace(`${paymentReturnUrl}?payment=success`)
       } else {
-        router.replace('/portal/dashboard?payment=failed')
+        router.replace(`${paymentReturnUrl}?payment=failed`)
       }
     }
-  }, [countdown, status, router, paymentReturnUrl])
+  }, [countdown, verificationStatus, router, paymentReturnUrl])
 
   const handleContinue = () => {
-    // Redirect to dashboard with success status
-    router.replace(`${paymentReturnUrl ? paymentReturnUrl : "/portal/dashboard"}?payment=success`)
+    router.replace(`${paymentReturnUrl}?payment=success`)
   }
 
   const handleRetry = () => {
-    // Redirect back to dashboard
-    router.replace('/portal/dashboard')
+    router.replace(paymentReturnUrl)
   }
 
-  if (status === 'processing') {
+  if (verificationStatus === 'processing') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
@@ -140,7 +130,7 @@ export default function PaymentCallbackPage() {
     )
   }
 
-  if (status === 'success') {
+  if (verificationStatus === 'success') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
@@ -151,12 +141,12 @@ export default function PaymentCallbackPage() {
           </div>
 
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
-          <p className="text-gray-600 mb-4">Your student payment has been processed successfully.</p>
+          <p className="text-gray-600 mb-4">Your payment has been processed successfully. You can now access your BECE results.</p>
 
           {countdown !== null && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
               <p className="text-sm text-green-800">
-                Redirecting to dashboard in <span className="font-semibold">{countdown}</span> seconds...
+                Redirecting to your results in <span className="font-semibold">{countdown}</span> seconds...
               </p>
             </div>
           )}
@@ -164,27 +154,31 @@ export default function PaymentCallbackPage() {
           <div className="bg-green-50 rounded-lg p-4 mb-6 text-left">
             <h3 className="font-semibold text-green-800 mb-3">Payment Details</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-green-700">School:</span>
-                <span className="font-medium text-green-900 capitalize">
-                  {verificationResponse?.data?.school?.schoolName?.toLowerCase()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-green-700">Students:</span>
-                <span className="font-medium text-green-900">
-                  {paymentDetails?.numberOfStudents?.toLocaleString()}
-                </span>
-              </div>
+              {paymentDetails?.studentName && (
+                <div className="flex justify-between">
+                  <span className="text-green-700">Student:</span>
+                  <span className="font-medium text-green-900 capitalize">
+                    {paymentDetails.studentName.toLowerCase()}
+                  </span>
+                </div>
+              )}
+              {paymentDetails?.school && (
+                <div className="flex justify-between">
+                  <span className="text-green-700">School:</span>
+                  <span className="font-medium text-green-900 capitalize">
+                    {paymentDetails.school.toLowerCase()}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-green-700">Amount:</span>
                 <span className="font-medium text-green-900">
-                  ₦{paymentDetails?.amount?.toLocaleString()}
+                  ₦1,000
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-green-700">Reference:</span>
-                <span className="font-mono text-xs text-green-900 truncate">
+                <span className="font-mono text-xs text-green-900">
                   {paymentDetails?.reference}
                 </span>
               </div>
@@ -195,7 +189,7 @@ export default function PaymentCallbackPage() {
             onClick={handleContinue}
             className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors duration-200"
           >
-            Continue to Dashboard
+            Continue to Results
           </button>
         </div>
       </div>
@@ -220,7 +214,7 @@ export default function PaymentCallbackPage() {
         {countdown !== null && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
             <p className="text-sm text-green-800">
-              Redirecting to dashboard in <span className="font-semibold">{countdown}</span> seconds...
+              Redirecting back in <span className="font-semibold">{countdown}</span> seconds...
             </p>
           </div>
         )}
@@ -239,10 +233,10 @@ export default function PaymentCallbackPage() {
             Try Again
           </button>
           <button
-            onClick={() => router.push('/portal/dashboard')}
+            onClick={() => router.push('/result-checking')}
             className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors duration-200"
           >
-            Back to Dashboard
+            Back to Login
           </button>
         </div>
       </div>

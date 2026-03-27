@@ -130,7 +130,7 @@ export const publicMetadata = {
 // SECTION 2 — Student Portal (Result Checking)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STUDENT_PORTAL_BASE = `${SITE_URL}/student-portal`
+const STUDENT_PORTAL_BASE = `${SITE_URL}/result-checking`
 
 export const studentPortalMetadata = {
 
@@ -142,7 +142,7 @@ export const studentPortalMetadata = {
             description: 'Check your BECE or UBEAT results quickly and securely.',
             url:         STUDENT_PORTAL_BASE,
             images: [{
-                url:    `${SITE_URL}/images/og/student-portal.png`,
+                url:    `${SITE_URL}/images/og/result-checking.png`,
                 width:  2940,
                 height: 1840,
                 alt:    'Imo State Student Portal',

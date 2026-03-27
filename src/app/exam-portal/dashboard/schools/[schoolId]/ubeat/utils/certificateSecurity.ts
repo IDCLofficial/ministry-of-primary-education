@@ -36,7 +36,7 @@ export async function generateUBEATCertificateQR(
     const payload = buildUBEATVerifyPayload(data)
     const sig = await signPayloadClient(payload)
     const fullPayload: CertificateVerifyPayload = { ...payload, sig }
-    const verifyUrl = buildVerifyUrlFor('student-portal/ubeat/verify', fullPayload, options?.baseUrl)
+    const verifyUrl = buildVerifyUrlFor('result-checking/ubeat/verify', fullPayload, options?.baseUrl)
     const size = options?.size ?? 280
     const margin = options?.margin ?? 4
     return QRCode.toDataURL(verifyUrl, {

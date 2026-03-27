@@ -18,18 +18,18 @@ export default function robots(): MetadataRoute.Robots {
                     '/news/',
                     '/events/',
                     '/media',
-                    '/student-portal',
-                    '/student-portal/bece',
-                    '/student-portal/ubeat',
-                    '/student-portal/faq',
+                    '/result-checking',
+                    '/result-checking/bece',
+                    '/result-checking/ubeat',
+                    '/result-checking/faq',
                     '/registration-portal',
                 ],
                 disallow: [
                     // Student portal — auth-protected pages
-                    '/student-portal/bece/dashboard',
-                    '/student-portal/ubeat/dashboard',
-                    '/student-portal/ubeat/payment',
-                    '/student-portal/payment-callback',
+                    '/result-checking/bece/dashboard',
+                    '/result-checking/ubeat/dashboard',
+                    '/result-checking/ubeat/payment',
+                    '/result-checking/payment-callback',
 
                     // Exam portal — admin only
                     '/exam-portal/',

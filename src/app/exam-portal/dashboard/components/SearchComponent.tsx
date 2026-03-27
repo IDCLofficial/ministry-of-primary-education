@@ -3,7 +3,7 @@ import useShortcuts from '@useverse/useshortcuts';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { IoSchoolOutline, IoPeopleOutline, IoDocumentTextOutline, IoTimeOutline, IoStatsChartOutline, IoCloseCircle } from 'react-icons/io5';
-import { getSecureItem, setSecureItem, removeSecureItem } from '@/app/student-portal/utils/secureStorage';
+import { getSecureItem, setSecureItem, removeSecureItem } from '@/app/result-checking/utils/secureStorage';
 
 type SearchCategory = 'pages' | 'actions' | 'schools' | 'students';
 

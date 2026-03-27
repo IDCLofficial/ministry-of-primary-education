@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import { getPortalToken } from '@/app/student-portal/utils/secureStorage'
+import { getPortalToken } from '@/app/result-checking/utils/secureStorage'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://moe-backend-production-3842.up.railway.app'
 

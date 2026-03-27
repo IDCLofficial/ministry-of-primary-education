@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getPortalToken } from '@/app/student-portal/utils/secureStorage';
+import { getPortalToken } from '@/app/result-checking/utils/secureStorage';
 
 interface PaymentData {
   id: string;

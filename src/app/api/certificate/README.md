@@ -21,6 +21,6 @@ If `CERT_SIGNING_SECRET` is not set or too short, the sign and verify APIs retur
 ## Flow
 
 1. Certificate generator builds payload, calls `/api/certificate/sign`, then encodes payload + `sig` into the QR code.
-2. QR code points to `/student-portal/bece/verify?data=<base64>`.
+2. QR code points to `/result-checking/bece/verify?data=<base64>`.
 3. Verify page decodes payload, shows details, and offers "View result" → BECE login with exam number prefilled.
 4. Optional: user clicks "Verify signature" on the verify page to check HMAC via `/api/certificate/verify`.

@@ -94,25 +94,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
         // ── Student portal (public-facing) ────────────────────────────────────
         {
-            url:              url('/student-portal'),
+            url:              url('/result-checking'),
             lastModified:     now,
             changeFrequency:  'monthly',
             priority:         0.9,
         },
         {
-            url:              url('/student-portal/bece'),
+            url:              url('/result-checking/bece'),
             lastModified:     now,
             changeFrequency:  'monthly',
             priority:         0.8,
         },
         {
-            url:              url('/student-portal/ubeat'),
+            url:              url('/result-checking/ubeat'),
             lastModified:     now,
             changeFrequency:  'monthly',
             priority:         0.8,
         },
         {
-            url:              url('/student-portal/faq'),
+            url:              url('/result-checking/faq'),
             lastModified:     now,
             changeFrequency:  'monthly',
             priority:         0.6,
@@ -129,10 +129,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // NOTE: The following routes are intentionally excluded from the sitemap
         // as they are auth-protected or private:
         //
-        // /student-portal/bece/dashboard
-        // /student-portal/ubeat/dashboard
-        // /student-portal/ubeat/payment
-        // /student-portal/payment-callback
+        // /result-checking/bece/dashboard
+        // /result-checking/ubeat/dashboard
+        // /result-checking/ubeat/payment
+        // /result-checking/payment-callback
         // /exam-portal (and all sub-routes)
         // /portal (and all sub-routes)
 

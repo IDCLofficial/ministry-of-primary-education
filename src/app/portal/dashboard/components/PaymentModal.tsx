@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useCreateStudentPaymentMutation, ExamTypeEnum, SchoolByCodeResponse } from '../../store/api/authApi'
 import toast from 'react-hot-toast'
-import { setSecureItem } from '@/app/student-portal/utils/secureStorage'
+import { setSecureItem } from '@/app/result-checking/utils/secureStorage'
 
 // ─── Maintenance Config ────────────────────────────────────────────────────
 if (process.env.NEXT_PUBLIC_MODE === undefined){

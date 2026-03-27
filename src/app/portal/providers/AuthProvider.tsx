@@ -11,7 +11,7 @@ import {
   setSecureItem,
   removeSecureItem,
   setPortalToken,
-} from '@/app/student-portal/utils/secureStorage'
+} from '@/app/result-checking/utils/secureStorage'
 
 interface School {
   id: string

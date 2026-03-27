@@ -32,7 +32,7 @@ export default function GlobalLoader() {
     return () => clearTimeout(timeout);
   }, [pathname, mounted]);
 
-  if (pathname.startsWith('/portal') || pathname.startsWith('/exam-portal') || pathname.startsWith('/student-portal')) {
+  if (pathname.startsWith('/portal') || pathname.startsWith('/exam-portal') || pathname.startsWith('/result-checking')) {
     return null;
   }
 

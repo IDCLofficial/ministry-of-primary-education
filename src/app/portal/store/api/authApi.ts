@@ -1,7 +1,7 @@
 import { decryptApiResponseFrom, isApiResponseDecryptConfigured } from '@/lib/apiResponseFunnel'
 import { API_BASE_URL, endpoints } from '../../utils/constants/Api.const'
 import { apiSlice } from './apiSlice'
-import { getPortalToken } from '@/app/student-portal/utils/secureStorage'
+import { getPortalToken } from '@/app/result-checking/utils/secureStorage'
 
 // School name response type
 interface SchoolName {

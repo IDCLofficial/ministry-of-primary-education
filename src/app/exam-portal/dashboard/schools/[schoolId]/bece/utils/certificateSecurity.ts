@@ -57,7 +57,7 @@ export async function verifyPayloadClient(payload: Omit<CertificateVerifyPayload
     }
 }
 
-/** Build the verify URL for a given path (e.g. student-portal/bece/verify or student-portal/ubeat/verify). */
+/** Build the verify URL for a given path (e.g. result-checking/bece/verify or result-checking/ubeat/verify). */
 export function buildVerifyUrlFor(
     verifyPath: string,
     payload: CertificateVerifyPayload,
@@ -70,7 +70,7 @@ export function buildVerifyUrlFor(
 
 /** Build the verify URL that the QR code will point to (reconstructs exam login with autofill). */
 export function buildVerifyUrl(payload: CertificateVerifyPayload, baseUrl?: string): string {
-    return buildVerifyUrlFor('student-portal/bece/verify', payload, baseUrl)
+    return buildVerifyUrlFor('result-checking/bece/verify', payload, baseUrl)
 }
 
 /** Generate a QR code as a data URL for the verify URL (perfect square, high quality). */
