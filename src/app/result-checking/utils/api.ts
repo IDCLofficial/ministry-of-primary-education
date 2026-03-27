@@ -72,7 +72,8 @@ export interface PaymentStatus {
 }
 
 export interface CreatePaymentResponse {
-    authorizationUrl: string
+    authorizationUrl: string,
+    reference: string
 }
 
 export interface VerifyPaymentSuccessResponse {

@@ -25,6 +25,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog'
+import { isValidEmail } from '@/lib/utils'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -172,10 +173,6 @@ function formatDate(iso?: string): { date: string; time: string } | null {
     } catch {
         return null
     }
-}
-
-function isValidEmail(email: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 }
 
 // ---------------------------------------------------------------------------

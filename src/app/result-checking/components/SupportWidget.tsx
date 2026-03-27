@@ -684,7 +684,7 @@ function BottomSheet({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.22 }}
                         style={{ opacity: overlayOpacity }}
-                        className="fixed inset-0 z-40 bg-black"
+                        className="fixed inset-0 z-[99999999999999999] bg-black"
                         onClick={onClose}
                         aria-hidden="true"
                     />
@@ -695,7 +695,7 @@ function BottomSheet({
                         role="dialog"
                         aria-modal="true"
                         aria-label="Student Support Centre"
-                        className="fixed left-1/2 -translate-x-1/2 w-full bottom-0 z-50 flex flex-col bg-white rounded-t-2xl shadow-2xl overflow-hidden max-w-[calc(100dvw-.25rem)]"
+                        className="fixed left-1/2 -translate-x-1/2 w-full bottom-0 z-[9999999999999] flex flex-col bg-white rounded-t-2xl shadow-2xl overflow-hidden max-w-[calc(100dvw-.25rem)]"
                         style={{
                             y,
                             maxHeight: "90dvh",
@@ -746,7 +746,7 @@ function DesktopPopover({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px]"
+                        className="fixed inset-0 z-[999999] bg-black/30 backdrop-blur-[1px]"
                         onClick={onClose}
                         aria-hidden="true"
                     />
@@ -757,7 +757,7 @@ function DesktopPopover({
                         role="dialog"
                         aria-modal="true"
                         aria-label="Student Support Centre"
-                        className="fixed bottom-[88px] right-7 z-50 w-[430px] max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
+                        className="fixed bottom-[88px] right-7 z-[99999999] w-[430px] max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
                         style={{
                             maxWidth: "calc(100vw - 28px)",
                             fontFamily: "'DM Sans', sans-serif",
@@ -782,7 +782,7 @@ function FAB({ onClick, fabRef }: { onClick: () => void; fabRef: React.RefObject
         <motion.button
             ref={fabRef}
             onClick={onClick}
-            className="fixed bottom-7 right-7 z-50"
+            className="fixed bottom-7 right-7 z-[999999]"
             style={{ fontFamily: "'DM Sans', sans-serif" }}
             whileHover={{ y: -2, boxShadow: "0 16px 32px -4px rgba(26,138,60,0.38)" }}
             whileTap={{ scale: 0.96 }}

@@ -15,15 +15,17 @@ export const metadata = studentPortalMetadata.landing
 
 export default function StudentPortalLayout({ children }: StudentPortalLayoutProps) {
     blockInProduction();
-    
+
     return (
         <ReduxProvider>
+            <SupportWidget />
+
             <div className="min-h-screen satoshi-font">
                 <NextTopLoader
                     color='oklch(72.3% 0.219 149.579)'
                     showSpinner={false}
                 />
-                <Toaster 
+                <Toaster
                     position="top-right"
                     toastOptions={{
                         duration: 3000,
@@ -47,7 +49,6 @@ export default function StudentPortalLayout({ children }: StudentPortalLayoutPro
                         },
                     }}
                 />
-                <SupportWidget />
                 {children}
             </div>
         </ReduxProvider>
