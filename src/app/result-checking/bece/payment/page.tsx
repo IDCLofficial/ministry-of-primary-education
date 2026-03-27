@@ -16,7 +16,7 @@ import animationData from '../../assets/students.json'
 import { verifyPayment } from '../../utils/api'
 import { useFindBECEResultMutation, useSetBecePaymentEmailMutation } from '../../store/api/studentApi'
 import { capitalizeWords, updateSearchParam } from '@/lib'
-import { getSecureItem, setSecureItem, removeSecureItem } from '@/app/result-checking/utils/secureStorage'
+import { getSecureItem, setSecureItem, removeSecureItem, useSecureLocalStorage } from '@/app/result-checking/utils/secureStorage'
 import {
     Dialog,
     DialogContent,
@@ -25,11 +25,17 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog'
-import Link from 'next/link'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+interface RecentAccount {
+    examNo: string
+    studentName: string
+    school: string
+    lastAccessed: number // Unix ms timestamp
+}
 
 type PaymentStatus = 'pending' | 'processing' | 'success' | 'failed' | 'already_used'
 
@@ -256,6 +262,20 @@ function usePaymentVerification(
     const [details, setDetails] = useState<PaymentDetails | null>(null)
     const [verifyError, setVerifyError] = useState<string | null>(null)
 
+    // ── Recent accounts (persisted, encrypted) ───────────────────────────────
+    const [_, setRecentAccounts] = useSecureLocalStorage<RecentAccount[]>(
+        'bece_recent_accounts',
+        [],
+    )
+
+    const syncRecentAccount = useCallback((account: RecentAccount) => {
+        console.log("Ewo!!!")
+        setRecentAccounts(prev => {
+            const existing = (prev ?? []).filter(a => a.examNo !== account.examNo)
+            return [account, ...existing].slice(0, 5);
+        })
+    }, [setRecentAccounts])
+
     useEffect(() => {
         if (!isCallback || !reference) return
 
@@ -315,6 +335,12 @@ function usePaymentVerification(
 
                         if (response.examNumber) {
                             await storage.saveExamAccess(response.examNumber)
+                            syncRecentAccount({
+                                examNo: response.examNumber,
+                                lastAccessed: Date.now(),
+                                school: built.school || "N/A",
+                                studentName: built.studentName || "N/A"
+                            })
                         }
                         storage.clearPaymentData()
 
@@ -331,13 +357,13 @@ function usePaymentVerification(
                     return
                 } catch (err: any) {
                     if (cancelled) return
-                    
+
                     // Check if error response contains 402 status
                     if (err?.response?.status === 402 || err?.statusCode === 402) {
                         setStatus('already_used')
                         setVerifyError(
-                            err?.response?.data?.message || 
-                            err?.message || 
+                            err?.response?.data?.message ||
+                            err?.message ||
                             'This payment has already been used to access an exam number.'
                         )
                         storage.clearPaymentData()
@@ -502,14 +528,14 @@ function EmailDialog({
             }).unwrap();
 
             if (request.status >= 201) {
-                throw new Error ("Something went wrong, Email not set");
+                throw new Error("Something went wrong, Email not set");
             }
-            
+
             await onConfirm(trimmed)
         } catch {
             setError('Something went wrong. Please try again.');
             setIsSubmitting(false)
-            throw new Error ("Something went wrong, Email not set");
+            throw new Error("Something went wrong, Email not set");
         }
     }
 
@@ -1244,7 +1270,7 @@ function AlreadyUsedView({
 
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Already Used</h1>
                 <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                    {errorMessage || 
+                    {errorMessage ||
                         'This payment has already been used to access an exam number. Each payment can only be used once.'}
                 </p>
 
@@ -1272,7 +1298,7 @@ function AlreadyUsedView({
 
                 {/* Help Box */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 text-left">
-                    <h3 className="font-semibold text-gray-900 text-sm">Need help? <div onClick={()=>updateSearchParam("contacting-support", "true")} className='text-green-600 inline-block'>Contact Support</div></h3>
+                    <h3 className="font-semibold text-gray-900 text-sm">Need help? <div onClick={() => updateSearchParam("contacting-support", "true")} className='text-green-600 inline-block'>Contact Support</div></h3>
                 </div>
 
                 {/* Actions */}
@@ -1285,7 +1311,7 @@ function AlreadyUsedView({
                         Go to Dashboard
                     </button>
                     <button
-                        onClick={() => router.push('/result-checking')}
+                        onClick={() => router.push('/result-checking/bece')}
                         className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 border border-gray-300 cursor-pointer"
                     >
                         Back to Login
@@ -1347,7 +1373,7 @@ function PaymentContent() {
     const { status, details, verifyError } = usePaymentVerification(
         isCallback,
         reference,
-        trxref,
+        trxref
     )
 
     const handleContinue = useCallback(() => {

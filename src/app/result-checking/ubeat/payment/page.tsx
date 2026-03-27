@@ -1,26 +1,5 @@
 'use client'
 
-/**
- * UBEAT Payment Page
- *
- * Handles two distinct flows:
- *  1. PENDING  – Shown before the user is redirected to Paystack (no `?reference` param).
- *  2. CALLBACK – Shown after Paystack redirects back (has `?reference` & `?trxref` params).
- *     • processing → success | failed | already_used
- *
- * Key improvements over the original:
- *  - All async work is in custom hooks (`usePaymentSetup`, `usePaymentVerification`).
- *  - No mixed-concern useEffect chains in the component body.
- *  - Explicit, typed state machine: 'pending' | 'processing' | 'success' | 'failed' | 'already_used'.
- *  - Retry logic on verification failure (up to MAX_RETRIES attempts with back-off).
- *  - localStorage helpers centralised in `storage.ts`-style module (inlined here).
- *  - Accessibility: role="status", aria-live, focus management on state transitions.
- *  - Print styles kept, but triggered via a dedicated handler to avoid side-effects.
- *  - No `confirm()` (blocks thread) → replaced with inline confirmation UI.
- *  - Defensive amount formatting (handles missing / NaN amounts gracefully).
- *  - Email dialog collects notification email before redirecting to Paystack.
- *  - 402 "already used" payment status handled explicitly.
- */
 
 import React, {
     useState,
@@ -38,7 +17,7 @@ import animationData from '../../assets/students.json'
 import { verifyPayment } from '../../utils/api'
 import { useFindUBEATResultMutation, useSetUbeatPaymentEmailMutation } from '../../store/api/studentApi'
 import { capitalizeWords, updateSearchParam } from '@/lib'
-import { getSecureItem, setSecureItem, removeSecureItem } from '@/app/result-checking/utils/secureStorage'
+import { getSecureItem, setSecureItem, removeSecureItem, useSecureLocalStorage } from '@/app/result-checking/utils/secureStorage'
 import {
     Dialog,
     DialogContent,
@@ -52,6 +31,13 @@ import Link from 'next/link'
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+interface RecentAccount {
+    examNo: string
+    studentName: string
+    school: string
+    lastAccessed: number // Unix ms timestamp
+}
 
 type PaymentStatus = 'pending' | 'processing' | 'success' | 'failed' | 'already_used'
 
@@ -278,6 +264,19 @@ function usePaymentVerification(
     const [details, setDetails] = useState<PaymentDetails | null>(null)
     const [verifyError, setVerifyError] = useState<string | null>(null)
 
+    // ── Recent accounts (persisted, encrypted) ───────────────────────────────
+    const [_, setRecentAccounts] = useSecureLocalStorage<RecentAccount[]>(
+        'bece_recent_accounts',
+        [],
+    )
+
+    const syncRecentAccount = useCallback((account: RecentAccount) => {
+        setRecentAccounts(prev => {
+            const existing = (prev ?? []).filter(a => a.examNo !== account.examNo)
+            return [account, ...existing].slice(0, 5);
+        })
+    }, [setRecentAccounts])
+
     useEffect(() => {
         if (!isCallback || !reference) return
 
@@ -337,6 +336,12 @@ function usePaymentVerification(
 
                         if (response.examNumber) {
                             await storage.saveExamAccess(response.examNumber)
+                            syncRecentAccount({
+                                examNo: response.examNumber,
+                                lastAccessed: Date.now(),
+                                school: built.school || "N/A",
+                                studentName: built.studentName || "N/A"
+                            })
                         }
                         storage.clearPaymentData()
 
@@ -1223,7 +1228,7 @@ function FailedView({
                         Try Again
                     </button>
                     <button
-                        onClick={() => router.push('/result-checking')}
+                        onClick={() => router.push('/result-checking/ubeat')}
                         className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 border border-gray-300 cursor-pointer"
                     >
                         Back to Login
@@ -1354,6 +1359,7 @@ function PaymentContent() {
 
     const reference = searchParams.get('reference')
     const trxref = searchParams.get('trxref')
+
     const isCallback = !!reference
 
     const [returnUrl, setReturnUrl] = useState('/result-checking/ubeat/dashboard')
@@ -1369,7 +1375,7 @@ function PaymentContent() {
     const { status, details, verifyError } = usePaymentVerification(
         isCallback,
         reference,
-        trxref,
+        trxref
     )
 
     const handleContinue = useCallback(() => {

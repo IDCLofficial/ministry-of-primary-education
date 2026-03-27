@@ -8,9 +8,6 @@ export const apiSlice = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl: API_BASE_URL,
         prepareHeaders: (headers, { endpoint } ) => {
-            const token = localStorage.getItem('access_token');
-            // Add ngrok header for external API calls
-            // Student portal endpoints don't require authentication
             const skipAuthEndpoints = [
                 'login', 
                 'registerSchool', 
@@ -21,12 +18,6 @@ export const apiSlice = createApi({
                 'findUBEATResult'
             ]
             headers.set('ngrok-skip-browser-warning', 'true')
-            if (!skipAuthEndpoints.includes(endpoint)) {
-                if (!token) {
-                    throw new Error('No authentication token found')
-                }
-                headers.set('Authorization', `Bearer ${token}`)
-            }
             return headers
         },
     }),
