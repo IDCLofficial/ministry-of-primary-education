@@ -1,8 +1,9 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { IoArrowBack, IoSchoolOutline, IoPeopleOutline, IoBookOutline, IoFileTrayStackedOutline, IoCashOutline, IoBuildOutline } from 'react-icons/io5'
+import { IoArrowBack, IoSchoolOutline, IoPeopleOutline, IoBookOutline, IoFileTrayStackedOutline, IoCashOutline, IoBuildOutline, IoHelpCircleOutline } from 'react-icons/io5'
 import { studentPortalMetadata } from '@/lib/metadata'
+import ClientBtn from './clientBtn'
 
 interface FAQItem {
     question: string
@@ -34,6 +35,26 @@ const allFAQs: FAQItem[] = [
         answer: 'Results are typically available 2-4 weeks after the examination. Your school will notify you when results are ready to be checked. If it\'s been longer than this period, please contact your school administration for updates.'
     },
     {
+        category: 'results',
+        question: 'What if my result is missing or not found?',
+        answer: 'If you get a "Result Not found" error or your result is missing, first verify your exam number is correct. If the issue persists, contact our support team for immediate assistance.'
+    },
+    {
+        category: 'results',
+        question: 'I found errors in my name or details. What should I do?',
+        answer: 'If you notice misspelt names, mismatched details, or any incorrect information in your results, please contact our support team immediately. We\'ll help verify and correct these issues with the examination board.'
+    },
+    {
+        category: 'results',
+        question: 'My subject or score is missing. How do I fix this?',
+        answer: 'Missing subjects or scores need immediate attention. Contact our support team with your exam number and details of the missing information. We\'ll investigate and resolve this with the examination board.'
+    },
+    {
+        category: 'results',
+        question: 'The wrong result is displayed for my exam number. What now?',
+        answer: 'If you see someone else\'s result or incorrect information when you log in, this is a serious issue. Please contact our support team immediately with your exam number so we can investigate and correct this.'
+    },
+    {
         category: 'payment',
         question: 'Do I need to pay to access my results?',
         answer: 'Yes, both BECE and UBEAT require a one-time payment to access your results. After logging in with your exam number, you\'ll be directed to a secure payment page. Once payment is confirmed, you can view, download, and print your results unlimited times.'
@@ -47,6 +68,11 @@ const allFAQs: FAQItem[] = [
         category: 'payment',
         question: 'Is my payment information safe?',
         answer: 'Absolutely! We take security very seriously. All payments are processed through certified payment gateways (Paystack/Flutterwave) that comply with international security standards. We never store your card details.'
+    },
+    {
+        category: 'payment',
+        question: 'I paid but still can\'t access my results. What should I do?',
+        answer: 'Payment disputes can be frustrating. If your payment was successful but you still can\'t access your results, please contact our support team with your transaction reference number. We\'ll resolve this quickly.'
     },
     {
         category: 'technical',
@@ -69,6 +95,11 @@ const allFAQs: FAQItem[] = [
         answer: 'First, check your internet connection. Then verify your exam number is correct. Clear your browser cache or try a different browser. If problems persist, try the alternative login method or contact support.'
     },
     {
+        category: 'technical',
+        question: 'I can\'t access the portal at all. Help!',
+        answer: 'If you\'re unable to access the portal, try clearing your browser cache, using a different browser, or checking your internet connection. If the issue continues, contact our support team for technical assistance.'
+    },
+    {
         category: 'results',
         question: 'How many times can I view my results?',
         answer: 'Unlimited! Once you\'ve paid (for BECE) or logged in successfully, you can view your results as many times as you want. Just use the same exam number to log back in.'
@@ -88,6 +119,17 @@ const allFAQs: FAQItem[] = [
         question: 'Is my personal information secure?',
         answer: 'Yes, we take data privacy seriously. Your personal information and results are encrypted and stored securely. We only share your information with authorized personnel and never sell your data.'
     }
+]
+
+const supportIssues = [
+    'Missing results',
+    'Misspelt names',
+    'Payment disputes',
+    'Wrong results',
+    'Mismatched details',
+    'Portal access',
+    'Missing subjects',
+    'Result not found'
 ]
 
 export default function FAQPage() {
@@ -203,6 +245,33 @@ export default function FAQPage() {
                     </div>
                 </div>
 
+                {/* Contact Support Banner */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-10 mb-16 shadow-sm">
+                    <div className="">
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
+                            <div className="flex-1">
+                                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                                    Need help with an issue?
+                                </h3>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    Our support team can assist with:
+                                </p>
+                                <div className="flex flex-wrap gap-2 mb-6">
+                                    {supportIssues.map((issue, index) => (
+                                        <span
+                                            key={index}
+                                            className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-full"
+                                        >
+                                            {issue}
+                                        </span>
+                                    ))}
+                                </div>
+                                <ClientBtn />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Still Have Questions */}
                 <div className="bg-gray-50 rounded-3xl p-12 text-center">
                     <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
@@ -232,4 +301,3 @@ export default function FAQPage() {
         </div>
     )
 }
-

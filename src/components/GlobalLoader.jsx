@@ -38,7 +38,7 @@ export default function GlobalLoader() {
 
   if (loading || isRouteChanging) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-[rgba(1,50,32,0.9)] via-[rgba(0,20,10,0.7)] to-transparent
+      <div className="fixed inset-0 z-[99] flex items-center justify-center bg-gradient-to-br from-[rgba(1,50,32,0.9)] via-[rgba(0,20,10,0.7)] to-transparent
 ">
          <svg
           className="animate-spin-slow"
