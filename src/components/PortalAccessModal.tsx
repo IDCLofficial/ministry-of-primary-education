@@ -65,7 +65,7 @@ export default function PortalAccessModal() {
                         </div>
 
                         {/* Feature 2 */}
-                        <div className="flex items-start gap-4 p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
+                        <Link href={"/result-checking"} className="flex items-start gap-4 p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
                             <div className="bg-green-600 text-white p-3 rounded-lg flex-shrink-0">
                                 <FaCheckCircle className="w-5 h-5" />
                             </div>
@@ -75,7 +75,7 @@ export default function PortalAccessModal() {
                                     Access your examination results instantly
                                 </p>
                             </div>
-                        </div>
+                        </Link>
 
                         {/* Feature 3 */}
                         <div className="flex items-start gap-4 p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
