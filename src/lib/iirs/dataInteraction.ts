@@ -54,6 +54,7 @@ export async function getTransactionData(
 
   if (date) {
     params.append('date', date);
+    console.log(date)
   }
 
   params.append('mode', mode);

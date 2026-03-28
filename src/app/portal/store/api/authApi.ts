@@ -303,15 +303,25 @@ interface VerifyResetTokenResponse {
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get school names
-    getSchoolNames: builder.query<SchoolName[], { lga: string }>({
+   getSchoolNames: builder.query<SchoolName[], { lga: string }>({
       query: ({ lga }) => `${API_BASE_URL}${endpoints.GET_SCHOOL_NAMES}?lga=${lga.toLowerCase()}`,
       transformResponse: (response: SchoolName[]) => {
-        const uniqueSchools = Array.from(
-          new Map(
-            response.map(school => [school.schoolName, school])
-          ).values()
+        // Track which schools were kept and which were removed
+        const schoolNameCounts = new Map<string, SchoolName[]>()
+        
+        // Group schools by name to identify duplicates
+        response.forEach(school => {
+          const existing = schoolNameCounts.get(school.schoolName) || []
+          existing.push(school)
+          schoolNameCounts.set(school.schoolName, existing)
+        })
+        
+        // The Map approach keeps the LAST occurrence of each duplicate
+        const schoolMap = new Map(
+          response.map(school => [school.schoolName, school])
         )
-
+        const uniqueSchools = Array.from(schoolMap.values())
+        
         return uniqueSchools.sort((a, b) =>
           a.schoolName.localeCompare(b.schoolName)
         )

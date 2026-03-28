@@ -6,8 +6,6 @@ import { useEffect, useState } from "react";
 import { FiTrendingUp, FiDollarSign, FiChevronDown } from "react-icons/fi";
 import { HiOutlineBuildingLibrary } from "react-icons/hi2";
 import { BsReceipt, BsCreditCard, BsCalendar } from "react-icons/bs";
-import { IoCalendarNumberOutline } from 'react-icons/io5';
-import CalendarComponent from './Calendar';
 import { useDate } from '../../context/dateContext';
 import { FaNairaSign } from 'react-icons/fa6';
 
@@ -55,13 +53,13 @@ export default function MetricsCards() {
 
   useEffect(() => {
     // if(!token || token === null) return;
-    async function getData(tokenKey: string, date: string | undefined) {
+    async function getData(tokenKey: string) {
       try {
         setIsLoading(true);
         const result = await getTransactionData(
-          token!,
+          tokenKey!,
           'all',
-          selectedDate?.toISOString().split('T')[0],
+          selectedDate?.toDateString(),
           'dashboard'
         );
         setData(result)
@@ -72,7 +70,7 @@ export default function MetricsCards() {
         throw e;
       }
     }
-    getData(token || "", selectedDate ? selectedDate.toISOString() : undefined);
+    getData(token || "");
   }, [token, selectedPeriod, selectedDate])
 
   if (isLoading) {

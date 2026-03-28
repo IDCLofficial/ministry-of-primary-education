@@ -1,56 +1,61 @@
-"use client"
+"use client";
 
-import React, { useState } from 'react';
-import { FiDownload } from 'react-icons/fi';
-import { FiLoader } from 'react-icons/fi';
-import { useAuth } from '../../providers/AuthProvider';
-import { getTransactionData, statsData } from '@/lib/iirs/dataInteraction';
-import { FaX } from 'react-icons/fa6';
-import { BsDownload } from 'react-icons/bs';
-import Calendar from 'react-calendar';
-import PayoutReportTable from './PayoutReportTable';
-import { generatePaymentReportPDF } from '@/lib/iirs/pdfGenerator';
-import CalendarComponent from './Calendar';
+import React, { useState } from "react";
+import { FiDownload } from "react-icons/fi";
+import { FiLoader } from "react-icons/fi";
+import { useAuth } from "../../providers/AuthProvider";
+import { getTransactionData, statsData } from "@/lib/iirs/dataInteraction";
+import { FaX } from "react-icons/fa6";
+import { BsDownload } from "react-icons/bs";
+import Calendar from "react-calendar";
+import PayoutReportTable from "./PayoutReportTable";
+import { generatePaymentReportPDF } from "@/lib/iirs/pdfGenerator";
+import CalendarComponent from "./Calendar";
 
 export default function DownloadReportButton() {
   const { token } = useAuth();
   const [isDownloading, setIsDownloading] = useState(false);
   const [showReportTable, setShowReportTable] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [openCalendar, setOpenCalendar] = useState(false);
-  const [transactionData, setTransactionData] = useState<statsData>({} as statsData)
-  const [isLoadingData, setIsLoadingData] = useState(false)
+  const [transactionData, setTransactionData] = useState<statsData>(
+    {} as statsData,
+  );
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   React.useEffect(() => {
     async function fetchReportData() {
-      setIsLoadingData(true)
-      console.log(selectedDate)
+      setIsLoadingData(true);
+      console.log(selectedDate);
       try {
         const data = await getTransactionData(
           token!,
-          'all',
-          selectedDate?.toISOString().split('T')[0],
-          'report'
+          "all",
+          selectedDate?.toDateString(),
+          "report",
         );
-        setTransactionData(data)
+        console.log({
+          selectedDate:selectedDate.toDateString(),
+        })
+        setTransactionData(data);
       } catch (error) {
-        console.error('Error fetching report data:', error)
+        console.error("Error fetching report data:", error);
       } finally {
-        setIsLoadingData(false)
+        setIsLoadingData(false);
       }
     }
     fetchReportData();
-  }, [selectedDate, showReportTable])
+  }, [selectedDate]);
 
   React.useEffect(() => {
     if (showReportTable) {
-      document.body.style.overflow = 'hidden';
-      setSelectedDate(new Date())
+      document.body.style.overflow = "hidden";
+      setSelectedDate(new Date());
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [showReportTable]);
 
@@ -58,28 +63,49 @@ export default function DownloadReportButton() {
     <>
       {/* Report Table Button */}
 
-      <div className={`fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 
-        ${showReportTable ? 'opacity-100 transition-all ease-in pointer-events-auto' : 'opacity-0 transition-all ease-out pointer-events-none'}`}
+      <div
+        className={`fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 
+        ${showReportTable ? "opacity-100 transition-all ease-in pointer-events-auto" : "opacity-0 transition-all ease-out pointer-events-none"}`}
       >
-        <div className='absolute w-full h-full' onClick={() => setShowReportTable(false)}></div>
+        <div
+          className="absolute w-full h-full"
+          onClick={() => setShowReportTable(false)}
+        ></div>
         {/* Report Table Content */}
         <div className="absolute bg-white rounded-lg max-w-5xl h-5/6 overflow-y-auto w-full mx-4 z-20 ">
+          {openCalendar && <div
+            className="absolute left-0 w-full h-full"
+            onClick={() => setOpenCalendar(false)}
+          ></div>}
           <div className="flex justify-between items-center border-b border-b-gray-200  p-4 top-0 bg-white ">
-            <h2 className='text-lg font-semibold'>Report Table</h2>
-            <div className='relative'>
-              <div className='flex items-center gap-2 relative'>
-                <button className='border border-gray-100 p-1 rounded-md cursor-pointer' onClick={() => setOpenCalendar(s => !s)}>
-                  <span>{selectedDate?.toLocaleDateString().split(',')[0] || ''}</span>
+            <h2 className="text-lg font-semibold">Report Table</h2>
+            <div className="relative">
+              <div className="flex items-center gap-2 relative">
+                <button
+                  className="border border-gray-100 p-1 rounded-md cursor-pointer"
+                  onClick={() => setOpenCalendar((s) => !s)}
+                >
+                  <span>
+                    {selectedDate?.toLocaleDateString().split(",")[0] || ""}
+                  </span>
                 </button>
-                <button className='px-2 py-1 flex items-center gap-2 border border-green-500 rounded-md cursor-pointer'
-                  onClick={() => generatePaymentReportPDF(transactionData, selectedDate?.toLocaleDateString().split(',')[0] || '')}
+                <button
+                  className="px-2 py-1 flex items-center gap-2 border border-green-500 rounded-md cursor-pointer"
+                  onClick={() =>
+                    generatePaymentReportPDF(
+                      transactionData,
+                      selectedDate?.toDateString().split(",")[0] || "",
+                    )
+                  }
                 >
                   <BsDownload />
                   Download
                 </button>
               </div>
-              <div className={`bg-white absolute right-0 mt-4 z-20 ${openCalendar ? 'opacity-100 transition-all ease-in pointer-events-auto' : 'opacity-0 transition-all ease-out pointer-events-none'}`}>
-                <CalendarComponent />
+              <div
+                className={`bg-white absolute right-0 mt-4 z-20 ${openCalendar ? "opacity-100 transition-all ease-in pointer-events-auto" : "opacity-0 transition-all ease-out pointer-events-none"}`}
+              >
+                <CalendarComponent setOpenCalendar={setOpenCalendar} selectedDate = {selectedDate} setSelectedDate={setSelectedDate}/>
               </div>
             </div>
             {/* <button
@@ -97,13 +123,17 @@ export default function DownloadReportButton() {
             {isLoadingData ? (
               <div className="flex flex-col items-center justify-center h-64 space-y-4">
                 <FiLoader className="animate-spin text-4xl text-green-600" />
-                <p className="text-gray-600 text-sm font-medium">Loading report data...</p>
+                <p className="text-gray-600 text-sm font-medium">
+                  Loading report data...
+                </p>
               </div>
             ) : (
-              <PayoutReportTable payouts={transactionData} date={selectedDate?.toLocaleDateString() || ''} />
+              <PayoutReportTable
+                payouts={transactionData}
+                date={selectedDate?.toLocaleDateString() || ""}
+              />
             )}
           </div>
-
         </div>
       </div>
 
@@ -116,12 +146,16 @@ export default function DownloadReportButton() {
           {isDownloading ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-              <span className="text-xs sm:text-sm font-medium">Generating...</span>
+              <span className="text-xs sm:text-sm font-medium">
+                Generating...
+              </span>
             </>
           ) : (
             <>
               <FiDownload className="text-base sm:text-lg" />
-              <span className="text-xs sm:text-sm font-medium">Get Payout Report</span>
+              <span className="text-xs sm:text-sm font-medium">
+                Get Payout Report
+              </span>
             </>
           )}
         </button>
