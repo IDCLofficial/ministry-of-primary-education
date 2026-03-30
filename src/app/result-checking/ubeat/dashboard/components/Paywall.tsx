@@ -277,7 +277,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                                 Results Access Required
                             </h1>
                             <p className="text-sm text-gray-500">
-                                Complete this <span className="font-bold">One Time Payment</span> payment to view your UBEAT results
+                                Complete payment to view your UBEAT results. Each payment gives you <span className="font-bold">5 checks</span>
                             </p>
                         </div>
 
@@ -315,7 +315,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                                     <span className="text-4xl font-semibold text-green-800">₦1,000</span>
                                 </div>
                                 <p className="text-xs text-gray-500">
-                                    One-time payment · Lifetime access
+                                    Each payment gives you 5 result checks
                                 </p>
                             </div>
 
@@ -331,7 +331,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                                         'Complete UBEAT results',
                                         'Official First School Leaving Certificate (FSLC) download',
                                         'Print-ready format',
-                                        'Unlimited access'
+                                        '5 checks per payment'
                                     ].map((feature, index) => (
                                         <div key={index} className="flex items-center gap-2.5">
                                             <div className="w-1 h-1 rounded-full bg-gray-400"></div>
