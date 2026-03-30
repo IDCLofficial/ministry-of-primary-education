@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { verifyPayment } from '../utils/api'
-import { getSecureItem } from '@/app/result-checking/utils/secureStorage'
+import { SessionStore } from '@/app/result-checking/utils/secureStorage'
 
 export default function StudentPaymentCallbackPage() {
   const searchParams = useSearchParams()
@@ -24,7 +24,7 @@ export default function StudentPaymentCallbackPage() {
 
   const [paymentReturnUrl, setPaymentReturnUrl] = useState('/result-checking/dashboard')
   useEffect(() => {
-    getSecureItem('student-payment-return-url').then((url) => {
+    SessionStore.get('student-payment-return-url').then((url) => {
       if (url) setPaymentReturnUrl(url)
     })
   }, [])
