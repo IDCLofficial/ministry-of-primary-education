@@ -4,7 +4,7 @@ import { IoCard, IoLockClosedOutline, IoMail, IoShieldCheckmark, IoShieldCheckma
 import toast from 'react-hot-toast'
 import { createPayment } from '@/app/result-checking/utils/api'
 import { ExamTypeEnum } from '@/app/portal/store/api/authApi'
-import { setSecureItem, removeSecureItem } from '@/app/result-checking/utils/secureStorage'
+import { SessionStore } from '@/app/result-checking/utils/secureStorage'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useSetBecePaymentEmailMutation } from '@/app/result-checking/store/api/studentApi'
 import { isValidEmail } from '@/lib/utils'
@@ -212,7 +212,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
 
         try {
             // Store return URL for redirect after payment (encrypted)
-            await setSecureItem('student-payment-return-url', '/result-checking/bece/dashboard')
+            await SessionStore.set('student-payment-return-url', '/result-checking/bece/dashboard')
 
             const response = await createPayment(examNo, ExamTypeEnum.BECE);
 
@@ -253,8 +253,8 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
         toast('Come back soon!', {
             icon: '👋',
         })
-        removeSecureItem('student_exam_no')
-        removeSecureItem('selected_exam_type')
+        SessionStore.remove('student_exam_no')
+        SessionStore.remove('selected_exam_type')
         window.location.href = '/result-checking/bece'
     }
 

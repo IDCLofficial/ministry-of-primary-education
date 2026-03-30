@@ -16,7 +16,7 @@ import animationData from '../../assets/students.json'
 import { verifyPayment } from '../../utils/api'
 import { useFindBECEResultMutation, useSetBecePaymentEmailMutation } from '../../store/api/studentApi'
 import { capitalizeWords, updateSearchParam } from '@/lib'
-import { getSecureItem, setSecureItem, removeSecureItem, useSecureLocalStorage } from '@/app/result-checking/utils/secureStorage'
+import { getSecureItem, removeSecureItem, useSecureLocalStorage, SessionStore } from '@/app/result-checking/utils/secureStorage'
 import {
     Dialog,
     DialogContent,
@@ -128,8 +128,8 @@ const storage = {
         return (await getSecureItem(STORAGE_KEYS.RETURN_URL)) ?? '/result-checking/bece/dashboard'
     },
     async saveExamAccess(examNumber: string): Promise<void> {
-        await setSecureItem(STORAGE_KEYS.EXAM_NO, examNumber)
-        await setSecureItem(STORAGE_KEYS.EXAM_TYPE, 'bece')
+        await SessionStore.set(STORAGE_KEYS.EXAM_NO, examNumber)
+        await SessionStore.set(STORAGE_KEYS.EXAM_TYPE, 'bece')
     },
     clearPaymentData(): void {
         removeSecureItem(STORAGE_KEYS.PAYMENT_URL)

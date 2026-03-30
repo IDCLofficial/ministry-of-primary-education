@@ -17,7 +17,7 @@ import animationData from '../../assets/students.json'
 import { verifyPayment } from '../../utils/api'
 import { useFindUBEATResultMutation, useSetUbeatPaymentEmailMutation } from '../../store/api/studentApi'
 import { capitalizeWords, updateSearchParam } from '@/lib'
-import { getSecureItem, setSecureItem, removeSecureItem, useSecureLocalStorage } from '@/app/result-checking/utils/secureStorage'
+import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/utils/secureStorage'
 import {
     Dialog,
     DialogContent,
@@ -114,29 +114,29 @@ const STORAGE_KEYS = {
 const storage = {
     async getFormData(): Promise<StudentFormData | null> {
         try {
-            const raw = await getSecureItem(STORAGE_KEYS.FORM_DATA)
+            const raw = await SessionStore.get(STORAGE_KEYS.FORM_DATA)
             return raw ? (JSON.parse(raw) as StudentFormData) : null
         } catch {
             return null
         }
     },
     async getPaymentUrl(): Promise<string> {
-        return (await getSecureItem(STORAGE_KEYS.PAYMENT_URL)) ?? ''
+        return (await SessionStore.get(STORAGE_KEYS.PAYMENT_URL)) ?? ''
     },
     async getPaymentRef(): Promise<string> {
-        return (await getSecureItem(STORAGE_KEYS.PAYMENT_REF)) ?? ''
+        return (await SessionStore.get(STORAGE_KEYS.PAYMENT_REF)) ?? ''
     },
     async getReturnUrl(): Promise<string> {
-        return (await getSecureItem(STORAGE_KEYS.RETURN_URL)) ?? '/result-checking/ubeat/dashboard'
+        return (await SessionStore.get(STORAGE_KEYS.RETURN_URL)) ?? '/result-checking/ubeat/dashboard'
     },
     async saveExamAccess(examNumber: string): Promise<void> {
-        await setSecureItem(STORAGE_KEYS.EXAM_NO, examNumber)
-        await setSecureItem(STORAGE_KEYS.EXAM_TYPE, 'ubeat')
+        await SessionStore.set(STORAGE_KEYS.EXAM_NO, examNumber)
+        await SessionStore.set(STORAGE_KEYS.EXAM_TYPE, 'ubeat')
     },
     clearPaymentData(): void {
-        removeSecureItem(STORAGE_KEYS.PAYMENT_URL)
-        removeSecureItem(STORAGE_KEYS.PAYMENT_REF)
-        removeSecureItem(STORAGE_KEYS.FORM_DATA)
+        SessionStore.remove(STORAGE_KEYS.PAYMENT_URL)
+        SessionStore.remove(STORAGE_KEYS.PAYMENT_REF)
+        SessionStore.remove(STORAGE_KEYS.FORM_DATA)
     },
 }
 
@@ -262,7 +262,7 @@ function usePaymentVerification(
     const [verifyError, setVerifyError] = useState<string | null>(null)
 
     // ── Recent accounts (persisted, encrypted) ───────────────────────────────
-    const [_, setRecentAccounts] = useSecureLocalStorage<RecentAccount[]>(
+    const [_, setRecentAccounts] = useSecureSessionStorage<RecentAccount[]>(
         'bece_recent_accounts',
         [],
     )

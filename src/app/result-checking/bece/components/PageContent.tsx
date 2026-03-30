@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { setSecureItem, useSecureLocalStorage } from '@/app/result-checking/utils/secureStorage'
+import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/utils/secureStorage'
 import { IoPersonCircle, IoLockClosed, IoTrashOutline, IoChevronForward, IoClose, IoChevronDown, IoChevronUp, IoCalendarOutline, IoSwapHorizontal } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
@@ -169,7 +169,7 @@ export default function StudentLoginPage() {
     })
 
     // ── Recent accounts (persisted, encrypted) ───────────────────────────────
-    const [recentAccounts, setRecentAccounts] = useSecureLocalStorage<RecentAccount[]>(
+    const [recentAccounts, setRecentAccounts] = useSecureSessionStorage<RecentAccount[]>(
         'bece_recent_accounts',
         [],
     )
@@ -254,8 +254,8 @@ export default function StudentLoginPage() {
             })
 
             await Promise.all([
-                setSecureItem('student_exam_no', examNo),
-                setSecureItem('selected_exam_type', 'bece'),
+                SessionStore.set('student_exam_no', examNo),
+                SessionStore.set('selected_exam_type', 'bece'),
             ])
 
             toast.dismiss("loading-results")
@@ -311,8 +311,8 @@ export default function StudentLoginPage() {
             toast.dismiss("loading-results")
 
             await Promise.all([
-                setSecureItem('student_exam_no', selectedExamNo),
-                setSecureItem('selected_exam_type', 'bece'),
+                SessionStore.set('student_exam_no', selectedExamNo),
+                SessionStore.set('selected_exam_type', 'bece'),
             ])
             toast.success(`Welcome back, ${result.name}! 🎉`)
             setTimeout(() => router.push('/result-checking/bece/dashboard'), 0)
@@ -349,13 +349,13 @@ export default function StudentLoginPage() {
             }
 
             await Promise.all([
-                setSecureItem('bece_alt_form_data', JSON.stringify({
+                SessionStore.set('bece_alt_form_data', JSON.stringify({
                     fullName: altFormData.fullName,
                     school: altFormData.schoolName,
                     lga: altFormData.lga,
                     examYear: altFormData.examYear,
                 })),
-                setSecureItem('selected_exam_type', 'bece'),
+                SessionStore.set('selected_exam_type', 'bece'),
             ])
 
             toast.success('Data retrieved successfully!')

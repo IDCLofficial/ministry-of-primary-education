@@ -12,7 +12,7 @@ import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
 import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation } from '../../store/api/studentApi'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
-import { setSecureItem, useSecureLocalStorage } from '@/app/result-checking/utils/secureStorage'
+import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/utils/secureStorage'
 import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ export default function UBEATLogin() {
     })
 
     // ── Recent accounts (persisted, encrypted) ───────────────────────────────
-    const [recentAccounts, setRecentAccounts] = useSecureLocalStorage<RecentAccount[]>(
+    const [recentAccounts, setRecentAccounts] = useSecureSessionStorage<RecentAccount[]>(
         'ubeat_recent_accounts',
         [],
     )
@@ -253,8 +253,8 @@ export default function UBEATLogin() {
             })
 
             await Promise.all([
-                setSecureItem('student_exam_no', examNo),
-                setSecureItem('selected_exam_type', 'ubeat'),
+                SessionStore.set('student_exam_no', examNo),
+                SessionStore.set('selected_exam_type', 'ubeat'),
             ])
 
             toast.dismiss("loading-results");
@@ -311,8 +311,8 @@ export default function UBEATLogin() {
             toast.dismiss("loading-results")
 
             await Promise.all([
-                setSecureItem('student_exam_no', selectedExamNo),
-                setSecureItem('selected_exam_type', 'ubeat'),
+                SessionStore.set('student_exam_no', selectedExamNo),
+                SessionStore.set('selected_exam_type', 'ubeat'),
             ])
             toast.success(`Welcome back, ${result.studentName}! 🎉`)
             setTimeout(() => router.push('/result-checking/ubeat/dashboard'), 0)
@@ -349,13 +349,13 @@ export default function UBEATLogin() {
             }
 
             await Promise.all([
-                setSecureItem('ubeat_alt_form_data', JSON.stringify({
+                SessionStore.set('ubeat_alt_form_data', JSON.stringify({
                     fullName: altFormData.fullName,
                     school: altFormData.schoolName,
                     lga: altFormData.lga,
                     examYear: altFormData.examYear,
                 })),
-                setSecureItem('selected_exam_type', 'ubeat'),
+                SessionStore.set('selected_exam_type', 'ubeat'),
             ])
 
             toast.success('Data retrieved successfully!')

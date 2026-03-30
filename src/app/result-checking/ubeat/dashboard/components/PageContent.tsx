@@ -11,7 +11,7 @@ import { UBEATStudent } from '@/app/exam-portal/dashboard/schools/types/student.
 import { generateUBEATCertificate } from '@/app/exam-portal/dashboard/schools/[schoolId]/ubeat/utils/certificateGenerator'
 import { useGetUBEATResultQuery } from '../../../store/api/studentApi'
 import Lottie from 'lottie-react'
-import { getSecureItem, removeSecureItem } from '@/app/result-checking/utils/secureStorage'
+import { SessionStore } from '@/app/result-checking/utils/secureStorage'
 import celebrationData from "../components/CelebrationLolo.json"
 import { useMedia } from 'react-use'
 import PortalHeader from '../../../components/Portalheader'
@@ -48,8 +48,8 @@ export default function UBEATDashboard() {
     useEffect(() => {
         let cancelled = false
         Promise.all([
-            getSecureItem('student_exam_no'),
-            getSecureItem('selected_exam_type'),
+            SessionStore.get('student_exam_no'),
+            SessionStore.get('selected_exam_type'),
         ]).then(([storedExamNo, selectedExamType]) => {
             if (cancelled) return
             if (!storedExamNo || selectedExamType !== 'ubeat' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
@@ -74,14 +74,14 @@ export default function UBEATDashboard() {
     })
 
     const handleLogout = () => {
-        removeSecureItem('student_exam_no')
-        removeSecureItem('selected_exam_type')
+        SessionStore.remove('student_exam_no')
+        SessionStore.remove('selected_exam_type')
         toast.success('Logged out successfully')
         setTimeout(() => router.push('/result-checking/ubeat'), 0)
     }
 
     const handleChangeExam = () => {
-        removeSecureItem('selected_exam_type')
+        SessionStore.remove('selected_exam_type')
         toast('Returning to exam selection...', { icon: '🔄' })
         setTimeout(() => router.push('/result-checking'), 0)
     }
