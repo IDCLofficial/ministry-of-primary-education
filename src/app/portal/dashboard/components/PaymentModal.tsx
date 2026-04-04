@@ -10,7 +10,7 @@ if (process.env.NEXT_PUBLIC_MODE === undefined){
   throw new Error("Missing important variable: NEXT_PUBLIC_MODE") 
 }
 
-const PAYMENT_MAINTENANCE_MODE = true;
+const PAYMENT_MAINTENANCE_MODE = false;
 
 const MAINTENANCE_ETA: string | null = "2026-04-02T12:00:00Z"
 
