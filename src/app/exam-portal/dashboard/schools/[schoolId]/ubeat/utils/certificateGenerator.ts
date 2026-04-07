@@ -1,4 +1,4 @@
-import { COMMISSIONERS_SIGNATURES, DIRECTORS_SIGNATURES } from '../../../constants'
+import { COMMISSIONERS_SIGNATURES, DIRECTORS_SIGNATURES, SignatureImageConfig } from '../../../constants'
 import { UBEATStudent } from '../../../types/student.types'
 import {
     generateUBEATCertificateQR,
@@ -89,15 +89,15 @@ interface CertificateSignaturesConfig {
 const DISTINCTION_SIGNATURES: CertificateSignaturesConfig = {
     signature1: {
         x: 0.255,
-        y: 0.785,
+        y: 0.725,
         width: 0.15,
         height: 0.06,
         rotation: 2,
         opacity: 1
     },
     signature2: {
-        x: 0.72,
-        y: 0.79,
+        x: 0.73,
+        y: 0.725,
         width: 0.15,
         height: 0.06,
         rotation: 2,
@@ -127,7 +127,7 @@ const CREDIT_SIGNATURES: CertificateSignaturesConfig = {
 const PASS_SIGNATURES: CertificateSignaturesConfig = {
     signature1: {
         x: 0.25,
-        y: 0.675,
+        y: 0.725,
         width: 0.14,
         height: 0.055,
         rotation: 4,
@@ -135,7 +135,7 @@ const PASS_SIGNATURES: CertificateSignaturesConfig = {
     },
     signature2: {
         x: 0.71,
-        y: 0.676,
+        y: 0.726,
         width: 0.14,
         height: 0.055,
         rotation: 4,
@@ -147,8 +147,8 @@ const PASS_SIGNATURES: CertificateSignaturesConfig = {
 const DISTINCTION_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> = {
     studentName: {
         x: 0.5,
-        y: 0.43,
-        fontSize: 120,
+        y: 0.435,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -159,8 +159,8 @@ const DISTINCTION_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldCo
     },
     schoolName: {
         x: 0.5,
-        y: 0.492,
-        fontSize: 80,
+        y: 0.494,
+        fontSize: 55,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -170,9 +170,9 @@ const DISTINCTION_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldCo
         rotation: 0
     },
     examNumber: {
-        x: 0.75,
-        y: 0.1525,
-        fontSize: 90,
+        x: 0.77,
+        y: 0.1225,
+        fontSize: 55,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -183,8 +183,8 @@ const DISTINCTION_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldCo
     },
     date: {
         x: 0.30,
-        y: 0.73,
-        fontSize: 100,
+        y: 0.865,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -194,9 +194,9 @@ const DISTINCTION_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldCo
         rotation: 0
     },
     serialNumber: {
-        x: 0.76,
-        y: 0.729,
-        fontSize: 100,
+        x: 0.815,
+        y: 0.865,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -206,9 +206,9 @@ const DISTINCTION_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldCo
         rotation: 0
     },
     year: {
-        x: 0.692,
-        y: 0.564,
-        fontSize: 100,
+        x: 0.485,
+        y: 0.578,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -327,8 +327,8 @@ const CREDIT_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>
 const PASS_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> = {
     studentName: {
         x: 0.5,
-        y: 0.4075,
-        fontSize: 120,
+        y: 0.4375,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -339,8 +339,8 @@ const PASS_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> 
     },
     schoolName: {
         x: 0.5,
-        y: 0.465,
-        fontSize: 80,
+        y: 0.495,
+        fontSize: 50,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -350,9 +350,9 @@ const PASS_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> 
         rotation: 0
     },
     examNumber: {
-        x: 0.74,
-        y: 0.1385,
-        fontSize: 80,
+        x: 0.77,
+        y: 0.1215,
+        fontSize: 50,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -362,9 +362,9 @@ const PASS_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> 
         rotation: 0
     },
     date: {
-        x: 0.26,
-        y: 0.79,
-        fontSize: 100,
+        x: 0.25,
+        y: 0.865,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -376,7 +376,7 @@ const PASS_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> 
     serialNumber: {
         x: 0.24,
         y: 0.14,
-        fontSize: 100,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -386,9 +386,9 @@ const PASS_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> 
         rotation: 0
     },
     year: {
-        x: 0.75,
-        y: 0.79,
-        fontSize: 100,
+        x: 0.805,
+        y: 0.865,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -398,9 +398,9 @@ const PASS_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> 
         rotation: 0
     },
     gradeLevel: {
-        x: 0.67,
-        y: 0.532,
-        fontSize: 105,
+        x: 0.48,
+        y: 0.578,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -575,16 +575,20 @@ export const generateUBEATCertificate = async (
     let sig2Img: HTMLImageElement | null = null
 
     try {
-        const signaturePng = DIRECTORS_SIGNATURES[Number(student.examYear)]
-        sig1Img = await loadImage(signaturePng);
+        const sigConfig = DIRECTORS_SIGNATURES[Number(student.examYear)]
+        if (sigConfig?.path) {
+            sig1Img = await loadImage(sigConfig.path)
+        }
     } catch (error) {
         console.warn('Could not load signature 1:', error)
     }
     
     try {
-        const signaturePng = COMMISSIONERS_SIGNATURES[Number(student.examYear)]
-
-        sig2Img = await loadImage(signaturePng);    } catch (error) {
+        const sigConfig = COMMISSIONERS_SIGNATURES[Number(student.examYear)]
+        if (sigConfig?.path) {
+            sig2Img = await loadImage(sigConfig.path)
+        }
+    } catch (error) {
         console.warn('Could not load signature 2:', error)
     }
 
@@ -738,11 +742,21 @@ export const generateUBEATCertificate = async (
             // ── Signature images ─────────────────────────────────────────────
 
             if (sig1Img && customFields?.signature1 !== null) {
-                drawSignature(ctx, sig1Img, signatures.signature1, cw, ch)
+                const sigConfig = DIRECTORS_SIGNATURES[Number(student.examYear)]
+                const scale = sigConfig?.scale ?? 0.15
+                const aspectRatio = sig1Img.width / sig1Img.height
+                const targetWidth = cw * scale
+                const sig1FinalConfig = { ...signatures.signature1, width: targetWidth, height: targetWidth / aspectRatio }
+                drawSignature(ctx, sig1Img, sig1FinalConfig, cw, ch)
             }
 
             if (sig2Img && customFields?.signature2 !== null) {
-                drawSignature(ctx, sig2Img, signatures.signature2, cw, ch)
+                const sigConfig = COMMISSIONERS_SIGNATURES[Number(student.examYear)]
+                const scale = sigConfig?.scale ?? 0.15
+                const aspectRatio = sig2Img.width / sig2Img.height
+                const targetWidth = cw * scale
+                const sig2FinalConfig = { ...signatures.signature2, width: targetWidth, height: targetWidth / aspectRatio }
+                drawSignature(ctx, sig2Img, sig2FinalConfig, cw, ch)
             }
 
             // ── QR code (verify URL + HMAC-signed payload) ────────────────────

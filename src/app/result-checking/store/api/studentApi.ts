@@ -178,7 +178,7 @@ export const studentApi = apiSlice.injectEndpoints({
 
         setUbeatPaymentEmail: builder.mutation<{ status: number, message: string }, { paymentReference: string, email: string }>({
             query: (data) => ({
-                url: `${API_BASE_URL}ubeat/update-payment-email`,
+                url: `${API_BASE_URL}/ubeat/update-payment-email`,
                 method: 'PATCH',
                 body: data,
             }),

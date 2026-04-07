@@ -6,7 +6,7 @@ import {
     loadImageFromDataUrl,
     embedSteganographicId,
 } from './certificateSecurity'
-import { COMMISSIONERS_SIGNATURES, DIRECTORS_SIGNATURES } from '../../../constants'
+import { COMMISSIONERS_SIGNATURES, DIRECTORS_SIGNATURES, SignatureImageConfig } from '../../../constants'
 
 export interface BECECertificateData {
     /** Student name (displayed after "This is to certify that") */
@@ -155,8 +155,8 @@ export interface BECECertificateFieldsConfig {
 
 const DEFAULT_STUDENT_NAME: FieldConfig = {
     x: 0.5,
-    y: 0.39,
-    fontSize: 84,
+    y: 0.415,
+    fontSize: 65,
     fontWeight: 'bold',
     fontStyle: 'normal',
     fontFamily: 'Times New Roman',
@@ -169,8 +169,8 @@ const DEFAULT_STUDENT_NAME: FieldConfig = {
 /** Year field: uses same config as the old schoolName position (school name is now welded with LGA). */
 const DEFAULT_YEAR: FieldConfig = {
     x: 0.64,
-    y: 0.475,
-    fontSize: 54,
+    y: 0.498,
+    fontSize: 55,
     fontWeight: 'normal',
     fontStyle: 'normal',
     fontFamily: 'Times New Roman',
@@ -182,8 +182,8 @@ const DEFAULT_YEAR: FieldConfig = {
 
 const DEFAULT_LGA: FieldConfig = {
     x: 0.5,
-    y: 0.433,
-    fontSize: 66,
+    y: 0.455,
+    fontSize: 55,
     fontWeight: 'normal',
     fontStyle: 'normal',
     fontFamily: 'Times New Roman',
@@ -195,8 +195,8 @@ const DEFAULT_LGA: FieldConfig = {
 
 const DEFAULT_SUBJECT_COUNT: FieldConfig = {
     x: 0.65,
-    y: 0.516,
-    fontSize: 60,
+    y: 0.536,
+    fontSize: 55,
     fontWeight: 'normal',
     fontStyle: 'normal',
     fontFamily: 'Times New Roman',
@@ -207,8 +207,8 @@ const DEFAULT_SUBJECT_COUNT: FieldConfig = {
 }
 
 const DEFAULT_EXAM_NUMBER: FieldConfig = {
-    x: 0.72,
-    y: 0.184,
+    x: 0.715,
+    y: 0.178,
     fontSize: 54,
     fontWeight: 'bold',
     fontStyle: 'normal',
@@ -229,7 +229,7 @@ const DEFAULT_SERIAL_NUMBER: FieldConfig = {
     align: 'right',
     color: '#000000',
     transform: 'none',
-    rotation: 0.1
+    rotation: 0
 }
 
 const DEFAULT_ISSUE_DATE: FieldConfig = {
@@ -248,15 +248,15 @@ const DEFAULT_ISSUE_DATE: FieldConfig = {
 const DEFAULT_SIGNATURES = {
     signature1: {
         x: 0.28,
-        y: 0.805,
+        y: 0.8325,
         width: 0.14,
         height: 0.055,
         rotation: 0,
         opacity: 1
     } as SignatureConfig,
     signature2: {
-        x: 0.70,
-        y: 0.805,
+        x: 0.74,
+        y: 0.8325,
         width: 0.14,
         height: 0.055,
         rotation: 0,
@@ -267,14 +267,13 @@ const DEFAULT_SIGNATURES = {
 const DEFAULT_TABLES: TablesConfig = {
     leftX: 0.12,
     rightX: 0.518,
-    tableGapFraction: 0.07,
-    topY: 0.588,
+    tableGapFraction: 0.11,
+    topY: 0.6,
     tableWidthFraction: 0.36,
     rowHeight: 0.032,
     subjectColFraction: 0.63,
     gradeColFraction: 0.27,
-    rotation: -0.2,
-    showSn: true,
+    showSn: false,
     snColFraction: 0.06,
     headerFontSize: 42,
     cellFontSize: 42,
@@ -427,7 +426,7 @@ const drawTable = (
 
 // ─── Main generator ─────────────────────────────────────────────────────────
 
-const DEFAULT_BG_IMAGE = '/images/BECE/junior-school-certificate.jpg'
+const DEFAULT_BG_IMAGE = '/images/new-certificates/Basic Education Certificate Examination.png'
 
 export async function generateBECECertificate(
     data: BECECertificateData,
@@ -462,18 +461,23 @@ export async function generateBECECertificate(
 
     let sig1Img: HTMLImageElement | null = null
     let sig2Img: HTMLImageElement | null = null
+
     try {
-        const signaturePng = DIRECTORS_SIGNATURES[Number(data.year)]
-        sig1Img = await loadImage(signaturePng);
+        const sigConfig = DIRECTORS_SIGNATURES[Number(data.year)]
+        if (sigConfig?.path) {
+            sig1Img = await loadImage(sigConfig.path)
+        }
     } catch (error) {
         console.warn('Could not load signature 1:', error)
     }
     
     try {
-        const signaturePng = COMMISSIONERS_SIGNATURES[Number(data.year)]
-        sig2Img = await loadImage(signaturePng);
+        const sigConfig = COMMISSIONERS_SIGNATURES[Number(data.year)]
+        if (sigConfig?.path) {
+            sig2Img = await loadImage(sigConfig.path)
+        }
     } catch (error) {
-        console.warn('Could not load signature 1:', error)
+        console.warn('Could not load signature 2:', error)
     }
 
     return new Promise((resolve, reject) => {
@@ -603,8 +607,22 @@ export async function generateBECECertificate(
             drawTable(ctx, rightRows, tablesWithSn, false, leftRows.length + 1, cw, ch)
 
             // ── Signatures ──
-            if (sig1Img) drawSignature(ctx, sig1Img, sig1, cw, ch)
-            if (sig2Img) drawSignature(ctx, sig2Img, sig2, cw, ch)
+            if (sig1Img) {
+                const sigConfig = DIRECTORS_SIGNATURES[Number(data.year)]
+                const scale = sigConfig?.scale ?? 0.15
+                const aspectRatio = sig1Img.width / sig1Img.height
+                const targetWidth = cw * scale
+                const sig1FinalConfig = { ...sig1, width: targetWidth, height: targetWidth / aspectRatio }
+                drawSignature(ctx, sig1Img, sig1FinalConfig, cw, ch)
+            }
+            if (sig2Img) {
+                const sigConfig = COMMISSIONERS_SIGNATURES[Number(data.year)]
+                const scale = sigConfig?.scale ?? 0.15
+                const aspectRatio = sig2Img.width / sig2Img.height
+                const targetWidth = cw * scale
+                const sig2FinalConfig = { ...sig2, width: targetWidth, height: targetWidth / aspectRatio }
+                drawSignature(ctx, sig2Img, sig2FinalConfig, cw, ch)
+            }
 
             // ── QR code (perfect square, verify URL + HMAC-signed payload for document integrity) ──
             if (qrImg) {
