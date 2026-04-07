@@ -155,7 +155,7 @@ const DISTINCTION_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldCo
         align: 'center',
         color: '#000000',
         transform: 'uppercase',
-        rotation: 0.2
+        rotation: 0
     },
     schoolName: {
         x: 0.5,
@@ -167,7 +167,7 @@ const DISTINCTION_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldCo
         align: 'center',
         color: '#000000',
         transform: 'uppercase',
-        rotation: 0.3
+        rotation: 0
     },
     examNumber: {
         x: 0.75,
@@ -191,7 +191,7 @@ const DISTINCTION_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldCo
         align: 'left',
         color: '#000000',
         transform: 'none',
-        rotation: 0.2
+        rotation: 0
     },
     serialNumber: {
         x: 0.76,
@@ -238,32 +238,32 @@ const DISTINCTION_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldCo
 const CREDIT_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> = {
     studentName: {
         x: 0.5,
-        y: 0.43,
-        fontSize: 120,
+        y: 0.434,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
         align: 'center',
         color: '#000000',
         transform: 'uppercase',
-        rotation: 0.2
+        rotation: 0
     },
     schoolName: {
         x: 0.5,
         y: 0.492,
-        fontSize: 80,
+        fontSize: 50,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
         align: 'center',
         color: '#000000',
         transform: 'uppercase',
-        rotation: 0.3
+        rotation: 0
     },
     examNumber: {
-        x: 0.75,
-        y: 0.155,
-        fontSize: 90,
+        x: 0.77,
+        y: 0.1225,
+        fontSize: 50,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -273,21 +273,21 @@ const CREDIT_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>
         rotation: 0
     },
     date: {
-        x: 0.30,
-        y: 0.845,
-        fontSize: 100,
+        x: 0.25,
+        y: 0.865,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
         align: 'left',
         color: '#000000',
         transform: 'none',
-        rotation: 0.8
+        rotation: 0
     },
     serialNumber: {
-        x: 0.76,
-        y: 0.847,
-        fontSize: 100,
+        x: 0.82,
+        y: 0.865,
+        fontSize: 70,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -297,9 +297,9 @@ const CREDIT_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>
         rotation: 0
     },
     year: {
-        x: 0.738,
-        y: 0.564,
-        fontSize: 100,
+        x: 0.5,
+        y: 0.578,
+        fontSize: 60,
         fontWeight: 'bold',
         fontStyle: 'normal',
         fontFamily: 'Times New Roman',
@@ -371,7 +371,7 @@ const PASS_CONFIG: Required<Record<keyof CertificateFieldsConfig, FieldConfig>> 
         align: 'left',
         color: '#000000',
         transform: 'none',
-        rotation: 0.2
+        rotation: 0
     },
     serialNumber: {
         x: 0.24,
@@ -534,9 +534,9 @@ export const generateUBEATCertificate = async (
     
     const imagePath = (type: 'pass' | 'credit' | 'distinction') => {
         switch (type) {
-            case 'pass':        return '/images/FSLC/pass_level.png'
-            case 'credit':      return '/images/FSLC/credit_level.png'
-            case 'distinction': return '/images/FSLC/distinction_level.png'
+            case 'pass':        return '/images/new-certificates/Universal Basic Education - PASS.png'
+            case 'credit':      return '/images/new-certificates/Universal Basic Education - CREDIT.png'
+            case 'distinction': return '/images/new-certificates/Universal Basic Education - DISTINCTION.png'
         }
     }
 
