@@ -73,6 +73,24 @@ export interface BECEStudentResult {
     updatedAt: string
 }
 
+// Match returned by find-my-result / find-exam-number endpoints
+interface MatchedNames {
+    studentName: string
+    id: string
+}
+
+interface MatchedNamesResponseSuccess {
+    statusCode: 200,
+    data: MatchedNames[]
+}
+
+interface MatchedNamesResponseError {
+    statusCode: 404 | 400 | 500 | 'FETCH_ERROR',
+    message: string
+}
+
+export type FindResultMatch = MatchedNamesResponseSuccess | MatchedNamesResponseError;
+
 // Find UBEAT result by student details (alternative form)
 export interface FindResultRequest {
     schoolId: string
@@ -120,46 +138,73 @@ export const studentApi = apiSlice.injectEndpoints({
         }),
 
         // Find UBEAT result by student details
-        findUBEATResult: builder.mutation<{ paymentUrl: string; paymentReference: string }, FindResultRequest>({
+        findUBEATResult: builder.mutation<FindResultMatch, FindResultRequest>({
             query: (data) => ({
                 url: `${API_BASE_URL}/ubeat/find-my-result`,
                 method: 'POST',
                 body: data,
             }),
             transformResponse: async (response: unknown) => {
-                const raw = response as { data?: unknown }
-                if (typeof raw?.data !== 'string') return response as { paymentUrl: string; paymentReference: string }
-                if (!(await isApiResponseDecryptConfigured())) return response as { paymentUrl: string; paymentReference: string }
-                try {
-                    return await decryptApiResponseFrom<{ paymentUrl: string; paymentReference: string }>(raw as { data: string }, 'data')
-                } catch (e) {
-                    console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
-                    return response as { paymentUrl: string; paymentReference: string }
+                const raw = response as { statusCode?: number; data?: unknown; message?: string }
+                if (typeof raw?.data === 'string') {
+                    if (!(await isApiResponseDecryptConfigured())) return response as FindResultMatch
+                    try {
+                        return await decryptApiResponseFrom<FindResultMatch>(raw as { data: string }, 'data')
+                    } catch (e) {
+                        console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                        return response as FindResultMatch
+                    }
                 }
+                if (Array.isArray(raw?.data)) {
+                    return { statusCode: raw?.statusCode ?? 200, data: raw.data } as FindResultMatch
+                }
+                return response as FindResultMatch
             },
         }),
 
         // Find BECE result by student details
-        findBECEResult: builder.mutation<{ paymentUrl: string; paymentReference: string }, FindResultRequest>({
+        findBECEResult: builder.mutation<FindResultMatch, FindResultRequest>({
             query: (data) => ({
                 url: `${API_BASE_URL}/bece-student/find-exam-number`,
                 method: 'POST',
                 body: data,
             }),
             transformResponse: async (response: unknown) => {
-                const raw = response as { data?: unknown }
-                if (typeof raw?.data !== 'string') return response as { paymentUrl: string; paymentReference: string }
-                if (!(await isApiResponseDecryptConfigured())) return response as { paymentUrl: string; paymentReference: string }
-                try {
-                    return await decryptApiResponseFrom<{ paymentUrl: string; paymentReference: string }>(raw as { data: string }, 'data')
-                } catch (e) {
-                    console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
-                    return response as { paymentUrl: string; paymentReference: string }
+                const raw = response as { statusCode?: number; data?: unknown; message?: string }
+                if (typeof raw?.data === 'string') {
+                    if (!(await isApiResponseDecryptConfigured())) return response as FindResultMatch
+                    try {
+                        return await decryptApiResponseFrom<FindResultMatch>(raw as { data: string }, 'data')
+                    } catch (e) {
+                        console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                        return response as FindResultMatch
+                    }
                 }
+                if (Array.isArray(raw?.data)) {
+                    return { statusCode: raw?.statusCode ?? 200, data: raw.data } as FindResultMatch
+                }
+                return response as FindResultMatch
             },
         }),
 
-        // Find UBEAT result by student details
+        // Create BECE payment after student selection
+        createBECEPayment: builder.mutation<{ paymentUrl: string; paymentReference: string }, { id: string }>({
+            query: (data) => ({
+                url: `${API_BASE_URL}/bece-student/create-payment`,
+                method: 'POST',
+                body: data,
+            }),
+        }),
+
+        // Create UBEAT payment after student selection
+        createUBEATPayment: builder.mutation<{ paymentUrl: string; paymentReference: string }, { id: string }>({
+            query: (data) => ({
+                url: `${API_BASE_URL}/ubeat/create-payment`,
+                method: 'POST',
+                body: data,
+            }),
+        }),
+
         customerSupport: builder.mutation<{ reference: string }, CustomerSupport>({
             query: (data) => ({
                 url: `${API_BASE_URL}/customer-support/complain`,
@@ -217,6 +262,8 @@ export const {
     useLazyGetBECEResultQuery,
     useFindUBEATResultMutation,
     useFindBECEResultMutation,
+    useCreateBECEPaymentMutation,
+    useCreateUBEATPaymentMutation,
     useCustomerSupportMutation,
     useSetBecePaymentEmailMutation,
     useSetUbeatPaymentEmailMutation

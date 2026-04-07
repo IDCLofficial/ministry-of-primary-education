@@ -15,7 +15,7 @@ import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
 import animationData from '../../assets/students.json'
 import { verifyPayment } from '../../utils/api'
-import { useFindUBEATResultMutation, useSetUbeatPaymentEmailMutation } from '../../store/api/studentApi'
+import { useSetUbeatPaymentEmailMutation } from '../../store/api/studentApi'
 import { capitalizeWords, updateSearchParam } from '@/lib'
 import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/utils/secureStorage'
 import {
@@ -191,50 +191,34 @@ function usePaymentSetup(isCallback: boolean) {
     const [setupError, setSetupError] = useState<string | null>(null)
     const [isLoadingUrl, setIsLoadingUrl] = useState(false)
 
-    const [findUBEATResult, { isLoading: isFindingResult }] = useFindUBEATResultMutation();
-
     const router = useRouter()
 
     useEffect(() => {
         if (isCallback) return
 
         let cancelled = false
-        storage.getFormData().then((formData) => {
+        setIsLoadingUrl(true)
+
+        Promise.all([
+            storage.getFormData(),
+            storage.getPaymentUrl(),
+            storage.getPaymentRef(),
+        ]).then(([formData, url, ref]) => {
             if (cancelled) return
-            if (!formData) {
+            if (!formData || !url || !ref) {
                 toast.error('No payment data found. Please try again.')
                 router.replace('/result-checking/ubeat')
                 return
             }
             setStudentData(formData)
-            setIsLoadingUrl(true)
-
-            const fetchUrl = async () => {
-                try {
-                    const result = await findUBEATResult({
-                        schoolId: formData.school.id,
-                        examYear: parseInt(formData.examYear, 10),
-                        studentName: formData.fullName,
-                        lga: formData.lga,
-                    }).unwrap()
-
-                    if (cancelled) return
-                    const { paymentUrl: url, paymentReference: ref } = result as {
-                        paymentUrl: string
-                        paymentReference: string
-                    }
-                    setPaymentUrl(url)
-                    setPaymentReference(ref)
-                } catch (err) {
-                    if (cancelled) return
-                    console.error('Failed to fetch payment URL:', err)
-                    setSetupError('Unable to initialise payment. Please go back and try again.')
-                } finally {
-                    if (!cancelled) setIsLoadingUrl(false)
-                }
-            }
-            fetchUrl()
+            setPaymentUrl(url)
+            setPaymentReference(ref)
+        }).catch(() => {
+            if (!cancelled) setSetupError('Unable to load payment data. Please go back and try again.')
+        }).finally(() => {
+            if (!cancelled) setIsLoadingUrl(false)
         })
+
         return () => { cancelled = true }
     }, [isCallback]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -243,7 +227,7 @@ function usePaymentSetup(isCallback: boolean) {
         paymentUrl,
         paymentReference,
         setupError,
-        isLoadingUrl: isLoadingUrl || isFindingResult,
+        isLoadingUrl,
     }
 }
 

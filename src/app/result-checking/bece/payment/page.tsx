@@ -14,9 +14,9 @@ import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
 import animationData from '../../assets/students.json'
 import { verifyPayment } from '../../utils/api'
-import { useFindBECEResultMutation, useSetBecePaymentEmailMutation } from '../../store/api/studentApi'
+import { useSetBecePaymentEmailMutation } from '../../store/api/studentApi'
 import { capitalizeWords, updateSearchParam } from '@/lib'
-import { getSecureItem, removeSecureItem, useSecureLocalStorage, SessionStore } from '@/app/result-checking/utils/secureStorage'
+import { useSecureLocalStorage, SessionStore } from '@/app/result-checking/utils/secureStorage'
 import {
     Dialog,
     DialogContent,
@@ -112,29 +112,29 @@ const STORAGE_KEYS = {
 const storage = {
     async getFormData(): Promise<StudentFormData | null> {
         try {
-            const raw = await getSecureItem(STORAGE_KEYS.FORM_DATA)
+            const raw = await SessionStore.get(STORAGE_KEYS.FORM_DATA)
             return raw ? (JSON.parse(raw) as StudentFormData) : null
         } catch {
             return null
         }
     },
     async getPaymentUrl(): Promise<string> {
-        return (await getSecureItem(STORAGE_KEYS.PAYMENT_URL)) ?? ''
+        return (await SessionStore.get(STORAGE_KEYS.PAYMENT_URL)) ?? ''
     },
     async getPaymentRef(): Promise<string> {
-        return (await getSecureItem(STORAGE_KEYS.PAYMENT_REF)) ?? ''
+        return (await SessionStore.get(STORAGE_KEYS.PAYMENT_REF)) ?? ''
     },
     async getReturnUrl(): Promise<string> {
-        return (await getSecureItem(STORAGE_KEYS.RETURN_URL)) ?? '/result-checking/bece/dashboard'
+        return (await SessionStore.get(STORAGE_KEYS.RETURN_URL)) ?? '/result-checking/bece/dashboard'
     },
     async saveExamAccess(examNumber: string): Promise<void> {
         await SessionStore.set(STORAGE_KEYS.EXAM_NO, examNumber)
         await SessionStore.set(STORAGE_KEYS.EXAM_TYPE, 'bece')
     },
     clearPaymentData(): void {
-        removeSecureItem(STORAGE_KEYS.PAYMENT_URL)
-        removeSecureItem(STORAGE_KEYS.PAYMENT_REF)
-        removeSecureItem(STORAGE_KEYS.FORM_DATA)
+        SessionStore.remove(STORAGE_KEYS.PAYMENT_URL)
+        SessionStore.remove(STORAGE_KEYS.PAYMENT_REF)
+        SessionStore.remove(STORAGE_KEYS.FORM_DATA)
     },
 }
 
@@ -189,50 +189,34 @@ function usePaymentSetup(isCallback: boolean) {
     const [setupError, setSetupError] = useState<string | null>(null)
     const [isLoadingUrl, setIsLoadingUrl] = useState(false)
 
-    const [findBECEResult, { isLoading: isFindingResult }] = useFindBECEResultMutation();
-
     const router = useRouter()
 
     useEffect(() => {
         if (isCallback) return
 
         let cancelled = false
-        storage.getFormData().then((formData) => {
+        setIsLoadingUrl(true)
+
+        Promise.all([
+            storage.getFormData(),
+            storage.getPaymentUrl(),
+            storage.getPaymentRef(),
+        ]).then(([formData, url, ref]) => {
             if (cancelled) return
-            if (!formData) {
+            if (!formData || !url || !ref) {
                 toast.error('No payment data found. Please try again.')
                 router.replace('/result-checking/bece')
                 return
             }
             setStudentData(formData)
-            setIsLoadingUrl(true)
-
-            const fetchUrl = async () => {
-                try {
-                    const result = await findBECEResult({
-                        schoolId: formData.school.id,
-                        examYear: parseInt(formData.examYear, 10),
-                        studentName: formData.fullName,
-                        lga: formData.lga,
-                    }).unwrap()
-
-                    if (cancelled) return
-                    const { paymentUrl: url, paymentReference: ref } = result as {
-                        paymentUrl: string
-                        paymentReference: string
-                    }
-                    setPaymentUrl(url)
-                    setPaymentReference(ref)
-                } catch (err) {
-                    if (cancelled) return
-                    console.error('Failed to fetch payment URL:', err)
-                    setSetupError('Unable to initialise payment. Please go back and try again.')
-                } finally {
-                    if (!cancelled) setIsLoadingUrl(false)
-                }
-            }
-            fetchUrl()
+            setPaymentUrl(url)
+            setPaymentReference(ref)
+        }).catch(() => {
+            if (!cancelled) setSetupError('Unable to load payment data. Please go back and try again.')
+        }).finally(() => {
+            if (!cancelled) setIsLoadingUrl(false)
         })
+
         return () => { cancelled = true }
     }, [isCallback]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -241,7 +225,7 @@ function usePaymentSetup(isCallback: boolean) {
         paymentUrl,
         paymentReference,
         setupError,
-        isLoadingUrl: isLoadingUrl || isFindingResult,
+        isLoadingUrl,
     }
 }
 

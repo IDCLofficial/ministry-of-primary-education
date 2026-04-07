@@ -10,7 +10,7 @@ import { useDebounce } from '../../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
-import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation } from '../../store/api/studentApi'
+import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation, useCreateUBEATPaymentMutation, type FindResultMatch } from '../../store/api/studentApi'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/utils/secureStorage'
 import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
@@ -166,6 +166,9 @@ export default function UBEATLogin() {
         examYear: new Date().getFullYear().toString(),
     })
 
+    const [matchedStudents, setMatchedStudents] = useState<{ studentName: string; id: string }[] | null>(null)
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+
     // ── Recent accounts (persisted, encrypted) ───────────────────────────────
     const [recentAccounts, setRecentAccounts] = useSecureSessionStorage<RecentAccount[]>(
         'ubeat_recent_accounts',
@@ -196,7 +199,8 @@ export default function UBEATLogin() {
     // ── RTK Query ─────────────────────────────────────────────────────────────
     const [getUBEATResult, { isLoading, isFetching: isFetchingResult }] = useLazyGetUBEATResultQuery()
     const [findUBEATResult, { isLoading: isFindingResult }] = useFindUBEATResultMutation()
-    const isProcessingPayment = isFindingResult
+    const [createUBEATPayment, { isLoading: isCreatingPayment }] = useCreateUBEATPaymentMutation()
+    const isProcessingPayment = isFindingResult || isCreatingPayment
 
     const { data: schoolNames, isLoading: isLoadingSchoolNames, isFetching } = useGetSchoolNamesQuery(
         { lga: altFormData.lga },
@@ -341,30 +345,17 @@ export default function UBEATLogin() {
                 lga: altFormData.lga,
             }).unwrap()
 
-            const fullResult = result as { paymentUrl: string; paymentReference: string }
-
-            if (!fullResult.paymentUrl || !fullResult.paymentReference) {
-                const msg = 'Payment information unavailable. Please try again.'
+            if (result.statusCode !== 200) {
+                const msg = 'message' in result ? result.message : "No matching records found. Double-check your details."
                 setError(msg); toast.error(msg); return
             }
 
-            await Promise.all([
-                SessionStore.set('ubeat_alt_form_data', JSON.stringify({
-                    fullName: altFormData.fullName,
-                    school: altFormData.schoolName,
-                    lga: altFormData.lga,
-                    examYear: altFormData.examYear,
-                })),
-                SessionStore.set('selected_exam_type', 'ubeat'),
-            ])
-
-            toast.success('Data retrieved successfully!')
-
-            if (fullResult.paymentUrl.toLowerCase().includes('ubeat')) {
-                setTimeout(() => router.push(`${fullResult.paymentUrl}?trxref=${fullResult.paymentReference}&reference=${fullResult.paymentReference}`), 0)
-                return
+            if (!result.data || result.data.length === 0) {
+                const msg = "No matching records found. Double-check your details."
+                setError(msg); toast.error(msg); return
             }
-            setTimeout(() => router.push('/result-checking/ubeat/payment'), 0)
+
+            setMatchedStudents(result.data)
         } catch (error: unknown) {
             const err = error as { status: string | number; data?: { message?: string } }
             let msg = ''
@@ -377,12 +368,54 @@ export default function UBEATLogin() {
         }
     }
 
+    const handleStudentSelected = async (student: { name: string; _id: string }) => {
+        setSelectedStudentId(student._id)
+        setError('')
+        try {
+            const fullResult = await createUBEATPayment({ id: student._id }).unwrap()
+
+            if (!fullResult.paymentUrl || !fullResult.paymentReference) {
+                const msg = 'Payment information unavailable. Please try again.'
+                setError(msg); toast.error(msg); return
+            }
+
+            await Promise.all([
+                SessionStore.set('ubeat_alt_form_data', JSON.stringify({
+                    fullName: student.name,
+                    school: altFormData.schoolName,
+                    lga: altFormData.lga,
+                    examYear: altFormData.examYear,
+                })),
+                SessionStore.set('selected_exam_type', 'ubeat'),
+                SessionStore.set('ubeat_payment_url', fullResult.paymentUrl),
+                SessionStore.set('ubeat_payment_reference', fullResult.paymentReference),
+            ])
+
+            toast.success('Data retrieved successfully!')
+
+            if (fullResult.paymentUrl.toLowerCase().includes('ubeat')) {
+                setTimeout(() => router.push(`${fullResult.paymentUrl}?trxref=${fullResult.paymentReference}&reference=${fullResult.paymentReference}`), 0)
+                return
+            }
+            setTimeout(() => router.push('/result-checking/ubeat/payment'), 0)
+        } catch (error: unknown) {
+            const err = error as { status: string | number; data?: { message?: string } }
+            let msg = ''
+            if (err.status === 400) msg = err.data?.message ?? 'Invalid request.'
+            else if (err.status === 500) msg = 'Our system is having a moment. Try again shortly.'
+            else if (err.status === 'FETCH_ERROR') msg = 'No internet connection.'
+            else msg = 'Something went wrong. Please try again.'
+            setSelectedStudentId(null)
+            setError(msg); toast.error(msg)
+        }
+    }
+
     const toggleForm = () => {
         const params = new URLSearchParams(searchParams.toString())
         if (showAlternativeForm) params.delete('form')
         else params.set('form', 'alternative')
         setTimeout(() => router.push(`?${params.toString()}`), 0)
-        setError(''); setExamNo('')
+        setError(''); setExamNo(''); setMatchedStudents(null)
         setAltFormData({ fullName: '', schoolName: { id: '', name: '' }, lga: '', examYear: new Date().getFullYear().toString() })
     }
 
@@ -461,11 +494,17 @@ export default function UBEATLogin() {
                         /* ── Login Card ── */
                         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 animate-fadeIn-y hover:shadow-2xl transition-all duration-300">
                             <div className="mb-6">
-                                <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome, Student! 👋</h2>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                                    {isCreatingPayment ? 'Setting up payment…' : matchedStudents ? 'Is this you? 🔍' : 'Welcome, Student! 👋'}
+                                </h2>
                                 <p className="text-sm text-gray-600">
-                                    {showAlternativeForm
-                                        ? "Don't worry! Access your UBEAT results by providing your basic information below."
-                                        : "Enter your exam number below to view your UBEAT results."
+                                    {!showAlternativeForm
+                                        ? 'Enter your exam number below to view your UBEAT results.'
+                                        : isCreatingPayment
+                                            ? 'Please wait while we prepare your payment link.'
+                                            : matchedStudents
+                                                ? `We found ${matchedStudents.length} record${matchedStudents.length !== 1 ? 's' : ''} matching your details — select the one that\'s yours.`
+                                                : "Don't worry! Access your UBEAT results by providing your basic information below."
                                     }
                                 </p>
                             </div>
@@ -623,6 +662,79 @@ export default function UBEATLogin() {
                                         </button>
                                     </div>
                                 </form>
+                            ) : matchedStudents ? (
+                                /* ── Student Selection ── */
+                                <div className="space-y-3">
+                                    {error && (
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                                            <svg className="w-4 h-4 text-red-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                                            <p className="text-sm text-red-800 flex-1">{error}</p>
+                                            <button type="button" onClick={() => setError('')} className="text-red-400 hover:text-red-600 ml-1"><IoClose className="w-4 h-4" /></button>
+                                        </div>
+                                    )}
+                                    <motion.div
+                                        className="space-y-2"
+                                        variants={listVariants}
+                                        initial="hidden"
+                                        animate="show"
+                                    >
+                                        {matchedStudents.map((student) => {
+                                            const isSelected = selectedStudentId === student.id
+                                            const isOther = isCreatingPayment && !isSelected
+                                            return (
+                                                <motion.button
+                                                    key={student.id}
+                                                    variants={itemVariants}
+                                                    type="button"
+                                                    disabled={isCreatingPayment}
+                                                    onClick={() => handleStudentSelected({ name: student.studentName, _id: student.id })}
+                                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 text-left disabled:cursor-not-allowed ${
+                                                        isSelected
+                                                            ? 'border-green-400 bg-green-50 ring-2 ring-green-200'
+                                                            : isOther
+                                                                ? 'border-gray-200 bg-gray-50 opacity-40 cursor-not-allowed'
+                                                                : 'border-gray-200 bg-gray-50 hover:bg-green-50 hover:border-green-300 cursor-pointer'
+                                                    }`}
+                                                >
+                                                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                                                        {isSelected
+                                                            ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
+                                                            : getInitials(student.studentName)
+                                                        }
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`text-sm font-semibold truncate capitalize ${isSelected ? 'text-green-700' : 'text-gray-900'}`}>
+                                                            {student.studentName.toLowerCase()}
+                                                        </p>
+                                                        {isSelected && (
+                                                            <p className="text-xs text-green-600 mt-0.5">Setting up payment…</p>
+                                                        )}
+                                                    </div>
+                                                    {isSelected
+                                                        ? <span className="w-4 h-4 border-2 border-green-400/40 border-t-green-500 rounded-full animate-spin flex-shrink-0 block" />
+                                                        : <IoChevronForward className={`w-4 h-4 flex-shrink-0 ${isOther ? 'text-gray-300' : 'text-gray-400'}`} />
+                                                    }
+                                                </motion.button>
+                                            )
+                                        })}
+                                    </motion.div>
+
+                                    <div className="flex items-center gap-3 pt-1">
+                                        <div className="flex-1 h-px bg-gray-100" />
+                                        <span className="text-xs text-gray-400">not you?</span>
+                                        <div className="flex-1 h-px bg-gray-100" />
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        disabled={isCreatingPayment}
+                                        onClick={() => { setMatchedStudents(null); setSelectedStudentId(null); setError('') }}
+                                        className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-gray-500 hover:text-green-600 border border-gray-200 rounded-lg hover:border-green-300 transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        <IoSwapHorizontal className="w-4 h-4" />
+                                        None of these — search again
+                                    </button>
+                                </div>
                             ) : (
                                 /* ── Alternative Form ── */
                                 <form onSubmit={handleAlternativeFormSubmit} className="space-y-4">
