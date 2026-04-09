@@ -656,67 +656,70 @@ export default function PayoutsPage() {
                 </div>
                 {/* Payout Details Modal */}
                 {selectedPayout && (
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] relative overflow-hidden flex flex-col">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+                        <div className="bg-white rounded-lg sm:rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] relative overflow-hidden flex flex-col">
                             {/* Modal Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-green-100">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">Payout Details</h2>
-                                    <p className="text-sm text-gray-600 mt-1">
+                            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-green-100">
+                                <div className="flex-1 min-w-0 pr-2">
+                                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">Payout Details</h2>
+                                    <p className="text-xs sm:text-sm text-gray-600 mt-1 truncate">
                                         Payout ID: #{selectedPayout.id}
                                     </p>
                                 </div>
                                 <button
                                     onClick={handleCloseModal}
-                                    className="p-2 hover:bg-white rounded-lg transition-colors"
+                                    className="p-2 hover:bg-white rounded-lg transition-colors flex-shrink-0"
+                                    aria-label="Close modal"
                                 >
-                                    <IoClose className="w-6 h-6 text-gray-500" />
+                                    <IoClose className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />
                                 </button>
                             </div>
 
                             {/* Payout Summary */}
-                            <div className="p-6 border-b border-gray-200 bg-gray-50">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    <div>
-                                        <p className="text-sm text-gray-600 mb-1">Subaccount</p>
-                                        <p className="font-semibold text-gray-900">
-                                            {selectedPayout.subaccount?.business_name || 'Revenue Account (No Subaccount)'}
+                            <div className="p-3 sm:p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+                                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                                    <div className="bg-white p-2 sm:p-2.5 rounded-lg">
+                                        <p className="text-xs text-gray-600 mb-0.5">Subaccount</p>
+                                        <p className="font-semibold text-xs sm:text-sm text-gray-900 break-words leading-tight">
+                                            {selectedPayout.subaccount?.business_name || 'Revenue Account'}
                                         </p>
                                         {selectedPayout.subaccount?.subaccount_code && (
-                                            <p className="text-xs text-gray-500 font-mono">{selectedPayout.subaccount.subaccount_code}</p>
+                                            <p className="text-[10px] text-gray-500 font-mono truncate mt-0.5" title={selectedPayout.subaccount.subaccount_code}>
+                                                {selectedPayout.subaccount.subaccount_code}
+                                            </p>
                                         )}
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-600 mb-1">Total Amount</p>
-                                        <p className="font-semibold text-gray-900">{formatCurrency(selectedPayout.total_amount, selectedPayout.currency)}</p>
+                                    <div className="bg-white p-2 sm:p-2.5 rounded-lg">
+                                        <p className="text-xs text-gray-600 mb-0.5">Total Amount</p>
+                                        <p className="font-semibold text-xs sm:text-sm text-gray-900">{formatCurrency(selectedPayout.total_amount, selectedPayout.currency)}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-600 mb-1">Effective Amount</p>
-                                        <p className="font-semibold text-green-700">{formatCurrency(selectedPayout.effective_amount, selectedPayout.currency)}</p>
+                                    <div className="bg-white p-2 sm:p-2.5 rounded-lg">
+                                        <p className="text-xs text-gray-600 mb-0.5">Effective Amount</p>
+                                        <p className="font-semibold text-xs sm:text-sm text-green-700">{formatCurrency(selectedPayout.effective_amount, selectedPayout.currency)}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-600 mb-1">Settlement Date</p>
-                                        <p className="font-semibold text-gray-900">{formatDate(selectedPayout.settlement_date)}</p>
+                                    <div className="bg-white p-2 sm:p-2.5 rounded-lg">
+                                        <p className="text-xs text-gray-600 mb-0.5">Settlement Date</p>
+                                        <p className="font-semibold text-xs sm:text-sm text-gray-900 leading-tight">{formatDate(selectedPayout.settlement_date)}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-600 mb-1">Bank</p>
-                                        <p className="font-semibold text-gray-900">
+                                    <div className="bg-white p-2 sm:p-2.5 rounded-lg">
+                                        <p className="text-xs text-gray-600 mb-0.5">Bank</p>
+                                        <p className="font-semibold text-xs sm:text-sm text-gray-900 break-words leading-tight">
                                             {selectedPayout.subaccount?.settlement_bank || 'N/A'}
                                         </p>
                                         {selectedPayout.subaccount?.account_number && (
-                                            <p className="text-xs text-gray-500 font-mono">{selectedPayout.subaccount.account_number}</p>
+                                            <p className="text-[10px] text-gray-500 font-mono mt-0.5">{selectedPayout.subaccount.account_number}</p>
                                         )}
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-600 mb-1">Total Processed</p>
-                                        <p className="font-semibold text-gray-900">{formatCurrency(selectedPayout.total_processed, selectedPayout.currency)}</p>
+                                    <div className="bg-white p-2 sm:p-2.5 rounded-lg">
+                                        <p className="text-xs text-gray-600 mb-0.5">Total Processed</p>
+                                        <p className="font-semibold text-xs sm:text-sm text-gray-900">{formatCurrency(selectedPayout.total_processed, selectedPayout.currency)}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-600 mb-1">Total Fees</p>
-                                        <p className="font-semibold text-gray-900">{formatCurrency(selectedPayout.total_fees, selectedPayout.currency)}</p>
+                                    <div className="bg-white p-2 sm:p-2.5 rounded-lg">
+                                        <p className="text-xs text-gray-600 mb-0.5">Total Fees</p>
+                                        <p className="font-semibold text-xs sm:text-sm text-gray-900">{formatCurrency(selectedPayout.total_fees, selectedPayout.currency)}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-600 mb-1">Status</p>
+                                    <div className="bg-white p-2 sm:p-2.5 rounded-lg">
+                                        <p className="text-xs text-gray-600 mb-0.5">Status</p>
                                         <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedPayout.status)}`}>
                                             {selectedPayout.status}
                                         </span>
@@ -725,86 +728,95 @@ export default function PayoutsPage() {
                             </div>
 
                             {/* Payments Table */}
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                                    Payments ({modalPayments.length})
-                                </h3>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    Showing payments from {new Date(new Date(selectedPayout.settlement_date).getTime() - 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} 12:00 AM to {new Date(selectedPayout.settlement_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} 11:59 PM
-                                </p>
+                            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                                <div className="p-3 sm:p-4 border-b border-gray-200 flex-shrink-0">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+                                            Payments ({modalPayments.length})
+                                        </h3>
+                                    </div>
+                                    <p className="text-[10px] sm:text-xs text-gray-600 mt-1 break-words">
+                                        Showing payments from {new Date(new Date(selectedPayout.settlement_date).getTime() - 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} 12:00 AM to {new Date(selectedPayout.settlement_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} 11:59 PM
+                                    </p>
+                                </div>
 
+                                <div className="flex-1 overflow-y-auto">
                                 {loadingPayments ? (
-                                    <div className="flex items-center justify-center py-12">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+                                    <div className="flex items-center justify-center py-12 h-full">
+                                        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-green-600"></div>
                                     </div>
                                 ) : modalPayments.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <p className="text-gray-500">No payments found for this payout period</p>
+                                    <div className="text-center py-12 h-full flex items-center justify-center">
+                                        <p className="text-sm sm:text-base text-gray-500">No payments found for this payout period</p>
                                     </div>
                                 ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full">
-                                            <thead className="bg-gray-100 border-b border-gray-200">
-                                                <tr>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">School</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Reference</th>
-                                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700">Amount</th>
-                                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700">Students</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Date</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200">
-                                                {modalPayments.map((payment, index) => (
-                                                    <tr key={payment.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                                            <div className="font-medium">{payment.schoolName}</div>
-                                                            <div className="text-xs text-gray-500">{payment.schoolCode}</div>
-                                                        </td>
-                                                        <td className="px-4 py-3 text-xs font-mono text-gray-600">
-                                                            {payment.reference.substring(0, 20)}...
+                                    <div className="overflow-x-auto px-3 sm:px-4 pb-3 sm:pb-4">
+                                        <div className="inline-block min-w-full align-middle">
+                                            <table className="min-w-full">
+                                                <thead className="bg-gray-100 border-b border-gray-200 sticky top-0">
+                                                    <tr>
+                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700">School</th>
+                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 hidden sm:table-cell">Reference</th>
+                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs font-semibold text-gray-700">Amount</th>
+                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs font-semibold text-gray-700 hidden md:table-cell">Students</th>
+                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 hidden lg:table-cell">Date</th>
+                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 hidden sm:table-cell">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200">
+                                                    {modalPayments.map((payment, index) => (
+                                                        <tr key={payment.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900">
+                                                                <div className="font-medium truncate max-w-[120px] sm:max-w-none">{payment.schoolName}</div>
+                                                                <div className="text-xs text-gray-500 truncate">{payment.schoolCode}</div>
+                                                            </td>
+                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs font-mono text-gray-600 hidden sm:table-cell">
+                                                                <span className="hidden sm:inline">{payment.reference.substring(0, 20)}...</span>
+                                                            </td>
+                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
+                                                                ₦{payment.amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </td>
+                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 text-right hidden md:table-cell">
+                                                                {payment.numberOfStudents}
+                                                            </td>
+                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-600 hidden lg:table-cell whitespace-nowrap">
+                                                                {new Date(payment.paidAt).toLocaleDateString('en-US', {
+                                                                    month: 'short',
+                                                                    day: 'numeric',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                })}
+                                                            </td>
+                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm hidden sm:table-cell">
+                                                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
+                                                                    {payment.paymentStatus}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                                {/* <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                                                    <tr>
+                                                        <td colSpan={2} className="px-4 py-3 text-sm font-semibold text-gray-900">Total</td>
+                                                        <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
+                                                            ₦{modalPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </td>
                                                         <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">
-                                                            ₦{payment.amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            {modalPayments.reduce((sum, p) => sum + p.numberOfStudents, 0)}
                                                         </td>
-                                                        <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                                                            {payment.numberOfStudents}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-sm text-gray-600">
-                                                            {new Date(payment.paidAt).toLocaleDateString('en-US', {
-                                                                month: 'short',
-                                                                day: 'numeric',
-                                                                hour: '2-digit',
-                                                                minute: '2-digit'
-                                                            })}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-sm">
-                                                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                                {payment.paymentStatus}
-                                                            </span>
-                                                        </td>
+                                                        <td colSpan={2}></td>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                            {/* <tfoot className="bg-gray-50 border-t-2 border-gray-300">
-                                                <tr>
-                                                    <td colSpan={2} className="px-4 py-3 text-sm font-semibold text-gray-900">Total</td>
-                                                    <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
-                                                        ₦{modalPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">
-                                                        {modalPayments.reduce((sum, p) => sum + p.numberOfStudents, 0)}
-                                                    </td>
-                                                    <td colSpan={2}></td>
-                                                </tr>
-                                            </tfoot> */}
-                                        </table>
+                                                </tfoot> */}
+                                            </table>
+                                        </div>
                                     </div>
                                 )}
+                                </div>
                             </div>
                         </div>
                     </div>
-                )}            </div>
+                )}            
+            </div>
         </div>
     );
 }
