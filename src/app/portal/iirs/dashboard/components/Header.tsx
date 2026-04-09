@@ -54,7 +54,7 @@ export default function Header(){
     };
 
     const handleManageUsers = () => {
-        if (role !== "admin") return;
+        if (role !== "idcl") return;
         setIsDropdownOpen(false);
         setIsUserManagementOpen(true);
     };
@@ -134,7 +134,7 @@ export default function Header(){
                                         <span>View Profile</span>
                                     </button>
 
-                                    {role === "admin" && <button
+                                    {role === "idcl" && <button
                                         onClick={handleManageUsers}
                                         className="w-full flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                     >
