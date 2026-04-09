@@ -18,13 +18,13 @@ export interface UserProfile {
   state: string
   totalEarnings: number
   totalAmountProcessed: number
-  adminType: "iirs_admin" | "iirs_user"
+  adminType: 'moe_admin' | 'iirs_user' | 'idcl_admin'
 }
 
 interface AuthContextType {
   isAuthenticated: boolean
   user: UserProfile | null
-  role: "admin" | "user" | null
+  role: "moe" | "iirs" | "idcl" | null
   token: string | null
   login: (token: string) => void
   logout: () => void
@@ -41,7 +41,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
-  const [role, setRole] = useState<"admin" | "user" | null>("user");
+  const [role, setRole] = useState<"moe" | "iirs" | "idcl" | null>("iirs");
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -84,7 +84,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const userProfile = await getProfile(token as string)
       setUser(userProfile)
-      setRole(userProfile.adminType === "iirs_admin" ? "admin" : "user")
+      setRole(
+        userProfile.adminType === "moe_admin" ? "moe" : 
+        userProfile.adminType === "iirs_user" ? "iirs" :
+        userProfile.adminType === "idcl_admin" ? "idcl" : null
+      )
       setIsAuthenticated(true)
     } catch (error) {
       setIsAuthenticated(false)

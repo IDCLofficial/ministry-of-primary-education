@@ -4,9 +4,11 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { PiUserCircleFill } from "react-icons/pi"
 import ProfileModal from './ProfileModal';
 import UserManagementModal from './UserManagementModal';
-import { IoLogOutOutline, IoPersonOutline, IoPeopleOutline, IoChevronDown } from 'react-icons/io5';
+import { IoLogOutOutline, IoPersonOutline, IoPeopleOutline, IoChevronDown, IoWalletOutline, IoGridOutline } from 'react-icons/io5';
 import { useAuth } from '@/app/portal/iirs/providers/AuthProvider';
 import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Header(){
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -14,6 +16,7 @@ export default function Header(){
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const { user, logout, role } = useAuth();
+    const pathname = usePathname();
     
     const userProfile = useMemo(()=>{
         return {
@@ -51,14 +54,14 @@ export default function Header(){
     };
 
     const handleManageUsers = () => {
-        if (role !== "admin") return;
+        if (role !== "idcl") return;
         setIsDropdownOpen(false);
         setIsUserManagementOpen(true);
     };
 
     return(
         <>
-            <header className="w-full flex sticky top-0 py-2 sm:py-4 px-3 sm:px-6 items-center justify-center bg-white/30 backdrop-blur-[25px] z-50">
+            <header className="w-full flex flex-col sticky top-0 py-2 sm:py-4 px-3 sm:px-6 gap-3 bg-white/30 backdrop-blur-[25px] z-50">
                 <div className="w-full flex items-center justify-between backdrop-blur-[25px] rounded-full sm:rounded-[100px] px-3 sm:px-4 border border-gray-200 bg-white/50">
                     <Image 
                         src="/images/iirs/logo.png" 
@@ -68,6 +71,32 @@ export default function Header(){
                         height={100}
                         className="w-24 h-16 sm:w-28 sm:h-20 md:w-32 md:h-24 object-contain"
                     />
+
+                    {/* Navigation Menu */}
+                    <nav className="hidden md:flex items-center gap-2">
+                        <Link
+                            href="/portal/iirs/dashboard"
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                pathname === '/portal/iirs/dashboard'
+                                    ? 'bg-green-600 text-white'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                        >
+                            <IoGridOutline size={18} />
+                            <span>Dashboard</span>
+                        </Link>
+                        <Link
+                            href="/portal/iirs/dashboard/payouts"
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                pathname === '/portal/iirs/dashboard/payouts'
+                                    ? 'bg-green-600 text-white'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                        >
+                            <IoWalletOutline size={18} />
+                            <span>Payouts</span>
+                        </Link>
+                    </nav>
                     
                     {/* User Menu */}
                     <div className="relative" ref={dropdownRef}>
@@ -105,7 +134,7 @@ export default function Header(){
                                         <span>View Profile</span>
                                     </button>
 
-                                    {role === "admin" && <button
+                                    {role === "idcl" && <button
                                         onClick={handleManageUsers}
                                         className="w-full flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                     >
@@ -128,6 +157,32 @@ export default function Header(){
                         )}
                     </div>
                 </div>
+
+                {/* Mobile Navigation */}
+                <nav className="md:hidden flex items-center justify-center gap-2 px-2">
+                    <Link
+                        href="/portal/iirs/dashboard"
+                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            pathname === '/portal/iirs/dashboard'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-white/80 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                        <IoGridOutline size={18} />
+                        <span>Dashboard</span>
+                    </Link>
+                    <Link
+                        href="/portal/iirs/dashboard/payouts"
+                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            pathname === '/portal/iirs/dashboard/payouts'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-white/80 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                        <IoWalletOutline size={18} />
+                        <span>Payouts</span>
+                    </Link>
+                </nav>
             </header>
             
             <ProfileModal 

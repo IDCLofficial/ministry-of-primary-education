@@ -1,7 +1,6 @@
 "use client"
 
 import InvoiceTable from './components/InvoiceTable';
-import MonthlyChart from './components/MonthlyChart';
 import MetricsCards from './components/MetricsCards';
 import DownloadReportButton from './components/DownloadReportButton';
 import { useAuth } from '../providers/AuthProvider';
@@ -28,14 +27,14 @@ export default function Dashboard() {
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                         IIRS Dashboard 
                         <span className="text-gray-500 text-sm sm:text-base block sm:inline mt-1 sm:mt-0">
-                            {role === "admin" ? "" : "(View Only)"}
+                            {role === "iirs" ? "" : "(View Only)"}
                         </span>
                     </h1>
                     <DownloadReportButton />
                 </div>
 
                 {/* Metrics Cards */}
-                <MetricsCards />
+                <MetricsCards role={role} />
 
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 gap-6">

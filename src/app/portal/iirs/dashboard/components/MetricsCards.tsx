@@ -32,7 +32,7 @@ interface PaymentSummary {
   totalLatestTsaPayout: number;
 }
 
-export default function MetricsCards() {
+export default function MetricsCards({role}: {role: "moe" | "iirs" | "idcl" | null}) {
   const { token } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<PaymentSummary | null>(null);
@@ -62,6 +62,7 @@ export default function MetricsCards() {
           selectedDate?.toDateString(),
           'dashboard'
         );
+        console.log(result)
         setData(result)
         setIsLoading(false);
       } catch (e) {
@@ -214,7 +215,7 @@ export default function MetricsCards() {
         </div>
 
         {/* IDCL Earnings Card */}
-        <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 shadow-lg border border-amber-200 hover:shadow-xl transition-all duration-300 group">
+        {role !== 'iirs' && <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 shadow-lg border border-amber-200 hover:shadow-xl transition-all duration-300 group">
           <div className="flex flex-col space-y-3">
             <div className="flex items-center justify-between">
               <div className="p-3 bg-amber-500 rounded-lg shadow-md group-hover:scale-110 transition-transform duration-300">
@@ -228,10 +229,10 @@ export default function MetricsCards() {
               <p className="text-sm text-blue-600 flex items-center">IDCL Payout Today: <FaNairaSign className='text-sm' />{data?.totalLatestIdclPayout?.toLocaleString() || 0}</p>
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Paystack Charges Card */}
-        <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl p-6 shadow-lg border border-rose-200 hover:shadow-xl transition-all duration-300 group">
+        {role !== 'iirs' && <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl p-6 shadow-lg border border-rose-200 hover:shadow-xl transition-all duration-300 group">
           <div className="flex flex-col space-y-3">
             <div className="flex items-center justify-between">
               <div className="p-3 bg-rose-500 rounded-lg shadow-md group-hover:scale-110 transition-transform duration-300">
@@ -244,7 +245,7 @@ export default function MetricsCards() {
               <span className="text-xs font-medium text-rose-600 bg-rose-200 px-2 py-1 rounded-full">{getPeriodLabel()}</span>
             </div>
           </div>
-        </div>
+        </div>}
 
       </div>
     </div>

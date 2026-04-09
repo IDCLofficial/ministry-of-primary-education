@@ -15,8 +15,8 @@ const PayoutReportTable = ({ payouts, date }: { payouts: statsData, date: string
                 <div className="px-6 py-4">
                     <h2 className="text-lg font-semibold text-gray-800 mb-3">Summary</h2>
                     <div className="space-y-2">
-                        <p className="text-sm text-gray-700">Total Payout: ₦{(payouts.totalIdclEarnings + payouts.totalTsaEarnings)?.toLocaleString('en-NG')}</p>
-                        <p className="text-sm text-gray-700">Total Idcl Earnings: ₦{payouts.totalIdclEarnings?.toLocaleString('en-NG')}</p>
+                        <p className="text-sm text-gray-700">Total Payout: ₦{((payouts.totalIdclEarnings ? payouts.totalIdclEarnings : 0) + (payouts.totalTsaEarnings ? payouts.totalTsaEarnings : 0))?.toLocaleString('en-NG')}</p>
+                        {payouts.totalIdclEarnings !== undefined && <p className="text-sm text-gray-700">Total Idcl Earnings: ₦{payouts.totalIdclEarnings?.toLocaleString('en-NG')}</p>}
                         <p className="text-sm text-gray-700">Total TSA Earnings: ₦{payouts.totalTsaEarnings?.toLocaleString('en-NG')}</p>
                     </div>
                 </div>

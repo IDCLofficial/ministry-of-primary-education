@@ -45,7 +45,7 @@ export default function Revenue() {
             <HangingTree finance />
             
             {/* Header */}
-            <div className="flex max-md:flex-row flex-col justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
+            {/* <div className="flex max-md:flex-row flex-col justify-center gap-2 items-center absolute top-10 left-1/2 -translate-x-1/2">
                 <Image
                     src="/images/iirs/iirs-logo.png"
                     alt="logo"
@@ -60,7 +60,7 @@ export default function Revenue() {
                 <span className='sm:text-xl text-lg font-bold max-md:hidden block'>
                     Imo State Internal Revenue Service
                 </span>
-            </div>
+            </div> */}
 
             {/* Main Content */}
             <main className="py-8 gap-4 flex flex-col w-full relative z-10">
