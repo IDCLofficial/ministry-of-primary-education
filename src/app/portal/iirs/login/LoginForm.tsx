@@ -17,7 +17,8 @@ export default function LoginForm({onSubmit, isSubmitting}:{onSubmit:(email: str
         <form onSubmit={(e)=>handleSubmit(e)} className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl border border-gray-100 p-8 space-y-6">
             {/* Header */}
             <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold text-gray-900">IIRS Login</h1>
+                <h1 className="text-3xl font-bold text-gray-900">MOPSE</h1>
+                <h1 className="text-xl font-semibold text-gray-700">Payments Dashboard</h1>
                 <p className="text-sm text-gray-500">Enter your credentials to access your account</p>
             </div>
 

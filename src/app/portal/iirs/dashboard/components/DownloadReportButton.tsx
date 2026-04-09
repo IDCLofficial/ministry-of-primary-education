@@ -11,6 +11,7 @@ import Calendar from "react-calendar";
 import PayoutReportTable from "./PayoutReportTable";
 import { generatePaymentReportPDF } from "@/lib/iirs/pdfGenerator";
 import CalendarComponent from "./Calendar";
+import { PiPaperPlane } from "react-icons/pi";
 
 export default function DownloadReportButton() {
   const { token } = useAuth();
@@ -138,7 +139,7 @@ export default function DownloadReportButton() {
       </div>
 
       <div className="relative">
-        <button
+        {/* <button
           onClick={() => setShowReportTable(!showReportTable)}
           disabled={isDownloading}
           className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md cursor-pointer w-full sm:w-auto"
@@ -152,13 +153,13 @@ export default function DownloadReportButton() {
             </>
           ) : (
             <>
-              <FiDownload className="text-base sm:text-lg" />
+              <PiPaperPlane className="text-base sm:text-lg" />
               <span className="text-xs sm:text-sm font-medium">
                 Get Payout Report
               </span>
             </>
           )}
-        </button>
+        </button> */}
 
         {/* {showPeriodMenu && !isDownloading && (
         <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-full sm:w-48 bg-white rounded-lg border border-gray-200 shadow-lg z-20">
