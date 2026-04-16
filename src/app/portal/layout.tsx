@@ -9,8 +9,6 @@ import { MaintenanceScreen } from './components/MaintenanceScreen';
 export default function layout({ children }: { children: React.ReactNode }) {
     const isMaintenanceMode = process.env.NEXT_PUBLIC_PORTAL_MAINTENANCE === 'true';
 
-    console.log('isMaintenanceMode', isMaintenanceMode, process.env.NEXT_PUBLIC_PORTAL_MAINTENANCE);
-
     if (isMaintenanceMode) {
         return <MaintenanceScreen />;
     }
