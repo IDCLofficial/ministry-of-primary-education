@@ -8,6 +8,8 @@ import toast from 'react-hot-toast';
 import { getPaymentsData, Payment } from '@/lib/iirs/dataInteraction';
 import { Filter } from 'lucide-react';
 import { FiFilter } from 'react-icons/fi';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Interfaces based on actual API response
 interface Subaccount {
@@ -346,6 +348,258 @@ export default function PayoutsPage() {
         toast.success('CSV exported successfully');
     };
 
+    // Export to PDF - Main Payouts Table
+    const handleExportPDF = () => {
+        if (payouts.length === 0) {
+            toast.error('No data to export');
+            return;
+        }
+
+        try {
+            const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+
+            // Set font for better number presentation
+            doc.setFont('serif', 'normal');
+
+            // Add title
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(40);
+            doc.text('Payouts History Report', 14, 15);
+
+            // Add metadata
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(100);
+            const dateStr = new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            doc.text(`Generated on: ${dateStr}`, 14, 22);
+            doc.text(`Total Records: ${totalRecords}`, 14, 27);
+
+            // Add filter info if applied
+            if (appliedFilters.from || appliedFilters.to) {
+                const filterText = appliedFilters.from && appliedFilters.to
+                    ? `Period: ${appliedFilters.from} to ${appliedFilters.to}`
+                    : appliedFilters.from
+                        ? `From: ${appliedFilters.from}`
+                        : `To: ${appliedFilters.to}`;
+                doc.text(filterText, 14, 32);
+            }
+
+            // Prepare table data
+            const tableData = payouts.map(payout => [
+                `#${payout.id}`,
+                payout.subaccount?.business_name || 'IDCL Revenue Account',
+                formatCurrency(payout.total_amount, payout.currency),
+                formatCurrency(payout.effective_amount, payout.currency),
+                formatCurrency(payout.total_processed, payout.currency),
+                payout.status,
+                new Date(payout.settlement_date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                }),
+                payout.subaccount?.settlement_bank || 'Fidelity Bank'
+            ]);
+
+            // Add table
+            autoTable(doc, {
+                head: [['ID', 'Subaccount', 'Total Amount', 'Effective Amount', 'Total Processed', 'Status', 'Settlement Date', 'Bank']],
+                body: tableData,
+                startY: appliedFilters.from || appliedFilters.to ? 37 : 32,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [22, 163, 74], // green-600
+                    textColor: 255,
+                    fontStyle: 'bold',
+                    fontSize: 8,
+                    font: 'helvetica'
+                },
+                styles: {
+                    fontSize: 7,
+                    cellPadding: 2,
+                    font: 'helvetica',
+                    fontStyle: 'normal'
+                },
+                bodyStyles: {
+                    font: 'sans-serif',
+                    fontStyle: 'normal'
+                },
+                columnStyles: {
+                    0: { cellWidth: 12, font: 'helvetica' },
+                    1: { cellWidth: 42, font: 'helvetica' },
+                    2: { cellWidth: 36, halign: 'right', font: 'courier' },  // Monospace
+                    3: { cellWidth: 36, halign: 'right', font: 'courier' },  // Monospace
+                    4: { cellWidth: 36, halign: 'right', font: 'courier' },  // Monospace
+                    5: { cellWidth: 18, halign: 'center', font: 'helvetica' },
+                    6: { cellWidth: 32, font: 'courier' },  // If this is numeric
+                    7: { cellWidth: 36, font: 'courier' }   // If this is numeric
+                },
+                alternateRowStyles: {
+                    fillColor: [249, 250, 251]
+                }
+            });
+
+            // Save the PDF
+            const filename = `payouts_report_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+            toast.success('PDF downloaded successfully');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            toast.error('Failed to generate PDF');
+        }
+    };
+
+    // Export Payout Details to PDF (for modal)
+    const handleExportPayoutDetailsPDF = () => {
+        if (!selectedPayout) return;
+
+        try {
+            const doc = new jsPDF('p', 'mm', 'a4');
+
+            // Set font for better number presentation
+            doc.setFont('helvetica', 'normal');
+
+            // Add title
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(40);
+            doc.text('Payout Details Report', 14, 15);
+
+            // Add payout ID and date
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(100);
+            doc.text(`Payout ID: #${selectedPayout.id}`, 14, 22);
+            doc.text(`Generated on: ${new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })}`, 14, 27);
+
+            // Add summary section
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(40);
+            doc.text('Payout Summary', 14, 37);
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(60);
+            const summaryY = 43;
+            const lineHeight = 5;
+
+            doc.text(`Subaccount: ${selectedPayout.subaccount?.business_name || 'IDCL Revenue Account'}`, 14, summaryY);
+            if (selectedPayout.subaccount?.subaccount_code) {
+                doc.text(`Subaccount Code: ${selectedPayout.subaccount.subaccount_code}`, 14, summaryY + lineHeight);
+            }
+            doc.text(`Total Amount: ${formatCurrency(selectedPayout.total_amount, selectedPayout.currency)}`, 14, summaryY + lineHeight * 2);
+            doc.text(`Effective Amount: ${formatCurrency(selectedPayout.effective_amount, selectedPayout.currency)}`, 14, summaryY + lineHeight * 3);
+            doc.text(`Total Processed: ${formatCurrency(selectedPayout.total_processed, selectedPayout.currency)}`, 14, summaryY + lineHeight * 4);
+            doc.text(`Total Fees: ${formatCurrency(selectedPayout.total_fees, selectedPayout.currency)}`, 14, summaryY + lineHeight * 5);
+            doc.text(`Status: ${selectedPayout.status}`, 14, summaryY + lineHeight * 6);
+            doc.text(`Settlement Date: ${formatDate(selectedPayout.settlement_date)}`, 14, summaryY + lineHeight * 7);
+            doc.text(`Settlement Bank: ${selectedPayout.subaccount?.settlement_bank || 'Fidelity Bank'}`, 14, summaryY + lineHeight * 8);
+            if (selectedPayout.subaccount?.account_number) {
+                doc.text(`Account Number: ${selectedPayout.subaccount.account_number}`, 14, summaryY + lineHeight * 9);
+            }
+
+            // Add payments section
+            if (modalPayments.length > 0) {
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(40);
+                doc.text(`Payments (${modalPayments.length})`, 14, summaryY + lineHeight * 11);
+
+                // Prepare payments table data
+                const paymentsTableData = modalPayments.map(payment => [
+                    payment.schoolCode,
+                    payment.schoolName.length > 30 ? payment.schoolName.substring(0, 30) + '...' : payment.schoolName,
+                    payment.reference.substring(0, 20) + '...',
+                    `₦${payment.amount.toLocaleString('en-NG', { minimumFractionDigits: 2 })}`,
+                    payment.numberOfStudents.toString(),
+                    new Date(payment.paidAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }),
+                    payment.paymentStatus
+                ]);
+
+                // Calculate totals
+                const totalAmount = modalPayments.reduce((sum, p) => sum + p.amount, 0);
+                const totalStudents = modalPayments.reduce((sum, p) => sum + p.numberOfStudents, 0);
+
+                // Add payments table
+                autoTable(doc, {
+                    head: [['School Code', 'School Name', 'Reference', 'Amount', 'Students', 'Date', 'Status']],
+                    body: paymentsTableData,
+                    foot: [[
+                        { content: 'Total', colSpan: 3, styles: { fontStyle: 'bold', font: 'helvetica' } },
+                        { content: `₦${totalAmount.toLocaleString('en-NG', { minimumFractionDigits: 2 })}`, styles: { fontStyle: 'bold', font: 'helvetica' } },
+                        { content: totalStudents.toString(), styles: { fontStyle: 'bold', font: 'helvetica' } },
+                        '',
+                        ''
+                    ]],
+                    startY: summaryY + lineHeight * 12,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [22, 163, 74],
+                        textColor: 255,
+                        fontStyle: 'bold',
+                        fontSize: 8,
+                        font: 'helvetica'
+                    },
+                    footStyles: {
+                        fillColor: [243, 244, 246],
+                        textColor: 60,
+                        fontStyle: 'bold',
+                        fontSize: 8,
+                        font: 'helvetica'
+                    },
+                    styles: {
+                        fontSize: 7,
+                        cellPadding: 2,
+                        font: 'helvetica',
+                        fontStyle: 'normal'
+                    },
+                    bodyStyles: {
+                        font: 'courier',
+                        fontStyle: 'normal'
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 18, font: 'helvetica' },
+                        1: { cellWidth: 42, font: 'helvetica' },
+                        2: { cellWidth: 32, font: 'courier' },
+                        3: { cellWidth: 30, halign: 'right', font: 'courier' },
+                        4: { cellWidth: 20, halign: 'right', font: 'courier' },
+                        5: { cellWidth: 26, font: 'helvetica' },
+                        6: { cellWidth: 20, halign: 'center', font: 'helvetica' }
+                    },
+                    alternateRowStyles: {
+                        fillColor: [249, 250, 251]
+                    }
+                });
+            }
+
+            // Save the PDF
+            const filename = `payout_${selectedPayout.id}_details_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+            toast.success('PDF downloaded successfully');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            toast.error('Failed to generate PDF');
+        }
+    };
+
     return (
         <div className="h-full w-full overflow-y-auto px-4 sm:px-6 lg:px-8">
             <div className="w-full mt-6 sm:mt-8 lg:mt-10 pb-6">
@@ -464,14 +718,24 @@ export default function PayoutsPage() {
                                     {totalRecords} total record{totalRecords !== 1 ? 's' : ''}
                                 </p>
                             </div>
-                            <button
-                                onClick={handleExportCSV}
-                                disabled={payouts.length === 0}
-                                className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <FaDownload className="text-sm" />
-                                Export CSV
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleExportPDF}
+                                    disabled={payouts.length === 0}
+                                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <FaDownload className="text-sm" />
+                                    Export PDF
+                                </button>
+                                <button
+                                    onClick={handleExportCSV}
+                                    disabled={payouts.length === 0}
+                                    className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <FaDownload className="text-sm" />
+                                    Export CSV
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -730,72 +994,82 @@ export default function PayoutsPage() {
                             {/* Payments Table */}
                             <div className="flex-1 overflow-hidden flex flex-col min-h-0">
                                 <div className="p-3 sm:p-4 border-b border-gray-200 flex-shrink-0">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
-                                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">
-                                            Payments ({modalPayments.length})
-                                        </h3>
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                        <div>
+                                            <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+                                                Payments ({modalPayments.length})
+                                            </h3>
+                                            <p className="text-[10px] sm:text-xs text-gray-600 mt-1 break-words">
+                                                Showing payments from {new Date(new Date(selectedPayout.settlement_date).getTime() - 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} 12:00 AM to {new Date(selectedPayout.settlement_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} 11:59 PM
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={handleExportPayoutDetailsPDF}
+                                            disabled={loadingPayments || modalPayments.length === 0}
+                                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                                        >
+                                            <FaDownload className="text-xs" />
+                                            Download PDF
+                                        </button>
                                     </div>
-                                    <p className="text-[10px] sm:text-xs text-gray-600 mt-1 break-words">
-                                        Showing payments from {new Date(new Date(selectedPayout.settlement_date).getTime() - 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} 12:00 AM to {new Date(selectedPayout.settlement_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} 11:59 PM
-                                    </p>
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto">
-                                {loadingPayments ? (
-                                    <div className="flex items-center justify-center py-12 h-full">
-                                        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-green-600"></div>
-                                    </div>
-                                ) : modalPayments.length === 0 ? (
-                                    <div className="text-center py-12 h-full flex items-center justify-center">
-                                        <p className="text-sm sm:text-base text-gray-500">No payments found for this payout period</p>
-                                    </div>
-                                ) : (
-                                    <div className="overflow-x-auto px-3 sm:px-4 pb-3 sm:pb-4">
-                                        <div className="inline-block min-w-full align-middle">
-                                            <table className="min-w-full">
-                                                <thead className="bg-gray-100 border-b border-gray-200 sticky top-0">
-                                                    <tr>
-                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700">School</th>
-                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 hidden sm:table-cell">Reference</th>
-                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs font-semibold text-gray-700">Amount</th>
-                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs font-semibold text-gray-700 hidden md:table-cell">Students</th>
-                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 hidden lg:table-cell">Date</th>
-                                                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 hidden sm:table-cell">Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-200">
-                                                    {modalPayments.map((payment, index) => (
-                                                        <tr key={payment.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900">
-                                                                <div className="font-medium truncate max-w-[120px] sm:max-w-none">{payment.schoolName}</div>
-                                                                <div className="text-xs text-gray-500 truncate">{payment.schoolCode}</div>
-                                                            </td>
-                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs font-mono text-gray-600 hidden sm:table-cell">
-                                                                <span className="hidden sm:inline">{payment.reference.substring(0, 20)}...</span>
-                                                            </td>
-                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
-                                                                ₦{payment.amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                            </td>
-                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 text-right hidden md:table-cell">
-                                                                {payment.numberOfStudents}
-                                                            </td>
-                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-600 hidden lg:table-cell whitespace-nowrap">
-                                                                {new Date(payment.paidAt).toLocaleDateString('en-US', {
-                                                                    month: 'short',
-                                                                    day: 'numeric',
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit'
-                                                                })}
-                                                            </td>
-                                                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm hidden sm:table-cell">
-                                                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
-                                                                    {payment.paymentStatus}
-                                                                </span>
-                                                            </td>
+                                    {loadingPayments ? (
+                                        <div className="flex items-center justify-center py-12 h-full">
+                                            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-green-600"></div>
+                                        </div>
+                                    ) : modalPayments.length === 0 ? (
+                                        <div className="text-center py-12 h-full flex items-center justify-center">
+                                            <p className="text-sm sm:text-base text-gray-500">No payments found for this payout period</p>
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-x-auto px-3 sm:px-4 pb-3 sm:pb-4">
+                                            <div className="inline-block min-w-full align-middle">
+                                                <table className="min-w-full">
+                                                    <thead className="bg-gray-100 border-b border-gray-200 sticky top-0">
+                                                        <tr>
+                                                            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700">School</th>
+                                                            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 hidden sm:table-cell">Reference</th>
+                                                            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs font-semibold text-gray-700">Amount</th>
+                                                            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs font-semibold text-gray-700 hidden md:table-cell">Students</th>
+                                                            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 hidden lg:table-cell">Date</th>
+                                                            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 hidden sm:table-cell">Status</th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                                {/* <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-200">
+                                                        {modalPayments.map((payment, index) => (
+                                                            <tr key={payment.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900">
+                                                                    <div className="font-medium truncate max-w-[120px] sm:max-w-none">{payment.schoolName}</div>
+                                                                    <div className="text-xs text-gray-500 truncate">{payment.schoolCode}</div>
+                                                                </td>
+                                                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs font-mono text-gray-600 hidden sm:table-cell">
+                                                                    <span className="hidden sm:inline">{payment.reference.substring(0, 20)}...</span>
+                                                                </td>
+                                                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
+                                                                    ₦{payment.amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </td>
+                                                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 text-right hidden md:table-cell">
+                                                                    {payment.numberOfStudents}
+                                                                </td>
+                                                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-600 hidden lg:table-cell whitespace-nowrap">
+                                                                    {new Date(payment.paidAt).toLocaleDateString('en-US', {
+                                                                        month: 'short',
+                                                                        day: 'numeric',
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit'
+                                                                    })}
+                                                                </td>
+                                                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm hidden sm:table-cell">
+                                                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
+                                                                        {payment.paymentStatus}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                    {/* <tfoot className="bg-gray-50 border-t-2 border-gray-300">
                                                     <tr>
                                                         <td colSpan={2} className="px-4 py-3 text-sm font-semibold text-gray-900">Total</td>
                                                         <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
@@ -807,15 +1081,15 @@ export default function PayoutsPage() {
                                                         <td colSpan={2}></td>
                                                     </tr>
                                                 </tfoot> */}
-                                            </table>
+                                                </table>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
-                )}            
+                )}
             </div>
         </div>
     );
