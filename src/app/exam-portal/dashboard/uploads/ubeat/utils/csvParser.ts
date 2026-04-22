@@ -1,5 +1,26 @@
 import * as XLSX from 'xlsx'
 
+export const parseLine = (line: string): string[] => {
+  const result: string[] = []
+  let current = ''
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+
+    if (char === '"') {
+      inQuotes = !inQuotes
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim())
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  result.push(current.trim())
+  return result
+}
+
 /**
  * Extract exam year from filename
  * Expected format: IMSG_EDC_UBEAT_2024_EXAM or similar patterns with year
@@ -162,28 +183,6 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
     throw new Error(`File "${file.name}" must have at least 1 header row and one data row. Found ${lines.length} rows.`)
   }
 
-  // Parse CSV line handling quoted fields
-  const parseLine = (line: string): string[] => {
-    const result: string[] = []
-    let current = ''
-    let inQuotes = false
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i]
-
-      if (char === '"') {
-        inQuotes = !inQuotes
-      } else if (char === ',' && !inQuotes) {
-        result.push(current.trim())
-        current = ''
-      } else {
-        current += char
-      }
-    }
-    result.push(current.trim())
-    return result
-  }
-
   const records: UBEATStudentRecord[] = []
 
   const parseLineSafe = (idx: number) => (idx >= 0 && idx < lines.length ? parseLine(lines[idx]) : [])
@@ -196,6 +195,16 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
   const row0 = parseLineSafe(0)
   const row1 = parseLineSafe(1)
   const row2 = parseLineSafe(2)
+
+  const isFlatFormat = row0.length >= 18 && (
+    row0[0]?.toLowerCase().includes('serial') ||
+    row0[1]?.toLowerCase().includes('candidate') ||
+    row0[2]?.toLowerCase().includes('exam')
+  )
+
+  if (isFlatFormat) {
+    return parseFlatFormat(lines, row0, examYear, file)
+  }
 
   // Auto-detect CSV layout by row/column shape (do NOT rely on header titles).
   // - Legacy layout: 2 header rows, data starts at line index 2, first column is numeric serial.
@@ -236,6 +245,25 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
     english: { ca30: 7, ca70: 8, total: 9 },
     generalKnowledge: { ca30: 10, ca70: 11, total: 12 },
     igbo: { ca30: 13, ca70: 14, total: 15 },
+  }
+
+  const flatFormatIndices = {
+    serialNo: 0,
+    candidateName: 1,
+    examNo: 2,
+    sex: 3,
+    age: 4,
+    schoolName: 5,
+    lga: 6,
+    zone: 7,
+    codeNo: 8,
+    attendance: 9,
+    math: { ca30: 10, ca70: 11 },
+    english: { ca30: 12, ca70: 13 },
+    generalKnowledge: { ca30: 14, ca70: 15 },
+    igbo: { ca30: 16, ca70: 17 },
+    examYear: 18,
+    fileName: 19,
   }
 
   // Parse data rows (skip detected header rows)
@@ -357,6 +385,121 @@ const getSchoolNameFromFileMeta = (fileName: string): string => {
 
   // If it's a plain filename, strip extension.
   return raw.replace(/\.(csv|xlsx|xls)$/i, '').trim()
+}
+
+const parseFlatFormat = (
+  lines: string[],
+  headers: string[],
+  fileExamYear: number,
+  file: { name: string; size: number }
+): UBEATStudentRecord[] => {
+  const columnMap: Record<string, number> = {}
+  headers.forEach((header, idx) => {
+    columnMap[header.toLowerCase().trim()] = idx
+  })
+
+  const getIdx = (name: string): number => columnMap[name.toLowerCase()] ?? -1
+
+  const records: UBEATStudentRecord[] = []
+  const dataStartRow = 1
+
+  for (let i = dataStartRow; i < lines.length; i++) {
+    const values = parseLine(lines[i])
+
+    const serialNo = getIdx('serial no')
+    const candidateName = getIdx('candidate name')
+    const examNo = getIdx('exam number')
+    const sex = getIdx('sex')
+    const age = getIdx('age')
+    const schoolName = getIdx('school name')
+    const lga = getIdx('lga')
+    const zone = getIdx('zone')
+    const codeNo = getIdx('code no')
+    const attendance = getIdx('attendance')
+    const mathCa = getIdx('mathematics ca')
+    const mathExam = getIdx('mathematics exam')
+    const engCa = getIdx('english ca')
+    const engExam = getIdx('english exam')
+    const gkCa = getIdx('general knowledge ca')
+    const gkExam = getIdx('general knowledge exam')
+    const igboCa = getIdx('igbo ca')
+    const igboExam = getIdx('igbo exam')
+    const examYearCol = getIdx('exam year')
+    const fileNameCol = getIdx('file name')
+
+    const isEmptyRow =
+      (serialNo >= 0 && values[serialNo]?.trim()) ||
+      (candidateName >= 0 && values[candidateName]?.trim()) ||
+      (examNo >= 0 && values[examNo]?.trim())
+
+    if (!isEmptyRow) {
+      continue
+    }
+
+    try {
+      const sexValue = sex >= 0 ? values[sex]?.trim().toUpperCase() ?? 'M' : 'M'
+      const sexResult = sexValue === 'F' || sexValue === 'FEMALE' ? 'female' : 'male'
+
+      const yearValue =
+        examYearCol >= 0 && values[examYearCol]?.trim()
+          ? parseInt(values[examYearCol], 10)
+          : fileExamYear
+      const year = !isNaN(yearValue) && yearValue >= 2000 && yearValue <= 2099 ? yearValue : fileExamYear
+
+      const record: UBEATStudentRecord = {
+        serialNumber:
+          serialNo >= 0 && values[serialNo]?.trim()
+            ? getNumberValue(values, serialNo, i - (dataStartRow - 1))
+            : i - dataStartRow + 1,
+        examNumber:
+          examNo >= 0 && values[examNo]?.trim()
+            ? values[examNo].trim()
+            : `UBEAT/${i - dataStartRow + 1}`,
+        studentName:
+          candidateName >= 0 && values[candidateName]?.trim()
+            ? values[candidateName].trim()
+            : 'Unknown',
+        age: age >= 0 ? getNumberValue(values, age, 0) : 0,
+        sex: sexResult,
+        lga: lga >= 0 ? getStringValue(values, lga, 'Unknown LGA') : 'Unknown LGA',
+        zone: zone >= 0 ? getStringValue(values, zone, 'Unknown Zone') : 'Unknown Zone',
+        schoolName:
+          schoolName >= 0 ? getStringValue(values, schoolName, 'Unknown School') : 'Unknown School',
+        codeNo: codeNo >= 0 ? getStringValue(values, codeNo, '') : '',
+        attendance: attendance >= 0 ? getAttendanceValue(values, attendance) : 0,
+        examYear: year,
+        subjects: {
+          mathematics: {
+            ca: mathCa >= 0 ? getStringValue(values, mathCa, '0') : '0',
+            exam: mathExam >= 0 ? getNumberValue(values, mathExam, 0) : 0,
+          },
+          english: {
+            ca: engCa >= 0 ? getStringValue(values, engCa, '0') : '0',
+            exam: engExam >= 0 ? getNumberValue(values, engExam, 0) : 0,
+          },
+          generalKnowledge: {
+            ca: gkCa >= 0 ? getStringValue(values, gkCa, '0') : '0',
+            exam: gkExam >= 0 ? getNumberValue(values, gkExam, 0) : 0,
+          },
+          igbo: {
+            ca: igboCa >= 0 ? getStringValue(values, igboCa, '0') : '0',
+            exam: igboExam >= 0 ? getNumberValue(values, igboExam, 0) : 0,
+          },
+        },
+        file,
+      }
+
+      records.push(record)
+    } catch (error) {
+      console.warn(`Error parsing flat format row ${i + 1}:`, error)
+    }
+  }
+
+  if (records.length === 0) {
+    throw new Error('No valid student records found in the flat format file')
+  }
+
+  return records
 }
 
 export type { UBEATStudentRecord as StudentRecord }
