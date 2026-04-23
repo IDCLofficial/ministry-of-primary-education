@@ -44,6 +44,18 @@ export const extractExamYearFromFilename = (filename: string): number => {
   return new Date().getFullYear()
 }
 
+export type ValidationErrorType =
+  | 'name_special_chars'
+  | 'exam_number_invalid'
+  | 'missing_required'
+  | 'incomplete_scores'
+
+export interface ValidationError {
+  type: ValidationErrorType
+  field: string
+  message: string
+}
+
 export interface UBEATStudentRecord {
   serialNumber: number
   examNumber: string
@@ -78,6 +90,101 @@ export interface UBEATStudentRecord {
     name: string
     size: number
   }
+  validationErrors?: ValidationError[]
+}
+
+export const validateStudentRecord = (record: UBEATStudentRecord): ValidationError[] => {
+  const errors: ValidationError[] = []
+
+  if (record.studentName) {
+    const specialCharPattern = /[^a-zA-Z\s\-'."\u2018\u2019\u02BC]/
+    if (specialCharPattern.test(record.studentName)) {
+      errors.push({
+        type: 'name_special_chars',
+        field: 'studentName',
+        message: 'Name contains invalid characters'
+      })
+    }
+  }
+
+  if (record.examNumber) {
+    const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
+    const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}\/\d{1,4}$/
+    const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}$/
+    const isValid = EXAM_NO_REGEX.test(record.examNumber) || EXAM_NO_REGEX_02.test(record.examNumber) || EXAM_NO_REGEX_03.test(record.examNumber)
+    if (!isValid) {
+      errors.push({
+        type: 'exam_number_invalid',
+        field: 'examNumber',
+        message: 'Invalid exam number format'
+      })
+    }
+  }
+
+  if (!record.studentName?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'studentName',
+      message: 'Student name is required'
+    })
+  }
+
+  if (!record.examNumber?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'examNumber',
+      message: 'Exam number is required'
+    })
+  }
+
+  if (!record.schoolName?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'schoolName',
+      message: 'School name is required'
+    })
+  }
+
+  if (!record.lga?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'lga',
+      message: 'LGA is required'
+    })
+  }
+
+  const subjects = record.subjects
+  const requiredScores = [
+    { key: 'mathematics', label: 'Mathematics' },
+    { key: 'english', label: 'English' },
+    { key: 'generalKnowledge', label: 'General Knowledge' },
+    { key: 'igbo', label: 'Igbo' }
+  ]
+
+  for (const subj of requiredScores) {
+    const sub = subjects[subj.key as keyof typeof subjects]
+    if (!sub) {
+      errors.push({
+        type: 'incomplete_scores',
+        field: subj.key,
+        message: `${subj.label} scores missing`
+      })
+      continue
+    }
+
+    const caMissing = !sub.ca || sub.ca === '' || sub.ca === 'ABS'
+    const examMissing = sub.exam === undefined || sub.exam === null
+
+    if (caMissing && examMissing) {
+      errors.push({
+        type: 'incomplete_scores',
+        field: subj.key,
+        message: `${subj.label}: CA and Exam missing`
+      })
+    }
+  }
+
+  return errors
 }
 
 export const parseCSVFile = (file: File): Promise<UBEATStudentRecord[]> => {
