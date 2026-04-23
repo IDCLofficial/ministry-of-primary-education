@@ -1,5 +1,108 @@
 import * as XLSX from 'xlsx'
 
+export type ValidationErrorType =
+  | 'name_special_chars'
+  | 'exam_number_invalid'
+  | 'missing_required'
+  | 'incomplete_scores'
+
+export interface ValidationError {
+  type: ValidationErrorType
+  field: string
+  message: string
+}
+
+export const validateStudentRecord = (record: StudentRecord): ValidationError[] => {
+  const errors: ValidationError[] = []
+
+  if (record.name) {
+    const specialCharPattern = /[^a-zA-Z\s\-'."\u2018\u2019\u02BC]/
+    if (specialCharPattern.test(record.name)) {
+      errors.push({
+        type: 'name_special_chars',
+        field: 'name',
+        message: 'Name contains invalid characters'
+      })
+    }
+  }
+
+  if (record.examNo) {
+    const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
+    const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}\/\d{1,4}$/
+    const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}$/
+    const isValid = EXAM_NO_REGEX.test(record.examNo) || EXAM_NO_REGEX_02.test(record.examNo) || EXAM_NO_REGEX_03.test(record.examNo)
+    if (!isValid) {
+      errors.push({
+        type: 'exam_number_invalid',
+        field: 'examNo',
+        message: 'Invalid exam number format'
+      })
+    }
+  }
+
+  if (!record.name?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'name',
+      message: 'Student name is required'
+    })
+  }
+
+  if (!record.examNo?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'examNo',
+      message: 'Exam number is required'
+    })
+  }
+
+  if (!record.schoolName?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'schoolName',
+      message: 'School name is required'
+    })
+  }
+
+  if (!record.lga?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'lga',
+      message: 'LGA is required'
+    })
+  }
+
+  const subjects = [
+    { key: 'englishStudies', label: 'English Studies', value: record.englishStudies },
+    { key: 'mathematics', label: 'Mathematics', value: record.mathematics },
+    { key: 'basicScience', label: 'Basic Science', value: record.basicScience },
+    { key: 'christianReligiousStudies', label: 'Christian Religious Studies', value: record.christianReligiousStudies },
+    { key: 'nationalValues', label: 'National Values', value: record.nationalValues },
+    { key: 'culturalAndCreativeArts', label: 'Cultural & Creative Arts', value: record.culturalAndCreativeArts },
+    { key: 'businessStudies', label: 'Business Studies', value: record.businessStudies },
+    { key: 'igbo', label: 'Igbo', value: record.igbo },
+    { key: 'preVocationalStudies', label: 'Pre-Vocational Studies', value: record.preVocationalStudies },
+  ]
+
+  for (const subj of subjects) {
+    if (subj.value === undefined || subj.value === null) {
+      errors.push({
+        type: 'incomplete_scores',
+        field: subj.key,
+        message: `${subj.label} score missing`
+      })
+    } else if (subj.value < 0) {
+      errors.push({
+        type: 'incomplete_scores',
+        field: subj.key,
+        message: `${subj.label} score invalid`
+      })
+    }
+  }
+
+  return errors
+}
+
 interface StudentRecord {
   schoolName: string
   serialNo: number
@@ -20,6 +123,7 @@ interface StudentRecord {
     name: string,
     size: number,
   }
+  validationErrors?: ValidationError[]
 }
 
 /**

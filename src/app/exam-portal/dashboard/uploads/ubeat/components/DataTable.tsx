@@ -5,9 +5,10 @@ import { createPortal } from 'react-dom'
 import { IoSearch, IoEye, IoTrash, IoCloudUpload, IoRefresh } from 'react-icons/io5'
 import { useExamModal } from '../contexts/ExamModalContext'
 import toast from 'react-hot-toast'
-import { UBEATStudentRecord } from '../utils/csvParser'
+import { UBEATStudentRecord, validateStudentRecord, ValidationError, ValidationErrorType } from '../utils/csvParser'
 import { useRouter } from 'next/navigation'
 import { useUploadUBEATResultsMutation } from '../../../../store/api/authApi'
+import ErrorTypeModal from './ErrorTypeModal'
 
 interface DataTableProps {
     data: UBEATStudentRecord[]
@@ -118,10 +119,70 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         if (recycleBin.length === 0) setRecycleBinExported(true)
     }, [recycleBin])
 
-    const filteredData = useMemo(() => {
+    const dataWithValidation = useMemo(() => {
+        return data.map(record => ({
+            ...record,
+            validationErrors: validateStudentRecord(record)
+        }))
+    }, [data])
+
+    const [excludedErrorKeys, setExcludedErrorKeys] = useState<Set<string>>(new Set())
+    const [ignoredErrorKeys, setIgnoredErrorKeys] = useState<Set<string>>(new Set())
+    const [activeErrorModal, setActiveErrorModal] = useState<string | null>(null)
+
+    const errorTypeRecords = useMemo(() => {
+        const types: Record<string, UBEATStudentRecord[]> = {
+            name_special_chars: [],
+            exam_number_invalid: [],
+            missing_required: [],
+            incomplete_scores: []
+        }
+        const binKeys = new Set(recycleBin.map(recordKey))
+        dataWithValidation.forEach(r => {
+            const key = recordKey(r)
+            if (binKeys.has(key)) return
+            r.validationErrors?.forEach(e => {
+                if (types[e.type]) types[e.type].push(r)
+            })
+        })
+        return types
+    }, [dataWithValidation, recycleBin])
+
+    const cleanRecords = useMemo(() => {
+        return dataWithValidation.filter(r => {
+            const key = recordKey(r)
+            if (excludedErrorKeys.has(key)) return false
+            const hasErrors = r.validationErrors && r.validationErrors.length > 0
+            if (hasErrors && !ignoredErrorKeys.has(key)) return false
+            return true
+        })
+    }, [dataWithValidation, excludedErrorKeys, ignoredErrorKeys])
+
+    const manuallyExcluded = useMemo(() => {
+        return dataWithValidation.filter(r => {
+            const key = recordKey(r)
+            return excludedErrorKeys.has(key) && (!r.validationErrors || r.validationErrors.length === 0)
+        })
+    }, [dataWithValidation, excludedErrorKeys])
+
+    const errorRecords = useMemo(() => {
+        return dataWithValidation.filter(r => {
+            const key = recordKey(r)
+            return r.validationErrors && r.validationErrors.length > 0 && !ignoredErrorKeys.has(key)
+        })
+    }, [dataWithValidation, ignoredErrorKeys])
+
+    const ignoredRecords = useMemo(() => {
+        return dataWithValidation.filter(r => {
+            const key = recordKey(r)
+            return ignoredErrorKeys.has(key)
+        })
+    }, [dataWithValidation, ignoredErrorKeys])
+
+    const searchFilteredRecords = useMemo(() => {
         const { mode, field, term } = parseSearchQuery(searchTerm)
         const t = term.toLowerCase()
-        if (!t) return data
+        if (!t) return cleanRecords
 
         const match = (value: string) => {
             const v = (value ?? '').toLowerCase()
@@ -130,7 +191,177 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
             return v.includes(t)
         }
 
-        return data.filter(record => {
+        return cleanRecords.filter(record => {
+            const name = record.studentName ?? ''
+            const examNo = record.examNumber ?? ''
+            const school = record.schoolName ?? ''
+
+            if (field === 'name') return match(name)
+            if (field === 'examNo') return match(examNo)
+            if (field === 'school') return match(school)
+
+            return match(name) || match(examNo) || match(school)
+        })
+    }, [cleanRecords, searchTerm])
+
+    const sortedData = useMemo(() => {
+        if (!sortConfig.key) return searchFilteredRecords
+
+        return [...searchFilteredRecords].sort((a, b) => {
+            const aValue = a[sortConfig.key!]
+            const bValue = b[sortConfig.key!]
+
+            // Handle undefined/null values - push them to the end
+            if (aValue == null && bValue == null) return 0
+            if (aValue == null) return 1
+            if (bValue == null) return -1
+
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
+            return 0
+        })
+    }, [searchFilteredRecords, sortConfig])
+
+    const handleExcludeError = (key: string) => {
+        setExcludedErrorKeys(prev => new Set(prev).add(key))
+    }
+
+    const handleIgnoreError = (key: string) => {
+        setIgnoredErrorKeys(prev => new Set(prev).add(key))
+        toast.success('Record ignored - can be uploaded')
+    }
+
+    const handleUnignoreError = (key: string) => {
+        setIgnoredErrorKeys(prev => {
+            const next = new Set(prev)
+            next.delete(key)
+            return next
+        })
+        toast.success('Record restored to error group')
+    }
+
+    const handleRestoreError = (key: string) => {
+        setExcludedErrorKeys(prev => {
+            const next = new Set(prev)
+            next.delete(key)
+            return next
+        })
+    }
+
+    const handleMoveErrorToBin = (key: string) => {
+        const record = dataWithValidation.find(r => recordKey(r) === key)
+        if (!record) return
+        if (recycleBin.some(r => recordKey(r) === key)) {
+            toast('Already in recycle bin', { icon: '🗑️' })
+            return
+        }
+        setRecycleBin(prev => [...prev, record])
+        onDataChange(data.filter(r => recordKey(r) !== key))
+        setExcludedErrorKeys(prev => {
+            const next = new Set(prev)
+            next.delete(key)
+            return next
+        })
+        setIgnoredErrorKeys(prev => {
+            const next = new Set(prev)
+            next.delete(key)
+            return next
+        })
+        toast.success('Moved to recycle bin')
+    }
+
+    const handleBulkExcludeErrors = () => {
+        const newExcluded = new Set(excludedErrorKeys)
+        errorRecords.forEach(r => {
+            newExcluded.add(recordKey(r))
+        })
+        setExcludedErrorKeys(newExcluded)
+        toast.success(`Excluded ${errorRecords.length} error records`)
+    }
+
+    const handleBulkMoveErrorsToBin = () => {
+        const newBinRecords = errorRecords.filter(r => {
+            const key = recordKey(r)
+            return !recycleBin.some(rr => recordKey(rr) === key)
+        })
+        setRecycleBin(prev => [...prev, ...newBinRecords])
+        const keysToRemove = new Set(errorRecords.map(recordKey))
+        onDataChange(data.filter(r => !keysToRemove.has(recordKey(r))))
+        setExcludedErrorKeys(new Set())
+        setIgnoredErrorKeys(prev => {
+            const next = new Set(prev)
+            keysToRemove.forEach(k => next.delete(k))
+            return next
+        })
+        toast.success(`Moved ${newBinRecords.length} error records to recycle bin`)
+    }
+
+    const handleCleanAndRestore = (key: string, updatedRecord?: any) => {
+        const record = dataWithValidation.find(r => recordKey(r) === key)
+        if (!record) return
+        const updated = updatedRecord || {
+            ...record,
+            studentName: record.studentName.replace(/[^a-zA-Z\s\-'."\u2018\u2019\u02BC]/g, '').trim(),
+            examNumber: record.examNumber.replace(/[^A-Za-z0-9\/\\\-]/g, '').trim(),
+        }
+        const errors = validateStudentRecord(updated)
+        if (errors.length === 0) {
+            onDataChange(data.map(r => recordKey(r) === key ? updated : r))
+            setExcludedErrorKeys(prev => {
+                const next = new Set(prev)
+                next.delete(key)
+                return next
+            })
+            toast.success('Record fixed and restored')
+        } else {
+            toast.error('Record still has errors after auto-clean')
+        }
+    }
+
+    const getErrorStyles = (errors: ValidationError[]): { bgClass: string; borderClass: string; label: string } | null => {
+        if (!errors || errors.length === 0) return null
+
+        if (errors.some(e => e.type === 'name_special_chars')) {
+            return { bgClass: 'bg-yellow-50', borderClass: 'border-yellow-400', label: 'Name Error' }
+        }
+        if (errors.some(e => e.type === 'exam_number_invalid')) {
+            return { bgClass: 'bg-red-50', borderClass: 'border-red-400', label: 'Exam # Error' }
+        }
+        if (errors.some(e => e.type === 'missing_required')) {
+            return { bgClass: 'bg-orange-50', borderClass: 'border-orange-400', label: 'Missing Field' }
+        }
+        if (errors.some(e => e.type === 'incomplete_scores')) {
+            return { bgClass: 'bg-blue-50', borderClass: 'border-blue-400', label: 'Incomplete Scores' }
+        }
+        return null
+    }
+
+    const errorCounts = useMemo(() => {
+        const counts: Record<string, number> = { name_special_chars: 0, exam_number_invalid: 0, missing_required: 0, incomplete_scores: 0 }
+        const binKeys = new Set(recycleBin.map(recordKey))
+        dataWithValidation.forEach(r => {
+            const key = recordKey(r)
+            if (binKeys.has(key)) return
+            r.validationErrors?.forEach(e => {
+                if (counts[e.type] !== undefined) counts[e.type]++
+            })
+        })
+        return counts
+    }, [dataWithValidation, recycleBin])
+
+    const filteredData = useMemo(() => {
+        const { mode, field, term } = parseSearchQuery(searchTerm)
+        const t = term.toLowerCase()
+        if (!t) return dataWithValidation
+
+        const match = (value: string) => {
+            const v = (value ?? '').toLowerCase()
+            if (mode === 'startsWith') return v.startsWith(t)
+            if (mode === 'exact') return v === t
+            return v.includes(t)
+        }
+
+        return dataWithValidation.filter(record => {
             const name = record.studentName ?? ''
             const examNo = record.examNumber ?? ''
             const school = record.schoolName ?? ''
@@ -140,20 +371,7 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
             if (field === 'school') return match(school)
             return match(name) || match(examNo) || match(school)
         })
-    }, [data, searchTerm])
-
-    const sortedData = useMemo(() => {
-        if (!sortConfig.key) return filteredData
-
-        return [...filteredData].sort((a, b) => {
-            const aValue = a[sortConfig.key!]
-            const bValue = b[sortConfig.key!]
-
-            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
-            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
-            return 0
-        })
-    }, [filteredData, sortConfig])
+    }, [dataWithValidation, searchTerm])
 
     // Files/sheets in data (for "remove whole file" and batch context)
     const filesList = useMemo(() => {
@@ -544,7 +762,23 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                 )}
                             </h3>
                             <p className="text-sm text-gray-500">
-                                {data.length.toLocaleString()} total records, {filteredData.length.toLocaleString()} showing
+                                {data.length.toLocaleString()} total records, {sortedData.length.toLocaleString()} showing
+                                {(errorCounts.name_special_chars + errorCounts.exam_number_invalid + errorCounts.missing_required + errorCounts.incomplete_scores) > 0 && (
+                                    <span className="ml-3 inline-flex gap-2">
+                                        <button onClick={() => setActiveErrorModal('name_special_chars')} className={`px-2 py-0.5 rounded text-xs font-medium ${errorCounts.name_special_chars > 0 ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-gray-100 text-gray-400'}`}>
+                                            {errorCounts.name_special_chars > 0 ? `⚠️ Name: ${errorCounts.name_special_chars}` : 'Name: 0'}
+                                        </button>
+                                        <button onClick={() => setActiveErrorModal('exam_number_invalid')} className={`px-2 py-0.5 rounded text-xs font-medium ${errorCounts.exam_number_invalid > 0 ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-gray-100 text-gray-400'}`}>
+                                            {errorCounts.exam_number_invalid > 0 ? `⚠️ Exam #: ${errorCounts.exam_number_invalid}` : 'Exam #: 0'}
+                                        </button>
+                                        <button onClick={() => setActiveErrorModal('missing_required')} className={`px-2 py-0.5 rounded text-xs font-medium ${errorCounts.missing_required > 0 ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-gray-100 text-gray-400'}`}>
+                                            {errorCounts.missing_required > 0 ? `⚠️ Missing: ${errorCounts.missing_required}` : 'Missing: 0'}
+                                        </button>
+                                        <button onClick={() => setActiveErrorModal('incomplete_scores')} className={`px-2 py-0.5 rounded text-xs font-medium ${errorCounts.incomplete_scores > 0 ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-gray-100 text-gray-400'}`}>
+                                            {errorCounts.incomplete_scores > 0 ? `⚠️ Scores: ${errorCounts.incomplete_scores}` : 'Scores: 0'}
+                                        </button>
+                                    </span>
+                                )}
                             </p>
                         </div>
                         <div className="flex items-center space-x-3">
@@ -689,6 +923,131 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                     </div>
                 </div>
 
+                {errorRecords.length > 0 && (
+                    <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-700">
+                                    ⚠️ Records with Errors ({errorRecords.length})
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                    (Excluded from upload)
+                                </span>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleBulkExcludeErrors}
+                                    className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100"
+                                    title="Exclude all error records on current page"
+                                >
+                                    Exclude Page
+                                </button>
+                                <button
+                                    onClick={handleBulkMoveErrorsToBin}
+                                    className="px-2 py-1 text-xs border border-orange-300 text-orange-700 rounded hover:bg-orange-50"
+                                    title="Move error records to recycle bin"
+                                >
+                                    Move to Bin
+                                </button>
+                            </div>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto space-y-1">
+                            {errorRecords.slice(0, 20).map((record) => {
+                                const key = recordKey(record)
+                                const errors = record.validationErrors || []
+                                const errorStyle = getErrorStyles(errors)
+                                return (
+                                    <div key={key} className={`flex items-center justify-between p-2 rounded border ${errorStyle?.bgClass} ${errorStyle?.borderClass} border`}>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-medium truncate">{record.studentName}</span>
+                                                <span className="text-xs text-gray-500">({record.examNumber})</span>
+                                            </div>
+                                            <div className="flex gap-1 mt-0.5">
+                                                {errors.slice(0, 2).map((e, i) => (
+                                                    <span key={i} className="text-[10px] px-1 py-0.5 rounded bg-white/80 border">
+                                                        {e.message}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-1 ml-2">
+                                            <button
+                                                onClick={() => handleCleanAndRestore(key)}
+                                                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                title="Auto-clean and restore"
+                                            >
+                                                Fix
+                                            </button>
+                                            <button
+                                                onClick={() => handleExcludeError(key)}
+                                                className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100"
+                                                title="Keep excluded"
+                                            >
+                                                Exclude
+                                            </button>
+                                            <button
+                                                onClick={() => handleIgnoreError(key)}
+                                                className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
+                                                title="Ignore and allow upload"
+                                            >
+                                                Ignore
+                                            </button>
+                                            <button
+                                                onClick={() => handleMoveErrorToBin(key)}
+                                                className="px-2 py-1 text-xs border border-orange-300 text-orange-700 rounded hover:bg-orange-50"
+                                                title="Move to recycle bin"
+                                            >
+                                                Bin
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                            {errorRecords.length > 20 && (
+                                <p className="text-xs text-gray-500 text-center py-1">
+                                    ... and {errorRecords.length - 20} more
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {ignoredRecords.length > 0 && (
+                    <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-purple-700">
+                                Ignored ({ignoredRecords.length}) — included in upload
+                            </span>
+                        </div>
+                        <div className="max-h-32 overflow-y-auto space-y-1">
+                            {ignoredRecords.slice(0, 10).map((record) => {
+                                const key = recordKey(record)
+                                return (
+                                    <div key={key} className="flex items-center justify-between p-2 rounded border border-purple-200 bg-white">
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-sm truncate">{record.studentName}</span>
+                                            <span className="text-xs text-gray-500 ml-2">({record.examNumber})</span>
+                                        </div>
+                                        <button
+                                            onClick={() => handleUnignoreError(key)}
+                                            className="px-2 py-1 text-xs border border-purple-300 text-purple-700 rounded hover:bg-purple-100"
+                                            title="Restore to error group"
+                                        >
+                                            Unignore
+                                        </button>
+                                    </div>
+                                )
+                            })}
+                            {ignoredRecords.length > 10 && (
+                                <p className="text-xs text-purple-500 text-center">
+                                    ... and {ignoredRecords.length - 10} more
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {failedSchools.length > 0 && (
                     <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
                         <p className="text-sm text-red-700 font-medium">⚠️ Upload Failed</p>
@@ -764,9 +1123,21 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                             {paginatedData.map((record) => {
                                 const key = recordKey(record)
                                 const isEditing = editingKey === key
+                                const errors = record.validationErrors || []
+                                const errorStyle = getErrorStyles(errors)
+                                const hasError = !!errorStyle
                                 return (
-                                    <tr key={key} className="hover:bg-gray-50">
+                                    <tr key={key} className={`hover:bg-gray-50 ${hasError ? `${errorStyle.bgClass} border-l-4 ${errorStyle.borderClass}` : ''}`}>
                                         <td className="px-6 py-4 whitespace-nowrap">
+                                            {hasError && (
+                                                <div className="flex flex-col gap-1 mb-1">
+                                                    {errors.slice(0, 2).map((e, i) => (
+                                                        <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/80 border font-medium" title={e.message}>
+                                                            {errorStyle.label}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                             <input
                                                 type="checkbox"
                                                 checked={selectedKeys.has(key)}
@@ -1141,6 +1512,23 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                     )}
                 </>,
                 document.body
+            )}
+
+            {activeErrorModal && (
+                <ErrorTypeModal
+                    isOpen={true}
+                    onClose={() => setActiveErrorModal(null)}
+                    title={activeErrorModal}
+                    errorType={activeErrorModal}
+                    records={errorTypeRecords[activeErrorModal] || []}
+                    onCleanAndRestore={handleCleanAndRestore}
+                    onIgnore={handleIgnoreError}
+                    onUnignore={handleUnignoreError}
+                    onMoveToBin={handleMoveErrorToBin}
+                    onExclude={handleExcludeError}
+                    onDataChange={onDataChange}
+                    validateRecord={validateStudentRecord}
+                />
             )}
         </React.Fragment>
     )
