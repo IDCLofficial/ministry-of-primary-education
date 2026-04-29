@@ -17,6 +17,8 @@ import StudentRegistrationExcel, { SortableField, SortState } from '../../compon
 import OnboardingCompletionSummary from '../../components/OnboardingCompletionSummary'
 import PaymentModal from '../../components/PaymentModal'
 import PaymentStatusModal from '../../components/PaymentStatusModal'
+import ReconciliationModal from '../../components/ReconciliationModal'
+import FlaggedAccountAlert from '../../components/FlaggedAccountAlert'
 import { useDebounce } from '@/app/portal/utils/hooks/useDebounce'
 import Link from 'next/link'
 import CostSummary from '../../components/CostSummary'
@@ -156,6 +158,12 @@ export default function ExamPage() {
   }
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | null>(null)
+  const [showReconciliationModal, setShowReconciliationModal] = useState(false)
+
+  // Check if account is flagged
+  const isAccountFlagged = currentExamData?.isFlagged || false
+  const remainingAmount = currentExamData?.remainingAmount || 0
+  const flagReason = currentExamData?.flagReason
 
   // Check for payment status in URL params
   React.useEffect(() => {
@@ -598,6 +606,14 @@ export default function ExamPage() {
 
   const showPaymentSection = currentExamData?.status === 'approved';
 
+  const handlePurchasePoints = () => {
+    if (isAccountFlagged) {
+      setShowReconciliationModal(true);
+    } else {
+      setShowPaymentModal(true);
+    }
+  };
+
   // Show exam dashboard if approved - use exam-specific points
   const hasPointsOrStudents = school && (examPoints || (allStudentsData?.totalItems || 0) > 0);
 
@@ -606,6 +622,14 @@ export default function ExamPage() {
       <ExamHeader currentExam={exam} />
 
       <div className="flex-1 mt-4 sm:mt-6">
+        {isAccountFlagged && (
+          <FlaggedAccountAlert
+            remainingAmount={remainingAmount}
+            flagReason={flagReason}
+            onReconcile={() => setShowReconciliationModal(true)}
+          />
+        )}
+
         {hasPointsOrStudents ? (
           <div className={`flex-1 overflow-y-hidden flex flex-col xl:grid xl:grid-cols-4 gap-4 sm:gap-6`}>
             <div className={`${showPaymentSection ? 'xl:col-span-3' : 'xl:col-span-4'} space-y-4 sm:space-y-6 order-2 xl:order-1`}>
@@ -632,6 +656,8 @@ export default function ExamPage() {
                 isFetchingProfile={isFetchingSchool}
                 refetchProfile={refetch}
                 onExportStudentList={handleExportStudentList}
+                isFlagged={isAccountFlagged}
+                onShowReconciliationModal={() => setShowReconciliationModal(true)}
               />
             </div>
 
@@ -642,8 +668,9 @@ export default function ExamPage() {
                   examPoints={currentExamData?.availablePoints || 0}
                   examTotalPoints={currentExamData?.totalPoints || 0}
                   examNumberOfStudents={examNumberOfStudents}
-                  onPurchaseMorePoints={() => setShowPaymentModal(true)}
+                  onPurchaseMorePoints={handlePurchasePoints}
                   isFetchingProfile={isFetching}
+                  isFlagged={isAccountFlagged}
                 />
                 {/* Only show OnboardingCompletionSummary when no unused points remain */}
                 {(currentExamData?.availablePoints || 0) === 0 && (
@@ -666,7 +693,7 @@ export default function ExamPage() {
               <h2 className="text-xl font-semibold text-gray-600 mb-1">School Payment Portal</h2>
               <p className="text-gray-500 mb-4">Click the button below to proceed with school payment</p>
               <button
-                onClick={() => setShowPaymentModal(true)}
+                onClick={handlePurchasePoints}
                 className="inline-flex active:scale-95 active:rotate-1 cursor-pointer items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -679,19 +706,31 @@ export default function ExamPage() {
         )}
       </div>
 
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onPaymentSuccess={() => { }}
-        numberOfStudents={10}
-        examType={getExamType(examId)}
-        feePerStudent={exam?.fee || 500}
-        school={school || null}
-      />
+      {!isAccountFlagged && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onPaymentSuccess={() => { }}
+          numberOfStudents={10}
+          examType={getExamType(examId)}
+          feePerStudent={exam?.fee || 500}
+          school={school || null}
+        />
+      )}
 
       <PaymentStatusModal
         status={paymentStatus}
         onClose={handleClosePaymentStatus}
+      />
+
+      <ReconciliationModal
+        isOpen={showReconciliationModal}
+        onClose={() => setShowReconciliationModal(false)}
+        remainingAmount={remainingAmount}
+        flagReason={flagReason}
+        examType={getExamType(examId)}
+        numberOfStudents={currentExamData?.numberOfStudents || 0}
+        schoolId={school?._id || ''}
       />
     </div>
   )

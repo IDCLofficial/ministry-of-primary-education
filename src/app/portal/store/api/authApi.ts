@@ -9,6 +9,30 @@ interface SchoolName {
   schoolName: string
   hasAccount: boolean
   schoolCode: string
+  isFlagged?: boolean
+  remainingAmount?: number
+  flagReason?: string
+}
+
+// Flagged school response type
+interface FlaggedSchool {
+  id: string
+  schoolName: string
+  schoolCode: string
+  flaggedExams: string[]
+}
+
+// Balance payment reconciliation interfaces
+interface BalancePaymentRequest {
+  examType: string
+  numberOfStudents: number
+  amountPaid: number
+  flagReason: string
+  schoolId: string
+}
+
+interface BalancePaymentResponse {
+  authorizationUrl: string
 }
 
 // School by code response type
@@ -124,6 +148,14 @@ export interface ExamDataMain {
   availablePoints: number;
   usedPoints: number;
   numberOfStudents: number;
+  aeeId: string;
+  reviewNotes: string;
+  successfulPaymentCount: number;
+  lastPointsEarned: string;
+  amountPaid: number;
+  flagReason?: string;
+  isFlagged?: boolean;
+  remainingAmount?: number;
 }
 
 interface RejectedExamData extends ExamDataMain {
@@ -303,25 +335,25 @@ interface VerifyResetTokenResponse {
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get school names
-   getSchoolNames: builder.query<SchoolName[], { lga: string }>({
+    getSchoolNames: builder.query<SchoolName[], { lga: string }>({
       query: ({ lga }) => `${API_BASE_URL}${endpoints.GET_SCHOOL_NAMES}?lga=${lga.toLowerCase()}`,
       transformResponse: (response: SchoolName[]) => {
         // Track which schools were kept and which were removed
         const schoolNameCounts = new Map<string, SchoolName[]>()
-        
+
         // Group schools by name to identify duplicates
         response.forEach(school => {
           const existing = schoolNameCounts.get(school.schoolName) || []
           existing.push(school)
           schoolNameCounts.set(school.schoolName, existing)
         })
-        
+
         // The Map approach keeps the LAST occurrence of each duplicate
         const schoolMap = new Map(
           response.map(school => [school.schoolName, school])
         )
         const uniqueSchools = Array.from(schoolMap.values())
-        
+
         return uniqueSchools.sort((a, b) =>
           a.schoolName.localeCompare(b.schoolName)
         )
@@ -624,6 +656,25 @@ export const authApi = apiSlice.injectEndpoints({
         },
       }),
     }),
+
+    // Get flagged schools for AEE's LGA
+    getFlaggedSchools: builder.query<FlaggedSchool[], { lga: string }>({
+      query: ({ lga }) => `${API_BASE_URL}/schools/flaggedSchools?lga=${lga.toLowerCase()}`,
+      providesTags: ['School'],
+    }),
+
+    // Reconcile balance payment for flagged school
+    reconcileBalancePayment: builder.mutation<BalancePaymentResponse, BalancePaymentRequest>({
+      query: (paymentData) => ({
+        url: `${API_BASE_URL}/student-payments/balance-payment`,
+        method: 'POST',
+        body: paymentData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['School'],
+    }),
   }),
   overrideExisting: true,
 })
@@ -651,8 +702,10 @@ export const {
   useResetPasswordMutation,
   useVerifyResetTokenMutation,
   useLoadExamsDataQuery,
-  useGetMyPaidSchoolsQuery
+  useGetMyPaidSchoolsQuery,
+  useGetFlaggedSchoolsQuery,
+  useReconcileBalancePaymentMutation
 } = authApi
 
 // Export types for use in components
-export type { Student, SchoolName, SchoolByCodeResponse, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentUpdateRequest, StudentUpdateResponse, StudentsResponse, ApplicationStatusUpdateRequest, ApplicationStatusUpdateResponse, ExamDataMain as ExamData }
+export type { Student, SchoolName, FlaggedSchool, SchoolByCodeResponse, StudentPaymentRequest, StudentPaymentResponse, PaymentVerificationResponse, StudentOnboardingRequest, StudentOnboardingResponse, StudentUpdateRequest, StudentUpdateResponse, StudentsResponse, ApplicationStatusUpdateRequest, ApplicationStatusUpdateResponse, ExamDataMain as ExamData }
