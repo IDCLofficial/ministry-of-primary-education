@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { useReconcileBalancePaymentMutation } from '../../store/api/authApi'
 import toast from 'react-hot-toast'
 import useShortcuts from '@useverse/useshortcuts'
+import { setSecureItem } from '@/app/result-checking/utils/secureStorage'
 
 interface ReconciliationModalProps {
   isOpen: boolean
@@ -53,6 +54,7 @@ export default function ReconciliationModal({
 
       // Redirect to Paystack payment page
       if (result.authorizationUrl) {
+        await setSecureItem('payment-return-url', window.location.href)
         window.location.href = result.authorizationUrl
       } else {
         toast.error('Payment authorization URL not received')
