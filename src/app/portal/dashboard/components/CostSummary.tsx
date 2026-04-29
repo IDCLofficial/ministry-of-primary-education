@@ -12,6 +12,7 @@ interface CostSummaryProps {
   examNumberOfStudents: number
   onPurchaseMorePoints: () => void
   isFetchingProfile?: boolean
+  isFlagged?: boolean
 }
 
 export default function CostSummary({
@@ -20,7 +21,8 @@ export default function CostSummary({
   pointCost,
   examNumberOfStudents,
   onPurchaseMorePoints,
-  isFetchingProfile = false
+  isFetchingProfile = false,
+  isFlagged = false
 }: CostSummaryProps) {
   const { school, isLoading } = useAuth()
   const { isFetching: isAdminProfileFetching } = useGetProfileQuery()

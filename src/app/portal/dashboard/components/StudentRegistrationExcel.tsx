@@ -61,6 +61,8 @@ interface StudentRegistrationExcelProps {
   isFetchingProfile?: boolean
   onExportStudentList?: () => void
   allStudents: number
+  isFlagged?: boolean
+  onShowReconciliationModal?: () => void
 }
 
 export default function StudentRegistrationExcel({
@@ -82,7 +84,9 @@ export default function StudentRegistrationExcel({
   examType,
   isFetchingProfile = false,
   onExportStudentList,
-  allStudents
+  allStudents,
+  isFlagged = false,
+  onShowReconciliationModal
 }: StudentRegistrationExcelProps) {
   const examTypeData = getExamById(examType === "Common-entrance" ? "CESS" : examType)
   const [onboardStudent] = useOnboardStudentMutation()
@@ -158,6 +162,11 @@ export default function StudentRegistrationExcel({
   ]
 
   const handleAddNewRow = () => {
+    if (isFlagged) {
+      onShowReconciliationModal?.()
+      return
+    }
+
     if (actualAvailablePoints <= 0) {
       toast.error('No available points to onboard new students')
       return
@@ -180,6 +189,10 @@ export default function StudentRegistrationExcel({
   }
 
   const handleEditRow = (id: string) => {
+    if (isFlagged) {
+      onShowReconciliationModal?.()
+      return
+    }
     setEditableStudents(prev =>
       prev.map(s => (s.id === id ? { ...s, isEditing: true } : s))
     )
@@ -232,6 +245,12 @@ export default function StudentRegistrationExcel({
   const handleSaveRow = async (id: string) => {
     const student = editableStudents.find(s => s.id === id)
     if (!student || !school?._id) return
+
+    // Prevent save operations when account is flagged
+    if (isFlagged) {
+      onShowReconciliationModal?.()
+      return
+    }
 
     // Prevent save operations when profile is being refetched (points updating)
     if (isFetchingProfile) {
@@ -854,7 +873,13 @@ export default function StudentRegistrationExcel({
             </button>
 
             <button
-              onClick={() => setQuickAddMode(!quickAddMode)}
+              onClick={() => {
+                if (isFlagged) {
+                  onShowReconciliationModal?.()
+                  return
+                }
+                setQuickAddMode(!quickAddMode)
+              }}
               className={`px-4 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap cursor-pointer ${quickAddMode
                 ? 'bg-green-600 text-white hover:bg-green-700'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
