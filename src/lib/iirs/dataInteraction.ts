@@ -77,6 +77,50 @@ export interface PaymentsData {
     pagination: Pagination;
 }
 
+export interface ResultPaymentStatsQuery {
+    examType?: string;
+    year?: string;
+    paymentStatus?: string;
+    page?: string;
+    limit?: string;
+}
+
+export interface ResultPaymentRecord {
+    _id: string;
+    examType: string;
+    amount: number;
+    examNumber: string;
+    examYear: number;
+    studentName: string;
+    lga: string;
+    schoolName: string;
+    school: string;
+    paymentReference: string;
+    paymentStatus: string;
+    searchMode: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+    authorizationUrl?: string;
+    email?: string;
+    paidAt?: string;
+}
+
+export interface ResultPaymentExamTypeStats {
+    totalAmount: number;
+    count: number;
+}
+
+export interface ResultPaymentStatsResponse {
+    data: ResultPaymentRecord[];
+    total: number;
+    totalAmount: number;
+    amountByExamType: Record<string, ResultPaymentExamTypeStats>;
+    page: number;
+    limit: number;
+    totalPages: number;
+}
+
 export async function getPaymentsData(
     token: string,
     page: number = 1,
@@ -96,6 +140,38 @@ export async function getPaymentsData(
             'Authorization': `Bearer ${token}`
         }
     });
+    return response.json();
+}
+
+export async function getResultPaymentStats(
+    token: string,
+    query: ResultPaymentStatsQuery = {}
+): Promise<ResultPaymentStatsResponse> {
+    const params = new URLSearchParams();
+
+    if (query.examType) params.append('examType', query.examType);
+    if (query.year) params.append('year', query.year);
+    if (query.paymentStatus) params.append('paymentStatus', query.paymentStatus);
+    if (query.page) params.append('page', query.page);
+    if (query.limit) params.append('limit', query.limit);
+
+    const queryString = params.toString();
+    const endpoint = `${BASE_URL.split("/iirs-admin")[0]}/result-payment/all${queryString ? `?${queryString}` : ''}`;
+
+    const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            throw new Error('Unauthorized access. Please log in again.');
+        }
+        throw new Error(`Failed to fetch result payment stats: ${response.statusText}`);
+    }
+
     return response.json();
 }
 

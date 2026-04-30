@@ -4,7 +4,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { PiUserCircleFill } from "react-icons/pi"
 import ProfileModal from './ProfileModal';
 import UserManagementModal from './UserManagementModal';
-import { IoLogOutOutline, IoPersonOutline, IoPeopleOutline, IoChevronDown, IoWalletOutline, IoGridOutline } from 'react-icons/io5';
+import { IoLogOutOutline, IoPersonOutline, IoPeopleOutline, IoChevronDown, IoWalletOutline, IoGridOutline, IoStatsChartOutline } from 'react-icons/io5';
 import { useAuth } from '@/app/portal/iirs/providers/AuthProvider';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -96,6 +96,19 @@ export default function Header(){
                             <IoWalletOutline size={18} />
                             <span>Payouts</span>
                         </Link>
+                        {role === 'idcl' && (
+                            <Link
+                                href="/portal/iirs/dashboard/result-payments"
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                    pathname === '/portal/iirs/dashboard/result-payments'
+                                        ? 'bg-green-600 text-white'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                            >
+                                <IoStatsChartOutline size={18} />
+                                <span>Result Payments</span>
+                            </Link>
+                        )}
                     </nav>
                     
                     {/* User Menu */}
@@ -182,6 +195,19 @@ export default function Header(){
                         <IoWalletOutline size={18} />
                         <span>Payouts</span>
                     </Link>
+                    {role === 'idcl' && (
+                        <Link
+                            href="/portal/iirs/dashboard/result-payments"
+                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                pathname === '/portal/iirs/dashboard/result-payments'
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-white/80 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                            }`}
+                        >
+                            <IoStatsChartOutline size={18} />
+                            <span>Result Payments</span>
+                        </Link>
+                    )}
                 </nav>
             </header>
             
