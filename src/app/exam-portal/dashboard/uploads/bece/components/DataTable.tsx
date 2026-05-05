@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import { StudentRecord, validateStudentRecord, ValidationError, ValidationErrorType } from '../utils/csvParser'
 import { useRouter } from 'next/navigation'
 import { BeceResultUpload, useUploadBeceExamResultsMutation } from '../../../../store/api/authApi'
+import { LgaEnum } from '../../../../../portal/dashboard/[schoolCode]/types'
 import ErrorTypeModal from './ErrorTypeModal'
 
 interface DataTableProps {
@@ -159,6 +160,24 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
     }
 
     const recordKey = (r: StudentRecord) => `${r.examNo}\0${r.file.name}`
+
+    // Auto-bin records with invalid LGAs as soon as they are loaded
+    React.useEffect(() => {
+        if (data.length === 0) return
+        const validLgas = new Set(Object.values(LgaEnum).map(v => v.toLowerCase()))
+        const invalidLgaRecords = data.filter(
+            r => !validLgas.has((r.lga ?? '').toLowerCase().trim())
+        )
+        if (invalidLgaRecords.length === 0) return
+        const invalidKeys = new Set(invalidLgaRecords.map(recordKey))
+        setRecycleBin(prev => [
+            ...prev,
+            ...invalidLgaRecords.filter(r => !prev.some(rr => recordKey(rr) === recordKey(r)))
+        ])
+        onDataChange(data.filter(r => !invalidKeys.has(recordKey(r))))
+        toast(`${invalidLgaRecords.length} record${invalidLgaRecords.length !== 1 ? 's' : ''} with invalid LGA auto-moved to recycle bin`, { icon: '🗑️' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data])
 
     const errorCounts = useMemo(() => {
         const counts: Record<string, number> = { name_special_chars: 0, exam_number_invalid: 0, missing_required: 0, incomplete_scores: 0 }
@@ -550,12 +569,33 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
             setRecycleBinExported(true)
         }
 
-        const recordsToUpload: StudentRecord[] =
+        const validLgas = new Set(Object.values(LgaEnum).map(v => v.toLowerCase()))
+        const binKeys = new Set(recycleBin.map(recordKey))
+
+        let recordsToUpload: StudentRecord[] =
             selectedRows.size > 0
                 ? Array.from(selectedRows)
                     .sort((a, b) => a - b)
                     .map(i => sortedData[i])
                 : data
+
+        // Exclude any records still in the recycle bin
+        recordsToUpload = recordsToUpload.filter(r => !binKeys.has(recordKey(r)))
+
+        // Detect invalid LGA records and move them to bin before upload
+        const invalidLgaRecords = recordsToUpload.filter(
+            r => !validLgas.has((r.lga ?? '').toLowerCase().trim())
+        )
+        if (invalidLgaRecords.length > 0) {
+            const invalidKeys = new Set(invalidLgaRecords.map(recordKey))
+            setRecycleBin(prev => [
+                ...prev,
+                ...invalidLgaRecords.filter(r => !prev.some(rr => recordKey(rr) === recordKey(r)))
+            ])
+            onDataChange(data.filter(r => !invalidKeys.has(recordKey(r))))
+            recordsToUpload = recordsToUpload.filter(r => !invalidKeys.has(recordKey(r)))
+            toast(`${invalidLgaRecords.length} record${invalidLgaRecords.length !== 1 ? 's' : ''} with invalid LGA moved to recycle bin`, { icon: '🗑️' })
+        }
 
         if (recordsToUpload.length === 0) {
             toast.error('No records to upload. Select rows or add data.')
