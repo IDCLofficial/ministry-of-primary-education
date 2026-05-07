@@ -150,6 +150,14 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
     })
   }
 
+  if (isGradeOnlyFormat && !record.examNumber?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'examNumber',
+      message: 'Exam number is required'
+    })
+  }
+
   if (!isGradeOnlyFormat && !record.examNumber?.trim()) {
     errors.push({
       type: 'missing_required',
@@ -624,7 +632,7 @@ const parseFlatFormat = (
         examNumber:
           examNo >= 0 && values[examNo]?.trim()
             ? values[examNo].trim()
-            : `UBEAT/${i - dataStartRow + 1}`,
+            : '',
         studentName:
           candidateName >= 0 && values[candidateName]?.trim()
             ? values[candidateName].trim()
@@ -684,17 +692,15 @@ const parseGradeOnlyFormat = (
     const sheetMarker = ' - Sheet: '
     const sheetIdx = fileName.indexOf(sheetMarker)
     const raw = sheetIdx >= 0 ? fileName.slice(sheetIdx + sheetMarker.length) : fileName
-const dashIdx = raw.indexOf(' - ')
+    const dashIdx = raw.indexOf(' - ')
     if (dashIdx >= 0) {
       return raw.slice(dashIdx + 3).replace(/\.(csv|xlsx|xls)$/i, '').trim()
     }
     return raw.replace(/\.(csv|xlsx|xls)$/i, '').trim()
   }
-    return raw.replace(/\.(csv|xlsx|xls)$/i, '').trim()
-  }
 
   const inferredSchoolName = getSchoolNameFromFileMeta(file.name)
-const lga = getLgaFromFileMeta(file.name)
+  const lga = getLgaFromFileMeta(file.name)
   const zone = 'Unknown Zone'
 
   for (let i = dataStartRow; i < lines.length; i++) {
@@ -714,7 +720,7 @@ const lga = getLgaFromFileMeta(file.name)
 
       const record: UBEATStudentRecord = {
         serialNumber: i - dataStartRow + 1,
-        examNumber: getStringValue(values, 1, `UBEAT/${i - dataStartRow + 1}`),
+        examNumber: getStringValue(values, 1, ''),
         studentName: getStringValue(values, 0, 'Unknown'),
         age: getNumberValue(values, 3, 0),
         sex,
@@ -725,7 +731,7 @@ const lga = getLgaFromFileMeta(file.name)
         codeNo: '',
         attendance: 0,
         examYear: fileExamYear,
-        file
+        file,
       }
 
       records.push(record)

@@ -60,7 +60,8 @@ export interface UBEATResultUpload {
     studentName: string
     age: number
     sex: 'male' | 'female'
-    subjects: {
+    grade?: string
+    subjects?: {
       mathematics: {
         ca: number;
         exam: number;
