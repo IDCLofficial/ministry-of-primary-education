@@ -22,15 +22,21 @@ export default function SchoolDetailsPage({ params }: { params: Promise<{ school
         skip: !schoolId
     })
     
-    const { data: studentsData, isLoading: studentsLoading, error: studentsError, isFetching: studentsFetching } = useGetResultsQuery({
+    const { data: studentsData, isLoading: studentsLoading, error: studentsError, isFetching: studentsFetching, refetch } = useGetResultsQuery({
         schoolId,
         page: parseInt(page),
         limit: 10,
         search: search || undefined,
         examYear: year !== "all" ? parseInt(year) : undefined
     }, {
-        skip: !schoolId
+        skip: !schoolId,
+        refetchOnMountOrArgChange: true
     })
+
+    // Refetch when year or search changes
+    React.useEffect(() => {
+        refetch()
+    }, [year, search, refetch])
 
     const students = studentsData?.results || []
     const isLoading = schoolLoading || studentsLoading

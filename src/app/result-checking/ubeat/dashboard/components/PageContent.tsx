@@ -310,6 +310,9 @@ export default function UBEATDashboard() {
     // Use average score from API response
     const averageScore = student.averageScore || 0
 
+    // Check if this is a grade-only year (2020-2021)
+    const isGradeOnlyYear = (student.examYear || 0) <= 2021
+
     const getGradeColor = (grade: string) => {
         // A1: Gold fill with trophy icon
         if (grade === 'A1') return 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white border-0'
@@ -479,23 +482,54 @@ export default function UBEATDashboard() {
                                         </p>
                                         <p className="text-xs text-gray-500">Grade</p>
                                     </div>
-                                    <div className="text-center border-l md:border-r border-gray-200">
-                                        <p className="text-2xl font-semibold text-purple-600 mb-1">
-                                            {averageScore}
-                                        </p>
-                                        <p className="text-xs text-gray-500">Score</p>
-                                    </div>
-                                    <div className="text-center max-md:hidden">
-                                        <p className="text-2xl font-semibold text-gray-900 mb-1">
-                                            {subjectsArray.length}
-                                        </p>
-                                        <p className="text-xs text-gray-500">Subjects</p>
-                                    </div>
+                                    {isGradeOnlyYear ? (
+                                        <div className="text-center border-l md:border-r border-gray-200 col-span-2">
+                                            <p className="text-lg font-semibold text-purple-600 mb-1">
+                                                {student.examYear}
+                                            </p>
+                                            <p className="text-xs text-gray-500">Exam Year</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="text-center border-l md:border-r border-gray-200">
+                                                <p className="text-2xl font-semibold text-purple-600 mb-1">
+                                                    {averageScore}
+                                                </p>
+                                                <p className="text-xs text-gray-500">Score</p>
+                                            </div>
+                                            <div className="text-center max-md:hidden">
+                                                <p className="text-2xl font-semibold text-gray-900 mb-1">
+                                                    {subjectsArray.length}
+                                                </p>
+                                                <p className="text-xs text-gray-500">Subjects</p>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Detailed Results Table */}
+                        {/* Grade-Only Year Notice */}
+                        {isGradeOnlyYear && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="text-sm font-semibold text-amber-800 mb-1">Results Summary Only</h4>
+                                        <p className="text-sm text-amber-700">
+                                            Your {student.examYear} UBEAT results contain your overall grade. Detailed subject-by-subject scores are not available for this exam year. Contact your school for more information.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Detailed Results Table - Only show for years with subject scores */}
+                        {!isGradeOnlyYear && (
                         <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden">
                             <div className="border-b border-gray-100 px-6 py-4">
                                 <h3 className="text-sm font-semibold text-gray-900">Subject Results <span className='text-gray-500'>({subjectsArray.length})</span></h3>
@@ -574,6 +608,7 @@ export default function UBEATDashboard() {
                                 </div>
                             </div>
                         </div>
+                    )}
                     </div>
                 </div>
 
