@@ -96,6 +96,7 @@ export interface UBEATStudentRecord {
 
 export const validateStudentRecord = (record: UBEATStudentRecord): ValidationError[] => {
   const errors: ValidationError[] = []
+  const isGradeOnlyFormat = record.grade !== undefined
 
   if (record.studentName) {
     const specialCharPattern = /[^a-zA-Z\s\-'."\u2018\u2019\u02BC]/
@@ -108,7 +109,7 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
     }
   }
 
-  if (record.examNumber) {
+  if (!isGradeOnlyFormat && record.examNumber) {
     const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
     const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}\/\d{1,4}$/
     const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}$/
@@ -130,7 +131,7 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
     })
   }
 
-  if (!record.examNumber?.trim()) {
+  if (!isGradeOnlyFormat && !record.examNumber?.trim()) {
     errors.push({
       type: 'missing_required',
       field: 'examNumber',
@@ -153,8 +154,6 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
       message: 'LGA is required'
     })
   }
-
-  const isGradeOnlyFormat = record.grade !== undefined
 
   if (!isGradeOnlyFormat && record.subjects) {
     const subjects = record.subjects

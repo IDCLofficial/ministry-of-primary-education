@@ -14,6 +14,7 @@ export interface ValidationError {
 
 export const validateStudentRecord = (record: StudentRecord): ValidationError[] => {
   const errors: ValidationError[] = []
+  const isGradeOnlyFormat = record.grade !== undefined
 
   if (record.name) {
     const specialCharPattern = /[^a-zA-Z\s\-'."\u2018\u2019\u02BC]/
@@ -26,7 +27,7 @@ export const validateStudentRecord = (record: StudentRecord): ValidationError[] 
     }
   }
 
-  if (record.examNo) {
+  if (!isGradeOnlyFormat && record.examNo) {
     const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
     const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}\/\d{1,4}$/
     const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}$/
@@ -48,7 +49,7 @@ export const validateStudentRecord = (record: StudentRecord): ValidationError[] 
     })
   }
 
-  if (!record.examNo?.trim()) {
+  if (!isGradeOnlyFormat && !record.examNo?.trim()) {
     errors.push({
       type: 'missing_required',
       field: 'examNo',
@@ -71,8 +72,6 @@ export const validateStudentRecord = (record: StudentRecord): ValidationError[] 
       message: 'LGA is required'
     })
   }
-
-  const isGradeOnlyFormat = record.grade !== undefined
 
   const subjects = [
     { key: 'englishStudies', label: 'English Studies', value: record.englishStudies },
