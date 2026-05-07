@@ -226,7 +226,6 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
 
         const validLgaSet = new Set(VALID_LGAS)
         const recordsToFix: { key: string; record: StudentRecord; fixedLga: string }[] = []
-        const recordsToBin: StudentRecord[] = []
 
         data.forEach(r => {
             const lgaValue = r.lga ?? ''
@@ -234,8 +233,6 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                 const { fixed, wasFixed } = tryFixLga(lgaValue)
                 if (wasFixed) {
                     recordsToFix.push({ key: recordKey(r), record: r, fixedLga: fixed })
-                } else {
-                    recordsToBin.push(r)
                 }
             }
         })
@@ -247,15 +244,6 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
             }))
             toast.success(`Fixed LGA for ${recordsToFix.length} record${recordsToFix.length !== 1 ? 's' : ''}: ${recordsToFix.map(f => f.fixedLga).filter((v, i, a) => a.indexOf(v) === i).join(', ')}`, { icon: '🔧' })
         }
-
-        if (recordsToBin.length === 0) return
-        const invalidKeys = new Set(recordsToBin.map(recordKey))
-        setRecycleBin(prev => [
-            ...prev,
-            ...recordsToBin.filter(r => !prev.some(rr => recordKey(rr) === recordKey(r)))
-        ])
-        onDataChange(data.filter(r => !invalidKeys.has(recordKey(r))))
-        toast(`${recordsToBin.length} record${recordsToBin.length !== 1 ? 's' : ''} with invalid LGA auto-moved to recycle bin`, { icon: '🗑️' })
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data])
 

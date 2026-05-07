@@ -17,7 +17,7 @@ export const validateStudentRecord = (record: StudentRecord): ValidationError[] 
   const isGradeOnlyFormat = record.grade !== undefined
 
   if (record.name) {
-    const specialCharPattern = /[^a-zA-Z\s\-'."\u2018\u2019\u02BC]/
+    const specialCharPattern = /[^\p{L}\p{N}\s\-'."\u2018\u2019\u02BC\u00C0-\u024F]/u
     if (specialCharPattern.test(record.name)) {
       errors.push({
         type: 'name_special_chars',

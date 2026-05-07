@@ -68,6 +68,7 @@ export type ValidationErrorType =
   | 'exam_number_invalid'
   | 'missing_required'
   | 'incomplete_scores'
+  | 'invalid_lga'
 
 export interface ValidationError {
   type: ValidationErrorType
@@ -118,7 +119,7 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
   const isGradeOnlyFormat = record.grade !== undefined
 
   if (record.studentName) {
-    const specialCharPattern = /[^a-zA-Z\s\-'."\u2018\u2019\u02BC]/
+    const specialCharPattern = /[^\p{L}\p{N}\s\-'."\u2018\u2019\u02BC\u00C0-\u024F]/u
     if (specialCharPattern.test(record.studentName)) {
       errors.push({
         type: 'name_special_chars',
@@ -180,6 +181,15 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
       field: 'lga',
       message: 'LGA is required'
     })
+  } else {
+    const validLgaSet = new Set(LGA_VALUES.map(v => v.toLowerCase()))
+    if (!validLgaSet.has(record.lga.toLowerCase().trim())) {
+      errors.push({
+        type: 'invalid_lga',
+        field: 'lga',
+        message: `Invalid LGA: ${record.lga}`
+      })
+    }
   }
 
   if (!isGradeOnlyFormat && record.subjects) {
