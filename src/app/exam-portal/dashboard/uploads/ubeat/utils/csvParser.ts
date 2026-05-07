@@ -62,13 +62,14 @@ export interface UBEATStudentRecord {
   studentName: string
   age: number
   sex: 'male' | 'female'
+  grade?: string
   lga: string
   zone: string
   schoolName: string
   codeNo: string
   attendance: string | number
   examYear: number
-  subjects: {
+  subjects?: {
     mathematics: {
       ca: string
       exam: number
@@ -153,34 +154,38 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
     })
   }
 
-  const subjects = record.subjects
-  const requiredScores = [
-    { key: 'mathematics', label: 'Mathematics' },
-    { key: 'english', label: 'English' },
-    { key: 'generalKnowledge', label: 'General Knowledge' },
-    { key: 'igbo', label: 'Igbo' }
-  ]
+  const isGradeOnlyFormat = record.grade !== undefined
 
-  for (const subj of requiredScores) {
-    const sub = subjects[subj.key as keyof typeof subjects]
-    if (!sub) {
-      errors.push({
-        type: 'incomplete_scores',
-        field: subj.key,
-        message: `${subj.label} scores missing`
-      })
-      continue
-    }
+  if (!isGradeOnlyFormat && record.subjects) {
+    const subjects = record.subjects
+    const requiredScores = [
+      { key: 'mathematics', label: 'Mathematics' },
+      { key: 'english', label: 'English' },
+      { key: 'generalKnowledge', label: 'General Knowledge' },
+      { key: 'igbo', label: 'Igbo' }
+    ]
 
-    const caMissing = !sub.ca || sub.ca === '' || sub.ca === 'ABS'
-    const examMissing = sub.exam === undefined || sub.exam === null
+    for (const subj of requiredScores) {
+      const sub = subjects[subj.key as keyof typeof subjects]
+      if (!sub) {
+        errors.push({
+          type: 'incomplete_scores',
+          field: subj.key,
+          message: `${subj.label} scores missing`
+        })
+        continue
+      }
 
-    if (caMissing && examMissing) {
-      errors.push({
-        type: 'incomplete_scores',
-        field: subj.key,
-        message: `${subj.label}: CA and Exam missing`
-      })
+      const caMissing = !sub.ca || sub.ca === '' || sub.ca === 'ABS'
+      const examMissing = sub.exam === undefined || sub.exam === null
+
+      if (caMissing && examMissing) {
+        errors.push({
+          type: 'incomplete_scores',
+          field: subj.key,
+          message: `${subj.label}: CA and Exam missing`
+        })
+      }
     }
   }
 
@@ -311,6 +316,24 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
 
   if (isFlatFormat) {
     return parseFlatFormat(lines, row0, examYear, file)
+  }
+
+  const isGradeOnlyFormat = row0.length === 5 && (
+    row0[0]?.toLowerCase().includes('candidate name') ||
+    row0[0]?.toLowerCase().includes('name')
+  ) && (
+    row0[1]?.toLowerCase().includes('exam number') ||
+    row0[1]?.toLowerCase().includes('exam no')
+  ) && (
+    row0[2]?.toLowerCase().includes('sex')
+  ) && (
+    row0[3]?.toLowerCase().includes('age')
+  ) && (
+    row0[4]?.toLowerCase().includes('grade')
+  )
+
+  if (isGradeOnlyFormat) {
+    return parseGradeOnlyFormat(lines, examYear, file)
   }
 
   // Auto-detect CSV layout by row/column shape (do NOT rely on header titles).
@@ -604,6 +627,69 @@ const parseFlatFormat = (
 
   if (records.length === 0) {
     throw new Error('No valid student records found in the flat format file')
+  }
+
+  return records
+}
+
+const parseGradeOnlyFormat = (
+  lines: string[],
+  fileExamYear: number,
+  file: { name: string; size: number }
+): UBEATStudentRecord[] => {
+  const records: UBEATStudentRecord[] = []
+  const dataStartRow = 1
+
+  const getSchoolNameFromFileMeta = (fileName: string): string => {
+    const sheetMarker = ' - Sheet: '
+    const sheetIdx = fileName.indexOf(sheetMarker)
+    const raw = sheetIdx >= 0 ? fileName.slice(sheetIdx + sheetMarker.length) : fileName
+    return raw.replace(/\.(csv|xlsx|xls)$/i, '').trim()
+  }
+
+  const inferredSchoolName = getSchoolNameFromFileMeta(file.name)
+  const lga = 'Unknown LGA'
+  const zone = 'Unknown Zone'
+
+  for (let i = dataStartRow; i < lines.length; i++) {
+    const values = parseLine(lines[i])
+
+    const isEmptyRow =
+      !values[0]?.trim() &&
+      !values[1]?.trim()
+
+    if (isEmptyRow) {
+      continue
+    }
+
+    try {
+      const sexValue = values[2]?.trim().toUpperCase() || 'M'
+      const sex = sexValue === 'F' || sexValue === 'FEMALE' ? 'female' : 'male'
+
+      const record: UBEATStudentRecord = {
+        serialNumber: i - dataStartRow + 1,
+        examNumber: getStringValue(values, 1, `UBEAT/${i - dataStartRow + 1}`),
+        studentName: getStringValue(values, 0, 'Unknown'),
+        age: getNumberValue(values, 3, 0),
+        sex,
+        grade: getStringValue(values, 4, ''),
+        lga,
+        zone,
+        schoolName: inferredSchoolName || 'Unknown School',
+        codeNo: '',
+        attendance: 0,
+        examYear: fileExamYear,
+        file
+      }
+
+      records.push(record)
+    } catch (error) {
+      console.warn(`Error parsing grade-only format row ${i + 1}:`, error)
+    }
+  }
+
+  if (records.length === 0) {
+    throw new Error('No valid student records found in the grade-only format file')
   }
 
   return records

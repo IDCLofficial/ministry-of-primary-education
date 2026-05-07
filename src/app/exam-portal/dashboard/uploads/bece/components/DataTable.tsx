@@ -38,33 +38,57 @@ function parseSearchQuery(raw: string): { mode: SearchMode; field: SearchField; 
 
 function exportRecycleBinCsv(records: StudentRecord[]) {
     if (records.length === 0) return
-    const headers = [
-        'Serial No', 'Name', 'Exam No', 'School Name', 'LGA',
-        'English Studies', 'Mathematics', 'Basic Science',
-        'Christian Religious Studies', 'National Values',
-        'Cultural and Creative Arts', 'Business Studies',
-        'Igbo Language', 'Pre-Vocational Studies',
-        'Exam Year', 'File Name'
-    ]
-
-    const rows = records.map(r => [
-        r.serialNo,
-        r.name,
-        r.examNo,
-        r.schoolName,
-        r.lga ?? '',
-        r.englishStudies ?? '',
-        r.mathematics ?? '',
-        r.basicScience ?? '',
-        r.christianReligiousStudies ?? '',
-        r.nationalValues ?? '',
-        r.culturalAndCreativeArts ?? '',
-        r.businessStudies ?? '',
-        r.igbo ?? '',
-        r.preVocationalStudies ?? '',
-        r.examYear ?? '',
-        r.file.name
-    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`))
+    
+    const isGradeOnlyFormat = records[0]?.grade !== undefined
+    
+    let headers: string[]
+    let rows: string[][]
+    
+    if (isGradeOnlyFormat) {
+        headers = [
+            'Serial No', 'Name', 'Exam No', 'Sex', 'Age', 'Grade',
+            'School Name', 'LGA', 'Exam Year', 'File Name'
+        ]
+        rows = records.map(r => [
+            r.serialNo,
+            r.name,
+            r.examNo,
+            r.sex ?? '',
+            r.age ?? '',
+            r.grade ?? '',
+            r.schoolName,
+            r.lga ?? '',
+            r.examYear ?? '',
+            r.file.name
+        ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`))
+    } else {
+        headers = [
+            'Serial No', 'Name', 'Exam No', 'School Name', 'LGA',
+            'English Studies', 'Mathematics', 'Basic Science',
+            'Christian Religious Studies', 'National Values',
+            'Cultural and Creative Arts', 'Business Studies',
+            'Igbo Language', 'Pre-Vocational Studies',
+            'Exam Year', 'File Name'
+        ]
+        rows = records.map(r => [
+            r.serialNo,
+            r.name,
+            r.examNo,
+            r.schoolName,
+            r.lga ?? '',
+            r.englishStudies ?? '',
+            r.mathematics ?? '',
+            r.basicScience ?? '',
+            r.christianReligiousStudies ?? '',
+            r.nationalValues ?? '',
+            r.culturalAndCreativeArts ?? '',
+            r.businessStudies ?? '',
+            r.igbo ?? '',
+            r.preVocationalStudies ?? '',
+            r.examYear ?? '',
+            r.file.name
+        ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`))
+    }
 
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -643,14 +667,16 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                     subjects: [
                         { name: 'English Studies', exam: student.englishStudies },
                         { name: 'Mathematics', exam: student.mathematics },
-                        { name: 'Basic Science', exam: student.basicScience },
-                        { name: 'Christian Religious Studies', exam: student.christianReligiousStudies },
-                        { name: 'National Values', exam: student.nationalValues },
-                        { name: 'Cultural and Creative Arts', exam: student.culturalAndCreativeArts },
-                        { name: 'Business Studies', exam: student.businessStudies },
-                        { name: 'Igbo Language', exam: student.igbo },
-                        { name: 'Pre-Vocational Studies', exam: student.preVocationalStudies }
-                    ].filter(subject => subject.exam > 0)
+                        { name: 'English Studies', exam: student.englishStudies ?? 0 },
+                        { name: 'Mathematics', exam: student.mathematics ?? 0 },
+                        { name: 'Basic Science', exam: student.basicScience ?? 0 },
+                        { name: 'Christian Religious Studies', exam: student.christianReligiousStudies ?? 0 },
+                        { name: 'National Values', exam: student.nationalValues ?? 0 },
+                        { name: 'Cultural and Creative Arts', exam: student.culturalAndCreativeArts ?? 0 },
+                        { name: 'Business Studies', exam: student.businessStudies ?? 0 },
+                        { name: 'Igbo Language', exam: student.igbo ?? 0 },
+                        { name: 'Pre-Vocational Studies', exam: student.preVocationalStudies ?? 0 }
+                    ].filter((subject): subject is { name: string; exam: number } => (subject.exam ?? 0) > 0)
                 }))
             }))
 
@@ -949,6 +975,9 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                     { key: 'serialNo', label: 'S/NO' },
                                     { key: 'name', label: 'Name' },
                                     { key: 'examNo', label: 'Exam No.' },
+                                    ...(data.length > 0 && data[0].sex !== undefined ? [{ key: 'sex', label: 'Sex' }] : []),
+                                    ...(data.length > 0 && data[0].age !== undefined ? [{ key: 'age', label: 'Age' }] : []),
+                                    ...(data.length > 0 && data[0].grade !== undefined ? [{ key: 'grade', label: 'Grade' }] : []),
                                     { key: 'schoolName', label: 'School' }
                                 ].map(({ key, label }) => (
                                     <th
@@ -1018,6 +1047,21 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                             record.examNo
                                         )}
                                     </td>
+                                    {data.length > 0 && data[0].sex !== undefined && (
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {record.sex || '-'}
+                                        </td>
+                                    )}
+                                    {data.length > 0 && data[0].age !== undefined && (
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {record.age ?? '-'}
+                                        </td>
+                                    )}
+                                    {data.length > 0 && data[0].grade !== undefined && (
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {record.grade || '-'}
+                                        </td>
+                                    )}
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {isEditing ? (
                                             <input

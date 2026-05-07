@@ -55,11 +55,12 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
 
   const calculateAverage = () => {
     const currentStudent = isEditing ? editedStudent : student
-    if (!currentStudent) return '0'
+    if (!currentStudent || !currentStudent.subjects) return '0'
     
+    const studentSubjects = currentStudent.subjects
     const totals = subjects.map(s => {
-      const subject = currentStudent.subjects[s.key]
-      return calculateTotal(subject.ca, subject.exam)
+      const subject = studentSubjects[s.key]
+      return calculateTotal(subject?.ca ?? '0', subject?.exam ?? 0)
     })
     const sum = totals.reduce((acc, val) => acc + val, 0)
     return (sum / subjects.length).toFixed(1)
@@ -67,11 +68,12 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
 
   const calculateTotalScore = () => {
     const currentStudent = isEditing ? editedStudent : student
-    if (!currentStudent) return '0'
+    if (!currentStudent || !currentStudent.subjects) return '0'
     
+    const studentSubjects = currentStudent.subjects
     const totals = subjects.map(s => {
-      const subject = currentStudent.subjects[s.key]
-      return calculateTotal(subject.ca, subject.exam)
+      const subject = studentSubjects[s.key]
+      return calculateTotal(subject?.ca ?? '0', subject?.exam ?? 0)
     })
     const sum = totals.reduce((acc, val) => acc + val, 0)
     return sum.toFixed(0)
@@ -132,17 +134,15 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
   }
 
   const handleScoreChange = (subjectKey: typeof subjects[number]['key'], field: 'ca' | 'exam', value: string) => {
-    if (!editedStudent) return
+    if (!editedStudent || !editedStudent.subjects) return
     
     const newSubject = { ...editedStudent.subjects[subjectKey] }
     
     if (field === 'ca') {
-      // CA is stored as string, validate it's a number
       const numValue = parseFloat(value) || 0
       const clampedValue = Math.min(Math.max(numValue, 0), 30)
       newSubject.ca = clampedValue.toString()
     } else {
-      // Exam is stored as number
       const numValue = parseFloat(value) || 0
       const clampedValue = Math.min(Math.max(numValue, 0), 70)
       newSubject.exam = clampedValue
@@ -279,11 +279,14 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {currentStudent && subjects.map((subject) => {
-                    const subjectData = currentStudent.subjects[subject.key]
-                    const caValue = parseFloat(subjectData.ca) || 0
-                    const examValue = subjectData.exam
-                    const totalValue = caValue + examValue
+                  {(() => {
+                    if (!currentStudent || !currentStudent.subjects) return null
+                    const studentSubjects = currentStudent.subjects
+                    return subjects.map((subject) => {
+                      const subjectData = studentSubjects[subject.key]
+                      const caValue = parseFloat(subjectData?.ca ?? '0') || 0
+                      const examValue = subjectData?.exam ?? 0
+                      const totalValue = caValue + examValue
                     
                     return (
                       <tr key={subject.key} className="hover:bg-gray-50">
@@ -337,7 +340,8 @@ export default function ExamModal({ isOpen, onClose, student, onUpdate }: ExamMo
                         </td>
                       </tr>
                     )
-                  })}
+                    })
+                  })()}
                 </tbody>
                 <tfoot className="bg-gray-50">
                   <tr>

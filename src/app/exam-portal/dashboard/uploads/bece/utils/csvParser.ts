@@ -72,6 +72,8 @@ export const validateStudentRecord = (record: StudentRecord): ValidationError[] 
     })
   }
 
+  const isGradeOnlyFormat = record.grade !== undefined
+
   const subjects = [
     { key: 'englishStudies', label: 'English Studies', value: record.englishStudies },
     { key: 'mathematics', label: 'Mathematics', value: record.mathematics },
@@ -84,19 +86,21 @@ export const validateStudentRecord = (record: StudentRecord): ValidationError[] 
     { key: 'preVocationalStudies', label: 'Pre-Vocational Studies', value: record.preVocationalStudies },
   ]
 
-  for (const subj of subjects) {
-    if (subj.value === undefined || subj.value === null) {
-      errors.push({
-        type: 'incomplete_scores',
-        field: subj.key,
-        message: `${subj.label} score missing`
-      })
-    } else if (subj.value < 0) {
-      errors.push({
-        type: 'incomplete_scores',
-        field: subj.key,
-        message: `${subj.label} score invalid`
-      })
+  if (!isGradeOnlyFormat) {
+    for (const subj of subjects) {
+      if (subj.value === undefined || subj.value === null) {
+        errors.push({
+          type: 'incomplete_scores',
+          field: subj.key,
+          message: `${subj.label} score missing`
+        })
+      } else if (subj.value < 0) {
+        errors.push({
+          type: 'incomplete_scores',
+          field: subj.key,
+          message: `${subj.label} score invalid`
+        })
+      }
     }
   }
 
@@ -108,15 +112,18 @@ interface StudentRecord {
   serialNo: number
   name: string
   examNo: string
-  englishStudies: number
-  mathematics: number
-  basicScience: number
-  christianReligiousStudies: number
-  nationalValues: number
-  culturalAndCreativeArts: number
-  businessStudies: number
-  igbo: number
-  preVocationalStudies: number
+  sex?: string
+  age?: number
+  grade?: string
+  englishStudies?: number
+  mathematics?: number
+  basicScience?: number
+  christianReligiousStudies?: number
+  nationalValues?: number
+  culturalAndCreativeArts?: number
+  businessStudies?: number
+  igbo?: number
+  preVocationalStudies?: number
   lga: string
   examYear: number
   file: {
@@ -257,7 +264,6 @@ export const parseCSVText = (csvText: string, lga: string, schoolName: string, e
     throw new Error('CSV file must have at least a header and one data row')
   }
 
-  // Parse CSV line handling quoted fields
   const parseLine = (line: string): string[] => {
     const result: string[] = []
     let current = ''
@@ -281,58 +287,109 @@ export const parseCSVText = (csvText: string, lga: string, schoolName: string, e
 
   const records: StudentRecord[] = []
 
-  // New CSV structure:
-  // CANDIDATES NAME, CANDIDATE EXAM NUMBER, ENGLISH LANGUAGE, MATHEMATICS, 
-  // BASIC SCIENCE AND TECHNOLOGY, CHRISTIAN RELIGIOUS KNOWLEDGE, NATIONAL VALUES,
-  // CULTURAL AND CREATIVE ARTS, BUSINESS STUDIES, IGBO LANGUAGE, PRE-VOCATIONAL STUDIES
-  const columnIndices = {
-    name: 0,                       // First column
-    examNo: 1,                     // Second column
-    englishStudies: 2,             // Third column
-    mathematics: 3,                // Fourth column
-    basicScience: 4,               // Fifth column
-    christianReligiousStudies: 5,  // Sixth column
-    nationalValues: 6,             // Seventh column
-    culturalAndCreativeArts: 7,    // Eighth column
-    businessStudies: 8,            // Ninth column
-    igbo: 9,                       // Tenth column
-    preVocationalStudies: 10       // Eleventh column
-  }
+  const headerRow = parseLine(lines[0])
+  const isGradeOnlyFormat = headerRow.length >= 5 && (
+    headerRow[0]?.toLowerCase().includes('candidate name') ||
+    headerRow[0]?.toLowerCase().includes('candidates name') ||
+    headerRow[0]?.toLowerCase().includes('name')
+  ) && (
+    headerRow[1]?.toLowerCase().includes('exam number') ||
+    headerRow[1]?.toLowerCase().includes('exam no')
+  ) && (
+    headerRow[2]?.toLowerCase().includes('sex')
+  ) && (
+    headerRow[3]?.toLowerCase().includes('age')
+  ) && (
+    headerRow[4]?.toLowerCase().includes('grade')
+  )
 
-  // Parse data rows
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseLine(lines[i])
-
-    // Skip empty rows
-    const isEmptyRow = values[0]?.trim() === '' && values[1]?.trim() === ''
-    
-    if (isEmptyRow) {
-      continue
+  if (isGradeOnlyFormat) {
+    const gradeColumnIndices = {
+      name: 0,
+      examNo: 1,
+      sex: 2,
+      age: 3,
+      grade: 4
     }
 
-    try {
-      const record: StudentRecord = {
-        schoolName: schoolName,
-        serialNo: i,
-        name: getStringValue(values, columnIndices.name, 'Unknown'),
-        examNo: getStringValue(values, columnIndices.examNo, `${i}`),
-        englishStudies: getNumberValueOrAbsent(values, columnIndices.englishStudies, 0),
-        mathematics: getNumberValueOrAbsent(values, columnIndices.mathematics, 0),
-        basicScience: getNumberValueOrAbsent(values, columnIndices.basicScience, 0),
-        christianReligiousStudies: getNumberValueOrAbsent(values, columnIndices.christianReligiousStudies, 0),
-        nationalValues: getNumberValueOrAbsent(values, columnIndices.nationalValues, 0),
-        culturalAndCreativeArts: getNumberValueOrAbsent(values, columnIndices.culturalAndCreativeArts, 0),
-        businessStudies: getNumberValueOrAbsent(values, columnIndices.businessStudies, 0),
-        igbo: getNumberValueOrAbsent(values, columnIndices.igbo, 0),
-        preVocationalStudies: getNumberValueOrAbsent(values, columnIndices.preVocationalStudies, 0),
-        lga: lga,
-        examYear: examYear,
-        file: file
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseLine(lines[i])
+
+      const isEmptyRow = values[0]?.trim() === '' && values[1]?.trim() === ''
+      
+      if (isEmptyRow) {
+        continue
       }
 
-      records.push(record)
-    } catch (error) {
-      console.warn(`Error parsing row ${i + 1}:`, error)
+      try {
+        const sexValue = values[gradeColumnIndices.sex]?.trim().toUpperCase() || ''
+        
+        const record: StudentRecord = {
+          schoolName: schoolName,
+          serialNo: i,
+          name: getStringValue(values, gradeColumnIndices.name, 'Unknown'),
+          examNo: getStringValue(values, gradeColumnIndices.examNo, `${i}`),
+          sex: sexValue,
+          age: getNumberValueOrAbsent(values, gradeColumnIndices.age, 0),
+          grade: getStringValue(values, gradeColumnIndices.grade, ''),
+          lga: lga,
+          examYear: examYear,
+          file: file
+        }
+
+        records.push(record)
+      } catch (error) {
+        console.warn(`Error parsing row ${i + 1}:`, error)
+      }
+    }
+  } else {
+    const columnIndices = {
+      name: 0,
+      examNo: 1,
+      englishStudies: 2,
+      mathematics: 3,
+      basicScience: 4,
+      christianReligiousStudies: 5,
+      nationalValues: 6,
+      culturalAndCreativeArts: 7,
+      businessStudies: 8,
+      igbo: 9,
+      preVocationalStudies: 10
+    }
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseLine(lines[i])
+
+      const isEmptyRow = values[0]?.trim() === '' && values[1]?.trim() === ''
+      
+      if (isEmptyRow) {
+        continue
+      }
+
+      try {
+        const record: StudentRecord = {
+          schoolName: schoolName,
+          serialNo: i,
+          name: getStringValue(values, columnIndices.name, 'Unknown'),
+          examNo: getStringValue(values, columnIndices.examNo, `${i}`),
+          englishStudies: getNumberValueOrAbsent(values, columnIndices.englishStudies, 0),
+          mathematics: getNumberValueOrAbsent(values, columnIndices.mathematics, 0),
+          basicScience: getNumberValueOrAbsent(values, columnIndices.basicScience, 0),
+          christianReligiousStudies: getNumberValueOrAbsent(values, columnIndices.christianReligiousStudies, 0),
+          nationalValues: getNumberValueOrAbsent(values, columnIndices.nationalValues, 0),
+          culturalAndCreativeArts: getNumberValueOrAbsent(values, columnIndices.culturalAndCreativeArts, 0),
+          businessStudies: getNumberValueOrAbsent(values, columnIndices.businessStudies, 0),
+          igbo: getNumberValueOrAbsent(values, columnIndices.igbo, 0),
+          preVocationalStudies: getNumberValueOrAbsent(values, columnIndices.preVocationalStudies, 0),
+          lga: lga,
+          examYear: examYear,
+          file: file
+        }
+
+        records.push(record)
+      } catch (error) {
+        console.warn(`Error parsing row ${i + 1}:`, error)
+      }
     }
   }
 

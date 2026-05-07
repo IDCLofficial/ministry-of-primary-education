@@ -42,38 +42,62 @@ function recordKey(r: UBEATStudentRecord) {
 
 function exportRecycleBinCsv(records: UBEATStudentRecord[]) {
     if (records.length === 0) return
-    const headers = [
-        'Serial No', 'Candidate Name', 'Exam Number', 'Sex', 'Age',
-        'School Name', 'LGA', 'Zone', 'Code No', 'Attendance',
-        'Mathematics CA', 'Mathematics Exam',
-        'English CA', 'English Exam',
-        'General Knowledge CA', 'General Knowledge Exam',
-        'Igbo CA', 'Igbo Exam',
-        'Exam Year', 'File Name'
-    ]
-
-    const rows = records.map(r => [
-        r.serialNumber,
-        r.studentName,
-        r.examNumber,
-        r.sex,
-        r.age,
-        r.schoolName,
-        r.lga,
-        r.zone,
-        r.codeNo,
-        r.attendance,
-        r.subjects?.mathematics?.ca ?? '',
-        r.subjects?.mathematics?.exam ?? '',
-        r.subjects?.english?.ca ?? '',
-        r.subjects?.english?.exam ?? '',
-        r.subjects?.generalKnowledge?.ca ?? '',
-        r.subjects?.generalKnowledge?.exam ?? '',
-        r.subjects?.igbo?.ca ?? '',
-        r.subjects?.igbo?.exam ?? '',
-        r.examYear ?? '',
-        r.file.name
-    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`))
+    
+    const isGradeOnlyFormat = records[0]?.grade !== undefined
+    
+    let headers: string[]
+    let rows: string[][]
+    
+    if (isGradeOnlyFormat) {
+        headers = [
+            'Serial No', 'Candidate Name', 'Exam Number', 'Sex', 'Age', 'Grade',
+            'School Name', 'LGA', 'Exam Year', 'File Name'
+        ]
+        rows = records.map(r => [
+            r.serialNumber,
+            r.studentName,
+            r.examNumber,
+            r.sex ?? '',
+            r.age ?? '',
+            r.grade ?? '',
+            r.schoolName,
+            r.lga ?? '',
+            r.examYear ?? '',
+            r.file.name
+        ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`))
+    } else {
+        headers = [
+            'Serial No', 'Candidate Name', 'Exam Number', 'Sex', 'Age',
+            'School Name', 'LGA', 'Zone', 'Code No', 'Attendance',
+            'Mathematics CA', 'Mathematics Exam',
+            'English CA', 'English Exam',
+            'General Knowledge CA', 'General Knowledge Exam',
+            'Igbo CA', 'Igbo Exam',
+            'Exam Year', 'File Name'
+        ]
+        rows = records.map(r => [
+            r.serialNumber,
+            r.studentName,
+            r.examNumber,
+            r.sex,
+            r.age,
+            r.schoolName,
+            r.lga,
+            r.zone,
+            r.codeNo,
+            r.attendance,
+            r.subjects?.mathematics?.ca ?? '',
+            r.subjects?.mathematics?.exam ?? '',
+            r.subjects?.english?.ca ?? '',
+            r.subjects?.english?.exam ?? '',
+            r.subjects?.generalKnowledge?.ca ?? '',
+            r.subjects?.generalKnowledge?.exam ?? '',
+            r.subjects?.igbo?.ca ?? '',
+            r.subjects?.igbo?.exam ?? '',
+            r.examYear ?? '',
+            r.file.name
+        ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`))
+    }
 
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -719,36 +743,39 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                 return groups
             }, {} as Record<string, UBEATStudentRecord[]>)
 
-            const results = Object.entries(schoolGroups).map(([schoolName, students]) => ({
-                lga: students[0]?.lga,
-                examYear: students[0]?.examYear || new Date().getFullYear(),
-                schoolName,
-                students: students.map(student => ({
-                    serialNumber: student.serialNumber,
-                    examNumber: student.examNumber,
-                    studentName: student.studentName,
-                    age: student.age || 0,
-                    sex: student.sex,
-                    subjects: {
-                        mathematics: {
-                            ca: parseFloat(student.subjects.mathematics.ca) || 0,
-                            exam: student.subjects.mathematics.exam
-                        },
-                        english: {
-                            ca: parseFloat(student.subjects.english.ca) || 0,
-                            exam: student.subjects.english.exam
-                        },
-                        generalKnowledge: {
-                            ca: parseFloat(student.subjects.generalKnowledge.ca) || 0,
-                            exam: student.subjects.generalKnowledge.exam
-                        },
-                        igbo: {
-                            ca: parseFloat(student.subjects.igbo.ca) || 0,
-                            exam: student.subjects.igbo.exam
+            const results = Object.entries(schoolGroups).map(([schoolName, students]) => {
+                const studentsWithScores = students.filter(s => s.subjects !== undefined)
+                return {
+                    lga: students[0]?.lga,
+                    examYear: students[0]?.examYear || new Date().getFullYear(),
+                    schoolName,
+                    students: studentsWithScores.map(student => ({
+                        serialNumber: student.serialNumber,
+                        examNumber: student.examNumber,
+                        studentName: student.studentName,
+                        age: student.age || 0,
+                        sex: student.sex,
+                        subjects: {
+                            mathematics: {
+                                ca: parseFloat(student.subjects?.mathematics?.ca ?? '0') || 0,
+                                exam: student.subjects?.mathematics?.exam ?? 0
+                            },
+                            english: {
+                                ca: parseFloat(student.subjects?.english?.ca ?? '0') || 0,
+                                exam: student.subjects?.english?.exam ?? 0
+                            },
+                            generalKnowledge: {
+                                ca: parseFloat(student.subjects?.generalKnowledge?.ca ?? '0') || 0,
+                                exam: student.subjects?.generalKnowledge?.exam ?? 0
+                            },
+                            igbo: {
+                                ca: parseFloat(student.subjects?.igbo?.ca ?? '0') || 0,
+                                exam: student.subjects?.igbo?.exam ?? 0
+                            }
                         }
-                    }
-                }))
-            }))
+                    }))
+                }
+            }).filter(g => g.students.length > 0)
 
             await uploadUBEATResults({ result: results }).unwrap()
 
@@ -1136,6 +1163,9 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                     { key: 'serialNumber', label: 'S/NO' },
                                     { key: 'studentName', label: 'Name' },
                                     { key: 'examNumber', label: 'Exam No.' },
+                                    ...(data.length > 0 && data[0].sex !== undefined ? [{ key: 'sex', label: 'Sex' }] : []),
+                                    ...(data.length > 0 && data[0].age !== undefined ? [{ key: 'age', label: 'Age' }] : []),
+                                    ...(data.length > 0 && data[0].grade !== undefined ? [{ key: 'grade', label: 'Grade' }] : []),
                                     { key: 'schoolName', label: 'School' },
                                     { key: 'lga', label: 'LGA' }
                                 ].map(({ key, label }) => (
@@ -1213,6 +1243,21 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                                 record.examNumber
                                             )}
                                         </td>
+                                        {data.length > 0 && data[0].sex !== undefined && (
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                                                {record.sex || '-'}
+                                            </td>
+                                        )}
+                                        {data.length > 0 && data[0].age !== undefined && (
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {record.age ?? '-'}
+                                            </td>
+                                        )}
+                                        {data.length > 0 && data[0].grade !== undefined && (
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {record.grade || '-'}
+                                            </td>
+                                        )}
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {isEditing ? (
                                                 <input
