@@ -118,8 +118,11 @@ export interface BeceResultUploadResponse {
 
 // Adapter functions
 export function ubeatStudentToDisplayStudent(ubeatStudent: UBEATStudent): DisplayStudent {
+    // Check if subjects exist (grade-only format for 2020/2021 has empty subjects)
+    const hasSubjects = ubeatStudent.subjects && Object.keys(ubeatStudent.subjects).length > 0
+
     // Convert UBEAT subjects object to array of Subject
-    const subjectsArray: Subject[] = [
+    const subjectsArray: Subject[] = hasSubjects ? [
         {
             name: 'Mathematics',
             exam: ubeatStudent.subjects.mathematics.total,
@@ -140,7 +143,7 @@ export function ubeatStudentToDisplayStudent(ubeatStudent: UBEATStudent): Displa
             exam: ubeatStudent.subjects.igbo.total,
             grade: calculateGradeFromTotal(ubeatStudent.subjects.igbo.total)
         }
-    ]
+    ] : []
 
     return {
         _id: ubeatStudent._id,

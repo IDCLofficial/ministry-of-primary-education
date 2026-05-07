@@ -11,6 +11,41 @@ import { useUploadUBEATResultsMutation } from '../../../../store/api/authApi'
 import { LgaEnum } from '../../../../../portal/dashboard/[schoolCode]/types'
 import ErrorTypeModal from './ErrorTypeModal'
 
+const VALID_LGAS = Object.values(LgaEnum).map(v => v.toLowerCase())
+const LGA_TITLE_CASE: Record<string, string> = Object.values(LgaEnum).reduce((acc, v) => {
+    acc[v.toLowerCase()] = v
+    return acc
+}, {} as Record<string, string>)
+
+function normalizeLga(lga: string): string {
+    return lga.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+function findClosestLga(invalidLga: string): string | null {
+    const normalized = normalizeLga(invalidLga)
+    if (VALID_LGAS.includes(normalized)) {
+        return LGA_TITLE_CASE[normalized] || null
+    }
+    for (const valid of VALID_LGAS) {
+        if (valid.includes(normalized) || normalized.includes(valid)) {
+            return LGA_TITLE_CASE[valid] || null
+        }
+    }
+    return null
+}
+
+function tryFixLga(lga: string): { fixed: string; wasFixed: boolean } {
+    const normalized = normalizeLga(lga)
+    if (VALID_LGAS.includes(normalized)) {
+        return { fixed: LGA_TITLE_CASE[normalized] || lga, wasFixed: false }
+    }
+    const closest = findClosestLga(normalized)
+    if (closest) {
+        return { fixed: closest, wasFixed: true }
+    }
+    return { fixed: lga, wasFixed: false }
+}
+
 interface DataTableProps {
     data: UBEATStudentRecord[]
     onDataChange: (data: UBEATStudentRecord[]) => void
@@ -144,21 +179,42 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         if (recycleBin.length === 0) setRecycleBinExported(true)
     }, [recycleBin])
 
-    // Auto-bin records with invalid LGAs as soon as they are loaded
+    // Auto-fix or bin records with invalid LGAs as soon as they are loaded
     React.useEffect(() => {
         if (data.length === 0) return
-        const validLgas = new Set(Object.values(LgaEnum).map(v => v.toLowerCase()))
-        const invalidLgaRecords = data.filter(
-            r => !validLgas.has((r.lga ?? '').toLowerCase().trim())
-        )
-        if (invalidLgaRecords.length === 0) return
-        const invalidKeys = new Set(invalidLgaRecords.map(recordKey))
+
+        const validLgaSet = new Set(VALID_LGAS)
+        const recordsToFix: { key: string; record: UBEATStudentRecord; fixedLga: string }[] = []
+        const recordsToBin: UBEATStudentRecord[] = []
+
+        data.forEach(r => {
+            const lgaValue = r.lga ?? ''
+            if (!validLgaSet.has(lgaValue.toLowerCase().trim())) {
+                const { fixed, wasFixed } = tryFixLga(lgaValue)
+                if (wasFixed) {
+                    recordsToFix.push({ key: recordKey(r), record: r, fixedLga: fixed })
+                } else {
+                    recordsToBin.push(r)
+                }
+            }
+        })
+
+        if (recordsToFix.length > 0) {
+            onDataChange(data.map(r => {
+                const fix = recordsToFix.find(f => f.key === recordKey(r))
+                return fix ? { ...r, lga: fix.fixedLga } : r
+            }))
+            toast.success(`Fixed LGA for ${recordsToFix.length} record${recordsToFix.length !== 1 ? 's' : ''}: ${recordsToFix.map(f => f.fixedLga).filter((v, i, a) => a.indexOf(v) === i).join(', ')}`, { icon: '🔧' })
+        }
+
+        if (recordsToBin.length === 0) return
+        const invalidKeys = new Set(recordsToBin.map(recordKey))
         setRecycleBin(prev => [
             ...prev,
-            ...invalidLgaRecords.filter(r => !prev.some(rr => recordKey(rr) === recordKey(r)))
+            ...recordsToBin.filter(r => !prev.some(rr => recordKey(rr) === recordKey(r)))
         ])
         onDataChange(data.filter(r => !invalidKeys.has(recordKey(r))))
-        toast(`${invalidLgaRecords.length} record${invalidLgaRecords.length !== 1 ? 's' : ''} with invalid LGA auto-moved to recycle bin`, { icon: '🗑️' })
+        toast(`${recordsToBin.length} record${recordsToBin.length !== 1 ? 's' : ''} with invalid LGA auto-moved to recycle bin`, { icon: '🗑️' })
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data])
 
@@ -744,10 +800,29 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
             }, {} as Record<string, UBEATStudentRecord[]>)
 
             const results = Object.entries(schoolGroups).map(([schoolName, students]) => {
+                const examYear = students[0]?.examYear || new Date().getFullYear()
+                const isGradeOnlyFormat = examYear <= 2021 && students.some(s => s.grade)
+
+                if (isGradeOnlyFormat) {
+                    return {
+                        lga: students[0]?.lga,
+                        examYear,
+                        schoolName,
+                        students: students.map(student => ({
+                            serialNumber: student.serialNumber,
+                            examNumber: student.examNumber,
+                            studentName: student.studentName,
+                            age: student.age || 0,
+                            sex: student.sex,
+                            grade: student.grade || 'PASS'
+                        }))
+                    }
+                }
+
                 const studentsWithScores = students.filter(s => s.subjects !== undefined)
                 return {
                     lga: students[0]?.lga,
-                    examYear: students[0]?.examYear || new Date().getFullYear(),
+                    examYear,
                     schoolName,
                     students: studentsWithScores.map(student => ({
                         serialNumber: student.serialNumber,

@@ -26,15 +26,21 @@ export default function UBEATSchoolDetailsPage({ params }: { params: Promise<{ s
     // Convert schoolId back to schoolCode format (replace dashes with slashes)
     const schoolCode = schoolId.replace(/-/g, '/')
     
-    const { data: studentsData, isLoading: studentsLoading, error: studentsError, isFetching: studentsFetching } = useGetUBEATResultsQuery({
+    const { data: studentsData, isLoading: studentsLoading, error: studentsError, isFetching: studentsFetching, refetch } = useGetUBEATResultsQuery({
         schoolCode: schoolCode,
         page: parseInt(page),
         limit: 10,
         search: search || undefined,
         examYear: year !== "all" ? parseInt(year) : undefined
     }, {
-        skip: !schoolId
+        skip: !schoolId,
+        refetchOnMountOrArgChange: true
     })
+
+    // Refetch when year or search changes
+    React.useEffect(() => {
+        refetch()
+    }, [year, search, refetch])
 
     // Convert UBEAT students to DisplayStudent format
     const students = useMemo(() => {

@@ -1,4 +1,23 @@
 import * as XLSX from 'xlsx'
+import { LgaEnum } from '../../../../../portal/dashboard/[schoolCode]/types'
+
+const LGA_VALUES = Object.values(LgaEnum)
+const LGA_LOWER_MAP: Record<string, string> = {}
+LGA_VALUES.forEach(lga => {
+  LGA_LOWER_MAP[lga.toLowerCase()] = lga
+})
+
+function normalizeLgaToEnum(inputLga: string): string {
+  if (!inputLga || inputLga === 'Unknown LGA') return 'Unknown Lga'
+  const normalized = inputLga.toLowerCase().trim()
+  if (LGA_LOWER_MAP[normalized]) return LGA_LOWER_MAP[normalized]
+  for (const validLga of LGA_VALUES) {
+    if (validLga.toLowerCase().includes(normalized) || normalized.includes(validLga.toLowerCase())) {
+      return validLga
+    }
+  }
+  return inputLga
+}
 
 export const parseLine = (line: string): string[] => {
   const result: string[] = []
@@ -128,6 +147,14 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
       type: 'missing_required',
       field: 'studentName',
       message: 'Student name is required'
+    })
+  }
+
+  if (isGradeOnlyFormat && !record.examNumber?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'examNumber',
+      message: 'Exam number is required'
     })
   }
 
@@ -347,6 +374,7 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
   }
 
   const inferredSchoolName = isLegacy ? null : getSchoolNameFromFileMeta(file.name)
+  const inferredLga = isLegacy ? null : getLgaFromFileMeta(file.name)
 
   const legacyIndices = {
     serialNo: 0,
@@ -432,7 +460,7 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
         studentName: getStringValue(values, indices.candidateName, 'Unknown'),
         age: getNumberValue(values, indices.age, 0),
         sex,
-        lga: isLegacy ? getStringValue(values, legacyIndices.lga, 'Unknown LGA') : 'Unknown LGA',
+        lga: isLegacy ? getStringValue(values, legacyIndices.lga, 'Unknown Lga') : (inferredLga || 'Unknown Lga'),
         zone: isLegacy ? getStringValue(values, legacyIndices.zone, 'Unknown Zone') : 'Unknown Zone',
         schoolName: isLegacy
           ? getStringValue(values, legacyIndices.schoolName, 'Unknown School')
@@ -507,13 +535,34 @@ const getAttendanceValue = (values: string[], index: number): string | number =>
 }
 
 const getSchoolNameFromFileMeta = (fileName: string): string => {
-  // XLSX sheets are passed in as: "<original file> - Sheet: <sheetName>"
   const sheetMarker = ' - Sheet: '
   const sheetIdx = fileName.indexOf(sheetMarker)
   const raw = sheetIdx >= 0 ? fileName.slice(sheetIdx + sheetMarker.length) : fileName
 
-  // If it's a plain filename, strip extension.
+  const dashIdx = raw.indexOf(' - ')
+  if (dashIdx >= 0) {
+    return raw.slice(dashIdx + 3).replace(/\.(csv|xlsx|xls)$/i, '').trim()
+  }
   return raw.replace(/\.(csv|xlsx|xls)$/i, '').trim()
+}
+
+const getLgaFromFileMeta = (fileName: string): string => {
+  const withoutExt = fileName.replace(/\.(csv|xlsx|xls)$/i, '')
+  const dashIdx = withoutExt.indexOf(' - ')
+  let lgaPart = dashIdx >= 0 ? withoutExt.slice(0, dashIdx) : withoutExt
+  lgaPart = lgaPart.replace(/\b(20\d{2})\b/g, '').replace(/\bUBEAT\b/i, '').replace(/\s+/g, ' ').trim()
+  const sheetMarker = ' - Sheet: '
+  const sheetIdx = fileName.indexOf(sheetMarker)
+  if (sheetIdx >= 0) {
+    const fromSheet = fileName.slice(0, sheetIdx)
+    const sheetLgaPart = fromSheet.split(' - ')[0] || fromSheet
+    const cleanedSheetLga = sheetLgaPart.replace(/\b(20\d{2})\b/g, '').replace(/\bUBEAT\b/i, '').replace(/\s+/g, ' ').trim()
+    if (cleanedSheetLga.length > lgaPart.length) {
+      lgaPart = cleanedSheetLga
+    }
+  }
+  const normalizedLga = normalizeLgaToEnum(lgaPart)
+  return normalizedLga || 'Unknown Lga'
 }
 
 const parseFlatFormat = (
@@ -583,7 +632,7 @@ const parseFlatFormat = (
         examNumber:
           examNo >= 0 && values[examNo]?.trim()
             ? values[examNo].trim()
-            : `UBEAT/${i - dataStartRow + 1}`,
+            : '',
         studentName:
           candidateName >= 0 && values[candidateName]?.trim()
             ? values[candidateName].trim()
@@ -643,11 +692,15 @@ const parseGradeOnlyFormat = (
     const sheetMarker = ' - Sheet: '
     const sheetIdx = fileName.indexOf(sheetMarker)
     const raw = sheetIdx >= 0 ? fileName.slice(sheetIdx + sheetMarker.length) : fileName
+    const dashIdx = raw.indexOf(' - ')
+    if (dashIdx >= 0) {
+      return raw.slice(dashIdx + 3).replace(/\.(csv|xlsx|xls)$/i, '').trim()
+    }
     return raw.replace(/\.(csv|xlsx|xls)$/i, '').trim()
   }
 
   const inferredSchoolName = getSchoolNameFromFileMeta(file.name)
-  const lga = 'Unknown LGA'
+  const lga = getLgaFromFileMeta(file.name)
   const zone = 'Unknown Zone'
 
   for (let i = dataStartRow; i < lines.length; i++) {
@@ -667,7 +720,7 @@ const parseGradeOnlyFormat = (
 
       const record: UBEATStudentRecord = {
         serialNumber: i - dataStartRow + 1,
-        examNumber: getStringValue(values, 1, `UBEAT/${i - dataStartRow + 1}`),
+        examNumber: getStringValue(values, 1, ''),
         studentName: getStringValue(values, 0, 'Unknown'),
         age: getNumberValue(values, 3, 0),
         sex,
@@ -678,7 +731,7 @@ const parseGradeOnlyFormat = (
         codeNo: '',
         attendance: 0,
         examYear: fileExamYear,
-        file
+        file,
       }
 
       records.push(record)

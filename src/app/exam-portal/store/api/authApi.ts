@@ -60,7 +60,8 @@ export interface UBEATResultUpload {
     studentName: string
     age: number
     sex: 'male' | 'female'
-    subjects: {
+    grade?: string
+    subjects?: {
       mathematics: {
         ca: number;
         exam: number;
@@ -321,7 +322,7 @@ export const authApi = apiSlice.injectEndpoints({
         if (params.page) queryParams.append('page', params.page.toString())
         if (params.limit) queryParams.append('limit', params.limit.toString())
         if (params.search) queryParams.append('search', params.search)
-        if (params.examYear) queryParams.append('examYear', params.examYear.toString())
+        if (params.examYear) queryParams.append('year', params.examYear.toString())
         const queryString = queryParams.toString()
         return `/bece-result/results/${params.schoolId.replace(/\//g, "-")}${queryString ? `?${queryString}` : ''}`
       },
@@ -380,7 +381,7 @@ export const authApi = apiSlice.injectEndpoints({
         if (params.page) queryParams.append('page', params.page.toString())
         if (params.limit) queryParams.append('limit', params.limit.toString())
         if (params.search) queryParams.append('search', params.search)
-        if (params.examYear) queryParams.append('examYear', params.examYear.toString())
+        if (params.examYear) queryParams.append('year', params.examYear.toString())
         const queryString = queryParams.toString()
         return `/ubeat/results/${params.schoolCode.replace(/\//g, "-")}${queryString ? `?${queryString}` : ''}`
       },
