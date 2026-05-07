@@ -174,6 +174,61 @@ export interface DashboardSummary {
   certificateGenerated: number
 }
 
+// Skipped Results Interfaces
+export interface SkippedResult {
+  _id: string
+  studentName: string
+  examNumber: string
+  schoolName: string
+  lga: string
+  examYear: number
+  uploadBatch: string
+  status: string
+  reason: string
+  uploadedAt: string
+}
+
+export interface SkippedResultsResponse {
+  data: SkippedResult[]
+  summary: {
+    totalSkipped: number
+    bySchool: {
+      schoolName: string
+      lga: string
+      count: number
+      examYears: number[]
+    }[]
+  }
+  availableFilters: {
+    batches: string[]
+    lgas: string[]
+    statuses: string[]
+  }
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+  }
+  filters: {
+    uploadBatch: string | null
+    lga: string | null
+    schoolName: string | null
+    status: string | null
+  }
+}
+
+export interface SkippedResultsParams {
+  page?: number
+  limit?: number
+  uploadBatch?: string
+  lga?: string
+  schoolName?: string
+  status?: string
+}
+
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Admin login
@@ -357,6 +412,23 @@ export const authApi = apiSlice.injectEndpoints({
       providesTags: [{ type: 'Admin', id: 'SUMMARY' }],
     }),
 
+    // Get Skipped Results (School Not Found Errors)
+    getSkippedResults: builder.query<SkippedResultsResponse, SkippedResultsParams | void>({
+      query: (params) => {
+        const queryParams = new URLSearchParams()
+        if (params && params.page) queryParams.append('page', params.page.toString())
+        if (params && params.limit) queryParams.append('limit', params.limit.toString())
+        if (params && params.uploadBatch) queryParams.append('uploadBatch', params.uploadBatch)
+        if (params && params.lga) queryParams.append('lga', params.lga)
+        if (params && params.schoolName) queryParams.append('schoolName', params.schoolName)
+        if (params && params.status) queryParams.append('status', params.status)
+
+        const queryString = queryParams.toString()
+        return `/ubeat/skipped-results${queryString ? `?${queryString}` : ''}`
+      },
+      providesTags: [{ type: 'Admin', id: 'SKIPPED_RESULTS' }],
+    }),
+
   }),
 })
 
@@ -374,4 +446,5 @@ export const {
   useGetUploadLogsQuery,
   useGetDashboardSummaryQuery,
   useGetSchoolByIdQuery,
+  useGetSkippedResultsQuery,
 } = authApi
