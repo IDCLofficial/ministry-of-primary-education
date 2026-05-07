@@ -72,7 +72,7 @@ function parseSearchQuery(raw: string): { mode: SearchMode; field: SearchField; 
 }
 
 function recordKey(r: UBEATStudentRecord) {
-    return `${r.examNumber}\0${r.file.name}`
+    return `${r.examNumber || 'MISSING'}\0${r.serialNumber}\0${r.file.name}`
 }
 
 function exportRecycleBinCsv(records: UBEATStudentRecord[]) {

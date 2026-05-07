@@ -25,7 +25,7 @@ interface ErrorTypeModalProps {
   validateRecord: (record: any) => ValidationError[]
 }
 
-const recordKey = (r: any) => `${r.examNumber}\0${r.file.name}`
+const recordKey = (r: any) => `${r.examNumber || 'MISSING'}\0${r.serialNumber}\0${r.file.name}`
 
 const errorTypeConfig: Record<string, { color: string; bgColor: string; label: string }> = {
   name_special_chars: { color: 'text-yellow-700', bgColor: 'bg-yellow-50', label: 'Name with Invalid Characters' },
