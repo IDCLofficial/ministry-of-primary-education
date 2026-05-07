@@ -1,4 +1,4 @@
-import { IoCloudDone, IoCloudDoneOutline, IoCloudUpload, IoCloudUploadOutline, IoGrid, IoGridOutline, IoPeople, IoPeopleOutline } from "react-icons/io5"
+import { IoCloudDone, IoCloudDoneOutline, IoCloudUpload, IoCloudUploadOutline, IoGrid, IoGridOutline, IoPeople, IoPeopleOutline, IoWarning, IoWarningOutline } from "react-icons/io5"
 
 interface MenuItem {
     icon: React.ReactNode,
@@ -15,7 +15,7 @@ export const menuItems: (pathname: string) => MenuItem[] = (pathname: string) =>
         iconActive: <IoGrid />, 
         label: 'Dashboard',
         href: '/exam-portal/dashboard',
-        active: pathname === '/exam-portal/dashboard' || (pathname !== '/exam-portal/dashboard/view-uploads' && !pathname.includes('/exam-portal/dashboard/schools') && !pathname.includes('/exam-portal/dashboard/uploads'))
+        active: pathname === '/exam-portal/dashboard' || (pathname !== '/exam-portal/dashboard/view-uploads' && pathname !== '/exam-portal/dashboard/errored-uploads' && !pathname.includes('/exam-portal/dashboard/schools') && !pathname.includes('/exam-portal/dashboard/uploads'))
     },
     {
         icon: <IoPeopleOutline />,
@@ -40,5 +40,14 @@ export const menuItems: (pathname: string) => MenuItem[] = (pathname: string) =>
         abbr: 'View Uploads',
         href: '/exam-portal/dashboard/view-uploads',
         active: pathname === '/exam-portal/dashboard/view-uploads'
-    }
+    },
+    {
+        icon: <IoWarningOutline />,
+        iconActive: <IoWarning />,
+        label: 'Errored Uploads',
+        abbr: 'Errored Uploads',
+        href: '/exam-portal/dashboard/errored-uploads',
+        active: pathname === '/exam-portal/dashboard/errored-uploads'
+    },
+    //
 ]
