@@ -108,14 +108,9 @@ function UploadContent() {
                     const records = await parseCSVFile(file)
                     console.log('[UPLOAD] Parsed', records.length, 'records from', file.name)
                     if (records.length > 0) {
-                        console.log('[UPLOAD] First parsed record:', {
-                            name: records[0].studentName,
-                            examNo: records[0].examNumber,
-                            sex: records[0].sex,
-                            age: records[0].age,
-                            grade: records[0].grade,
-                            school: records[0].schoolName,
-                            lga: records[0].lga
+                        console.log('[UPLOAD] First 10 records from', file.name + ':')
+                        records.slice(0, 10).forEach((r, idx) => {
+                            console.log(`  ${idx + 1}. name: ${r.studentName}, examNo: ${r.examNumber}, sex: ${r.sex}, age: ${r.age}, grade: ${r.grade}, school: ${r.schoolName}, lga: ${r.lga}`)
                         })
                     }
                     
