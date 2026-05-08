@@ -377,7 +377,9 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
     row0[0]?.toLowerCase().includes('name')
   ) && (
     row0[1]?.toLowerCase().includes('exam number') ||
-    row0[1]?.toLowerCase().includes('exam no')
+    row0[1]?.toLowerCase().includes('exam no') ||
+    row0[1]?.toLowerCase().includes('candidate number') ||
+    row0[1]?.toLowerCase().includes('number')
   ) && (
     row0[2]?.toLowerCase().includes('sex')
   ) && (
@@ -392,7 +394,9 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
     row0[0]?.toLowerCase().includes('name')
   ) && (
     row0[1]?.toLowerCase().includes('exam number') ||
-    row0[1]?.toLowerCase().includes('exam no')
+    row0[1]?.toLowerCase().includes('exam no') ||
+    row0[1]?.toLowerCase().includes('candidate number') ||
+    row0[1]?.toLowerCase().includes('number')
   ) && (
     row0[2]?.toLowerCase().includes('age')
   ) && (
