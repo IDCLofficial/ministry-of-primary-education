@@ -313,6 +313,13 @@ export const parseXLSXFile = (file: File, examYear: number): Promise<UBEATStuden
               size: file.size
             }, examYear)
 
+            console.log(`[XLSX] Sheet "${sheetName}": parsed ${records.length} records`)
+            if (records.length > 0) {
+                records.slice(0, 10).forEach((r, idx) => {
+                    console.log(`  ${idx + 1}. name: ${r.studentName}, examNo: ${r.examNumber}, sex: ${r.sex}, age: ${r.age}, grade: ${r.grade}, school: ${r.schoolName}, lga: ${r.lga}`)
+                })
+            }
+
             if (records.length > 0) {
               allRecords.push(...records)
             }
