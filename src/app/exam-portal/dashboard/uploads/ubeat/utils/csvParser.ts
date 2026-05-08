@@ -713,28 +713,51 @@ const parseGradeOnlyFormat = (
   const lga = getLgaFromFileMeta(file.name)
   const zone = 'Unknown Zone'
 
+  const headerLine = lines[0] || ''
+  const headers = parseLine(headerLine)
+  const columnMap: Record<string, number> = {}
+  headers.forEach((header, idx) => {
+    const h = header.toLowerCase().trim()
+    columnMap[h] = idx
+  })
+
+  const findColumn = (keywords: string[]): number => {
+    for (const kw of keywords) {
+      for (const [h, idx] of Object.entries(columnMap)) {
+        if (h.includes(kw.toLowerCase())) return idx
+      }
+    }
+    return -1
+  }
+
+  const nameIdx = findColumn(['name', 'candidate', 'student'])
+  const examNoIdx = findColumn(['number', 'exam', 'no'])
+  const sexIdx = findColumn(['sex', 'gender'])
+  const ageIdx = findColumn(['age'])
+  const gradeIdx = findColumn(['grade', 'result', 'standing'])
+
   for (let i = dataStartRow; i < lines.length; i++) {
     const values = parseLine(lines[i])
 
-    const isEmptyRow =
-      !values[0]?.trim() &&
-      !values[1]?.trim()
+    const studentName = nameIdx >= 0 ? values[nameIdx]?.trim() : values[0]?.trim()
+    const examNumber = examNoIdx >= 0 ? values[examNoIdx]?.trim() : values[1]?.trim()
+    const sexValue = sexIdx >= 0 ? values[sexIdx]?.trim() : values[2]?.trim()
+    const ageValue = ageIdx >= 0 ? values[ageIdx]?.trim() : values[3]?.trim()
+    const gradeValue = gradeIdx >= 0 ? values[gradeIdx]?.trim() : values[4]?.trim()
 
-    if (isEmptyRow) {
-      continue
-    }
+    if (!studentName && !examNumber) continue
 
     try {
-      const sexValue = values[2]?.trim().toUpperCase() || 'M'
-      const sex = sexValue === 'F' || sexValue === 'FEMALE' ? 'female' : 'male'
+      const sex = (sexValue?.toUpperCase() || 'M') === 'F' || sexValue?.toUpperCase() === 'FEMALE' ? 'female' : 'male'
+      const age = parseInt(ageValue || '0', 10) || 0
 
       const record: UBEATStudentRecord = {
         serialNumber: i - dataStartRow + 1,
-        examNumber: getStringValue(values, 1, ''),
-        studentName: getStringValue(values, 0, 'Unknown'),
-        age: getNumberValue(values, 3, 0),
+        examNumber: examNumber || '',
+        studentName: studentName || 'Unknown',
+        age,
         sex,
-        grade: getStringValue(values, 4, ''),
+        grade: gradeValue || '',
         lga,
         zone,
         schoolName: inferredSchoolName || 'Unknown School',
