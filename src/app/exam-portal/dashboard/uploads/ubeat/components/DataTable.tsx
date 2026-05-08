@@ -1248,7 +1248,7 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                     </th>
                                 ))}
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
+                                    Debug
                                 </th>
                             </tr>
                         </thead>
@@ -1403,6 +1403,21 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                                             title="Move to recycle bin"
                                                         >
                                                             <span className="text-base leading-none">🗑️</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                const grade = record.grade || 'N/A'
+                                                                const sex = record.sex || 'N/A'
+                                                                const age = record.age
+                                                                const examNo = record.examNumber || 'N/A'
+                                                                const school = record.schoolName || 'N/A'
+                                                                const lga = record.lga || 'N/A'
+                                                                alert(`Parsed values:\nName: ${record.studentName}\nExam No: ${examNo}\nSex: ${sex}\nAge: ${age}\nGrade: ${grade}\nSchool: ${school}\nLGA: ${lga}`)
+                                                            }}
+                                                            className="p-1.5 rounded border border-transparent text-blue-500 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-100"
+                                                            title="Debug info"
+                                                        >
+                                                            <span className="text-base leading-none">🔍</span>
                                                         </button>
                                                     </>
                                                 )}

@@ -118,6 +118,8 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
   const errors: ValidationError[] = []
   const isGradeOnlyFormat = record.grade !== undefined
 
+  console.log(`[VALIDATE] "${record.studentName}" | examNo="${record.examNumber}" | grade="${record.grade}" | isGradeOnly=${isGradeOnlyFormat}`)
+
   if (record.studentName) {
     const specialCharPattern = /[^\p{L}\p{N}\s\-'."\u2018\u2019\u02BC\u00C0-\u024F]/u
     if (specialCharPattern.test(record.studentName)) {
@@ -126,6 +128,7 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
         field: 'studentName',
         message: 'Name contains invalid characters'
       })
+      console.log(`[VALIDATE] ERROR: name_special_chars for "${record.studentName}"`)
     }
   }
 
@@ -140,6 +143,7 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
         field: 'examNumber',
         message: 'Invalid exam number format'
       })
+      console.log(`[VALIDATE] ERROR: exam_number_invalid for "${record.examNumber}"`)
     }
   }
 
@@ -149,6 +153,7 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
       field: 'studentName',
       message: 'Student name is required'
     })
+    console.log(`[VALIDATE] ERROR: missing_required(studentName) for "${record.studentName}"`)
   }
 
   if (isGradeOnlyFormat && !record.examNumber?.trim()) {
@@ -157,6 +162,7 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
       field: 'examNumber',
       message: 'Exam number is required'
     })
+    console.log(`[VALIDATE] ERROR: missing_required(examNumber) for grade-only format`)
   }
 
   if (!isGradeOnlyFormat && !record.examNumber?.trim()) {
@@ -165,6 +171,7 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
       field: 'examNumber',
       message: 'Exam number is required'
     })
+    console.log(`[VALIDATE] ERROR: missing_required(examNumber) for full format`)
   }
 
   if (!record.schoolName?.trim()) {
@@ -173,7 +180,28 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
       field: 'schoolName',
       message: 'School name is required'
     })
+    console.log(`[VALIDATE] ERROR: missing_required(schoolName) for "${record.schoolName}"`)
   }
+
+  if (!record.sex) {
+    errors.push({
+      type: 'missing_required',
+      field: 'sex',
+      message: 'Sex is required'
+    })
+    console.log(`[VALIDATE] ERROR: missing_required(sex) for "${record.studentName}"`)
+  }
+
+  if (isGradeOnlyFormat && !record.grade?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'grade',
+      message: 'Grade is required'
+    })
+    console.log(`[VALIDATE] ERROR: missing_required(grade) for "${record.studentName}"`)
+  }
+
+  console.log(`[VALIDATE] RESULT: ${errors.length} errors for "${record.studentName}" - ${errors.map(e => e.type).join(', ')}`)
 
   if (!record.lga?.trim()) {
     errors.push({
@@ -181,6 +209,7 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
       field: 'lga',
       message: 'LGA is required'
     })
+    console.log(`[VALIDATE] ERROR: missing_required(lga) for "${record.studentName}"`)
   } else {
     const validLgaSet = new Set(LGA_VALUES.map(v => v.toLowerCase()))
     if (!validLgaSet.has(record.lga.toLowerCase().trim())) {
@@ -189,6 +218,7 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
         field: 'lga',
         message: `Invalid LGA: ${record.lga}`
       })
+      console.log(`[VALIDATE] ERROR: invalid_lga for "${record.studentName}" - lga="${record.lga}"`)
     }
   }
 
@@ -275,13 +305,38 @@ export const parseXLSXFile = (file: File, examYear: number): Promise<UBEATStuden
         const workbook = XLSX.read(data, { type: 'array' })
         const allRecords: UBEATStudentRecord[] = []
 
-        // Process each sheet
+        console.log(`\n[XLSX] ================================`)
+        console.log(`[XLSX] File: ${file.name}`)
+        console.log(`[XLSX] Total sheets: ${workbook.SheetNames.length}`)
+        console.log(`[XLSX] Sheet names: ${workbook.SheetNames.join(', ')}`)
+
+// Process each sheet
         workbook.SheetNames.forEach((sheetName) => {
+          console.log(`\n==========================================`)
+          console.log(`[XLSX] SHEET: "${sheetName}"`)
+          console.log(`==========================================`)
           const worksheet = workbook.Sheets[sheetName]
 
           // Skip empty sheets
           const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1')
           const rowCount = range.e.r - range.s.r + 1
+          const colCount = range.e.c - range.s.c + 1
+
+          console.log(`[XLSX] Dimensions: ${rowCount} rows x ${colCount} cols`)
+
+          // Show SAMPLE rows of the sheet as-is
+          const csvPreview = XLSX.utils.sheet_to_csv(worksheet)
+          const allLines = csvPreview.split('\n')
+          console.log(`[XLSX] RAW DATA (${allLines.length} lines) - First 5 + Last 3:`)
+          allLines.slice(0, 5).forEach((line, idx) => {
+              console.log(`  ${idx}: ${line}`)
+          })
+          if (allLines.length > 8) {
+              console.log(`  ... ${allLines.length - 8} more lines ...`)
+              allLines.slice(-3).forEach((line, idx) => {
+                  console.log(`  ${allLines.length - 3 + idx}: ${line}`)
+              })
+          }
 
           if (rowCount < 3) {
             console.warn(`Skipping sheet "${sheetName}": Not enough rows (needs at least 3, has ${rowCount})`)
@@ -296,6 +351,14 @@ export const parseXLSXFile = (file: File, examYear: number): Promise<UBEATStuden
               name: `${file.name} - Sheet: ${sheetName}`,
               size: file.size
             }, examYear)
+
+            console.log(`\n[XLSX] PARSED RECORDS (${records.length} total) - First 10:`)
+            records.slice(0, 10).forEach((r, idx) => {
+                console.log(`  ${idx + 1}. name="${r.studentName}", examNo="${r.examNumber}", sex="${r.sex}", age=${r.age}, grade="${r.grade}", school="${r.schoolName}", lga="${r.lga}"`)
+            })
+            if (records.length > 10) {
+                console.log(`  ... ${records.length - 10} more records`)
+            }
 
             if (records.length > 0) {
               allRecords.push(...records)
@@ -325,7 +388,17 @@ export const parseXLSXFile = (file: File, examYear: number): Promise<UBEATStuden
 }
 
 export const parseCSVText = (csvText: string, file: { name: string; size: number }, examYear: number): UBEATStudentRecord[] => {
+  console.log(`\n==========================================`)
+  console.log(`[START] parseCSVText called for: ${file.name}`)
+  console.log(`[START] examYear: ${examYear}`)
+  console.log(`[START] csvText length: ${csvText.length}`)
+  
   const lines = csvText.trim().split('\n').filter(line => line.trim() !== '')
+  console.log(`[START] Total lines after filter: ${lines.length}`)
+  console.log(`[START] Line 0 (first 200 chars): "${lines[0]?.substring(0, 200)}"`)
+  console.log(`[START] Line 1 (first 200 chars): "${lines[1]?.substring(0, 200)}"`)
+  console.log(`[START] Line 2 (first 200 chars): "${lines[2]?.substring(0, 200)}"`)
+  console.log(`[START] Line 3 (first 200 chars): "${lines[3]?.substring(0, 200)}"`)
 
   if (lines.length < 2) {
     throw new Error(`File "${file.name}" must have at least 1 header row and one data row. Found ${lines.length} rows.`)
@@ -350,6 +423,10 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
     row0[2]?.toLowerCase().includes('exam')
   )
 
+  console.log(`[FORMAT] row0 columns: ${row0.length}, row0:`, row0.join(' | '))
+  console.log(`[FORMAT] row0[0]="${row0[0]}", row0[1]="${row0[1]}", row0[2]="${row0[2]}", row0[3]="${row0[3]}", row0[4]="${row0[4]}"`)
+  console.log(`[FORMAT] isFlatFormat: ${isFlatFormat}, isGradeOnly check: row0.length===5=${row0.length === 5}`)
+
   if (isFlatFormat) {
     return parseFlatFormat(lines, row0, examYear, file)
   }
@@ -368,9 +445,35 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
     row0[4]?.toLowerCase().includes('grade')
   )
 
-  if (isGradeOnlyFormat) {
-    return parseGradeOnlyFormat(lines, examYear, file)
+  // Alternative: AGE and SEX swapped (e.g., "AGE,SEX" instead of "SEX,AGE")
+  const isGradeOnlyFormatAlt = row0.length === 5 && (
+    row0[0]?.toLowerCase().includes('candidate name') ||
+    row0[0]?.toLowerCase().includes('name')
+  ) && (
+    row0[1]?.toLowerCase().includes('exam number') ||
+    row0[1]?.toLowerCase().includes('exam no')
+  ) && (
+    row0[2]?.toLowerCase().includes('age')
+  ) && (
+    row0[3]?.toLowerCase().includes('sex')
+  ) && (
+    row0[4]?.toLowerCase().includes('grade')
+  )
+
+  const finalIsGradeOnly = isGradeOnlyFormat || isGradeOnlyFormatAlt
+
+  console.log(`[FORMAT] isGradeOnlyFormat: standard=${isGradeOnlyFormat}, alt(age-sex-swap)=${isGradeOnlyFormatAlt}, final=${finalIsGradeOnly}`)
+
+  if (finalIsGradeOnly) {
+    const gradeOnlyRecords = parseGradeOnlyFormat(lines, examYear, file)
+    console.log(`[FORMAT] Grade-only returned ${gradeOnlyRecords.length} records`)
+    if (gradeOnlyRecords.length > 0) {
+      return gradeOnlyRecords
+    }
+    console.log(`[FORMAT] Grade-only returned EMPTY, falling back to FULL format parsing`)
   }
+
+  console.log(`[FORMAT] Using full format parsing (legacy or new layout)`)
 
   // Auto-detect CSV layout by row/column shape (do NOT rely on header titles).
   // - Legacy layout: 2 header rows, data starts at line index 2, first column is numeric serial.
@@ -379,6 +482,9 @@ export const parseCSVText = (csvText: string, file: { name: string; size: number
   const hasLegacyDataRow = row2.length > 0 && isNumeric(row2[0])
   const isLegacy = hasLegacyDataRow
   const dataStartRow = isLegacy ? 2 : 1
+  console.log(`[FORMAT] row2[0]="${row2[0]}", isNumeric=${isNumeric(row2[0])}, hasLegacyDataRow=${hasLegacyDataRow}`)
+  console.log(`[FORMAT] isLegacy=${isLegacy}, dataStartRow=${dataStartRow}`)
+  
   if (isLegacy && lines.length < 3) {
     throw new Error(`File "${file.name}" appears to be the legacy UBEAT format but is missing the second header row.`)
   }
@@ -575,16 +681,67 @@ const getLgaFromFileMeta = (fileName: string): string => {
   return normalizedLga || 'Unknown Lga'
 }
 
+// Map of LGA codes from exam number (IM/XXX/...) to LGA names
+const EXAM_NO_LGA_CODE_MAP: Record<string, string> = {
+  '001': 'Ahiazu Mbaise',
+  '002': 'Aguata',
+  '003': 'Alimba',
+  '004': 'Awaka',
+  '005': 'Dunukofia',
+  '006': 'Ezeagwu',
+  '007': 'Ideato North',
+  '008': 'Ideato South',
+  '009': 'Ihitte Uboma',
+  '010': 'Ikeduru',
+  '011': 'Isiala Mbano',
+  '012': 'Isu',
+  '013': 'Mbaitoli',
+  '014': 'Ngor Okpala',
+  '015': 'Njaba',
+  '016': 'Nwangele',
+  '017': 'Nkwere',
+  '018': 'Obowo',
+  '019': 'Ohaji Egberre',
+  '020': 'Okigwe',
+  '021': 'Orlu',
+  '022': 'Orsu',
+  '023': 'Oru East',
+  '024': 'Oru West',
+  '025': 'Owerri Municipal',
+  '026': 'Owerri North',
+  '027': 'Owerri West',
+  '028': 'Unuimo',
+  '029': 'Isiala Mbano', // duplicate check
+}
+
+export const getLgaFromExamNumber = (examNumber: string): string | null => {
+  if (!examNumber) return null
+  const match = examNumber.match(/^[A-Za-z]{2}\/(\d{3})\//)
+  if (match && match[1]) {
+    const lgaCode = match[1]
+    const lgaName = EXAM_NO_LGA_CODE_MAP[lgaCode]
+    if (lgaName) {
+      return normalizeLgaToEnum(lgaName)
+    }
+  }
+  return null
+}
+
 const parseFlatFormat = (
   lines: string[],
   headers: string[],
   fileExamYear: number,
   file: { name: string; size: number }
 ): UBEATStudentRecord[] => {
+  console.log(`\n[FLAT-FORMAT] Starting parseFlatFormat`)
+  console.log(`[FLAT-FORMAT] Headers (${headers.length}):`, headers.join(' | '))
+  
   const columnMap: Record<string, number> = {}
   headers.forEach((header, idx) => {
     columnMap[header.toLowerCase().trim()] = idx
   })
+
+  console.log(`[FLAT-FORMAT] Column map:`, JSON.stringify(columnMap))
 
   const getIdx = (name: string): number => columnMap[name.toLowerCase()] ?? -1
 
@@ -593,6 +750,10 @@ const parseFlatFormat = (
 
   for (let i = dataStartRow; i < lines.length; i++) {
     const values = parseLine(lines[i])
+
+    if (i - dataStartRow < 10) {
+        console.log(`[PARSE-FLAT] Row ${i}: original:`, values.join(' | '))
+    }
 
     const serialNo = getIdx('serial no')
     const candidateName = getIdx('candidate name')
@@ -677,6 +838,10 @@ const parseFlatFormat = (
         file,
       }
 
+      if (i - dataStartRow < 10) {
+          console.log(`[PARSE-FLAT] Row ${i}: parsed -> name: "${record.studentName}", examNo: "${record.examNumber}", sex: "${record.sex}", age: ${record.age}, school: "${record.schoolName}", lga: "${record.lga}"`)
+      }
+
       records.push(record)
     } catch (error) {
       console.warn(`Error parsing flat format row ${i + 1}:`, error)
@@ -713,28 +878,71 @@ const parseGradeOnlyFormat = (
   const lga = getLgaFromFileMeta(file.name)
   const zone = 'Unknown Zone'
 
+  const headerLine = lines[0] || ''
+  const headers = parseLine(headerLine)
+  const columnMap: Record<string, number> = {}
+  headers.forEach((header, idx) => {
+    const h = header.toLowerCase().trim()
+    columnMap[h] = idx
+  })
+
+  const findColumn = (keywords: string[]): number => {
+    for (const kw of keywords) {
+      for (const [h, idx] of Object.entries(columnMap)) {
+        if (h.includes(kw.toLowerCase())) return idx
+      }
+    }
+    return -1
+  }
+
+  const nameIdx = findColumn(['name', 'candidate', 'student'])
+  const examNoIdx = findColumn(['number', 'exam', 'no'])
+  const sexIdx = findColumn(['sex', 'gender'])
+  const ageIdx = findColumn(['age'])
+  const gradeIdx = findColumn(['grade', 'result', 'standing'])
+
+  console.log(`[GRADE-ONLY] Column detection: nameIdx=${nameIdx}, examNoIdx=${examNoIdx}, sexIdx=${sexIdx}, ageIdx=${ageIdx}, gradeIdx=${gradeIdx}`)
+  console.log(`[GRADE-ONLY] Headers:`, headers.join(' | '))
+
+  if (gradeIdx < 0) {
+      console.warn(`[GRADE-ONLY] No GRADE column found! Falling back to full format parsing.`)
+      return []
+  }
+
   for (let i = dataStartRow; i < lines.length; i++) {
     const values = parseLine(lines[i])
 
-    const isEmptyRow =
-      !values[0]?.trim() &&
-      !values[1]?.trim()
+    const studentName = nameIdx >= 0 ? values[nameIdx]?.trim() : values[0]?.trim()
+    const examNumber = examNoIdx >= 0 ? values[examNoIdx]?.trim() : values[1]?.trim()
+    let sexValue = sexIdx >= 0 ? values[sexIdx]?.trim() : values[2]?.trim()
+    let ageValue = ageIdx >= 0 ? values[ageIdx]?.trim() : values[3]?.trim()
+    const gradeValue = gradeIdx >= 0 ? values[gradeIdx]?.trim() : values[4]?.trim()
 
-    if (isEmptyRow) {
-      continue
+    if (i - dataStartRow < 10) {
+        console.log(`[PARSE] Row ${i}: ORIGINAL: "${values.join(' | ')}" | PARSED: name="${studentName}", examNo="${examNumber}", sex="${sexValue}", age="${ageValue}", grade="${gradeValue}"`)
     }
 
+    const isSexValueNumber = /^\d+$/.test(sexValue || '')
+    const isAgeValueSex = /^[MF]$/i.test(ageValue || '')
+    if (isSexValueNumber && isAgeValueSex) {
+        const temp = sexValue
+        sexValue = ageValue
+        ageValue = temp
+    }
+
+    if (!studentName && !examNumber) continue
+
     try {
-      const sexValue = values[2]?.trim().toUpperCase() || 'M'
-      const sex = sexValue === 'F' || sexValue === 'FEMALE' ? 'female' : 'male'
+      const sex = (sexValue?.toUpperCase() || 'M') === 'F' || sexValue?.toUpperCase() === 'FEMALE' ? 'female' : 'male'
+      const age = parseInt(ageValue || '0', 10) || 0
 
       const record: UBEATStudentRecord = {
         serialNumber: i - dataStartRow + 1,
-        examNumber: getStringValue(values, 1, ''),
-        studentName: getStringValue(values, 0, 'Unknown'),
-        age: getNumberValue(values, 3, 0),
+        examNumber: examNumber || '',
+        studentName: studentName || 'Unknown',
+        age,
         sex,
-        grade: getStringValue(values, 4, ''),
+        grade: gradeValue || '',
         lga,
         zone,
         schoolName: inferredSchoolName || 'Unknown School',
