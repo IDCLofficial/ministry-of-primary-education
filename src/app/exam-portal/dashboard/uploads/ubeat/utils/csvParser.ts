@@ -617,6 +617,10 @@ const parseFlatFormat = (
   for (let i = dataStartRow; i < lines.length; i++) {
     const values = parseLine(lines[i])
 
+    if (i - dataStartRow < 10) {
+        console.log(`[PARSE-FLAT] Row ${i}: original:`, values.join(' | '))
+    }
+
     const serialNo = getIdx('serial no')
     const candidateName = getIdx('candidate name')
     const examNo = getIdx('exam number')
@@ -700,6 +704,10 @@ const parseFlatFormat = (
         file,
       }
 
+      if (i - dataStartRow < 10) {
+          console.log(`[PARSE-FLAT] Row ${i}: parsed -> name: "${record.studentName}", examNo: "${record.examNumber}", sex: "${record.sex}", age: ${record.age}, school: "${record.schoolName}", lga: "${record.lga}"`)
+      }
+
       records.push(record)
     } catch (error) {
       console.warn(`Error parsing flat format row ${i + 1}:`, error)
@@ -762,11 +770,19 @@ const parseGradeOnlyFormat = (
   for (let i = dataStartRow; i < lines.length; i++) {
     const values = parseLine(lines[i])
 
+    if (i - dataStartRow < 10) {
+        console.log(`[PARSE] Row ${i}: original:`, values.join(' | '))
+    }
+
     const studentName = nameIdx >= 0 ? values[nameIdx]?.trim() : values[0]?.trim()
     const examNumber = examNoIdx >= 0 ? values[examNoIdx]?.trim() : values[1]?.trim()
     let sexValue = sexIdx >= 0 ? values[sexIdx]?.trim() : values[2]?.trim()
     let ageValue = ageIdx >= 0 ? values[ageIdx]?.trim() : values[3]?.trim()
     const gradeValue = gradeIdx >= 0 ? values[gradeIdx]?.trim() : values[4]?.trim()
+
+    if (i - dataStartRow < 10) {
+        console.log(`[PARSE] Row ${i}: parsed -> name: "${studentName}", examNo: "${examNumber}", sex: "${sexValue}", age: "${ageValue}", grade: "${gradeValue}"`)
+    }
 
     const isSexValueNumber = /^\d+$/.test(sexValue || '')
     const isAgeValueSex = /^[MF]$/i.test(ageValue || '')
