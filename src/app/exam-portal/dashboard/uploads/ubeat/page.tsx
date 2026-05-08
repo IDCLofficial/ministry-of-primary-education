@@ -56,7 +56,38 @@ function UploadContent() {
     const [bulkLga, setBulkLga] = useState('')
     const [expandedBaseFiles, setExpandedBaseFiles] = useState<Set<string>>(new Set())
     const [clusterBulkValues, setClusterBulkValues] = useState<Record<string, { examYear: string; lga: string }>>({})
+    const [debugLogs, setDebugLogs] = useState<string[]>([])
     const { isModalOpen, selectedStudent, closeModal, updateStudent } = useExamModal()
+
+    const addDebugLog = (msg: string) => {
+        setDebugLogs(prev => [...prev, `${new Date().toISOString().split('T')[1]?.split('.')[0]} ${msg}`])
+    }
+
+    // Override console methods to capture logs
+    useEffect(() => {
+        const originalLog = console.log
+        const originalWarn = console.warn
+        const originalError = console.error
+        
+        console.log = (...args) => {
+            addDebugLog(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '))
+            originalLog.apply(console, args)
+        }
+        console.warn = (...args) => {
+            addDebugLog('[WARN] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '))
+            originalWarn.apply(console, args)
+        }
+        console.error = (...args) => {
+            addDebugLog('[ERROR] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '))
+            originalError.apply(console, args)
+        }
+        
+        return () => {
+            console.log = originalLog
+            console.warn = originalWarn
+            console.error = originalError
+        }
+    }, [])
 
     const warningMessage = "Unsaved data will be lost. Continue?"
 
