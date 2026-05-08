@@ -261,7 +261,15 @@ export const parseCSVFile = (file: File): Promise<UBEATStudentRecord[]> => {
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string
+        console.log('[DEBUG] Raw file content (first 500 chars):', text.substring(0, 500))
+        console.log('[DEBUG] File name:', file.name)
+        console.log('[DEBUG] Exam year extracted:', examYear)
+        
         const records = parseCSVText(text, { name: file.name, size: file.size }, examYear)
+        console.log('[DEBUG] Parsed records count:', records.length)
+        if (records.length > 0) {
+            console.log('[DEBUG] First record:', records[0])
+        }
         resolve(records)
       } catch (error) {
         reject(error)
