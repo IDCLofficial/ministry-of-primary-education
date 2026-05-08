@@ -175,6 +175,22 @@ export const validateStudentRecord = (record: UBEATStudentRecord): ValidationErr
     })
   }
 
+  if (!record.sex) {
+    errors.push({
+      type: 'missing_required',
+      field: 'sex',
+      message: 'Sex is required'
+    })
+  }
+
+  if (isGradeOnlyFormat && !record.grade?.trim()) {
+    errors.push({
+      type: 'missing_required',
+      field: 'grade',
+      message: 'Grade is required'
+    })
+  }
+
   if (!record.lga?.trim()) {
     errors.push({
       type: 'missing_required',
@@ -736,6 +752,9 @@ const parseGradeOnlyFormat = (
   const ageIdx = findColumn(['age'])
   const gradeIdx = findColumn(['grade', 'result', 'standing'])
 
+  console.log('[DEBUG] Grade-only format headers:', headers)
+  console.log('[DEBUG] Column indices - name:', nameIdx, 'examNo:', examNoIdx, 'sex:', sexIdx, 'age:', ageIdx, 'grade:', gradeIdx)
+
   for (let i = dataStartRow; i < lines.length; i++) {
     const values = parseLine(lines[i])
 
@@ -744,6 +763,8 @@ const parseGradeOnlyFormat = (
     const sexValue = sexIdx >= 0 ? values[sexIdx]?.trim() : values[2]?.trim()
     const ageValue = ageIdx >= 0 ? values[ageIdx]?.trim() : values[3]?.trim()
     const gradeValue = gradeIdx >= 0 ? values[gradeIdx]?.trim() : values[4]?.trim()
+
+    console.log('[DEBUG] Row', i, '- name:', studentName, 'examNo:', examNumber, 'sex:', sexValue, 'age:', ageValue, 'grade:', gradeValue)
 
     if (!studentName && !examNumber) continue
 
