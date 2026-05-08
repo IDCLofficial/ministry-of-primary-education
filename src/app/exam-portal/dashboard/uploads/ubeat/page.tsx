@@ -104,7 +104,20 @@ function UploadContent() {
                         totalRecords: allRecords.length
                     })
                     
+                    console.log('[UPLOAD] File:', file.name, 'Size:', file.size)
                     const records = await parseCSVFile(file)
+                    console.log('[UPLOAD] Parsed', records.length, 'records from', file.name)
+                    if (records.length > 0) {
+                        console.log('[UPLOAD] First parsed record:', {
+                            name: records[0].studentName,
+                            examNo: records[0].examNumber,
+                            sex: records[0].sex,
+                            age: records[0].age,
+                            grade: records[0].grade,
+                            school: records[0].schoolName,
+                            lga: records[0].lga
+                        })
+                    }
                     
                     // Step 3: Validating records
                     setUploadProgress({ 
