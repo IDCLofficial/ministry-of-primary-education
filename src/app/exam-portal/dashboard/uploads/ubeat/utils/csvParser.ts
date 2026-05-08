@@ -261,15 +261,7 @@ export const parseCSVFile = (file: File): Promise<UBEATStudentRecord[]> => {
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string
-        console.log('[DEBUG] Raw file content (first 500 chars):', text.substring(0, 500))
-        console.log('[DEBUG] File name:', file.name)
-        console.log('[DEBUG] Exam year extracted:', examYear)
-        
         const records = parseCSVText(text, { name: file.name, size: file.size }, examYear)
-        console.log('[DEBUG] Parsed records count:', records.length)
-        if (records.length > 0) {
-            console.log('[DEBUG] First record:', records[0])
-        }
         resolve(records)
       } catch (error) {
         reject(error)
@@ -760,19 +752,22 @@ const parseGradeOnlyFormat = (
   const ageIdx = findColumn(['age'])
   const gradeIdx = findColumn(['grade', 'result', 'standing'])
 
-  console.log('[DEBUG] Grade-only format headers:', headers)
-  console.log('[DEBUG] Column indices - name:', nameIdx, 'examNo:', examNoIdx, 'sex:', sexIdx, 'age:', ageIdx, 'grade:', gradeIdx)
-
   for (let i = dataStartRow; i < lines.length; i++) {
     const values = parseLine(lines[i])
 
     const studentName = nameIdx >= 0 ? values[nameIdx]?.trim() : values[0]?.trim()
     const examNumber = examNoIdx >= 0 ? values[examNoIdx]?.trim() : values[1]?.trim()
-    const sexValue = sexIdx >= 0 ? values[sexIdx]?.trim() : values[2]?.trim()
-    const ageValue = ageIdx >= 0 ? values[ageIdx]?.trim() : values[3]?.trim()
+    let sexValue = sexIdx >= 0 ? values[sexIdx]?.trim() : values[2]?.trim()
+    let ageValue = ageIdx >= 0 ? values[ageIdx]?.trim() : values[3]?.trim()
     const gradeValue = gradeIdx >= 0 ? values[gradeIdx]?.trim() : values[4]?.trim()
 
-    console.log('[DEBUG] Row', i, '- name:', studentName, 'examNo:', examNumber, 'sex:', sexValue, 'age:', ageValue, 'grade:', gradeValue)
+    const isSexValueNumber = /^\d+$/.test(sexValue || '')
+    const isAgeValueSex = /^[MF]$/i.test(ageValue || '')
+    if (isSexValueNumber && isAgeValueSex) {
+        const temp = sexValue
+        sexValue = ageValue
+        ageValue = temp
+    }
 
     if (!studentName && !examNumber) continue
 
