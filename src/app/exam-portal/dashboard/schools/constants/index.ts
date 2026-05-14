@@ -5,10 +5,8 @@ export interface SignatureImageConfig {
 
 export const COMMISSIONERS_SIGNATURES: Record<number, SignatureImageConfig> = {
     2020: { path: "/images/named signatures/prof-b-t-o-ikegwuoha.png", scale: 0.25 },
-    // Ibeagi P.N sign missing
-    2021: { path: "/images/named signatures/", scale: 0.20 },
-    // Prof Okorondu Ifunanya sign missing
-    2022: { path: "/images/named signatures/", scale: 0.20 },
+    2021: { path: "/images/named signatures/prof-b-t-o-ikegwuoha.png", scale: 0.20 },
+    2022: { path: "/images/named signatures/prof-okorondu-ifunanya.png", scale: 0.20 },
     2023: { path: "/images/named signatures/prof-johndliff-nwadike.png", scale: 0.20 },
     2024: { path: "/images/named signatures/prof-johndliff-nwadike.png", scale: 0.20 },
     2025: { path: "/images/named signatures/prof-b-t-o-ikegwuoha.png", scale: 0.25 },
