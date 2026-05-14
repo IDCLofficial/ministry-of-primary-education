@@ -359,7 +359,7 @@ export default function UBEATLogin() {
         } catch (error: unknown) {
             const err = error as { status: string | number; data?: { message?: string } }
             let msg = ''
-            if (err.status === 404) msg = "Couldn't find results with that info. Check your details."
+            if (err.status === 404) msg = "Couldn't find results with that info. Check your details or try to get your exam umer through the lik below. Call 0808 095 4826 if you still can't see your result."
             else if (err.status === 400) msg = err.data?.message ?? 'Invalid information provided.'
             else if (err.status === 500) msg = 'Our system is having a moment. Try again shortly.'
             else if (err.status === 'FETCH_ERROR') msg = 'No internet connection.'
