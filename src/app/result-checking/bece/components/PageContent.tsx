@@ -9,7 +9,8 @@ import animationData from '../../assets/students.json'
 import Image from 'next/image'
 import { useDebounce } from '../../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
-import { useLazyGetBECEResultQuery, useFindBECEResultMutation, useCreateBECEPaymentMutation, useGetAvailableYearsQuery, useFindMultipleMatchesMutation, type FindResultMatch, type MultiMatchResult } from '../../store/api/studentApi'
+import { useLazyGetBECEResultQuery, useFindBECEResultMutation, useCreateBECEPaymentMutation, useGetAvailableYearsQuery, useFindBECEMultipleMatchesMutation, type FindResultMatch, type MultiMatchResult } from '../../store/api/studentApi'
+import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
@@ -177,6 +178,7 @@ export default function StudentLoginPage() {
 
     const [multiMatchResults, setMultiMatchResults] = useState<MultiMatchResult[] | null>(null)
     const [isFindingMatches, setIsFindingMatches] = useState(false)
+    const [confirmMatch, setConfirmMatch] = useState<MultiMatchResult | null>(null)
 
     // ── Recent accounts (persisted, encrypted) ───────────────────────────────
     const [recentAccounts, setRecentAccounts] = useSecureSessionStorage<RecentAccount[]>(
@@ -208,7 +210,7 @@ export default function StudentLoginPage() {
     const [getBECEResult, { isLoading, isFetching, isSuccess }] = useLazyGetBECEResultQuery()
     const [findBECEResult, { isLoading: isFindingResult }] = useFindBECEResultMutation()
     const [createBECEPayment, { isLoading: isCreatingPayment }] = useCreateBECEPaymentMutation()
-    const [findMultipleMatches] = useFindMultipleMatchesMutation()
+    const [findBECEMultipleMatches] = useFindBECEMultipleMatchesMutation()
     const isProcessingPayment = isFindingResult || isCreatingPayment
 
     const { data: schoolNames, isLoading: isLoadingSchoolNames, isFetching: isFetchingSchools } = useGetSchoolNamesQuery(
@@ -260,7 +262,7 @@ export default function StudentLoginPage() {
         try {
             setIsFindingMatches(true)
             toast.loading("Checking for matches...", { id: "finding-matches", duration: Infinity })
-            const matches = await findMultipleMatches({ examNumber: rawExamNo, year: parseInt(year) }).unwrap()
+            const matches = await findBECEMultipleMatches({ examNumber: rawExamNo, year: parseInt(year) }).unwrap()
 
             if (matches.length === 0) {
                 setError("No results found for this exam number and year.")
@@ -357,7 +359,7 @@ export default function StudentLoginPage() {
     const handleMultiMatchSelect = async (match: MultiMatchResult) => {
         setSelectedStudentId(match._id)
         setError('')
-        await proceedWithResult({ _id: match._id, examNo: examNo, year })
+        setConfirmMatch(match)
     }
 
     const handleSelectRecent = async (selectedAccount: RecentAccount) => {
@@ -630,12 +632,12 @@ export default function StudentLoginPage() {
                                                         <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                                                             {isSelected
                                                                 ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
-                                                                : getInitials(match.studentName)
+                                                                : getInitials(match.name)
                                                             }
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className={`text-sm font-semibold truncate capitalize ${isSelected ? 'text-green-700' : 'text-gray-900'}`}>
-                                                                {match.studentName.toLowerCase()}
+                                                                {match.name.toLowerCase()}
                                                             </p>
                                                             <p className="text-xs text-gray-400 font-mono uppercase truncate mt-0.5">
                                                                 {match.examNo} &middot; {match.examYear}
@@ -1062,6 +1064,20 @@ export default function StudentLoginPage() {
                                 <strong>📝 Note:</strong> Use your official BECE exam number from your school.
                             </p>
                         </div>
+                    )}
+
+                    {confirmMatch && (
+                        <DetailsCheckBanner
+                            context="retrieval"
+                            examNo={confirmMatch.examNo}
+                            studentName={confirmMatch.name}
+                            school={confirmMatch.school?.schoolName}
+                            onDismiss={() => {
+                                const match = confirmMatch
+                                setConfirmMatch(null)
+                                proceedWithResult({ _id: match._id, examNo: examNo, year })
+                            }}
+                        />
                     )}
 
                     <div className="mt-6 text-center">
