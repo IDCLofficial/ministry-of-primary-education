@@ -116,9 +116,9 @@ export interface CustomerSupport {
 export const studentApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         // Get UBEAT student result by exam number
-        getUBEATResult: builder.query<UBEATStudentResult, string>({
-            query: (examNo) => ({
-                url: `${API_BASE_URL}/ubeat/result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}`,
+        getUBEATResult: builder.query<UBEATStudentResult, { examNo: string; year: string }>({
+            query: ({ examNo, year }) => ({
+                url: `${API_BASE_URL}/ubeat/result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}?year=${encodeURIComponent(year)}`,
                 method: 'GET',
             }),
             transformResponse: async (response: unknown) => {
@@ -132,7 +132,7 @@ export const studentApi = apiSlice.injectEndpoints({
                     return response as UBEATStudentResult
                 }
             },
-            providesTags: (result, error, examNo) => [
+            providesTags: (result, error, { examNo }) => [
                 { type: 'Students', id: `UBEAT-${examNo}` }
             ],
         }),
@@ -229,10 +229,18 @@ export const studentApi = apiSlice.injectEndpoints({
             }),
         }),
 
+        // Get available exam years
+        getAvailableYears: builder.query<{ years: number[] }, void>({
+            query: () => ({
+                url: `${API_BASE_URL}/ubeat/available-years`,
+                method: 'GET',
+            }),
+        }),
+
         // Get BECE student result by exam number
-        getBECEResult: builder.query<BECEStudentResult, string>({
-            query: (examNo) => ({
-                url: `${API_BASE_URL}/bece-student/check-result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}`,
+        getBECEResult: builder.query<BECEStudentResult, { examNo: string; year: string }>({
+            query: ({ examNo, year }) => ({
+                url: `${API_BASE_URL}/bece-student/check-result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}?year=${encodeURIComponent(year)}`,
                 method: 'GET',
             }),
             transformResponse: async (response: unknown) => {
@@ -246,7 +254,7 @@ export const studentApi = apiSlice.injectEndpoints({
                     return response as BECEStudentResult
                 }
             },
-            providesTags: (result, error, examNo) => [
+            providesTags: (result, error, { examNo }) => [
                 { type: 'Students', id: `BECE-${examNo}` }
             ],
         }),
@@ -258,6 +266,7 @@ export const studentApi = apiSlice.injectEndpoints({
 export const {
     useGetUBEATResultQuery,
     useGetBECEResultQuery,
+    useGetAvailableYearsQuery,
     useLazyGetUBEATResultQuery,
     useLazyGetBECEResultQuery,
     useFindUBEATResultMutation,
