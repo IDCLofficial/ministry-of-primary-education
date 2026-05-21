@@ -8,6 +8,7 @@ import { SessionStore } from '@/app/result-checking/utils/secureStorage'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useSetBecePaymentEmailMutation } from '@/app/result-checking/store/api/studentApi'
 import { isValidEmail } from '@/lib/utils'
+import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
 
 
 interface PaywallProps {
@@ -254,6 +255,8 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
             icon: '👋',
         })
         SessionStore.remove('student_exam_no')
+        SessionStore.remove('student_exam_year')
+        SessionStore.remove('student_exam_id')
         SessionStore.remove('selected_exam_type')
         window.location.href = '/result-checking/bece'
     }
@@ -280,6 +283,8 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
 
                         {/* Content */}
                         <div className="px-8 py-6">
+
+                            <DetailsCheckBanner context="paywall" examNo={examNo} studentName={studentName} school={school} />
 
                             {/* Student Info - Cleaner */}
                             <div className="mb-6 space-y-2.5">

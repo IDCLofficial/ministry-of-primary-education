@@ -99,6 +99,22 @@ export interface FindResultRequest {
     lga: string
 }
 
+// Match returned by find-multiple-matches endpoint
+export interface MultiMatchResult {
+    _id: string
+    name: string
+    examNo: string
+    examYear: number
+    school?: {
+        _id: string
+        schoolName: string
+        lga?: string
+        schoolCode?: string
+    }
+    subjects?: Array<{ name: string; exam: number }>
+    isPaid?: boolean
+}
+
 export interface CustomerSupport {
     fullName: string,
     lga: LgaEnum,
@@ -115,10 +131,12 @@ export interface CustomerSupport {
 // Extend the apiSlice with student portal endpoints
 export const studentApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
-        // Get UBEAT student result by exam number
-        getUBEATResult: builder.query<UBEATStudentResult, string>({
-            query: (examNo) => ({
-                url: `${API_BASE_URL}/ubeat/result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}`,
+        // Get UBEAT student result by exam number or _id
+        getUBEATResult: builder.query<UBEATStudentResult, { _id?: string; examNo?: string; year?: string }>({
+            query: ({ _id, examNo, year }) => ({
+                url: _id
+                    ? `${API_BASE_URL}/ubeat/result/${_id}`
+                    : `${API_BASE_URL}/ubeat/result/${encodeURIComponent((examNo || '').replace(/\s/g, '').replace(/\//g, '-'))}?year=${encodeURIComponent(year || '')}`,
                 method: 'GET',
             }),
             transformResponse: async (response: unknown) => {
@@ -132,8 +150,8 @@ export const studentApi = apiSlice.injectEndpoints({
                     return response as UBEATStudentResult
                 }
             },
-            providesTags: (result, error, examNo) => [
-                { type: 'Students', id: `UBEAT-${examNo}` }
+            providesTags: (result, error, { _id, examNo }) => [
+                { type: 'Students', id: `UBEAT-${_id || examNo}` }
             ],
         }),
 
@@ -229,10 +247,20 @@ export const studentApi = apiSlice.injectEndpoints({
             }),
         }),
 
-        // Get BECE student result by exam number
-        getBECEResult: builder.query<BECEStudentResult, string>({
-            query: (examNo) => ({
-                url: `${API_BASE_URL}/bece-student/check-result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}`,
+        // Get available exam years
+        getAvailableYears: builder.query<{ years: number[] }, { examType: 'ubeat' | 'bece' }>({
+            query: ({ examType }) => ({
+                url: `${API_BASE_URL}/students/available-years?examType=${examType.toUpperCase()}`,
+                method: 'GET',
+            }),
+        }),
+
+        // Get BECE student result by exam number or _id
+        getBECEResult: builder.query<BECEStudentResult, { _id?: string; examNo?: string; year?: string }>({
+            query: ({ _id, examNo, year }) => ({
+                url: _id
+                    ? `${API_BASE_URL}/bece-student/check-result/${_id}`
+                    : `${API_BASE_URL}/bece-student/check-result/${encodeURIComponent((examNo || '').replace(/\s/g, '').replace(/\//g, '-'))}?year=${encodeURIComponent(year || '')}`,
                 method: 'GET',
             }),
             transformResponse: async (response: unknown) => {
@@ -246,9 +274,54 @@ export const studentApi = apiSlice.injectEndpoints({
                     return response as BECEStudentResult
                 }
             },
-            providesTags: (result, error, examNo) => [
-                { type: 'Students', id: `BECE-${examNo}` }
+            providesTags: (result, error, { _id, examNo }) => [
+                { type: 'Students', id: `BECE-${_id || examNo}` }
             ],
+        }),
+
+        // Find multiple matches for UBEAT exam number
+        findMultipleMatches: builder.mutation<MultiMatchResult[], { examNumber: string; year: number }>({
+            query: (data) => ({
+                url: `${API_BASE_URL}/ubeat/result/find-multiple-matches`,
+                method: 'POST',
+                body: data,
+            }),
+            transformResponse: async (response: unknown) => {
+                const raw = response as { data?: unknown }
+                if (typeof raw?.data === 'string') {
+                    if (!(await isApiResponseDecryptConfigured())) return response as MultiMatchResult[]
+                    try {
+                        const result = await decryptApiResponseFrom<MultiMatchResult[]>(raw as { data: string }, 'data')
+                        return result
+                    } catch (e) {
+                        console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                        return response as MultiMatchResult[]
+                    }
+                }
+                return response as MultiMatchResult[]
+            },
+        }),
+
+        // Find multiple matches for BECE exam number
+        findBECEMultipleMatches: builder.mutation<MultiMatchResult[], { examNumber: string; year: number }>({
+            query: (data) => ({
+                url: `${API_BASE_URL}/bece-student/result/find-multiple-matches`,
+                method: 'POST',
+                body: data,
+            }),
+            transformResponse: async (response: unknown) => {
+                const raw = response as { data?: unknown }
+                if (typeof raw?.data === 'string') {
+                    if (!(await isApiResponseDecryptConfigured())) return response as MultiMatchResult[]
+                    try {
+                        return await decryptApiResponseFrom<MultiMatchResult[]>(raw as { data: string }, 'data')
+                    } catch (e) {
+                        console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                        return response as MultiMatchResult[]
+                    }
+                }
+                return response as MultiMatchResult[]
+            },
         }),
     }),
     overrideExisting: true,
@@ -258,6 +331,7 @@ export const studentApi = apiSlice.injectEndpoints({
 export const {
     useGetUBEATResultQuery,
     useGetBECEResultQuery,
+    useGetAvailableYearsQuery,
     useLazyGetUBEATResultQuery,
     useLazyGetBECEResultQuery,
     useFindUBEATResultMutation,
@@ -266,5 +340,7 @@ export const {
     useCreateUBEATPaymentMutation,
     useCustomerSupportMutation,
     useSetBecePaymentEmailMutation,
-    useSetUbeatPaymentEmailMutation
+    useSetUbeatPaymentEmailMutation,
+    useFindMultipleMatchesMutation,
+    useFindBECEMultipleMatchesMutation,
 } = studentApi

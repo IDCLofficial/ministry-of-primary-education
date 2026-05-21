@@ -9,7 +9,8 @@ import animationData from '../../assets/students.json'
 import Image from 'next/image'
 import { useDebounce } from '../../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
-import { useLazyGetBECEResultQuery, useFindBECEResultMutation, useCreateBECEPaymentMutation, type FindResultMatch } from '../../store/api/studentApi'
+import { useLazyGetBECEResultQuery, useFindBECEResultMutation, useCreateBECEPaymentMutation, useGetAvailableYearsQuery, useFindBECEMultipleMatchesMutation, type FindResultMatch, type MultiMatchResult } from '../../store/api/studentApi'
+import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
@@ -30,9 +31,11 @@ const IMO_STATE_LGAS = Object.values(LgaEnum);
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface RecentAccount {
+    _id?: string
     examNo: string
     studentName: string
     school: string
+    year: string
     lastAccessed: number // Unix ms timestamp
 }
 
@@ -98,7 +101,7 @@ function RecentAccountCard({
     isLoading,
 }: {
     account: RecentAccount
-    onSelect: (examNo: string) => void
+    onSelect: (account: RecentAccount) => void
     onRemove: (examNo: string) => void
     isLoading: boolean
 }) {
@@ -107,7 +110,7 @@ function RecentAccountCard({
             variants={itemVariants}
             layout
             className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-green-50 hover:border-green-200 transition-all duration-150 cursor-pointer ${isLoading ? 'opacity-50 cursor-not-allowed grayscale-50' : ''}`}
-            onClick={!isLoading ? () => onSelect(account.examNo) : () => { }}
+            onClick={!isLoading ? () => onSelect(account) : () => { }}
         >
             {/* Avatar */}
             <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
@@ -122,6 +125,7 @@ function RecentAccountCard({
                 <p className="text-xs text-gray-400 truncate font-mono uppercase">
                     {account.examNo}
                 </p>
+                <p className="text-[10px] text-gray-400">{account.year}</p>
             </div>
 
             {/* Time + arrow */}
@@ -148,6 +152,7 @@ export default function StudentLoginPage() {
     const searchParams = useSearchParams()
 
     const [examNo, setExamNo] = useState('')
+    const [year, setYear] = useState('')
     const [error, setError] = useState('')
     const [showAllAccounts, setShowAllAccounts] = useState(false)
 
@@ -170,6 +175,10 @@ export default function StudentLoginPage() {
 
     const [matchedStudents, setMatchedStudents] = useState<{ studentName: string; id: string }[] | null>(null)
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+
+    const [multiMatchResults, setMultiMatchResults] = useState<MultiMatchResult[] | null>(null)
+    const [isFindingMatches, setIsFindingMatches] = useState(false)
+    const [confirmMatch, setConfirmMatch] = useState<MultiMatchResult | null>(null)
 
     // ── Recent accounts (persisted, encrypted) ───────────────────────────────
     const [recentAccounts, setRecentAccounts] = useSecureSessionStorage<RecentAccount[]>(
@@ -201,6 +210,7 @@ export default function StudentLoginPage() {
     const [getBECEResult, { isLoading, isFetching, isSuccess }] = useLazyGetBECEResultQuery()
     const [findBECEResult, { isLoading: isFindingResult }] = useFindBECEResultMutation()
     const [createBECEPayment, { isLoading: isCreatingPayment }] = useCreateBECEPaymentMutation()
+    const [findBECEMultipleMatches] = useFindBECEMultipleMatchesMutation()
     const isProcessingPayment = isFindingResult || isCreatingPayment
 
     const { data: schoolNames, isLoading: isLoadingSchoolNames, isFetching: isFetchingSchools } = useGetSchoolNamesQuery(
@@ -208,11 +218,16 @@ export default function StudentLoginPage() {
         { skip: !altFormData.lga },
     )
 
+    const { data: availableYearsData } = useGetAvailableYearsQuery({ examType: 'bece' })
+    const availableYearOptions = useMemo(() => {
+        return (availableYearsData?.years ?? []).map(y => ({ value: String(y), label: String(y) }))
+    }, [availableYearsData])
+
     const schoolNamesList = useMemo(() => schoolNames ?? [], [schoolNames])
     const lgaOptions = useMemo(() => IMO_STATE_LGAS.map(lga => ({ value: lga, label: lga })), [])
 
     const debouncedExamNo = useDebounce(examNo, 500)
-    const canProceed = debouncedExamNo.length >= 6 && isValidExamNo(debouncedExamNo)
+    const canProceed = debouncedExamNo.length >= 6 && isValidExamNo(debouncedExamNo) && year.trim().length === 4
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
     const isMaintenanceMode = !API_BASE_URL
@@ -228,22 +243,68 @@ export default function StudentLoginPage() {
     // ── Handlers ──────────────────────────────────────────────────────────────
 
     const handleLogin = async (e: React.FormEvent) => {
-        if (isFetching || isLoading || !canProceed) return
+        if (isFetching || isLoading || isFindingMatches || !canProceed) return
         e.preventDefault()
         setError('')
+        setMultiMatchResults(null)
 
         if (!examNo.trim()) { setError('Please enter your exam number to continue'); return }
         if (!isValidExamNo(examNo)) {
             setError("Invalid format. Try: ok/977/2025/001")
             return
         }
+        if (!year.trim() || year.trim().length !== 4) {
+            setError('Please enter a valid exam year'); return
+        }
+
+        const rawExamNo = examNo.trim()
 
         try {
-            toast.loading("Loading your results...", {
-                id: "loading-results",
-                duration: Infinity
-            })
-            const result = await getBECEResult(examNo).unwrap()
+            setIsFindingMatches(true)
+            toast.loading("Checking for matches...", { id: "finding-matches", duration: Infinity })
+            const matches = await findBECEMultipleMatches({ examNumber: rawExamNo, year: parseInt(year) }).unwrap()
+
+            if (matches.length === 0) {
+                setError("No results found for this exam number and year.")
+                toast.dismiss("finding-matches"); toast.error("No results found.")
+                return
+            }
+
+            setMultiMatchResults(matches)
+            toast.dismiss("finding-matches")
+            toast.success(`Found ${matches.length} record${matches.length !== 1 ? 's' : ''} — please select yours.`)
+        } catch (error: unknown) {
+            toast.dismiss("finding-matches");
+            const err = error as { status: string | number }
+            if (err.status === 404) {
+                setError("We couldn't find your results. Check your exam number.")
+                toast.error("We couldn't find your results. Check your exam number.")
+            }
+            else if (err.status === 400) {
+                setError("This exam number doesn't look valid.")
+                toast.error("This exam number doesn't look valid.")
+            }
+            else if (err.status === 500) {
+                setError("Our system is having a moment. Try again shortly.")
+                toast.error("Our system is having a moment. Try again shortly.")
+            }
+            else if (err.status === 'FETCH_ERROR') {
+                setError("No internet connection. Please check and retry.")
+                toast.error("No internet connection. Please check and retry.")
+            }
+            else {
+                setError("Something went wrong. Please try again.")
+                toast.error("Something went wrong. Please try again.")
+            }
+        } finally {
+            setIsFindingMatches(false)
+        }
+    }
+
+    const proceedWithResult = async ({ _id, examNo: rawExamNo, year: yearVal }: { _id: string; examNo: string; year: string }) => {
+        try {
+            toast.loading("Loading your results...", { id: "loading-results", duration: Infinity })
+            const result = await getBECEResult({ _id, year: yearVal }).unwrap()
 
             if (!result?.examNo || !result?.name) {
                 setError("Couldn't load your results. Please try again.")
@@ -251,14 +312,18 @@ export default function StudentLoginPage() {
             }
 
             syncRecentAccount({
-                examNo: examNo,
+                _id,
+                examNo: rawExamNo,
                 studentName: result.name,
                 school: result.school ?? '',
+                year: yearVal,
                 lastAccessed: Date.now(),
             })
 
             await Promise.all([
-                SessionStore.set('student_exam_no', examNo),
+                SessionStore.set('student_exam_no', rawExamNo),
+                SessionStore.set('student_exam_year', yearVal),
+                SessionStore.set('student_exam_id', _id),
                 SessionStore.set('selected_exam_type', 'bece'),
             ])
 
@@ -291,8 +356,15 @@ export default function StudentLoginPage() {
         }
     }
 
-    const handleSelectRecent = async (selectedExamNo: string) => {
-        setExamNo(selectedExamNo)
+    const handleMultiMatchSelect = async (match: MultiMatchResult) => {
+        setSelectedStudentId(match._id)
+        setError('')
+        setConfirmMatch(match)
+    }
+
+    const handleSelectRecent = async (selectedAccount: RecentAccount) => {
+        setExamNo(selectedAccount.examNo)
+        setYear(selectedAccount.year)
         setError('')
 
         try {
@@ -300,22 +372,28 @@ export default function StudentLoginPage() {
                 id: "loading-results",
                 duration: Infinity
             })
-            const result = await getBECEResult(selectedExamNo).unwrap()
+            const result = selectedAccount._id
+                ? await getBECEResult({ _id: selectedAccount._id }).unwrap()
+                : await getBECEResult({ examNo: selectedAccount.examNo, year: selectedAccount.year }).unwrap()
             if (!result?.examNo || !result?.name) {
                 setError("Couldn't load results for this account.")
                 return
             }
 
             syncRecentAccount({
-                examNo: selectedExamNo,
+                _id: selectedAccount._id,
+                examNo: selectedAccount.examNo,
                 studentName: result.name,
                 school: result.school ?? '',
+                year: selectedAccount.year,
                 lastAccessed: Date.now(),
             })
             toast.dismiss("loading-results")
 
             await Promise.all([
-                SessionStore.set('student_exam_no', selectedExamNo),
+                SessionStore.set('student_exam_no', selectedAccount.examNo),
+                SessionStore.set('student_exam_year', selectedAccount.year),
+                ...(selectedAccount._id ? [SessionStore.set('student_exam_id', selectedAccount._id)] : []),
                 SessionStore.set('selected_exam_type', 'bece'),
             ])
             toast.success(`Welcome back, ${result.name}! 🎉`)
@@ -422,7 +500,7 @@ export default function StudentLoginPage() {
         if (showAlternativeForm) params.delete('form')
         else params.set('form', 'alternative')
         setTimeout(() => router.push(`?${params.toString()}`), 0)
-        setError(''); setExamNo(''); setMatchedStudents(null)
+        setError(''); setExamNo(''); setYear(''); setMatchedStudents(null); setMultiMatchResults(null)
         setAltFormData({ fullName: '', schoolName: { id: '', name: '' }, lga: '', examYear: new Date().getFullYear().toString() })
     }
 
@@ -501,11 +579,13 @@ export default function StudentLoginPage() {
                         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 animate-fadeIn-y hover:shadow-2xl transition-all duration-300">
                             <div className="mb-6">
                                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                                    {isCreatingPayment ? 'Setting up payment…' : matchedStudents ? 'Is this you? 🔍' : 'Welcome, Student! 👋'}
+                                    {isCreatingPayment ? 'Setting up payment…' : matchedStudents ? 'Is this you? 🔍' : multiMatchResults ? 'Is this you? 🔍' : 'Welcome, Student! 👋'}
                                 </h2>
                                 <p className="text-sm text-gray-600">
                                     {!showAlternativeForm
-                                        ? 'Enter your exam number below to view your BECE results.'
+                                        ? multiMatchResults
+                                            ? `We found ${multiMatchResults.length} record${multiMatchResults.length !== 1 ? 's' : ''} matching your exam number — select the one that belongs to you.`
+                                            : 'Enter your exam number below to view your BECE results.'
                                         : isCreatingPayment
                                             ? 'Please wait while we prepare your payment link.'
                                             : matchedStudents
@@ -516,6 +596,79 @@ export default function StudentLoginPage() {
                             </div>
 
                             {!showAlternativeForm ? (
+                                multiMatchResults ? (
+                                    <div className="space-y-3">
+                                        {error && (
+                                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                                                <svg className="w-4 h-4 text-red-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                                                <p className="text-sm text-red-800 flex-1">{error}</p>
+                                                <button type="button" onClick={() => setError('')} className="text-red-400 hover:text-red-600 ml-1"><IoClose className="w-4 h-4" /></button>
+                                            </div>
+                                        )}
+                                        <motion.div
+                                            className="space-y-2"
+                                            variants={listVariants}
+                                            initial="hidden"
+                                            animate="show"
+                                        >
+                                            {multiMatchResults.map((match) => {
+                                                const isSelected = selectedStudentId === match._id
+                                                const isOther = isLoading && !isSelected
+                                                return (
+                                                    <motion.button
+                                                        key={match._id}
+                                                        variants={itemVariants}
+                                                        type="button"
+                                                        disabled={isLoading}
+                                                        onClick={() => handleMultiMatchSelect(match)}
+                                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 text-left disabled:cursor-not-allowed ${
+                                                            isSelected
+                                                                ? 'border-green-400 bg-green-50 ring-2 ring-green-200'
+                                                                : isOther
+                                                                    ? 'border-gray-200 bg-gray-50 opacity-40 cursor-not-allowed'
+                                                                    : 'border-gray-200 bg-gray-50 hover:bg-green-50 hover:border-green-300 cursor-pointer'
+                                                        }`}
+                                                    >
+                                                        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                                                            {isSelected
+                                                                ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
+                                                                : getInitials(match.name)
+                                                            }
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className={`text-sm font-semibold truncate capitalize ${isSelected ? 'text-green-700' : 'text-gray-900'}`}>
+                                                                {match.name.toLowerCase()}
+                                                            </p>
+                                                            <p className="text-xs text-gray-400 font-mono uppercase truncate mt-0.5">
+                                                                {match.examNo} &middot; {match.examYear}
+                                                            </p>
+                                                        </div>
+                                                        {isSelected
+                                                            ? <span className="w-4 h-4 border-2 border-green-400/40 border-t-green-500 rounded-full animate-spin flex-shrink-0 block" />
+                                                            : <IoChevronForward className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                                                        }
+                                                    </motion.button>
+                                                )
+                                            })}
+                                        </motion.div>
+
+                                        <div className="flex items-center gap-3 pt-1">
+                                            <div className="flex-1 h-px bg-gray-100" />
+                                            <span className="text-xs text-gray-400">not you?</span>
+                                            <div className="flex-1 h-px bg-gray-100" />
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            disabled={isLoading}
+                                            onClick={() => { setMultiMatchResults(null); setSelectedStudentId(null); setError('') }}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-gray-500 hover:text-green-600 border border-gray-200 rounded-lg hover:border-green-300 transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            <IoSwapHorizontal className="w-4 h-4" />
+                                            None of these — search again
+                                        </button>
+                                    </div>
+                                ) : (
                                 <form onSubmit={handleLogin} className="space-y-5">
 
                                     {/* ── Recent Accounts ── */}
@@ -603,7 +756,7 @@ export default function StudentLoginPage() {
                                                 id="examNo"
                                                 value={examNo}
                                                 onChange={e => { setExamNo(e.target.value.toLowerCase()); setError('') }}
-                                                placeholder="e.g., ok/977/2025/001"
+                                                placeholder="XX/XXX/XXX"
                                                 className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200 uppercase ${error
                                                     ? 'border-red-300 bg-red-50'
                                                     : debouncedExamNo && !canProceed && debouncedExamNo.length > 0
@@ -644,6 +797,19 @@ export default function StudentLoginPage() {
                                         )}
                                     </div>
 
+                                    {/* Exam Year */}
+                                    <div className="group relative">
+                                        <label htmlFor="loginExamYear" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
+                                            Exam Year <span className="text-red-500">*</span>
+                                        </label>
+                                        <CustomDropdown
+                                            options={availableYearOptions}
+                                            value={year}
+                                            onChange={value => { setYear(value); setError('') }}
+                                            placeholder="Select exam year"
+                                        />
+                                    </div>
+
                                     {/* Submit */}
                                     <button
                                         type="submit"
@@ -668,7 +834,7 @@ export default function StudentLoginPage() {
                                         </button>
                                     </div>
                                 </form>
-                            ) : matchedStudents ? (
+                            )) : matchedStudents ? (
                                 /* ── Student Selection ── */
                                 <div className="space-y-3">
                                     {error && (
@@ -898,6 +1064,20 @@ export default function StudentLoginPage() {
                                 <strong>📝 Note:</strong> Use your official BECE exam number from your school.
                             </p>
                         </div>
+                    )}
+
+                    {confirmMatch && (
+                        <DetailsCheckBanner
+                            context="retrieval"
+                            examNo={confirmMatch.examNo}
+                            studentName={confirmMatch.name}
+                            school={confirmMatch.school?.schoolName}
+                            onDismiss={() => {
+                                const match = confirmMatch
+                                setConfirmMatch(null)
+                                proceedWithResult({ _id: match._id, examNo: examNo, year })
+                            }}
+                        />
                     )}
 
                     <div className="mt-6 text-center">

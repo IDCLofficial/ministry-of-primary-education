@@ -32,9 +32,11 @@ import { isValidEmail } from '@/lib/utils'
 // ---------------------------------------------------------------------------
 
 interface RecentAccount {
+    _id?: string
     examNo: string
     studentName: string
     school: string
+    year?: string
     lastAccessed: number // Unix ms timestamp
 }
 
@@ -127,8 +129,10 @@ const storage = {
     async getReturnUrl(): Promise<string> {
         return (await SessionStore.get(STORAGE_KEYS.RETURN_URL)) ?? '/result-checking/bece/dashboard'
     },
-    async saveExamAccess(examNumber: string): Promise<void> {
+    async saveExamAccess(examNumber: string, year?: string, id?: string): Promise<void> {
         await SessionStore.set(STORAGE_KEYS.EXAM_NO, examNumber)
+        if (year) await SessionStore.set('student_exam_year', year)
+        if (id) await SessionStore.set('student_exam_id', id)
         await SessionStore.set(STORAGE_KEYS.EXAM_TYPE, 'bece')
     },
     clearPaymentData(): void {
@@ -315,9 +319,11 @@ function usePaymentVerification(
                         }
 
                         if (response.examNumber) {
-                            await storage.saveExamAccess(response.examNumber)
+                            await storage.saveExamAccess(response.examNumber, String(response.examYear || ''), response._id)
                             syncRecentAccount({
+                                _id: response._id,
                                 examNo: response.examNumber,
+                                year: String(response.examYear || ''),
                                 lastAccessed: Date.now(),
                                 school: built.school || "N/A",
                                 studentName: built.studentName || "N/A"

@@ -79,6 +79,7 @@ export interface CreatePaymentResponse {
 export interface VerifyPaymentSuccessResponse {
     reference: string
     paymentStatus: 'successful' | 'failed' | 'pending'
+    _id?: string
     studentName?: string
     school?: string
     paidAt?: string

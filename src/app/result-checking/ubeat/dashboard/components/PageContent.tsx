@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { IoLogOut, IoDownload, IoPrint, IoSparkles, IoSwapHorizontal, IoTrophy } from 'react-icons/io5'
 import toast from 'react-hot-toast'
@@ -15,6 +15,7 @@ import { SessionStore } from '@/app/result-checking/utils/secureStorage'
 import celebrationData from "../components/CelebrationLolo.json"
 import { useMedia } from 'react-use'
 import PortalHeader from '../../../components/Portalheader'
+import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
@@ -30,7 +31,7 @@ export default function UBEATDashboard() {
     const searchParams = useSearchParams()
     const certificateRef = useRef<HTMLDivElement>(null)
     const [isDownloading, setIsDownloading] = useState(false)
-    const [examNo, setExamNo] = useState<string | null>(null)
+    const [examId, setExamId] = useState<string | null>(null)
 
     // Check for payment success from URL params
     useEffect(() => {
@@ -44,37 +45,39 @@ export default function UBEATDashboard() {
         }
     }, [searchParams])
 
-    // Get exam number from encrypted localStorage
+    // Get exam id from session
     useEffect(() => {
         let cancelled = false
         Promise.all([
-            SessionStore.get('student_exam_no'),
+            SessionStore.get('student_exam_id'),
             SessionStore.get('selected_exam_type'),
-        ]).then(([storedExamNo, selectedExamType]) => {
+        ]).then(([storedExamId, selectedExamType]) => {
             if (cancelled) return
-            if (!storedExamNo || selectedExamType !== 'ubeat' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
-                toast.error('Invalid exam number. Please log in again.')
+            if (!storedExamId || selectedExamType !== 'ubeat') {
+                toast.error('Please log in again.')
                 setTimeout(() => router.push('/result-checking/ubeat'), 0)
                 return
             }
-            const formattedExamNo = storedExamNo.replace(/\//g, '-')
-            setExamNo(formattedExamNo)
+            setExamId(storedExamId)
         })
         return () => { cancelled = true }
     }, [router])
 
     // Fetch student data using RTK Query
+    const queryArgs = useMemo(() => ({ _id: examId || '' }), [examId])
     const {
         data: student,
         isLoading,
         isError,
         error
-    } = useGetUBEATResultQuery(examNo || '', {
-        skip: !examNo,
+    } = useGetUBEATResultQuery(queryArgs, {
+        skip: !examId,
     })
 
     const handleLogout = () => {
         SessionStore.remove('student_exam_no')
+        SessionStore.remove('student_exam_year')
+        SessionStore.remove('student_exam_id')
         SessionStore.remove('selected_exam_type')
         toast.success('Logged out successfully')
         setTimeout(() => router.push('/result-checking/ubeat'), 0)
@@ -82,6 +85,9 @@ export default function UBEATDashboard() {
 
     const handleChangeExam = () => {
         SessionStore.remove('selected_exam_type')
+        SessionStore.remove('student_exam_no')
+        SessionStore.remove('student_exam_year')
+        SessionStore.remove('student_exam_id')
         toast('Returning to exam selection...', { icon: '🔄' })
         setTimeout(() => router.push('/result-checking'), 0)
     }
@@ -194,7 +200,7 @@ export default function UBEATDashboard() {
     }
 
     // Show loading
-    if (isLoading || !examNo) {
+    if (isLoading || !examId) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-green-50/30 via-white to-blue-50/30">
                 <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
@@ -427,6 +433,8 @@ export default function UBEATDashboard() {
                         Academic Year {student.examYear || new Date().getFullYear()}
                     </p>
                 </div>
+
+                <DetailsCheckBanner context="dashboard" examNo={student.examNumber} studentName={student.studentName} school={student.schoolName || student.school} />
 
                 {/* Content Grid */}
                 <div className="space-y-4 mb-6">
