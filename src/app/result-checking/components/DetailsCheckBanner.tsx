@@ -23,7 +23,7 @@ export default function DetailsCheckBanner({ examNo, studentName, school, contex
   const [open, setOpen] = useState(false)
   const [examYear, setExamYear] = useState('')
   const [message, setMessage] = useState('')
-  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '2349162612656'
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '2348123456789'
 
   useEffect(() => {
     const key = `details_check_dismissed_${context}_${examNo}`
