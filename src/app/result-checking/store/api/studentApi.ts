@@ -102,9 +102,17 @@ export interface FindResultRequest {
 // Match returned by find-multiple-matches endpoint
 export interface MultiMatchResult {
     _id: string
-    studentName: string
+    name: string
     examNo: string
     examYear: number
+    school?: {
+        _id: string
+        schoolName: string
+        lga?: string
+        schoolCode?: string
+    }
+    subjects?: Array<{ name: string; exam: number }>
+    isPaid?: boolean
 }
 
 export interface CustomerSupport {
@@ -251,7 +259,7 @@ export const studentApi = apiSlice.injectEndpoints({
         getBECEResult: builder.query<BECEStudentResult, { _id?: string; examNo?: string; year?: string }>({
             query: ({ _id, examNo, year }) => ({
                 url: _id
-                    ? `${API_BASE_URL}/bece-student/check-result/${_id}?year=${encodeURIComponent(year || '')}`
+                    ? `${API_BASE_URL}/bece-student/check-result/${_id}`
                     : `${API_BASE_URL}/bece-student/check-result/${encodeURIComponent((examNo || '').replace(/\s/g, '').replace(/\//g, '-'))}?year=${encodeURIComponent(year || '')}`,
                 method: 'GET',
             }),
@@ -284,8 +292,29 @@ export const studentApi = apiSlice.injectEndpoints({
                     if (!(await isApiResponseDecryptConfigured())) return response as MultiMatchResult[]
                     try {
                         const result = await decryptApiResponseFrom<MultiMatchResult[]>(raw as { data: string }, 'data')
-                        console.log('findMultipleMatches decrypted result:', result)
                         return result
+                    } catch (e) {
+                        console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                        return response as MultiMatchResult[]
+                    }
+                }
+                return response as MultiMatchResult[]
+            },
+        }),
+
+        // Find multiple matches for BECE exam number
+        findBECEMultipleMatches: builder.mutation<MultiMatchResult[], { examNumber: string; year: number }>({
+            query: (data) => ({
+                url: `${API_BASE_URL}/bece-student/result/find-multiple-matches`,
+                method: 'POST',
+                body: data,
+            }),
+            transformResponse: async (response: unknown) => {
+                const raw = response as { data?: unknown }
+                if (typeof raw?.data === 'string') {
+                    if (!(await isApiResponseDecryptConfigured())) return response as MultiMatchResult[]
+                    try {
+                        return await decryptApiResponseFrom<MultiMatchResult[]>(raw as { data: string }, 'data')
                     } catch (e) {
                         console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
                         return response as MultiMatchResult[]
@@ -313,4 +342,5 @@ export const {
     useSetBecePaymentEmailMutation,
     useSetUbeatPaymentEmailMutation,
     useFindMultipleMatchesMutation,
+    useFindBECEMultipleMatchesMutation,
 } = studentApi
