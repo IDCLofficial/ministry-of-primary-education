@@ -267,15 +267,9 @@ export default function StudentLoginPage() {
                 return
             }
 
-            if (matches.length === 1) {
-                toast.dismiss("finding-matches")
-                await proceedWithResult({ _id: matches[0]._id, examNo: rawExamNo, year })
-                return
-            }
-
             setMultiMatchResults(matches)
             toast.dismiss("finding-matches")
-            toast.success(`Found ${matches.length} matches — please select yours.`)
+            toast.success(`Found ${matches.length} record${matches.length !== 1 ? 's' : ''} — please select yours.`)
         } catch (error: unknown) {
             toast.dismiss("finding-matches");
             const err = error as { status: string | number }
@@ -576,12 +570,12 @@ export default function StudentLoginPage() {
                         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 animate-fadeIn-y hover:shadow-2xl transition-all duration-300">
                             <div className="mb-6">
                                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                                    {isCreatingPayment ? 'Setting up payment…' : matchedStudents ? 'Is this you? 🔍' : multiMatchResults ? 'Select your record' : 'Welcome, Student! 👋'}
+                                    {isCreatingPayment ? 'Setting up payment…' : matchedStudents ? 'Is this you? 🔍' : multiMatchResults ? 'Is this you? 🔍' : 'Welcome, Student! 👋'}
                                 </h2>
                                 <p className="text-sm text-gray-600">
                                     {!showAlternativeForm
                                         ? multiMatchResults
-                                            ? `We found ${multiMatchResults.length} records matching your exam number — select the one that belongs to you.`
+                                            ? `We found ${multiMatchResults.length} record${multiMatchResults.length !== 1 ? 's' : ''} matching your exam number — select the one that belongs to you.`
                                             : 'Enter your exam number below to view your BECE results.'
                                         : isCreatingPayment
                                             ? 'Please wait while we prepare your payment link.'
