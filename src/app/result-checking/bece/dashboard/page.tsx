@@ -16,6 +16,7 @@ import celebrationData from "./components/celebrationBirthdayEmoji.json"
 import { useMedia } from 'react-use'
 import PortalHeader from '../../components/Portalheader'
 import { SessionStore } from '@/app/result-checking/utils/secureStorage'
+import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
@@ -32,6 +33,7 @@ export default function StudentDashboardPage() {
     const [isDownloadingCertificate, setIsDownloadingCertificate] = useState(false)
     const [isPrinting, setIsPrinting] = useState(false)
     const [examNo, setExamNo] = useState<string | null>(null)
+    const [examYear, setExamYear] = useState<string>('')
 
     const getGradeColor = (grade: string) => {
         if (grade === 'A1') return 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white'
@@ -115,7 +117,8 @@ export default function StudentDashboardPage() {
         Promise.all([
             SessionStore.get('student_exam_no'),
             SessionStore.get('selected_exam_type'),
-        ]).then(([storedExamNo, selectedExamType]) => {
+            SessionStore.get('student_exam_year'),
+        ]).then(([storedExamNo, selectedExamType, storedExamYear]) => {
             if (cancelled) return
             if (!storedExamNo || selectedExamType !== 'bece' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
                 toast.error('Invalid exam number. Please log in again.')
@@ -124,6 +127,7 @@ export default function StudentDashboardPage() {
             }
             const formattedExamNo = storedExamNo.replace(/\//g, '-')
             setExamNo(formattedExamNo)
+            setExamYear(storedExamYear || new Date().getFullYear().toString())
         })
         return () => { cancelled = true }
     }, [router])
@@ -134,12 +138,13 @@ export default function StudentDashboardPage() {
         isLoading,
         isError,
         error
-    } = useGetBECEResultQuery(examNo || '', {
-        skip: !examNo,
+    } = useGetBECEResultQuery({ examNo: examNo || '', year: examYear }, {
+        skip: !examNo || !examYear,
     })
 
     const handleLogout = () => {
         SessionStore.remove('student_exam_no')
+        SessionStore.remove('student_exam_year')
         SessionStore.remove('selected_exam_type')
         toast.success('Logged out successfully')
         setTimeout(() => router.push('/result-checking/bece'), 0)
@@ -147,6 +152,8 @@ export default function StudentDashboardPage() {
 
     const handleChangeExam = () => {
         SessionStore.remove('selected_exam_type')
+        SessionStore.remove('student_exam_no')
+        SessionStore.remove('student_exam_year')
         toast('Returning to exam selection...', { icon: '🔄' })
         setTimeout(() => router.push('/result-checking'), 0)
     }
@@ -436,6 +443,8 @@ export default function StudentDashboardPage() {
                         Academic Year {new Date().getFullYear()}
                     </p>
                 </div>
+
+                <DetailsCheckBanner examNo={student.examNo} />
 
                 {/* Content Grid */}
                 <div className="space-y-6 mb-6">

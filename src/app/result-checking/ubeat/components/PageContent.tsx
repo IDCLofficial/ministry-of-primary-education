@@ -10,7 +10,7 @@ import { useDebounce } from '../../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
-import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation, useCreateUBEATPaymentMutation, type FindResultMatch } from '../../store/api/studentApi'
+import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation, useCreateUBEATPaymentMutation, useGetAvailableYearsQuery, type FindResultMatch } from '../../store/api/studentApi'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/utils/secureStorage'
 import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
@@ -30,6 +30,7 @@ interface RecentAccount {
     examNo: string
     studentName: string
     school: string
+    year: string
     lastAccessed: number // Unix ms timestamp
 }
 
@@ -95,7 +96,7 @@ function RecentAccountCard({
     isLoading,
 }: {
     account: RecentAccount
-    onSelect: (examNo: string) => void
+    onSelect: (account: RecentAccount) => void
     onRemove: (examNo: string) => void
     isLoading: boolean
 }) {
@@ -104,7 +105,7 @@ function RecentAccountCard({
             variants={itemVariants}
             layout
             className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-green-50 hover:border-green-200 transition-all duration-150 cursor-pointer ${isLoading ? 'opacity-50 cursor-not-allowed grayscale-50' : ''}`}
-            onClick={!isLoading ? () => onSelect(account.examNo) : () => { }}
+            onClick={!isLoading ? () => onSelect(account) : () => { }}
         >
             {/* Avatar */}
             <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
@@ -119,6 +120,7 @@ function RecentAccountCard({
                 <p className="text-xs text-gray-400 truncate font-mono uppercase">
                     {account.examNo}
                 </p>
+                <p className="text-[10px] text-gray-400">{account.year}</p>
             </div>
 
             {/* Time + arrow */}
@@ -146,6 +148,7 @@ export default function UBEATLogin() {
     const searchParams = useSearchParams()
 
     const [examNo, setExamNo] = useState('')
+    const [year, setYear] = useState('')
     const [error, setError] = useState('')
     const [showAllAccounts, setShowAllAccounts] = useState(false)
 
@@ -207,11 +210,16 @@ export default function UBEATLogin() {
         { skip: !altFormData.lga },
     )
 
+    const { data: availableYearsData } = useGetAvailableYearsQuery()
+    const availableYearOptions = useMemo(() => {
+        return (availableYearsData?.years ?? []).map(y => ({ value: String(y), label: String(y) }))
+    }, [availableYearsData])
+
     const schoolNamesList = useMemo(() => schoolNames ?? [], [schoolNames])
     const lgaOptions = useMemo(() => IMO_STATE_LGAS.map(lga => ({ value: lga, label: lga })), [])
 
     const debouncedExamNo = useDebounce(examNo, 500)
-    const canProceed = debouncedExamNo.length >= 6 && isValidExamNo(debouncedExamNo)
+    const canProceed = debouncedExamNo.length >= 6 && isValidExamNo(debouncedExamNo) && year.trim().length === 4
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
     const isMaintenanceMode = !API_BASE_URL
@@ -236,13 +244,16 @@ export default function UBEATLogin() {
             setError("Invalid format. Try: ok/977/2025/001")
             return
         }
+        if (!year.trim() || year.trim().length !== 4) {
+            setError('Please enter a valid exam year'); return
+        }
 
         try {
             toast.loading("Loading your results...", {
                 id: "loading-results",
                 duration: Infinity
             })
-            const result = await getUBEATResult(examNo).unwrap()
+            const result = await getUBEATResult({ examNo, year }).unwrap()
 
             if (!result?.examNumber || !result?.studentName) {
                 setError("Couldn't load your results. Please try again.")
@@ -253,11 +264,13 @@ export default function UBEATLogin() {
                 examNo: examNo,
                 studentName: result.studentName,
                 school: result.schoolName ?? result.school ?? '',
+                year,
                 lastAccessed: Date.now(),
             })
 
             await Promise.all([
                 SessionStore.set('student_exam_no', examNo),
+                SessionStore.set('student_exam_year', year),
                 SessionStore.set('selected_exam_type', 'ubeat'),
             ])
 
@@ -291,8 +304,9 @@ export default function UBEATLogin() {
         }
     }
 
-    const handleSelectRecent = async (selectedExamNo: string) => {
-        setExamNo(selectedExamNo)
+    const handleSelectRecent = async (selectedAccount: RecentAccount) => {
+        setExamNo(selectedAccount.examNo)
+        setYear(selectedAccount.year)
         setError('')
 
         try {
@@ -300,22 +314,24 @@ export default function UBEATLogin() {
                 id: "loading-results",
                 duration: Infinity
             })
-            const result = await getUBEATResult(selectedExamNo).unwrap()
+            const result = await getUBEATResult({ examNo: selectedAccount.examNo, year: selectedAccount.year }).unwrap()
             if (!result?.examNumber || !result?.studentName) {
                 setError("Couldn't load results for this account.")
                 return
             }
 
             syncRecentAccount({
-                examNo: selectedExamNo,
+                examNo: selectedAccount.examNo,
                 studentName: result.studentName,
                 school: result.schoolName ?? result.school ?? '',
+                year: selectedAccount.year,
                 lastAccessed: Date.now(),
             })
             toast.dismiss("loading-results")
 
             await Promise.all([
-                SessionStore.set('student_exam_no', selectedExamNo),
+                SessionStore.set('student_exam_no', selectedAccount.examNo),
+                SessionStore.set('student_exam_year', selectedAccount.year),
                 SessionStore.set('selected_exam_type', 'ubeat'),
             ])
             toast.success(`Welcome back, ${result.studentName}! 🎉`)
@@ -415,7 +431,7 @@ export default function UBEATLogin() {
         if (showAlternativeForm) params.delete('form')
         else params.set('form', 'alternative')
         setTimeout(() => router.push(`?${params.toString()}`), 0)
-        setError(''); setExamNo(''); setMatchedStudents(null)
+        setError(''); setExamNo(''); setYear(''); setMatchedStudents(null)
         setAltFormData({ fullName: '', schoolName: { id: '', name: '' }, lga: '', examYear: new Date().getFullYear().toString() })
     }
 
@@ -636,6 +652,19 @@ export default function UBEATLogin() {
                                         ) : (
                                             <p className="mt-2 text-xs text-gray-500">Format: xx/xxx/xxxx/xxx (e.g., ok/977/2025/001)</p>
                                         )}
+                                    </div>
+
+                                    {/* Exam Year */}
+                                    <div className="group relative">
+                                        <label htmlFor="loginExamYear" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
+                                            Exam Year <span className="text-red-500">*</span>
+                                        </label>
+                                        <CustomDropdown
+                                            options={availableYearOptions}
+                                            value={year}
+                                            onChange={value => { setYear(value); setError('') }}
+                                            placeholder="Select exam year"
+                                        />
                                     </div>
 
                                     {/* Submit */}

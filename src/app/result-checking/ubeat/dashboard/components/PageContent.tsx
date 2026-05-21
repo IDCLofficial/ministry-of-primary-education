@@ -15,6 +15,7 @@ import { SessionStore } from '@/app/result-checking/utils/secureStorage'
 import celebrationData from "../components/CelebrationLolo.json"
 import { useMedia } from 'react-use'
 import PortalHeader from '../../../components/Portalheader'
+import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
@@ -31,6 +32,7 @@ export default function UBEATDashboard() {
     const certificateRef = useRef<HTMLDivElement>(null)
     const [isDownloading, setIsDownloading] = useState(false)
     const [examNo, setExamNo] = useState<string | null>(null)
+    const [examYear, setExamYear] = useState<string>('')
 
     // Check for payment success from URL params
     useEffect(() => {
@@ -50,7 +52,8 @@ export default function UBEATDashboard() {
         Promise.all([
             SessionStore.get('student_exam_no'),
             SessionStore.get('selected_exam_type'),
-        ]).then(([storedExamNo, selectedExamType]) => {
+            SessionStore.get('student_exam_year'),
+        ]).then(([storedExamNo, selectedExamType, storedExamYear]) => {
             if (cancelled) return
             if (!storedExamNo || selectedExamType !== 'ubeat' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
                 toast.error('Invalid exam number. Please log in again.')
@@ -59,6 +62,7 @@ export default function UBEATDashboard() {
             }
             const formattedExamNo = storedExamNo.replace(/\//g, '-')
             setExamNo(formattedExamNo)
+            setExamYear(storedExamYear || new Date().getFullYear().toString())
         })
         return () => { cancelled = true }
     }, [router])
@@ -69,12 +73,13 @@ export default function UBEATDashboard() {
         isLoading,
         isError,
         error
-    } = useGetUBEATResultQuery(examNo || '', {
-        skip: !examNo,
+    } = useGetUBEATResultQuery({ examNo: examNo || '', year: examYear }, {
+        skip: !examNo || !examYear,
     })
 
     const handleLogout = () => {
         SessionStore.remove('student_exam_no')
+        SessionStore.remove('student_exam_year')
         SessionStore.remove('selected_exam_type')
         toast.success('Logged out successfully')
         setTimeout(() => router.push('/result-checking/ubeat'), 0)
@@ -82,6 +87,8 @@ export default function UBEATDashboard() {
 
     const handleChangeExam = () => {
         SessionStore.remove('selected_exam_type')
+        SessionStore.remove('student_exam_no')
+        SessionStore.remove('student_exam_year')
         toast('Returning to exam selection...', { icon: '🔄' })
         setTimeout(() => router.push('/result-checking'), 0)
     }
@@ -427,6 +434,8 @@ export default function UBEATDashboard() {
                         Academic Year {student.examYear || new Date().getFullYear()}
                     </p>
                 </div>
+
+                <DetailsCheckBanner examNo={student.examNumber} />
 
                 {/* Content Grid */}
                 <div className="space-y-4 mb-6">

@@ -127,8 +127,9 @@ const storage = {
     async getReturnUrl(): Promise<string> {
         return (await SessionStore.get(STORAGE_KEYS.RETURN_URL)) ?? '/result-checking/bece/dashboard'
     },
-    async saveExamAccess(examNumber: string): Promise<void> {
+    async saveExamAccess(examNumber: string, year?: string): Promise<void> {
         await SessionStore.set(STORAGE_KEYS.EXAM_NO, examNumber)
+        if (year) await SessionStore.set('student_exam_year', year)
         await SessionStore.set(STORAGE_KEYS.EXAM_TYPE, 'bece')
     },
     clearPaymentData(): void {
@@ -315,7 +316,7 @@ function usePaymentVerification(
                         }
 
                         if (response.examNumber) {
-                            await storage.saveExamAccess(response.examNumber)
+                            await storage.saveExamAccess(response.examNumber, String(response.examYear || ''))
                             syncRecentAccount({
                                 examNo: response.examNumber,
                                 lastAccessed: Date.now(),
