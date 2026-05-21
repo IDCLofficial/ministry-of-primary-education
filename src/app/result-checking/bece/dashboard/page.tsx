@@ -342,7 +342,7 @@ export default function StudentDashboardPage() {
             <Paywall
                 examNo={student.examNo}
                 studentName={student.name}
-                school={student.school}
+                school={student.schoolName || student.school}
             />
         )
     }
@@ -444,7 +444,7 @@ export default function StudentDashboardPage() {
                     </p>
                 </div>
 
-                <DetailsCheckBanner examNo={student.examNo} studentName={student.name} school={student.school} />
+                <DetailsCheckBanner examNo={student.examNo} studentName={student.name} school={student.schoolName || student.school} />
 
                 {/* Content Grid */}
                 <div className="space-y-6 mb-6">

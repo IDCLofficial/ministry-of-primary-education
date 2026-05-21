@@ -21,6 +21,7 @@ export default function DetailsCheckBanner({ examNo, studentName, school }: Deta
   const [open, setOpen] = useState(false)
   const [examYear, setExamYear] = useState('')
   const [message, setMessage] = useState('')
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '2349162612656'
 
   useEffect(() => {
     const key = `details_check_dismissed_${examNo}`
@@ -44,7 +45,7 @@ export default function DetailsCheckBanner({ examNo, studentName, school }: Deta
     `Hello, I noticed an issue with my details on the result-checking portal.\n\n${message ? `Issue: ${message}\n\n` : ''}Name: ${studentName || '—'}\nSchool: ${school || '—'}\nExam No: ${examNo}\nYear: ${examYear || '—'}`
   )
 
-  const whatsappUrl = `https://api.whatsapp.com/send?phone=2349162612656&text=${whatsappText}`
+  const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${whatsappText}`
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleDismiss() }}>

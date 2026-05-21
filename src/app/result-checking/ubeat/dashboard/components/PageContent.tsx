@@ -435,7 +435,7 @@ export default function UBEATDashboard() {
                     </p>
                 </div>
 
-                <DetailsCheckBanner examNo={student.examNumber} studentName={student.studentName} school={student.school} />
+                <DetailsCheckBanner examNo={student.examNumber} studentName={student.studentName} school={student.schoolName || student.school} />
 
                 {/* Content Grid */}
                 <div className="space-y-4 mb-6">
