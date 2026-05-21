@@ -57,19 +57,23 @@ export default function UBEATDashboard() {
             SessionStore.get('student_exam_id'),
         ]).then(([storedExamNo, selectedExamType, storedExamYear, storedExamId]) => {
             if (cancelled) return
+            console.log('[UBEAT Dashboard] Session values:', { storedExamNo, selectedExamType, storedExamYear, storedExamId })
 
             if (storedExamId) {
+                console.log('[UBEAT Dashboard] Using examId:', storedExamId)
                 setExamId(storedExamId)
                 setExamYear(storedExamYear || new Date().getFullYear().toString())
                 return
             }
 
             if (!storedExamNo || selectedExamType !== 'ubeat' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
+                console.log('[UBEAT Dashboard] Invalid exam no, redirecting')
                 toast.error('Invalid exam number. Please log in again.')
                 setTimeout(() => router.push('/result-checking/ubeat'), 0)
                 return
             }
             const formattedExamNo = storedExamNo.replace(/\//g, '-')
+            console.log('[UBEAT Dashboard] Using examNo:', formattedExamNo, 'year:', storedExamYear)
             setExamNo(formattedExamNo)
             setExamYear(storedExamYear || new Date().getFullYear().toString())
         })
@@ -80,13 +84,15 @@ export default function UBEATDashboard() {
     const queryArgs = examId
         ? { _id: examId }
         : { examNo: examNo || '', year: examYear }
+    const shouldSkip = !examId && (!examNo || !examYear)
+    console.log('[UBEAT Dashboard] Query args:', queryArgs, 'skip:', shouldSkip, 'examId:', examId, 'examNo:', examNo, 'examYear:', examYear)
     const {
         data: student,
         isLoading,
         isError,
         error
     } = useGetUBEATResultQuery(queryArgs, {
-        skip: !examId && (!examNo || !examYear),
+        skip: shouldSkip,
     })
 
     const handleLogout = () => {
