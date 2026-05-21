@@ -31,8 +31,6 @@ export default function UBEATDashboard() {
     const searchParams = useSearchParams()
     const certificateRef = useRef<HTMLDivElement>(null)
     const [isDownloading, setIsDownloading] = useState(false)
-    const [examNo, setExamNo] = useState<string | null>(null)
-    const [examYear, setExamYear] = useState<string>('')
     const [examId, setExamId] = useState<string | null>(null)
 
     // Check for payment success from URL params
@@ -47,53 +45,33 @@ export default function UBEATDashboard() {
         }
     }, [searchParams])
 
-    // Get exam number from encrypted localStorage
+    // Get exam id from session
     useEffect(() => {
         let cancelled = false
         Promise.all([
-            SessionStore.get('student_exam_no'),
-            SessionStore.get('selected_exam_type'),
-            SessionStore.get('student_exam_year'),
             SessionStore.get('student_exam_id'),
-        ]).then(([storedExamNo, selectedExamType, storedExamYear, storedExamId]) => {
+            SessionStore.get('selected_exam_type'),
+        ]).then(([storedExamId, selectedExamType]) => {
             if (cancelled) return
-            console.log('[UBEAT Dashboard] Session values:', { storedExamNo, selectedExamType, storedExamYear, storedExamId })
-
-            if (storedExamId) {
-                console.log('[UBEAT Dashboard] Using examId:', storedExamId)
-                setExamId(storedExamId)
-                setExamYear(storedExamYear || new Date().getFullYear().toString())
-                return
-            }
-
-            if (!storedExamNo || selectedExamType !== 'ubeat' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
-                console.log('[UBEAT Dashboard] Invalid exam no, redirecting')
-                toast.error('Invalid exam number. Please log in again.')
+            if (!storedExamId || selectedExamType !== 'ubeat') {
+                toast.error('Please log in again.')
                 setTimeout(() => router.push('/result-checking/ubeat'), 0)
                 return
             }
-            const formattedExamNo = storedExamNo.replace(/\//g, '-')
-            console.log('[UBEAT Dashboard] Using examNo:', formattedExamNo, 'year:', storedExamYear)
-            setExamNo(formattedExamNo)
-            setExamYear(storedExamYear || new Date().getFullYear().toString())
+            setExamId(storedExamId)
         })
         return () => { cancelled = true }
     }, [router])
 
     // Fetch student data using RTK Query
-    const queryArgs = useMemo(() => examId
-        ? { _id: examId }
-        : { examNo: examNo || '', year: examYear }
-    , [examId, examNo, examYear])
-    const shouldSkip = !examId && (!examNo || !examYear)
-    console.log('[UBEAT Dashboard] Query args:', queryArgs, 'skip:', shouldSkip, 'examId:', examId, 'examNo:', examNo, 'examYear:', examYear)
+    const queryArgs = useMemo(() => ({ _id: examId || '' }), [examId])
     const {
         data: student,
         isLoading,
         isError,
         error
     } = useGetUBEATResultQuery(queryArgs, {
-        skip: shouldSkip,
+        skip: !examId,
     })
 
     const handleLogout = () => {
@@ -222,7 +200,7 @@ export default function UBEATDashboard() {
     }
 
     // Show loading
-    if (isLoading || !examNo) {
+    if (isLoading || !examId) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-green-50/30 via-white to-blue-50/30">
                 <header className="bg-white border-b border-gray-100 sticky top-0 z-50">

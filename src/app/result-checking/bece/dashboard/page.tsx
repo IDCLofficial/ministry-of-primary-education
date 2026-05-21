@@ -32,8 +32,6 @@ export default function StudentDashboardPage() {
     const certificateRef = useRef<HTMLDivElement>(null)
     const [isDownloadingCertificate, setIsDownloadingCertificate] = useState(false)
     const [isPrinting, setIsPrinting] = useState(false)
-    const [examNo, setExamNo] = useState<string | null>(null)
-    const [examYear, setExamYear] = useState<string>('')
     const [examId, setExamId] = useState<string | null>(null)
 
     const getGradeColor = (grade: string) => {
@@ -112,47 +110,33 @@ export default function StudentDashboardPage() {
         }
     }, [searchParams])
 
-    // Get exam number from encrypted localStorage
+    // Get exam id from session
     useEffect(() => {
         let cancelled = false
         Promise.all([
-            SessionStore.get('student_exam_no'),
-            SessionStore.get('selected_exam_type'),
-            SessionStore.get('student_exam_year'),
             SessionStore.get('student_exam_id'),
-        ]).then(([storedExamNo, selectedExamType, storedExamYear, storedExamId]) => {
+            SessionStore.get('selected_exam_type'),
+        ]).then(([storedExamId, selectedExamType]) => {
             if (cancelled) return
-
-            if (storedExamId) {
-                setExamId(storedExamId)
-                setExamYear(storedExamYear || new Date().getFullYear().toString())
-                return
-            }
-
-            if (!storedExamNo || selectedExamType !== 'bece' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
-                toast.error('Invalid exam number. Please log in again.')
+            if (!storedExamId || selectedExamType !== 'bece') {
+                toast.error('Please log in again.')
                 setTimeout(() => router.push('/result-checking/bece'), 0)
                 return
             }
-            const formattedExamNo = storedExamNo.replace(/\//g, '-')
-            setExamNo(formattedExamNo)
-            setExamYear(storedExamYear || new Date().getFullYear().toString())
+            setExamId(storedExamId)
         })
         return () => { cancelled = true }
     }, [router])
 
     // Fetch student data using RTK Query
-    const queryArgs = useMemo(() => examId
-        ? { _id: examId }
-        : { examNo: examNo || '', year: examYear }
-    , [examId, examNo, examYear])
+    const queryArgs = useMemo(() => ({ _id: examId || '' }), [examId])
     const {
         data: student,
         isLoading,
         isError,
         error
     } = useGetBECEResultQuery(queryArgs, {
-        skip: !examId && (!examNo || !examYear),
+        skip: !examId,
     })
 
     const handleLogout = () => {
@@ -269,7 +253,7 @@ export default function StudentDashboardPage() {
     }
 
     // Show loading while fetching data
-    if (isLoading || (!examId && !examNo)) {
+    if (isLoading || !examId) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-green-50/30 via-white to-blue-50/30">
                 <header className="bg-white border-b border-gray-100 sticky top-0 z-50">

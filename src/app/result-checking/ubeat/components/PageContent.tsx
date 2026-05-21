@@ -747,7 +747,7 @@ export default function UBEATLogin() {
                                                 id="examNo"
                                                 value={examNo}
                                                 onChange={e => { setExamNo(e.target.value.toLowerCase()); setError('') }}
-                                                placeholder="e.g., ok/977/2025/001"
+                                                placeholder="XX/XXX/XXX"
                                                 className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200 uppercase ${error
                                                     ? 'border-red-300 bg-red-50'
                                                     : debouncedExamNo && !canProceed && debouncedExamNo.length > 0
