@@ -15,28 +15,31 @@ interface DetailsCheckBannerProps {
   examNo: string
   studentName?: string
   school?: string
+  context: 'paywall' | 'dashboard' | 'retrieval'
+  onDismiss?: () => void
 }
 
-export default function DetailsCheckBanner({ examNo, studentName, school }: DetailsCheckBannerProps) {
+export default function DetailsCheckBanner({ examNo, studentName, school, context, onDismiss }: DetailsCheckBannerProps) {
   const [open, setOpen] = useState(false)
   const [examYear, setExamYear] = useState('')
   const [message, setMessage] = useState('')
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '2349162612656'
 
   useEffect(() => {
-    const key = `details_check_dismissed_${examNo}`
+    const key = `details_check_dismissed_${context}_${examNo}`
     const stored = localStorage.getItem(key)
     if (!stored) setOpen(true)
 
     SessionStore.get('student_exam_year').then((year) => {
       if (year) setExamYear(year)
     })
-  }, [examNo])
+  }, [examNo, context])
 
   const handleDismiss = () => {
-    const key = `details_check_dismissed_${examNo}`
+    const key = `details_check_dismissed_${context}_${examNo}`
     localStorage.setItem(key, 'true')
     setOpen(false)
+    onDismiss?.()
   }
 
   if (!open) return null

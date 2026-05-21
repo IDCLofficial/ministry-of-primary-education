@@ -443,7 +443,7 @@ export default function StudentDashboardPage() {
                     </p>
                 </div>
 
-                <DetailsCheckBanner examNo={student.examNo} studentName={student.name} school={student.schoolName || student.school} />
+                <DetailsCheckBanner context="dashboard" examNo={student.examNo} studentName={student.name} school={student.schoolName || student.school} />
 
                 {/* Content Grid */}
                 <div className="space-y-6 mb-6">
