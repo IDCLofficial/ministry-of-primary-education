@@ -127,7 +127,7 @@ export const studentApi = apiSlice.injectEndpoints({
         getUBEATResult: builder.query<UBEATStudentResult, { _id?: string; examNo?: string; year?: string }>({
             query: ({ _id, examNo, year }) => ({
                 url: _id
-                    ? `${API_BASE_URL}/ubeat/result/${_id}?year=${encodeURIComponent(year || '')}`
+                    ? `${API_BASE_URL}/ubeat/result/${_id}`
                     : `${API_BASE_URL}/ubeat/result/${encodeURIComponent((examNo || '').replace(/\s/g, '').replace(/\//g, '-'))}?year=${encodeURIComponent(year || '')}`,
                 method: 'GET',
             }),
@@ -283,7 +283,9 @@ export const studentApi = apiSlice.injectEndpoints({
                 if (typeof raw?.data === 'string') {
                     if (!(await isApiResponseDecryptConfigured())) return response as MultiMatchResult[]
                     try {
-                        return await decryptApiResponseFrom<MultiMatchResult[]>(raw as { data: string }, 'data')
+                        const result = await decryptApiResponseFrom<MultiMatchResult[]>(raw as { data: string }, 'data')
+                        console.log('findMultipleMatches decrypted result:', result)
+                        return result
                     } catch (e) {
                         console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
                         return response as MultiMatchResult[]
