@@ -10,7 +10,7 @@ import { useDebounce } from '../../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
-import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation, useCreateUBEATPaymentMutation, useGetAvailableYearsQuery, type FindResultMatch } from '../../store/api/studentApi'
+import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation, useCreateUBEATPaymentMutation, useGetAvailableYearsQuery, useFindMultipleMatchesMutation, type FindResultMatch, type MultiMatchResult } from '../../store/api/studentApi'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/utils/secureStorage'
 import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
@@ -172,6 +172,9 @@ export default function UBEATLogin() {
     const [matchedStudents, setMatchedStudents] = useState<{ studentName: string; id: string }[] | null>(null)
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
 
+    const [multiMatchResults, setMultiMatchResults] = useState<MultiMatchResult[] | null>(null)
+    const [isFindingMatches, setIsFindingMatches] = useState(false)
+
     // ── Recent accounts (persisted, encrypted) ───────────────────────────────
     const [recentAccounts, setRecentAccounts] = useSecureSessionStorage<RecentAccount[]>(
         'ubeat_recent_accounts',
@@ -203,6 +206,7 @@ export default function UBEATLogin() {
     const [getUBEATResult, { isLoading, isFetching: isFetchingResult }] = useLazyGetUBEATResultQuery()
     const [findUBEATResult, { isLoading: isFindingResult }] = useFindUBEATResultMutation()
     const [createUBEATPayment, { isLoading: isCreatingPayment }] = useCreateUBEATPaymentMutation()
+    const [findMultipleMatches] = useFindMultipleMatchesMutation()
     const isProcessingPayment = isFindingResult || isCreatingPayment
 
     const { data: schoolNames, isLoading: isLoadingSchoolNames, isFetching } = useGetSchoolNamesQuery(
@@ -235,9 +239,10 @@ export default function UBEATLogin() {
     // ── Handlers ──────────────────────────────────────────────────────────────
 
     const handleLogin = async (e: React.FormEvent) => {
-        if (isFetchingResult || isLoading || !canProceed) return
+        if (isFetchingResult || isLoading || isFindingMatches || !canProceed) return
         e.preventDefault()
         setError('')
+        setMultiMatchResults(null)
 
         if (!examNo.trim()) { setError('Please enter your exam number to continue'); return }
         if (!isValidExamNo(examNo)) {
@@ -248,12 +253,60 @@ export default function UBEATLogin() {
             setError('Please enter a valid exam year'); return
         }
 
+        const rawExamNo = examNo.trim()
+
         try {
-            toast.loading("Loading your results...", {
-                id: "loading-results",
-                duration: Infinity
-            })
-            const result = await getUBEATResult({ examNo, year }).unwrap()
+            setIsFindingMatches(true)
+            toast.loading("Checking for matches...", { id: "finding-matches", duration: Infinity })
+            const matches = await findMultipleMatches({ examNumber: rawExamNo, year: parseInt(year) }).unwrap()
+
+            if (matches.length === 0) {
+                setError("No results found for this exam number and year.")
+                toast.dismiss("finding-matches"); toast.error("No results found.")
+                return
+            }
+
+            if (matches.length === 1) {
+                toast.dismiss("finding-matches")
+                await proceedWithResult({ _id: matches[0]._id, examNo: rawExamNo, year })
+                return
+            }
+
+            setMultiMatchResults(matches)
+            toast.dismiss("finding-matches")
+            toast.success(`Found ${matches.length} matches — please select yours.`)
+        } catch (error: unknown) {
+            toast.dismiss("finding-matches");
+            const err = error as { status: string | number }
+            if (err.status === 404) {
+                setError("We couldn't find your results. Check your exam number.");
+                toast.error("We couldn't find your results. Check your exam number.")
+            }
+            else if (err.status === 400) {
+                setError("This exam number doesn't look valid.");
+                toast.error("This exam number doesn't look valid.")
+            }
+            else if (err.status === 500) {
+                setError("Our system is having a moment. Try again shortly.");
+                toast.error("Our system is having a moment. Try again shortly.")
+            }
+            else if (err.status === 'FETCH_ERROR') {
+                setError("No internet connection. Please check and retry.");
+                toast.error("No internet connection. Please check and retry.")
+            }
+            else {
+                setError("Something went wrong. Please try again.");
+                toast.error("Something went wrong. Please try again.")
+            }
+        } finally {
+            setIsFindingMatches(false)
+        }
+    }
+
+    const proceedWithResult = async ({ _id, examNo: rawExamNo, year: yearVal }: { _id: string; examNo: string; year: string }) => {
+        try {
+            toast.loading("Loading your results...", { id: "loading-results", duration: Infinity })
+            const result = await getUBEATResult({ _id, year: yearVal }).unwrap()
 
             if (!result?.examNumber || !result?.studentName) {
                 setError("Couldn't load your results. Please try again.")
@@ -261,21 +314,20 @@ export default function UBEATLogin() {
             }
 
             syncRecentAccount({
-                examNo: examNo,
+                examNo: rawExamNo,
                 studentName: result.studentName,
                 school: result.schoolName ?? result.school ?? '',
-                year,
+                year: yearVal,
                 lastAccessed: Date.now(),
             })
 
             await Promise.all([
-                SessionStore.set('student_exam_no', examNo),
-                SessionStore.set('student_exam_year', year),
+                SessionStore.set('student_exam_no', rawExamNo),
+                SessionStore.set('student_exam_year', yearVal),
                 SessionStore.set('selected_exam_type', 'ubeat'),
             ])
 
             toast.dismiss("loading-results");
-
             toast.success(`Welcome ${result.studentName}! Loading your results... 🎉`)
             setTimeout(() => router.push('/result-checking/ubeat/dashboard'), 0)
         } catch (error: unknown) {
@@ -302,6 +354,12 @@ export default function UBEATLogin() {
                 toast.error("Something went wrong. Please try again.")
             }
         }
+    }
+
+    const handleMultiMatchSelect = async (match: MultiMatchResult) => {
+        setSelectedStudentId(match._id)
+        setError('')
+        await proceedWithResult({ _id: match._id, examNo: examNo, year })
     }
 
     const handleSelectRecent = async (selectedAccount: RecentAccount) => {
@@ -431,7 +489,7 @@ export default function UBEATLogin() {
         if (showAlternativeForm) params.delete('form')
         else params.set('form', 'alternative')
         setTimeout(() => router.push(`?${params.toString()}`), 0)
-        setError(''); setExamNo(''); setYear(''); setMatchedStudents(null)
+        setError(''); setExamNo(''); setYear(''); setMatchedStudents(null); setMultiMatchResults(null)
         setAltFormData({ fullName: '', schoolName: { id: '', name: '' }, lga: '', examYear: new Date().getFullYear().toString() })
     }
 
@@ -511,11 +569,13 @@ export default function UBEATLogin() {
                         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 animate-fadeIn-y hover:shadow-2xl transition-all duration-300">
                             <div className="mb-6">
                                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                                    {isCreatingPayment ? 'Setting up payment…' : matchedStudents ? 'Is this you? 🔍' : 'Welcome, Student! 👋'}
+                                    {isCreatingPayment ? 'Setting up payment…' : matchedStudents ? 'Is this you? 🔍' : multiMatchResults ? 'Select your record' : 'Welcome, Student! 👋'}
                                 </h2>
                                 <p className="text-sm text-gray-600">
                                     {!showAlternativeForm
-                                        ? 'Enter your exam number below to view your UBEAT results.'
+                                        ? multiMatchResults
+                                            ? `We found ${multiMatchResults.length} records matching your exam number — select the one that belongs to you.`
+                                            : 'Enter your exam number below to view your UBEAT results.'
                                         : isCreatingPayment
                                             ? 'Please wait while we prepare your payment link.'
                                             : matchedStudents
@@ -526,6 +586,79 @@ export default function UBEATLogin() {
                             </div>
 
                             {!showAlternativeForm ? (
+                                multiMatchResults ? (
+                                    <div className="space-y-3">
+                                        {error && (
+                                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                                                <svg className="w-4 h-4 text-red-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                                                <p className="text-sm text-red-800 flex-1">{error}</p>
+                                                <button type="button" onClick={() => setError('')} className="text-red-400 hover:text-red-600 ml-1"><IoClose className="w-4 h-4" /></button>
+                                            </div>
+                                        )}
+                                        <motion.div
+                                            className="space-y-2"
+                                            variants={listVariants}
+                                            initial="hidden"
+                                            animate="show"
+                                        >
+                                            {multiMatchResults.map((match) => {
+                                                const isSelected = selectedStudentId === match._id
+                                                const isOther = isLoading && !isSelected
+                                                return (
+                                                    <motion.button
+                                                        key={match._id}
+                                                        variants={itemVariants}
+                                                        type="button"
+                                                        disabled={isLoading}
+                                                        onClick={() => handleMultiMatchSelect(match)}
+                                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 text-left disabled:cursor-not-allowed ${
+                                                            isSelected
+                                                                ? 'border-green-400 bg-green-50 ring-2 ring-green-200'
+                                                                : isOther
+                                                                    ? 'border-gray-200 bg-gray-50 opacity-40 cursor-not-allowed'
+                                                                    : 'border-gray-200 bg-gray-50 hover:bg-green-50 hover:border-green-300 cursor-pointer'
+                                                        }`}
+                                                    >
+                                                        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                                                            {isSelected
+                                                                ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
+                                                                : getInitials(match.studentName)
+                                                            }
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className={`text-sm font-semibold truncate capitalize ${isSelected ? 'text-green-700' : 'text-gray-900'}`}>
+                                                                {match.studentName.toLowerCase()}
+                                                            </p>
+                                                            <p className="text-xs text-gray-400 font-mono uppercase truncate mt-0.5">
+                                                                {match.examNo} &middot; {match.examYear}
+                                                            </p>
+                                                        </div>
+                                                        {isSelected
+                                                            ? <span className="w-4 h-4 border-2 border-green-400/40 border-t-green-500 rounded-full animate-spin flex-shrink-0 block" />
+                                                            : <IoChevronForward className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                                                        }
+                                                    </motion.button>
+                                                )
+                                            })}
+                                        </motion.div>
+
+                                        <div className="flex items-center gap-3 pt-1">
+                                            <div className="flex-1 h-px bg-gray-100" />
+                                            <span className="text-xs text-gray-400">not you?</span>
+                                            <div className="flex-1 h-px bg-gray-100" />
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            disabled={isLoading}
+                                            onClick={() => { setMultiMatchResults(null); setSelectedStudentId(null); setError('') }}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-gray-500 hover:text-green-600 border border-gray-200 rounded-lg hover:border-green-300 transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            <IoSwapHorizontal className="w-4 h-4" />
+                                            None of these — search again
+                                        </button>
+                                    </div>
+                                ) : (
                                 <form onSubmit={handleLogin} className="space-y-5">
 
                                     {/* ── Recent Accounts ── */}
@@ -691,7 +824,7 @@ export default function UBEATLogin() {
                                         </button>
                                     </div>
                                 </form>
-                            ) : matchedStudents ? (
+                            )) : matchedStudents ? (
                                 /* ── Student Selection ── */
                                 <div className="space-y-3">
                                     {error && (

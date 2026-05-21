@@ -99,6 +99,14 @@ export interface FindResultRequest {
     lga: string
 }
 
+// Match returned by find-multiple-matches endpoint
+export interface MultiMatchResult {
+    _id: string
+    studentName: string
+    examNo: string
+    examYear: number
+}
+
 export interface CustomerSupport {
     fullName: string,
     lga: LgaEnum,
@@ -115,10 +123,12 @@ export interface CustomerSupport {
 // Extend the apiSlice with student portal endpoints
 export const studentApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
-        // Get UBEAT student result by exam number
-        getUBEATResult: builder.query<UBEATStudentResult, { examNo: string; year: string }>({
-            query: ({ examNo, year }) => ({
-                url: `${API_BASE_URL}/ubeat/result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}?year=${encodeURIComponent(year)}`,
+        // Get UBEAT student result by exam number or _id
+        getUBEATResult: builder.query<UBEATStudentResult, { _id?: string; examNo?: string; year?: string }>({
+            query: ({ _id, examNo, year }) => ({
+                url: _id
+                    ? `${API_BASE_URL}/ubeat/result/${_id}?year=${encodeURIComponent(year || '')}`
+                    : `${API_BASE_URL}/ubeat/result/${encodeURIComponent((examNo || '').replace(/\s/g, '').replace(/\//g, '-'))}?year=${encodeURIComponent(year || '')}`,
                 method: 'GET',
             }),
             transformResponse: async (response: unknown) => {
@@ -132,8 +142,8 @@ export const studentApi = apiSlice.injectEndpoints({
                     return response as UBEATStudentResult
                 }
             },
-            providesTags: (result, error, { examNo }) => [
-                { type: 'Students', id: `UBEAT-${examNo}` }
+            providesTags: (result, error, { _id, examNo }) => [
+                { type: 'Students', id: `UBEAT-${_id || examNo}` }
             ],
         }),
 
@@ -237,10 +247,12 @@ export const studentApi = apiSlice.injectEndpoints({
             }),
         }),
 
-        // Get BECE student result by exam number
-        getBECEResult: builder.query<BECEStudentResult, { examNo: string; year: string }>({
-            query: ({ examNo, year }) => ({
-                url: `${API_BASE_URL}/bece-student/check-result/${encodeURIComponent(examNo.replace(/\s/g, '').replace(/\//g, '-'))}?year=${encodeURIComponent(year)}`,
+        // Get BECE student result by exam number or _id
+        getBECEResult: builder.query<BECEStudentResult, { _id?: string; examNo?: string; year?: string }>({
+            query: ({ _id, examNo, year }) => ({
+                url: _id
+                    ? `${API_BASE_URL}/bece-student/check-result/${_id}?year=${encodeURIComponent(year || '')}`
+                    : `${API_BASE_URL}/bece-student/check-result/${encodeURIComponent((examNo || '').replace(/\s/g, '').replace(/\//g, '-'))}?year=${encodeURIComponent(year || '')}`,
                 method: 'GET',
             }),
             transformResponse: async (response: unknown) => {
@@ -254,9 +266,18 @@ export const studentApi = apiSlice.injectEndpoints({
                     return response as BECEStudentResult
                 }
             },
-            providesTags: (result, error, { examNo }) => [
-                { type: 'Students', id: `BECE-${examNo}` }
+            providesTags: (result, error, { _id, examNo }) => [
+                { type: 'Students', id: `BECE-${_id || examNo}` }
             ],
+        }),
+
+        // Find multiple matches for UBEAT exam number
+        findMultipleMatches: builder.mutation<MultiMatchResult[], { examNumber: string; year: number }>({
+            query: (data) => ({
+                url: `${API_BASE_URL}/ubeat/result/find-multiple-matches`,
+                method: 'POST',
+                body: data,
+            }),
         }),
     }),
     overrideExisting: true,
@@ -275,5 +296,6 @@ export const {
     useCreateUBEATPaymentMutation,
     useCustomerSupportMutation,
     useSetBecePaymentEmailMutation,
-    useSetUbeatPaymentEmailMutation
+    useSetUbeatPaymentEmailMutation,
+    useFindMultipleMatchesMutation,
 } = studentApi
