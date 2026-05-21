@@ -444,7 +444,7 @@ export default function StudentDashboardPage() {
                     </p>
                 </div>
 
-                <DetailsCheckBanner examNo={student.examNo} />
+                <DetailsCheckBanner examNo={student.examNo} studentName={student.name} school={student.school} />
 
                 {/* Content Grid */}
                 <div className="space-y-6 mb-6">

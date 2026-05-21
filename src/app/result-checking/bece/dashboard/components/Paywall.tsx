@@ -283,7 +283,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                         {/* Content */}
                         <div className="px-8 py-6">
 
-                            <DetailsCheckBanner examNo={examNo} />
+                            <DetailsCheckBanner examNo={examNo} studentName={studentName} school={school} />
 
                             {/* Student Info - Cleaner */}
                             <div className="mb-6 space-y-2.5">

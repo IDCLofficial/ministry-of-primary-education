@@ -1,62 +1,117 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { IoClose, IoAlertCircle } from 'react-icons/io5'
-import { updateSearchParam } from '@/lib'
+import { IoClose, IoLogoWhatsapp } from 'react-icons/io5'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { SessionStore } from '@/app/result-checking/utils/secureStorage'
 
 interface DetailsCheckBannerProps {
   examNo: string
+  studentName?: string
+  school?: string
 }
 
-export default function DetailsCheckBanner({ examNo }: DetailsCheckBannerProps) {
-  const [dismissed, setDismissed] = useState(true)
+export default function DetailsCheckBanner({ examNo, studentName, school }: DetailsCheckBannerProps) {
+  const [open, setOpen] = useState(false)
+  const [examYear, setExamYear] = useState('')
+  const [message, setMessage] = useState('')
 
   useEffect(() => {
     const key = `details_check_dismissed_${examNo}`
     const stored = localStorage.getItem(key)
-    if (!stored) setDismissed(false)
-  }, [examNo])
+    if (!stored) setOpen(true)
 
-  if (dismissed) return null
+    SessionStore.get('student_exam_year').then((year) => {
+      if (year) setExamYear(year)
+    })
+  }, [examNo])
 
   const handleDismiss = () => {
     const key = `details_check_dismissed_${examNo}`
     localStorage.setItem(key, 'true')
-    setDismissed(true)
+    setOpen(false)
   }
 
-  const handleReachOut = () => {
-    updateSearchParam('contacting-support', 'true')
-  }
+  if (!open) return null
+
+  const whatsappText = encodeURIComponent(
+    `Hello, I noticed an issue with my details on the result-checking portal.\n\n${message ? `Issue: ${message}\n\n` : ''}Name: ${studentName || '—'}\nSchool: ${school || '—'}\nExam No: ${examNo}\nYear: ${examYear || '—'}`
+  )
+
+  const whatsappUrl = `https://api.whatsapp.com/send?phone=2349162612656&text=${whatsappText}`
 
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 relative">
-      <button
-        onClick={handleDismiss}
-        className="absolute top-2 right-2 text-amber-400 hover:text-amber-600 transition-colors cursor-pointer"
-        aria-label="Dismiss"
-      >
-        <IoClose className="w-4 h-4" />
-      </button>
-      <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <IoAlertCircle className="w-4 h-4 text-amber-600" />
+    <Dialog open={open} onOpenChange={(v) => { if (!v) handleDismiss() }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-lg">Check Your Details</DialogTitle>
+          <DialogDescription>
+            Please review the details below. If anything is incorrect, let us know via WhatsApp and we&apos;ll help fix it.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 bg-gray-50 rounded-xl p-4">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Name</span>
+            <span className="font-medium text-gray-900 capitalize text-right max-w-[60%]">
+              {studentName?.toLowerCase() || '—'}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">School</span>
+            <span className="font-medium text-gray-900 capitalize text-right max-w-[60%]">
+              {school?.toLowerCase() || '—'}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Exam Number</span>
+            <span className="font-mono text-xs font-medium text-gray-900 uppercase">
+              {examNo}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Year</span>
+            <span className="font-medium text-gray-900">{examYear || '—'}</span>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-amber-900 mb-1">
-            Check your details
-          </p>
-          <p className="text-xs text-amber-700 leading-relaxed mb-3">
-            Take a moment to verify that your name, school, and exam number above are correct. If anything is misspelt or incorrect, please reach out to our support team.
-          </p>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            Describe the issue <span className="text-gray-400">(optional)</span>
+          </label>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="e.g. My name is misspelt, the school name is wrong..."
+            rows={3}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-green-100 focus:border-green-500"
+          />
+        </div>
+
+        <DialogFooter className="sm:justify-between gap-3">
           <button
-            onClick={handleReachOut}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors cursor-pointer"
+            onClick={handleDismiss}
+            className="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            <IoAlertCircle className="w-3.5 h-3.5" />
-            Reach Out to Support
+            Looks good, dismiss
           </button>
-        </div>
-      </div>
-    </div>
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors shadow-sm"
+          >
+            <IoLogoWhatsapp className="w-4 h-4" />
+            Reach Out via WhatsApp
+          </a>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
