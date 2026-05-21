@@ -215,7 +215,7 @@ export default function StudentLoginPage() {
         { skip: !altFormData.lga },
     )
 
-    const { data: availableYearsData } = useGetAvailableYearsQuery()
+    const { data: availableYearsData } = useGetAvailableYearsQuery({ examType: 'bece' })
     const availableYearOptions = useMemo(() => {
         return (availableYearsData?.years ?? []).map(y => ({ value: String(y), label: String(y) }))
     }, [availableYearsData])

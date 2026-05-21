@@ -240,9 +240,9 @@ export const studentApi = apiSlice.injectEndpoints({
         }),
 
         // Get available exam years
-        getAvailableYears: builder.query<{ years: number[] }, void>({
-            query: () => ({
-                url: `${API_BASE_URL}/ubeat/available-years`,
+        getAvailableYears: builder.query<{ years: number[] }, { examType: 'ubeat' | 'bece' }>({
+            query: ({ examType }) => ({
+                url: `${API_BASE_URL}/students/available-years?examType=${examType.toUpperCase()}`,
                 method: 'GET',
             }),
         }),

@@ -214,7 +214,7 @@ export default function UBEATLogin() {
         { skip: !altFormData.lga },
     )
 
-    const { data: availableYearsData } = useGetAvailableYearsQuery()
+    const { data: availableYearsData } = useGetAvailableYearsQuery({ examType: 'ubeat' })
     const availableYearOptions = useMemo(() => {
         return (availableYearsData?.years ?? []).map(y => ({ value: String(y), label: String(y) }))
     }, [availableYearsData])
