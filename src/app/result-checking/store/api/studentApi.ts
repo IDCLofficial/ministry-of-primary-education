@@ -278,6 +278,19 @@ export const studentApi = apiSlice.injectEndpoints({
                 method: 'POST',
                 body: data,
             }),
+            transformResponse: async (response: unknown) => {
+                const raw = response as { data?: unknown }
+                if (typeof raw?.data === 'string') {
+                    if (!(await isApiResponseDecryptConfigured())) return response as MultiMatchResult[]
+                    try {
+                        return await decryptApiResponseFrom<MultiMatchResult[]>(raw as { data: string }, 'data')
+                    } catch (e) {
+                        console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                        return response as MultiMatchResult[]
+                    }
+                }
+                return response as MultiMatchResult[]
+            },
         }),
     }),
     overrideExisting: true,
