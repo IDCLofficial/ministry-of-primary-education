@@ -34,6 +34,7 @@ export default function StudentDashboardPage() {
     const [isPrinting, setIsPrinting] = useState(false)
     const [examNo, setExamNo] = useState<string | null>(null)
     const [examYear, setExamYear] = useState<string>('')
+    const [examId, setExamId] = useState<string | null>(null)
 
     const getGradeColor = (grade: string) => {
         if (grade === 'A1') return 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white'
@@ -118,8 +119,16 @@ export default function StudentDashboardPage() {
             SessionStore.get('student_exam_no'),
             SessionStore.get('selected_exam_type'),
             SessionStore.get('student_exam_year'),
-        ]).then(([storedExamNo, selectedExamType, storedExamYear]) => {
+            SessionStore.get('student_exam_id'),
+        ]).then(([storedExamNo, selectedExamType, storedExamYear, storedExamId]) => {
             if (cancelled) return
+
+            if (storedExamId) {
+                setExamId(storedExamId)
+                setExamYear(storedExamYear || new Date().getFullYear().toString())
+                return
+            }
+
             if (!storedExamNo || selectedExamType !== 'bece' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
                 toast.error('Invalid exam number. Please log in again.')
                 setTimeout(() => router.push('/result-checking/bece'), 0)
@@ -133,18 +142,22 @@ export default function StudentDashboardPage() {
     }, [router])
 
     // Fetch student data using RTK Query
+    const queryArgs = examId
+        ? { _id: examId }
+        : { examNo: examNo || '', year: examYear }
     const {
         data: student,
         isLoading,
         isError,
         error
-    } = useGetBECEResultQuery({ examNo: examNo || '', year: examYear }, {
-        skip: !examNo || !examYear,
+    } = useGetBECEResultQuery(queryArgs, {
+        skip: !examId && (!examNo || !examYear),
     })
 
     const handleLogout = () => {
         SessionStore.remove('student_exam_no')
         SessionStore.remove('student_exam_year')
+        SessionStore.remove('student_exam_id')
         SessionStore.remove('selected_exam_type')
         toast.success('Logged out successfully')
         setTimeout(() => router.push('/result-checking/bece'), 0)
@@ -154,6 +167,7 @@ export default function StudentDashboardPage() {
         SessionStore.remove('selected_exam_type')
         SessionStore.remove('student_exam_no')
         SessionStore.remove('student_exam_year')
+        SessionStore.remove('student_exam_id')
         toast('Returning to exam selection...', { icon: '🔄' })
         setTimeout(() => router.push('/result-checking'), 0)
     }
@@ -254,7 +268,7 @@ export default function StudentDashboardPage() {
     }
 
     // Show loading while fetching data
-    if (isLoading || !examNo) {
+    if (isLoading || (!examId && !examNo)) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-green-50/30 via-white to-blue-50/30">
                 <header className="bg-white border-b border-gray-100 sticky top-0 z-50">

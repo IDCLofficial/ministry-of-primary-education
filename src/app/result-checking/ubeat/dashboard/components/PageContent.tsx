@@ -33,6 +33,7 @@ export default function UBEATDashboard() {
     const [isDownloading, setIsDownloading] = useState(false)
     const [examNo, setExamNo] = useState<string | null>(null)
     const [examYear, setExamYear] = useState<string>('')
+    const [examId, setExamId] = useState<string | null>(null)
 
     // Check for payment success from URL params
     useEffect(() => {
@@ -53,8 +54,16 @@ export default function UBEATDashboard() {
             SessionStore.get('student_exam_no'),
             SessionStore.get('selected_exam_type'),
             SessionStore.get('student_exam_year'),
-        ]).then(([storedExamNo, selectedExamType, storedExamYear]) => {
+            SessionStore.get('student_exam_id'),
+        ]).then(([storedExamNo, selectedExamType, storedExamYear, storedExamId]) => {
             if (cancelled) return
+
+            if (storedExamId) {
+                setExamId(storedExamId)
+                setExamYear(storedExamYear || new Date().getFullYear().toString())
+                return
+            }
+
             if (!storedExamNo || selectedExamType !== 'ubeat' || (!EXAM_NO_REGEX.test(storedExamNo) && !EXAM_NO_REGEX_02.test(storedExamNo) && !EXAM_NO_REGEX_03.test(storedExamNo))) {
                 toast.error('Invalid exam number. Please log in again.')
                 setTimeout(() => router.push('/result-checking/ubeat'), 0)
@@ -68,18 +77,22 @@ export default function UBEATDashboard() {
     }, [router])
 
     // Fetch student data using RTK Query
+    const queryArgs = examId
+        ? { _id: examId }
+        : { examNo: examNo || '', year: examYear }
     const {
         data: student,
         isLoading,
         isError,
         error
-    } = useGetUBEATResultQuery({ examNo: examNo || '', year: examYear }, {
-        skip: !examNo || !examYear,
+    } = useGetUBEATResultQuery(queryArgs, {
+        skip: !examId && (!examNo || !examYear),
     })
 
     const handleLogout = () => {
         SessionStore.remove('student_exam_no')
         SessionStore.remove('student_exam_year')
+        SessionStore.remove('student_exam_id')
         SessionStore.remove('selected_exam_type')
         toast.success('Logged out successfully')
         setTimeout(() => router.push('/result-checking/ubeat'), 0)
@@ -89,6 +102,7 @@ export default function UBEATDashboard() {
         SessionStore.remove('selected_exam_type')
         SessionStore.remove('student_exam_no')
         SessionStore.remove('student_exam_year')
+        SessionStore.remove('student_exam_id')
         toast('Returning to exam selection...', { icon: '🔄' })
         setTimeout(() => router.push('/result-checking'), 0)
     }

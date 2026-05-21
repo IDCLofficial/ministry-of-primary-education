@@ -256,6 +256,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
         })
         SessionStore.remove('student_exam_no')
         SessionStore.remove('student_exam_year')
+        SessionStore.remove('student_exam_id')
         SessionStore.remove('selected_exam_type')
         window.location.href = '/result-checking/bece'
     }

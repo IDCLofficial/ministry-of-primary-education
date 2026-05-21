@@ -27,6 +27,7 @@ const IMO_STATE_LGAS = Object.values(LgaEnum);
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface RecentAccount {
+    _id?: string
     examNo: string
     studentName: string
     school: string
@@ -308,6 +309,7 @@ export default function UBEATLogin() {
             }
 
             syncRecentAccount({
+                _id,
                 examNo: rawExamNo,
                 studentName: result.studentName,
                 school: result.schoolName ?? result.school ?? '',
@@ -318,6 +320,7 @@ export default function UBEATLogin() {
             await Promise.all([
                 SessionStore.set('student_exam_no', rawExamNo),
                 SessionStore.set('student_exam_year', yearVal),
+                SessionStore.set('student_exam_id', _id),
                 SessionStore.set('selected_exam_type', 'ubeat'),
             ])
 
@@ -366,13 +369,16 @@ export default function UBEATLogin() {
                 id: "loading-results",
                 duration: Infinity
             })
-            const result = await getUBEATResult({ examNo: selectedAccount.examNo, year: selectedAccount.year }).unwrap()
+            const result = selectedAccount._id
+                ? await getUBEATResult({ _id: selectedAccount._id }).unwrap()
+                : await getUBEATResult({ examNo: selectedAccount.examNo, year: selectedAccount.year }).unwrap()
             if (!result?.examNumber || !result?.studentName) {
                 setError("Couldn't load results for this account.")
                 return
             }
 
             syncRecentAccount({
+                _id: selectedAccount._id,
                 examNo: selectedAccount.examNo,
                 studentName: result.studentName,
                 school: result.schoolName ?? result.school ?? '',
@@ -384,6 +390,7 @@ export default function UBEATLogin() {
             await Promise.all([
                 SessionStore.set('student_exam_no', selectedAccount.examNo),
                 SessionStore.set('student_exam_year', selectedAccount.year),
+                ...(selectedAccount._id ? [SessionStore.set('student_exam_id', selectedAccount._id)] : []),
                 SessionStore.set('selected_exam_type', 'ubeat'),
             ])
             toast.success(`Welcome back, ${result.studentName}! 🎉`)

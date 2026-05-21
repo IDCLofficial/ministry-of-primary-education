@@ -30,6 +30,7 @@ const IMO_STATE_LGAS = Object.values(LgaEnum);
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface RecentAccount {
+    _id?: string
     examNo: string
     studentName: string
     school: string
@@ -309,6 +310,7 @@ export default function StudentLoginPage() {
             }
 
             syncRecentAccount({
+                _id,
                 examNo: rawExamNo,
                 studentName: result.name,
                 school: result.school ?? '',
@@ -319,6 +321,7 @@ export default function StudentLoginPage() {
             await Promise.all([
                 SessionStore.set('student_exam_no', rawExamNo),
                 SessionStore.set('student_exam_year', yearVal),
+                SessionStore.set('student_exam_id', _id),
                 SessionStore.set('selected_exam_type', 'bece'),
             ])
 
@@ -367,13 +370,16 @@ export default function StudentLoginPage() {
                 id: "loading-results",
                 duration: Infinity
             })
-            const result = await getBECEResult({ examNo: selectedAccount.examNo, year: selectedAccount.year }).unwrap()
+            const result = selectedAccount._id
+                ? await getBECEResult({ _id: selectedAccount._id }).unwrap()
+                : await getBECEResult({ examNo: selectedAccount.examNo, year: selectedAccount.year }).unwrap()
             if (!result?.examNo || !result?.name) {
                 setError("Couldn't load results for this account.")
                 return
             }
 
             syncRecentAccount({
+                _id: selectedAccount._id,
                 examNo: selectedAccount.examNo,
                 studentName: result.name,
                 school: result.school ?? '',
@@ -385,6 +391,7 @@ export default function StudentLoginPage() {
             await Promise.all([
                 SessionStore.set('student_exam_no', selectedAccount.examNo),
                 SessionStore.set('student_exam_year', selectedAccount.year),
+                ...(selectedAccount._id ? [SessionStore.set('student_exam_id', selectedAccount._id)] : []),
                 SessionStore.set('selected_exam_type', 'bece'),
             ])
             toast.success(`Welcome back, ${result.name}! 🎉`)
