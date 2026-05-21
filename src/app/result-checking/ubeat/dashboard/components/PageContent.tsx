@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { IoLogOut, IoDownload, IoPrint, IoSparkles, IoSwapHorizontal, IoTrophy } from 'react-icons/io5'
 import toast from 'react-hot-toast'
@@ -81,9 +81,10 @@ export default function UBEATDashboard() {
     }, [router])
 
     // Fetch student data using RTK Query
-    const queryArgs = examId
+    const queryArgs = useMemo(() => examId
         ? { _id: examId }
         : { examNo: examNo || '', year: examYear }
+    , [examId, examNo, examYear])
     const shouldSkip = !examId && (!examNo || !examYear)
     console.log('[UBEAT Dashboard] Query args:', queryArgs, 'skip:', shouldSkip, 'examId:', examId, 'examNo:', examNo, 'examYear:', examYear)
     const {
