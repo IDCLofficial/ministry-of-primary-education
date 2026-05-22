@@ -10,7 +10,6 @@ import Image from 'next/image'
 import { useDebounce } from '../../../portal/utils/hooks/useDebounce'
 import Link from 'next/link'
 import { useLazyGetBECEResultQuery, useFindBECEResultMutation, useCreateBECEPaymentMutation, useGetAvailableYearsQuery, useFindBECEMultipleMatchesMutation, type FindResultMatch, type MultiMatchResult } from '../../store/api/studentApi'
-import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
@@ -179,7 +178,6 @@ export default function StudentLoginPage() {
 
     const [multiMatchResults, setMultiMatchResults] = useState<MultiMatchResult[] | null>(null)
     const [isFindingMatches, setIsFindingMatches] = useState(false)
-    const [confirmMatch, setConfirmMatch] = useState<MultiMatchResult | null>(null)
 
     // ── Recent accounts (persisted, encrypted) ───────────────────────────────
     const [recentAccounts, setRecentAccounts] = useSecureSessionStorage<RecentAccount[]>(
@@ -273,9 +271,6 @@ export default function StudentLoginPage() {
 
             setMultiMatchResults(matches)
             console.log('[BECE Login] multiMatchResults:', JSON.stringify(matches, null, 2))
-            if (matches.length === 1) {
-                setConfirmMatch(matches[0])
-            }
             toast.dismiss("finding-matches")
             toast.success(`Found ${matches.length} record${matches.length !== 1 ? 's' : ''} — please select yours.`)
         } catch (error: unknown) {
@@ -364,7 +359,7 @@ export default function StudentLoginPage() {
     const handleMultiMatchSelect = async (match: MultiMatchResult) => {
         setSelectedStudentId(match._id)
         setError('')
-        setConfirmMatch(match)
+        await proceedWithResult({ _id: match._id, examNo: examNo, year })
     }
 
     const handleSelectRecent = async (selectedAccount: RecentAccount) => {
@@ -1069,21 +1064,6 @@ export default function StudentLoginPage() {
                                 <strong>📝 Note:</strong> Use your official BECE exam number from your school.
                             </p>
                         </div>
-                    )}
-
-                    {confirmMatch && (
-                        <DetailsCheckBanner
-                            context="retrieval"
-                            examNo={confirmMatch.examNo}
-                            studentName={confirmMatch.name || confirmMatch.studentName}
-                            school={confirmMatch.school?.schoolName || confirmMatch.school?.lga || ''}
-                            examYear={String(confirmMatch.examYear || '')}
-                            onDismiss={() => {
-                                const match = confirmMatch
-                                setConfirmMatch(null)
-                                proceedWithResult({ _id: match._id, examNo: examNo, year })
-                            }}
-                        />
                     )}
 
                     <div className="mt-6 text-center">

@@ -11,7 +11,6 @@ import Link from 'next/link'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
 import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation, useCreateUBEATPaymentMutation, useGetAvailableYearsQuery, useFindMultipleMatchesMutation, type FindResultMatch, type MultiMatchResult } from '../../store/api/studentApi'
-import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/utils/secureStorage'
 import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
@@ -177,7 +176,6 @@ export default function UBEATLogin() {
 
     const [multiMatchResults, setMultiMatchResults] = useState<MultiMatchResult[] | null>(null)
     const [isFindingMatches, setIsFindingMatches] = useState(false)
-    const [confirmMatch, setConfirmMatch] = useState<MultiMatchResult | null>(null)
 
     // ── Recent accounts (persisted, encrypted) ───────────────────────────────
     const [recentAccounts, setRecentAccounts] = useSecureSessionStorage<RecentAccount[]>(
@@ -272,9 +270,6 @@ export default function UBEATLogin() {
 
             setMultiMatchResults(matches)
             console.log('[UBEAT Login] multiMatchResults:', JSON.stringify(matches, null, 2))
-            if (matches.length === 1) {
-                setConfirmMatch(matches[0])
-            }
             toast.dismiss("finding-matches")
             toast.success(`Found ${matches.length} record${matches.length !== 1 ? 's' : ''} — please select yours.`)
         } catch (error: unknown) {
@@ -363,7 +358,7 @@ export default function UBEATLogin() {
     const handleMultiMatchSelect = async (match: MultiMatchResult) => {
         setSelectedStudentId(match._id)
         setError('')
-        setConfirmMatch(match)
+        await proceedWithResult({ _id: match._id, examNo: examNo, year })
     }
 
     const handleSelectRecent = async (selectedAccount: RecentAccount) => {
@@ -1062,21 +1057,6 @@ export default function UBEATLogin() {
                                 <strong>📝 Note:</strong> Use your official UBEAT exam number from your school.
                             </p>
                         </div>
-                    )}
-
-                    {confirmMatch && (
-                        <DetailsCheckBanner
-                            context="retrieval"
-                            examNo={confirmMatch.examNo}
-                            studentName={confirmMatch.name || confirmMatch.studentName}
-                            school={confirmMatch.school?.schoolName || confirmMatch.school?.lga || ''}
-                            examYear={String(confirmMatch.examYear || '')}
-                            onDismiss={() => {
-                                const match = confirmMatch
-                                setConfirmMatch(null)
-                                proceedWithResult({ _id: match._id, examNo: examNo, year })
-                            }}
-                        />
                     )}
 
                     <div className="mt-6 text-center">
