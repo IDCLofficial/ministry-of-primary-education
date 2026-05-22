@@ -116,7 +116,7 @@ export default function DetailsCheckBanner({ examNo, studentName, school, examYe
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors shadow-sm"
+            className="inline-flex flex-1 justify-center items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors shadow-sm"
           >
             <IoLogoWhatsapp className="w-4 h-4" />
             Reach Out via WhatsApp
