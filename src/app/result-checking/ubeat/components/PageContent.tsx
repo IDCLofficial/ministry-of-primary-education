@@ -11,7 +11,6 @@ import Link from 'next/link'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
 import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
 import { useLazyGetUBEATResultQuery, useFindUBEATResultMutation, useCreateUBEATPaymentMutation, useGetAvailableYearsQuery, useFindMultipleMatchesMutation, type FindResultMatch, type MultiMatchResult } from '../../store/api/studentApi'
-import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/utils/secureStorage'
 import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
@@ -49,7 +48,8 @@ function isValidExamNo(val: string) {
     return EXAM_NO_REGEX.test(val) || EXAM_NO_REGEX_02.test(val) || EXAM_NO_REGEX_03.test(val)
 }
 
-function getInitials(name: string) {
+function getInitials(name: string | undefined | null) {
+    if (!name) return '?'
     return name
         .split(' ')
         .filter(Boolean)
@@ -176,7 +176,6 @@ export default function UBEATLogin() {
 
     const [multiMatchResults, setMultiMatchResults] = useState<MultiMatchResult[] | null>(null)
     const [isFindingMatches, setIsFindingMatches] = useState(false)
-    const [confirmMatch, setConfirmMatch] = useState<MultiMatchResult | null>(null)
 
     // ── Recent accounts (persisted, encrypted) ───────────────────────────────
     const [recentAccounts, setRecentAccounts] = useSecureSessionStorage<RecentAccount[]>(
@@ -270,6 +269,7 @@ export default function UBEATLogin() {
             }
 
             setMultiMatchResults(matches)
+            console.log('[UBEAT Login] multiMatchResults:', JSON.stringify(matches, null, 2))
             toast.dismiss("finding-matches")
             toast.success(`Found ${matches.length} record${matches.length !== 1 ? 's' : ''} — please select yours.`)
         } catch (error: unknown) {
@@ -358,7 +358,7 @@ export default function UBEATLogin() {
     const handleMultiMatchSelect = async (match: MultiMatchResult) => {
         setSelectedStudentId(match._id)
         setError('')
-        setConfirmMatch(match)
+        await proceedWithResult({ _id: match._id, examNo: examNo, year })
     }
 
     const handleSelectRecent = async (selectedAccount: RecentAccount) => {
@@ -625,12 +625,12 @@ export default function UBEATLogin() {
                                                         <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                                                             {isSelected
                                                                 ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
-                                                                : getInitials(match.studentName)
+                                                                 : getInitials(match.name || match.studentName)
                                                             }
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className={`text-sm font-semibold truncate capitalize ${isSelected ? 'text-green-700' : 'text-gray-900'}`}>
-                                                                {match.studentName.toLowerCase()}
+                                                                {(match.name || match.studentName || 'Unknown').toLowerCase()}
                                                             </p>
                                                             <p className="text-xs text-gray-400 font-mono uppercase truncate mt-0.5">
                                                                 {match.examNo} &middot; {match.examYear}
@@ -735,6 +735,19 @@ export default function UBEATLogin() {
                                         )}
                                     </AnimatePresence>
 
+                                    {/* Exam Year */}
+                                    <div className="group relative">
+                                        <label htmlFor="loginExamYear" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
+                                            Exam Year <span className="text-red-500">*</span>
+                                        </label>
+                                        <CustomDropdown
+                                            options={availableYearOptions}
+                                            value={year}
+                                            onChange={value => { setYear(value); setError('') }}
+                                            placeholder="Select exam year"
+                                        />
+                                    </div>
+
                                     {/* ── Exam Number Input ── */}
                                     <div className="group">
                                         <label htmlFor="examNo" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
@@ -788,19 +801,6 @@ export default function UBEATLogin() {
                                         ) : (
                                             <p className="mt-2 text-xs text-gray-500">Format: XX/XXX/XXX or XX/XXX/XXX/XXX</p>
                                         )}
-                                    </div>
-
-                                    {/* Exam Year */}
-                                    <div className="group relative">
-                                        <label htmlFor="loginExamYear" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
-                                            Exam Year <span className="text-red-500">*</span>
-                                        </label>
-                                        <CustomDropdown
-                                            options={availableYearOptions}
-                                            value={year}
-                                            onChange={value => { setYear(value); setError('') }}
-                                            placeholder="Select exam year"
-                                        />
                                     </div>
 
                                     {/* Submit */}
@@ -1057,20 +1057,6 @@ export default function UBEATLogin() {
                                 <strong>📝 Note:</strong> Use your official UBEAT exam number from your school.
                             </p>
                         </div>
-                    )}
-
-                    {confirmMatch && (
-                        <DetailsCheckBanner
-                            context="retrieval"
-                            examNo={confirmMatch.examNo}
-                            studentName={confirmMatch.studentName}
-                            school={confirmMatch.school?.schoolName}
-                            onDismiss={() => {
-                                const match = confirmMatch
-                                setConfirmMatch(null)
-                                proceedWithResult({ _id: match._id, examNo: examNo, year })
-                            }}
-                        />
                     )}
 
                     <div className="mt-6 text-center">
