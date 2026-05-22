@@ -742,6 +742,19 @@ export default function StudentLoginPage() {
                                         )}
                                     </AnimatePresence>
 
+                                    {/* Exam Year */}
+                                    <div className="group relative">
+                                        <label htmlFor="loginExamYear" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
+                                            Exam Year <span className="text-red-500">*</span>
+                                        </label>
+                                        <CustomDropdown
+                                            options={availableYearOptions}
+                                            value={year}
+                                            onChange={value => { setYear(value); setError('') }}
+                                            placeholder="Select exam year"
+                                        />
+                                    </div>
+
                                     {/* ── Exam Number Input ── */}
                                     <div className="group">
                                         <label htmlFor="examNo" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
@@ -795,19 +808,6 @@ export default function StudentLoginPage() {
                                         ) : (
                                             <p className="mt-2 text-xs text-gray-500">Format: XX/XXX/XXX or XX/XXX/XXX/XXX</p>
                                         )}
-                                    </div>
-
-                                    {/* Exam Year */}
-                                    <div className="group relative">
-                                        <label htmlFor="loginExamYear" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
-                                            Exam Year <span className="text-red-500">*</span>
-                                        </label>
-                                        <CustomDropdown
-                                            options={availableYearOptions}
-                                            value={year}
-                                            onChange={value => { setYear(value); setError('') }}
-                                            placeholder="Select exam year"
-                                        />
                                     </div>
 
                                     {/* Submit */}
