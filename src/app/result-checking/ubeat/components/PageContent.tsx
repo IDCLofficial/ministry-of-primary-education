@@ -49,7 +49,8 @@ function isValidExamNo(val: string) {
     return EXAM_NO_REGEX.test(val) || EXAM_NO_REGEX_02.test(val) || EXAM_NO_REGEX_03.test(val)
 }
 
-function getInitials(name: string) {
+function getInitials(name: string | undefined | null) {
+    if (!name) return '?'
     return name
         .split(' ')
         .filter(Boolean)
@@ -633,7 +634,7 @@ export default function UBEATLogin() {
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className={`text-sm font-semibold truncate capitalize ${isSelected ? 'text-green-700' : 'text-gray-900'}`}>
-                                                                {match.name.toLowerCase()}
+                                                                {(match.name || 'Unknown').toLowerCase()}
                                                             </p>
                                                             <p className="text-xs text-gray-400 font-mono uppercase truncate mt-0.5">
                                                                 {match.examNo} &middot; {match.examYear}
