@@ -102,7 +102,7 @@ export interface FindResultRequest {
 // Match returned by find-multiple-matches endpoint
 export interface MultiMatchResult {
     _id: string
-    name: string
+    studentName: string
     examNo: string
     examYear: number
     school?: {
