@@ -291,13 +291,13 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Name</span>
                                     <span className="font-medium text-gray-900 capitalize">
-                                        {studentName.toLowerCase()}
+                                        {(studentName || '').toLowerCase()}
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">School</span>
                                     <span className="font-medium text-gray-900 capitalize text-right max-w-[60%]">
-                                        {school.toLowerCase()}
+                                        {(school || '').toLowerCase()}
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-sm">

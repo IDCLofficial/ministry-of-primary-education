@@ -51,7 +51,7 @@ export default function StudentDashboardPage() {
 
     const calculateAverage = () => {
         if (!student) return '0'
-        const scores = student.subjects.map(s => s.exam)
+        const scores = (student.subjects || []).map(s => s.exam)
         const total = scores.reduce((sum, score) => sum + score, 0)
         return (total / scores.length).toFixed(1)
     }
@@ -72,7 +72,7 @@ export default function StudentDashboardPage() {
     // Calculate credits (C4, C5, C6 grades)
     const calculateCredits = () => {
         if (!student) return 0
-        return student.subjects.filter(s => {
+        return (student.subjects || []).filter(s => {
             const grade = s.grade || calculateGradeFromScore(s.exam)
             return ['C4', 'C5', 'C6'].includes(grade)
         }).length
@@ -86,12 +86,12 @@ export default function StudentDashboardPage() {
             'D7': 7, 'E8': 8, 'F9': 9
         }
 
-        const totalPoints = student.subjects.reduce((sum, subject) => {
+        const totalPoints = (student.subjects || []).reduce((sum, subject) => {
             const grade = subject.grade || calculateGradeFromScore(subject.exam)
             return sum + (gradePoints[grade] || 9)
         }, 0)
 
-        const average = totalPoints / student.subjects.length
+        const average = totalPoints / (student.subjects || []).length
         if (average <= 1.5) return 'Distinction'
         if (average <= 2.5) return 'Credit'
         if (average <= 4.5) return 'Pass'
@@ -179,8 +179,8 @@ export default function StudentDashboardPage() {
                     schoolName: student.schoolName || student.school,
                     lga: student.lga,
                     year: certYear,
-                    subjectCount: student.subjects.length,
-                    courses: student.subjects.map((s) => ({
+                    subjectCount: (student.subjects || []).length,
+                    courses: (student.subjects || []).map((s) => ({
                         subject: s.name ?? '—',
                         grade: (s.grade != null && String(s.grade).trim() !== '') ? String(s.grade).trim() : calculateGradeFromScore(s.exam ?? 0),
                     })),
@@ -406,7 +406,7 @@ export default function StudentDashboardPage() {
                                 </div>
                                 <div>
                                     <h2 className="sm:text-2xl text-lg font-bold text-gray-900 mb-2">
-                                        Congratulations, <span className="capitalize">{student.name.toLowerCase()}</span>!
+                                        Congratulations, <span className="capitalize">{(student.name || '').toLowerCase()}</span>!
                                     </h2>
                                     <p className="sm:text-base text-sm text-gray-700 mb-1">
                                         You&apos;ve worked hard and here are your BECE results
@@ -461,7 +461,7 @@ export default function StudentDashboardPage() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div className="text-center">
                                     <p className="text-2xl font-semibold text-gray-900 mb-1">
-                                        {student.subjects.length}
+                                        {(student.subjects || []).length}
                                     </p>
                                     <p className="text-xs text-gray-500">Subjects</p>
                                 </div>
@@ -514,7 +514,7 @@ export default function StudentDashboardPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {student.subjects.map((subject, index) => {
+                                    {(student.subjects || []).map((subject, index) => {
                                         const calculatedGrade = calculateGradeFromScore(subject.exam)
                                         return (
                                             <tr key={index} className="hover:bg-gray-50 transition-colors">
@@ -635,7 +635,7 @@ export default function StudentDashboardPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-sm text-gray-600 mb-1">Full Name</p>
-                            <p className="text-base font-semibold text-gray-900 capitalize">{student.name.toLowerCase()}</p>
+                            <p className="text-base font-semibold text-gray-900 capitalize">{(student.name || '').toLowerCase()}</p>
                         </div>
                         <div>
                             <p className="text-sm text-gray-600 mb-1">Exam Number</p>
@@ -643,11 +643,11 @@ export default function StudentDashboardPage() {
                         </div>
                         <div>
                             <p className="text-sm text-gray-600 mb-1">School</p>
-                            <p className="text-base font-semibold text-gray-900 capitalize">{student?.school.toLowerCase()}</p>
+                            <p className="text-base font-semibold text-gray-900 capitalize">{(student?.school || '').toLowerCase()}</p>
                         </div>
                         <div>
                             <p className="text-sm text-gray-600 mb-1">LGA</p>
-                            <p className="text-base font-semibold text-gray-900 capitalize">{student.lga.toLowerCase()}</p>
+                            <p className="text-base font-semibold text-gray-900 capitalize">{(student.lga || '').toLowerCase()}</p>
                         </div>
                     </div>
                 </div>
@@ -657,7 +657,7 @@ export default function StudentDashboardPage() {
                 <div className="bg-green-50 rounded-2xl p-6 mb-6 border border-green-200">
                     <div className="grid grid-cols-4 gap-4 text-center">
                         <div>
-                            <p className="text-2xl font-bold text-gray-900">{student.subjects.length}</p>
+                            <p className="text-2xl font-bold text-gray-900">{(student.subjects || []).length}</p>
                             <p className="text-sm text-gray-600">Subjects</p>
                         </div>
                         <div>
@@ -687,7 +687,7 @@ export default function StudentDashboardPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {student.subjects.map((subject, index) => {
+                            {(student.subjects || []).map((subject, index) => {
                                 const calculatedGrade = calculateGradeFromScore(subject.exam)
                                 return (
                                     <tr key={index}>

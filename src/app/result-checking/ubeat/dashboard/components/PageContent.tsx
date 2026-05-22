@@ -399,7 +399,7 @@ export default function UBEATDashboard() {
                                 </div>
                                 <div>
                                     <h2 className="sm:text-2xl text-lg font-bold text-gray-900 mb-2">
-                                        Congratulations, <span className="capitalize">{student.studentName.toLowerCase()}</span>!
+                                        Congratulations, <span className="capitalize">{(student.studentName || '').toLowerCase()}</span>!
                                     </h2>
                                     <p className="sm:text-base text-sm text-gray-700 mb-1">
                                         You&apos;ve worked hard and here are your UBEAT results
@@ -448,7 +448,7 @@ export default function UBEATDashboard() {
                                 <div>
                                     <p className="text-xs font-medium text-gray-500 mb-1.5">Full Name</p>
                                     <p className="text-sm font-medium text-gray-900 capitalize">
-                                        {student.studentName.toLowerCase()}
+                                        {(student.studentName || '').toLowerCase()}
                                     </p>
                                 </div>
                                 <div>
@@ -673,7 +673,7 @@ export default function UBEATDashboard() {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-sm text-gray-600 mb-1">Full Name</p>
-                            <p className="text-base font-semibold text-gray-900 capitalize">{student.studentName.toLowerCase()}</p>
+                            <p className="text-base font-semibold text-gray-900 capitalize">{(student.studentName || '').toLowerCase()}</p>
                         </div>
                         <div>
                             <p className="text-sm text-gray-600 mb-1">Exam Number</p>
