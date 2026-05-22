@@ -103,6 +103,7 @@ export interface FindResultRequest {
 export interface MultiMatchResult {
     _id: string
     name?: string
+    studentName?: string
     examNo: string
     examYear: number
     school?: {

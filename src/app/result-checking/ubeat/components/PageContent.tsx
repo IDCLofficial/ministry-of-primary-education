@@ -271,6 +271,7 @@ export default function UBEATLogin() {
             }
 
             setMultiMatchResults(matches)
+            console.log('[UBEAT Login] multiMatchResults:', JSON.stringify(matches, null, 2))
             if (matches.length === 1) {
                 setConfirmMatch(matches[0])
             }
@@ -629,12 +630,12 @@ export default function UBEATLogin() {
                                                         <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                                                             {isSelected
                                                                 ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
-                                                                : getInitials(match.name)
+                                                                 : getInitials(match.name || match.studentName)
                                                             }
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className={`text-sm font-semibold truncate capitalize ${isSelected ? 'text-green-700' : 'text-gray-900'}`}>
-                                                                {(match.name || 'Unknown').toLowerCase()}
+                                                                {(match.name || match.studentName || 'Unknown').toLowerCase()}
                                                             </p>
                                                             <p className="text-xs text-gray-400 font-mono uppercase truncate mt-0.5">
                                                                 {match.examNo} &middot; {match.examYear}
@@ -1067,7 +1068,7 @@ export default function UBEATLogin() {
                         <DetailsCheckBanner
                             context="retrieval"
                             examNo={confirmMatch.examNo}
-                            studentName={confirmMatch.name}
+                            studentName={confirmMatch.name || confirmMatch.studentName}
                             school={confirmMatch.school?.schoolName || confirmMatch.school?.lga || ''}
                             examYear={String(confirmMatch.examYear || '')}
                             onDismiss={() => {
