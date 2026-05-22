@@ -15,13 +15,14 @@ interface DetailsCheckBannerProps {
   examNo: string
   studentName?: string
   school?: string
+  examYear?: string
   context: 'paywall' | 'dashboard' | 'retrieval'
   onDismiss?: () => void
 }
 
-export default function DetailsCheckBanner({ examNo, studentName, school, context, onDismiss }: DetailsCheckBannerProps) {
+export default function DetailsCheckBanner({ examNo, studentName, school, examYear: examYearProp, context, onDismiss }: DetailsCheckBannerProps) {
   const [open, setOpen] = useState(false)
-  const [examYear, setExamYear] = useState('')
+  const [examYear, setExamYear] = useState(examYearProp || '')
   const [message, setMessage] = useState('')
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '2348123456789'
 
@@ -29,11 +30,17 @@ export default function DetailsCheckBanner({ examNo, studentName, school, contex
     const key = `details_check_dismissed_${context}_${examNo}`
     const stored = localStorage.getItem(key)
     if (!stored) setOpen(true)
-
-    SessionStore.get('student_exam_year').then((year) => {
-      if (year) setExamYear(year)
-    })
   }, [examNo, context])
+
+  useEffect(() => {
+    if (examYearProp) {
+      setExamYear(examYearProp)
+    } else {
+      SessionStore.get('student_exam_year').then((year) => {
+        if (year) setExamYear(year)
+      })
+    }
+  }, [examYearProp])
 
   const handleDismiss = () => {
     const key = `details_check_dismissed_${context}_${examNo}`
@@ -52,7 +59,7 @@ export default function DetailsCheckBanner({ examNo, studentName, school, contex
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleDismiss() }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg">Check Your Details</DialogTitle>
           <DialogDescription>
@@ -101,15 +108,15 @@ export default function DetailsCheckBanner({ examNo, studentName, school, contex
         <DialogFooter className="sm:justify-between gap-3">
           <button
             onClick={handleDismiss}
-            className="px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+            className="px-4 py-2.5 flex-1 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Looks good, dismiss
+            Proceed to Dashboard
           </button>
           <a
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors shadow-sm"
+            className="inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors shadow-sm"
           >
             <IoLogoWhatsapp className="w-4 h-4" />
             Reach Out via WhatsApp
