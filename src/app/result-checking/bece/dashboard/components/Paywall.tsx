@@ -13,6 +13,7 @@ import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBan
 
 interface PaywallProps {
     examNo: string
+    examYear: number
     studentName: string
     school: string
 }
@@ -205,7 +206,7 @@ function EmailDialog({
     )
 }
 
-export default function Paywall({ examNo, studentName, school }: PaywallProps) {
+export default function Paywall({ examNo, examYear, studentName, school }: PaywallProps) {
     const [isProcessing, setIsProcessing] = useState(false);
 
     const handlePayment = async () => {
@@ -215,7 +216,7 @@ export default function Paywall({ examNo, studentName, school }: PaywallProps) {
             // Store return URL for redirect after payment (encrypted)
             await SessionStore.set('student-payment-return-url', '/result-checking/bece/dashboard')
 
-            const response = await createPayment(examNo, ExamTypeEnum.BECE);
+            const response = await createPayment(examNo, examYear, ExamTypeEnum.BECE);
 
             if (response.authorizationUrl) {
                 toast.success('Redirecting to payment gateway...')
