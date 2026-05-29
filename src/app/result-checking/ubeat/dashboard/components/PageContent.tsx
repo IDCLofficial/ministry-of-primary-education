@@ -287,6 +287,7 @@ export default function UBEATDashboard() {
         return (
             <Paywall
                 examNo={student.examNumber}
+                examYear={student.examYear}
                 studentName={student.studentName}
                 school={student?.schoolName || ''}
             />
