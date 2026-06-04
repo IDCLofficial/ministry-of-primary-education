@@ -341,6 +341,7 @@ export default function StudentDashboardPage() {
             <Paywall
                 examNo={student.examNo}
                 studentName={student.name}
+                examYear={student.examYear}
                 school={student.schoolName || student.school}
             />
         )

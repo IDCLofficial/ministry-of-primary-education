@@ -31,7 +31,7 @@ export interface UBEATStudentResult {
     serialNumber?: number
     averageScore?: number
     grade?: string
-    examYear?: number
+    examYear: number
     subjects?: {
         [key: string]: {
             ca: number
@@ -54,6 +54,7 @@ export interface BECEStudentResult {
     _id: string
     name: string
     examNo: string
+    examYear: number
     age: number
     sex: string
     school: string

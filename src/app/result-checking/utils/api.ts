@@ -129,14 +129,14 @@ export async function checkPaymentStatus(examNo: string): Promise<PaymentStatus>
 }
 
 // Create payment
-export async function createPayment(examNo: string, examType: ExamTypeEnum): Promise<CreatePaymentResponse> {
+export async function createPayment(examNo: string, examYear:number, examType: ExamTypeEnum): Promise<CreatePaymentResponse> {
     const response = await fetch(`${API_BASE_URL}/result-payment/create`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
         },
-        body: JSON.stringify({ examNo, examType }),
+        body: JSON.stringify({ examNo, examYear, examType }),
     })
 
     if (!response.ok) {
