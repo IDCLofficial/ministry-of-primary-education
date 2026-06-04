@@ -1,14 +1,15 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ExamTypeEnum, useOnboardStudentMutation, useUpdateStudentMutation, SchoolByCodeResponse } from '../../store/api/authApi'
+import { ExamTypeEnum, Gender, useBulkOnboardStudentsMutation, useOnboardStudentMutation, useUpdateStudentMutation, SchoolByCodeResponse } from '../../store/api/authApi'
 import CustomDropdown from './CustomDropdown'
 import toast from 'react-hot-toast'
 import Pagination from './Pagination'
 import StudentRegistrationSkeleton from './StudentRegistrationSkeleton'
 import CertificatePreviewModal from './CertificatePreviewModal'
 import { FaFileAlt } from 'react-icons/fa'
-import { IoDownload } from 'react-icons/io5'
+import { IoCloudUpload, IoDownload } from 'react-icons/io5'
+import * as XLSX from 'xlsx'
 import { getExamById } from '../[schoolCode]/types'
 
 interface Student {
@@ -18,12 +19,79 @@ interface Student {
   gender: 'Male' | 'Female'
   class: string
   examYear: number
+  age?: number
 }
 
 interface EditableStudent extends Student {
   isEditing?: boolean
   isNew?: boolean
   isLoadingId?: boolean
+}
+
+interface BulkStudentRow {
+  id: string
+  fullName: string
+  gender: 'Male' | 'Female'
+  age?: number
+  rowNumber: number
+  source: string
+  error?: string
+}
+
+const normalizeBulkGender = (value: unknown): 'Male' | 'Female' | null => {
+  const normalized = String(value ?? '').trim().toLowerCase()
+  if (['male', 'm', 'boy'].includes(normalized)) return 'Male'
+  if (['female', 'f', 'girl'].includes(normalized)) return 'Female'
+  return null
+}
+
+const findBulkValue = (row: Record<string, unknown>, candidates: string[]) => {
+  const entries = Object.entries(row)
+  for (const candidate of candidates) {
+    const found = entries.find(([key]) => key.trim().toLowerCase().replace(/[\s_-]/g, '') === candidate)
+    if (found) return found[1]
+  }
+  return undefined
+}
+
+const parseOptionalAge = (value: unknown): number | undefined => {
+  const normalized = String(value ?? '').trim()
+  if (!normalized) return undefined
+
+  const parsed = Number(normalized)
+  if (!Number.isInteger(parsed) || parsed <= 0) return undefined
+
+  return parsed
+}
+
+const parseBulkStudentRows = async (file: File): Promise<BulkStudentRow[]> => {
+  const data = await file.arrayBuffer()
+  const workbook = XLSX.read(data, { type: 'array' })
+  const parsedRows: BulkStudentRow[] = []
+
+  workbook.SheetNames.forEach((sheetName) => {
+    const worksheet = workbook.Sheets[sheetName]
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: '' })
+
+    rows.forEach((row, index) => {
+      const fullName = String(findBulkValue(row, ['name', 'fullname', 'studentname']) ?? '').trim()
+      const gender = normalizeBulkGender(findBulkValue(row, ['gender', 'sex']))
+      const age = parseOptionalAge(findBulkValue(row, ['age']))
+      const error = !fullName ? 'Name is required' : !gender ? 'Gender must be Male/Female or M/F' : undefined
+
+      parsedRows.push({
+        id: `${file.name}-${sheetName}-${index}`,
+        fullName,
+        gender: gender || 'Male',
+        age,
+        rowNumber: index + 2,
+        source: workbook.SheetNames.length > 1 ? `${file.name} / ${sheetName}` : file.name,
+        error
+      })
+    })
+  })
+
+  return parsedRows
 }
 
 export type SortableField = 'id' | 'name' | 'gender' | 'class' | 'year' | 'paymentStatus'
@@ -90,6 +158,7 @@ export default function StudentRegistrationExcel({
 }: StudentRegistrationExcelProps) {
   const examTypeData = getExamById(examType === "Common-entrance" ? "CESS" : examType)
   const [onboardStudent] = useOnboardStudentMutation()
+  const [bulkOnboardStudents] = useBulkOnboardStudentsMutation()
   const [updateStudent] = useUpdateStudentMutation()
   const [editableStudents, setEditableStudents] = useState<EditableStudent[]>([])
   const [showNewRow, setShowNewRow] = useState(false)
@@ -105,6 +174,12 @@ export default function StudentRegistrationExcel({
     examYear: new Date().getFullYear(),
     gender: 'Male'
   })
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false)
+  const [bulkRows, setBulkRows] = useState<BulkStudentRow[]>([])
+  const [bulkFileName, setBulkFileName] = useState('')
+  const [isParsingBulkFile, setIsParsingBulkFile] = useState(false)
+  const [isBulkUploading, setIsBulkUploading] = useState(false)
+  const [bulkUploadProgress, setBulkUploadProgress] = useState({ completed: 0, total: 0 })
 
   const examTypeToName: Record<ExamTypeEnum, string> = {
     [ExamTypeEnum.WAEC]: 'WAEC',
@@ -223,7 +298,7 @@ export default function StudentRegistrationExcel({
     }
   }
 
-  const handleFieldChange = (id: string, field: keyof Student, value: string | number) => {
+  const handleFieldChange = (id: string, field: keyof Student, value: string | number | undefined) => {
     setEditableStudents(prev =>
       prev.map(s => (s.id === id ? { ...s, [field]: value } : s))
     )
@@ -240,6 +315,111 @@ export default function StudentRegistrationExcel({
       return 'Exam year must be between 2020 and 2030'
     }
     return null
+  }
+
+  const handleOpenBulkUpload = () => {
+    if (isFlagged) {
+      onShowReconciliationModal?.()
+      return
+    }
+    if (actualAvailablePoints <= 0) {
+      toast.error('No available points to onboard new students')
+      return
+    }
+    setShowBulkUploadModal(true)
+  }
+
+  const handleBulkFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    const fileName = file.name.toLowerCase()
+    if (!fileName.endsWith('.csv') && !fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+      toast.error('Only CSV, XLSX, and XLS files are allowed')
+      return
+    }
+
+    setIsParsingBulkFile(true)
+    setBulkFileName(file.name)
+    try {
+      const rows = await parseBulkStudentRows(file)
+      setBulkRows(rows)
+      toast.success(`Parsed ${rows.length} student${rows.length !== 1 ? 's' : ''}`)
+    } catch (error) {
+      console.error('Bulk upload parsing failed:', error)
+      toast.error('Could not parse file. Use columns: name, gender')
+      setBulkRows([])
+    } finally {
+      setIsParsingBulkFile(false)
+    }
+  }
+
+  const handleBulkRowChange = (id: string, field: 'fullName' | 'gender' | 'age', value: string) => {
+    setBulkRows(prev => prev.map(row => {
+      if (row.id !== id) return row
+      const updated = {
+        ...row,
+        [field]: field === 'gender' ? value as 'Male' | 'Female' : field === 'age' ? parseOptionalAge(value) : value
+      }
+      return { ...updated, error: updated.fullName.trim() ? undefined : 'Name is required' }
+    }))
+  }
+
+  const handleBulkUploadStudents = async () => {
+    if (!school?._id) return
+    if (isFlagged) {
+      onShowReconciliationModal?.()
+      return
+    }
+    if (isFetchingProfile) {
+      toast.error('Please wait, points are being updated...')
+      return
+    }
+
+    const validRows = bulkRows.filter(row => !row.error && row.fullName.trim())
+    if (validRows.length === 0) {
+      toast.error('No valid students to upload')
+      return
+    }
+    if (validRows.length > actualAvailablePoints) {
+      toast.error(`You only have ${actualAvailablePoints} available point${actualAvailablePoints !== 1 ? 's' : ''}`)
+      return
+    }
+
+    setIsBulkUploading(true)
+    setBulkUploadProgress({ completed: 0, total: validRows.length })
+
+    try {
+      const students = validRows.map(row => ({
+        studentName: row.fullName.toLowerCase().split(' ').filter(Boolean).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+        gender: row.gender === 'Male' ? Gender.MALE : Gender.FEMALE,
+        class: examTypeData?.class || 'N/A',
+        examYear: lastStudentDefaults.examYear,
+        ...(row.age ? { age: row.age } : {})
+      }))
+
+      await bulkOnboardStudents({
+        examType,
+        data: {
+          school: school._id,
+          students
+        }
+      }).unwrap()
+
+      setBulkUploadProgress({ completed: students.length, total: students.length })
+      toast.success(`${students.length} student${students.length !== 1 ? 's' : ''} onboarded successfully`)
+      onRefreshStudents?.()
+      refetchProfile?.()
+      setBulkRows([])
+      setBulkFileName('')
+      setShowBulkUploadModal(false)
+    } catch (error) {
+      console.error('Bulk student upload failed:', error)
+      toast.error((error as { data?: { message?: string } })?.data?.message || 'Bulk upload failed')
+    } finally {
+      setIsBulkUploading(false)
+    }
   }
 
   const handleSaveRow = async (id: string) => {
@@ -274,7 +454,8 @@ export default function StudentRegistrationExcel({
           gender: student.gender.toLowerCase() as 'male' | 'female',
           class: examTypeData?.class || 'N/A',
           examYear: student.examYear,
-          school: school._id
+          school: school._id,
+          ...(student.age ? { age: student.age } : {})
         }
 
         // Optimistically add the student to the table with loading state for ID
@@ -358,7 +539,8 @@ export default function StudentRegistrationExcel({
             original.fullName !== student.fullName ||
             original.gender !== student.gender ||
             original.class !== student.class ||
-            original.examYear !== student.examYear
+            original.examYear !== student.examYear ||
+            original.age !== student.age
 
           if (!hasChanges) {
             // No changes detected, just cancel edit mode for this row only
@@ -379,7 +561,8 @@ export default function StudentRegistrationExcel({
         const updateData = {
           studentName: student.fullName,
           gender: student.gender.toLowerCase() as 'male' | 'female',
-          examYear: student.examYear
+          examYear: student.examYear,
+          ...(student.age ? { age: student.age } : {})
         }
 
         const response = await updateStudent({
@@ -600,6 +783,9 @@ export default function StudentRegistrationExcel({
               >
                 Gender {getSortIcon('gender')}
               </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Age
+              </th>
               <th
                 className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('class')}
@@ -661,6 +847,16 @@ export default function StudentRegistrationExcel({
                         className="text-sm"
                       />
                     </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <input
+                      type="number"
+                      min="1"
+                      value={newStudent.age || ''}
+                      onChange={(e) => handleFieldChange(newStudent.id, 'age', e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                      placeholder="Optional"
+                      className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
                   </td>
                   <td className="px-4 py-3 text-sm relative">
                     <div className="w-32 relative z-10 uppercase text-sm">
@@ -777,6 +973,20 @@ export default function StudentRegistrationExcel({
                     <span className="text-gray-900">{student.gender}</span>
                   )}
                 </td>
+                <td className="px-4 py-3 text-sm">
+                  {student.isEditing ? (
+                    <input
+                      type="number"
+                      min="1"
+                      value={student.age || ''}
+                      onChange={(e) => handleFieldChange(student.id, 'age', e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                      placeholder="Optional"
+                      className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  ) : (
+                    <span className="text-gray-900">{student.age || '-'}</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-sm relative">
                   {student.isEditing ? (
                     <div className="w-32 relative z-10 uppercase text-sm">
@@ -873,6 +1083,14 @@ export default function StudentRegistrationExcel({
             </button>
 
             <button
+              onClick={handleOpenBulkUpload}
+              className="px-4 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium whitespace-nowrap cursor-pointer bg-green-600 text-white hover:bg-green-700"
+            >
+              <IoCloudUpload className="w-5 h-5" />
+              Bulk Upload
+            </button>
+
+            <button
               onClick={() => {
                 if (isFlagged) {
                   onShowReconciliationModal?.()
@@ -928,6 +1146,145 @@ export default function StudentRegistrationExcel({
           approvalId={`${examTypeToName[examType]}-IMO-${currentExamData.applicationId.slice(-6)?.toUpperCase() || 'XXXXX'}`}
           issueDate={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
         />
+      )}
+
+      {showBulkUploadModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Bulk Upload Students</h3>
+                <p className="text-sm text-gray-500">Upload CSV or Excel with columns: name, gender, age optional</p>
+              </div>
+              <button
+                onClick={() => setShowBulkUploadModal(false)}
+                disabled={isBulkUploading}
+                className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4">
+              <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors">
+                <IoCloudUpload className="w-10 h-10 text-green-600 mb-3" />
+                <span className="text-sm font-medium text-gray-900">
+                  {isParsingBulkFile ? 'Parsing file...' : bulkFileName || 'Click to upload CSV or Excel'}
+                </span>
+                <span className="text-xs text-gray-500 mt-1">Accepted columns: name/fullName/studentName, gender/sex, and optional age</span>
+                <input
+                  type="file"
+                  accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  onChange={handleBulkFileChange}
+                  disabled={isParsingBulkFile || isBulkUploading}
+                  className="hidden"
+                />
+              </label>
+
+              {bulkRows.length > 0 && (
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{bulkRows.length} parsed row{bulkRows.length !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-gray-500">{bulkRows.filter(row => row.error).length} row{bulkRows.filter(row => row.error).length !== 1 ? 's' : ''} need attention</p>
+                    </div>
+                    <p className="text-xs text-gray-500">Available points: {actualAvailablePoints}</p>
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Row</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Gender</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Age</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-100">
+                        {bulkRows.map(row => (
+                          <tr key={row.id}>
+                            <td className="px-4 py-2 text-sm text-gray-500">{row.rowNumber}</td>
+                            <td className="px-4 py-2">
+                              <input
+                                type="text"
+                                value={row.fullName}
+                                onChange={(e) => handleBulkRowChange(row.id, 'fullName', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <select
+                                value={row.gender}
+                                onChange={(e) => handleBulkRowChange(row.id, 'gender', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                              >
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                              </select>
+                            </td>
+                            <td className="px-4 py-2">
+                              <input
+                                type="number"
+                                min="1"
+                                value={row.age || ''}
+                                onChange={(e) => handleBulkRowChange(row.id, 'age', e.target.value)}
+                                placeholder="Optional"
+                                className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                              />
+                            </td>
+                            <td className="px-4 py-2 text-sm">
+                              {row.error ? (
+                                <span className="text-red-600">{row.error}</span>
+                              ) : (
+                                <span className="text-green-600">Ready</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {isBulkUploading && (
+                <div className="bg-green-50 border border-green-100 rounded-lg p-4">
+                  <div className="flex justify-between text-sm text-green-800 mb-2">
+                    <span>Uploading students...</span>
+                    <span>{bulkUploadProgress.completed}/{bulkUploadProgress.total}</span>
+                  </div>
+                  <div className="w-full bg-green-100 rounded-full h-2">
+                    <div
+                      className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${bulkUploadProgress.total ? (bulkUploadProgress.completed / bulkUploadProgress.total) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowBulkUploadModal(false)}
+                disabled={isBulkUploading}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkUploadStudents}
+                disabled={isBulkUploading || isParsingBulkFile || bulkRows.length === 0 || bulkRows.some(row => row.error)}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isBulkUploading ? 'Uploading...' : 'Upload Students'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

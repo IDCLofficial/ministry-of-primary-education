@@ -231,7 +231,8 @@ export default function ExamPage() {
         fullName: student.studentName,
         gender: student.gender === 'male' ? 'Male' as const : 'Female' as const,
         class: student.class,
-        examYear: student.examYear
+        examYear: student.examYear,
+        age: student.age
       }))
 
       // Capitalize school name
@@ -323,6 +324,7 @@ export default function ExamPage() {
       gender: student.gender === 'male' ? 'Male' as const : 'Female' as const,
       class: student.class,
       examYear: student.examYear,
+      age: student.age,
       paymentStatus: student.paymentStatus === 'paid' ? 'Completed' as const :
         student.paymentStatus === 'pending' ? 'Pending' as const : 'Not Paid' as const,
       onboardingStatus: student.onboardingStatus
