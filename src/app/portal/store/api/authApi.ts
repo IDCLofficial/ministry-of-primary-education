@@ -65,6 +65,7 @@ interface Student {
   gender: 'male' | 'female'
   class: string
   examYear: number
+  age?: number
   paymentStatus: 'paid' | 'unpaid' | 'pending'
   onboardingStatus: 'onboarded' | 'pending' | 'not_onboarded'
   school: string
@@ -228,6 +229,7 @@ interface StudentOnboardingRequest {
   class: string
   examYear: number
   school: string
+  age?: number
 }
 
 interface StudentOnboardingResponse {
@@ -245,11 +247,30 @@ interface StudentOnboardingResponse {
   __v: number
 }
 
+export enum Gender {
+  MALE = 'male',
+  FEMALE = 'female',
+}
+
+interface BulkStudentPayload {
+  studentName: string
+  gender: Gender
+  class: string
+  examYear: number
+  age?: number
+}
+
+interface BulkCreateOnboardingPayload {
+  school: string
+  students: BulkStudentPayload[]
+}
+
 // Student Update interfaces
 interface StudentUpdateRequest {
   studentName: string
   gender: 'male' | 'female'
   examYear: number
+  age?: number
 }
 
 interface StudentUpdateResponse {
@@ -545,6 +566,20 @@ export const authApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Students'],
     }),
 
+    // Bulk onboard students
+    bulkOnboardStudents: builder.mutation<StudentOnboardingResponse[], { examType: string; data: BulkCreateOnboardingPayload }>({
+      query: ({ examType, data }) => ({
+        url: `${API_BASE_URL}/onboarding/bulk?examType=${examType}`,
+        method: 'POST',
+        body: data,
+        headers: {
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['Students'],
+    }),
+
     // Update student
     updateStudent: builder.mutation<StudentUpdateResponse, { id: string; examType: ExamTypeEnum; data: StudentUpdateRequest }>({
       query: ({ id, examType, data }) => ({
@@ -692,6 +727,7 @@ export const {
   useGetStudentsBySchoolQuery,
   useCreateStudentPaymentMutation,
   useVerifyPaymentQuery,
+  useBulkOnboardStudentsMutation,
   useOnboardStudentMutation,
   useUpdateStudentMutation,
   useUpdateApplicationStatusMutation,
