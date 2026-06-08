@@ -366,6 +366,10 @@ export default function StudentRegistrationExcel({
     }))
   }
 
+  const handleBulkRowDelete = (id: string) => {
+    setBulkRows(prev => prev.filter(row => row.id !== id))
+  }
+
   const handleBulkUploadStudents = async () => {
     if (!school?._id) return
     if (isFlagged) {
@@ -1202,6 +1206,7 @@ export default function StudentRegistrationExcel({
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Gender</th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Age</th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase text-center">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-100">
@@ -1242,6 +1247,16 @@ export default function StudentRegistrationExcel({
                               ) : (
                                 <span className="text-green-600">Ready</span>
                               )}
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleBulkRowDelete(row.id)}
+                                disabled={isBulkUploading}
+                                className="px-3 py-1 text-xs font-medium text-red-600 border border-red-200 rounded hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Delete
+                              </button>
                             </td>
                           </tr>
                         ))}
