@@ -8,9 +8,8 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://education.im.gov.n
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // ── Dynamic routes ────────────────────────────────────────────────────────
-    // Fetch slugs from your CMS/API and map them below.
-    const newsSlugs:  string[] = (await getNewsList(process.env.NEXT_PUBLIC_MINISTRY_ID || '')).map((n) => slugify(n.title)) ||[] // newsItems.map((n: { slug: string }) => n.slug)
-    const eventSlugs: string[] = (await getEventsList()).map((e) => slugify(e.title)) || [] // eventItems.map((e: { slug: string }) => e.slug)
+    const newsSlugs:  string[] = (await getNewsList(process.env.NEXT_PUBLIC_MINISTRY_ID || '')).map((n) => slugify(n.title)) || []
+    const eventSlugs: string[] = (await getEventsList()).map((e) => slugify(e.title)) || []
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -131,10 +130,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         //
         // /result-checking/bece/dashboard
         // /result-checking/ubeat/dashboard
+        // /result-checking/bece/payment
         // /result-checking/ubeat/payment
         // /result-checking/payment-callback
+        // /result-checking/bece/bulk-downloads
+        // /result-checking/ubeat/bulk-downloads
         // /exam-portal (and all sub-routes)
-        // /portal (and all sub-routes)
-
+        // /portal (and all sub-routes, including /portal/iirs)
     ]
 }
