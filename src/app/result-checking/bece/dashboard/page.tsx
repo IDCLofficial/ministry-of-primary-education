@@ -449,7 +449,7 @@ export default function StudentDashboardPage() {
                 {/* Content Grid */}
                 <div className="space-y-6 mb-6">
                     {/* Student Info */}
-                    <StudentInfoCard student={student} />
+                    <StudentInfoCard student={student} onDownload={handleDownload} isDownloading={isDownloadingCertificate} />
 
                     {/* Overall Performance Summary */}
                     <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden print:hidden">
