@@ -21,7 +21,7 @@ export const apiSlice = createApi({
             return headers
         },
     }),
-    tagTypes: ['School', 'Students'],
+    tagTypes: ['School', 'Students', 'Voucher'],
     endpoints: () => ({}),
 })
 

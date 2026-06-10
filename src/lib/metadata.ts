@@ -221,6 +221,42 @@ export const studentPortalMetadata = {
         robots: { index: false, follow: false },
     } satisfies Metadata,
 
+    // ── Bulk Downloads (Agent) ────────────────────────────────────────────────
+
+    bulkDownloadsBECE: {
+        title:       'Bulk BECE Downloads',
+        description: 'Search a BECE cohort by year, LGA and school. Process bulk payment and download certificates as a ZIP file.',
+        openGraph: {
+            title:       'Bulk BECE Downloads | Imo State Student Portal',
+            description: 'Pay for a whole school cohort and download BECE certificates in one ZIP file.',
+            url:         `${STUDENT_PORTAL_BASE}/bece/bulk-downloads`,
+            images: [{
+                url:    `${SITE_URL}/images/og/bece.png`,
+                width:  2940,
+                height: 1840,
+                alt:    'Imo State Student Portal — Bulk BECE Downloads',
+            }],
+        },
+        robots: { index: false, follow: false },
+    } satisfies Metadata,
+
+    bulkDownloadsUBEAT: {
+        title:       'Bulk UBEAT Downloads',
+        description: 'Search a UBEAT cohort by year, LGA and school. Process bulk payment and download FSLC certificates as a ZIP file.',
+        openGraph: {
+            title:       'Bulk UBEAT Downloads | Imo State Student Portal',
+            description: 'Pay for a whole school cohort and download UBEAT FSLC certificates in one ZIP file.',
+            url:         `${STUDENT_PORTAL_BASE}/ubeat/bulk-downloads`,
+            images: [{
+                url:    `${SITE_URL}/images/og/ubeat.png`,
+                width:  2940,
+                height: 1840,
+                alt:    'Imo State Student Portal — Bulk UBEAT Downloads',
+            }],
+        },
+        robots: { index: false, follow: false },
+    } satisfies Metadata,
+
     // ── Shared ───────────────────────────────────────────────────────────────
 
     faq: {
