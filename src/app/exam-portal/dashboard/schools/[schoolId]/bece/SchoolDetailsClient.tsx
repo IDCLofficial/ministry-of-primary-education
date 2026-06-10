@@ -107,7 +107,7 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
             toast.success('Certificate downloaded')
         } catch (err) {
             console.error('Certificate generation failed:', err)
-            toast.error('Failed to generate certificate')
+            toast.error('Failed to generate certificate. The certificate image could not be loaded.')
         }
     }
 

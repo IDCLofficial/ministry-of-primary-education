@@ -193,7 +193,7 @@ export default function StudentDashboardPage() {
             toast.success('Certificate downloaded', { id: 'cert-download' })
         } catch (err) {
             console.error('Certificate download failed:', err)
-            toast.error('Failed to download certificate', { id: 'cert-download' })
+            toast.error('Failed to download certificate. The certificate image could not be loaded.', { id: 'cert-download' })
         } finally {
             setIsDownloadingCertificate(false)
         }

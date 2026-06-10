@@ -511,7 +511,7 @@ const drawSignature = (
 
 export const generateUBEATCertificate = async (
     data: CertificateData,
-    certificateType: 'pass' | 'credit' | 'distinction' = 'pass',
+    certificateType = 'pass',
     customFields?: CertificateFieldsConfig,
     customFonts?: CustomFont[]
 ): Promise<void> => {
@@ -532,13 +532,20 @@ export const generateUBEATCertificate = async (
         console.error('Font loading failed:', error)
     }
     
-    const imagePath = (type: 'pass' | 'credit' | 'distinction') => {
-        switch (type) {
-            case 'pass':        return '/images/new-certificates/Universal Basic Education - PASS.png'
-            case 'credit':      return '/images/new-certificates/Universal Basic Education - CREDIT.png'
-            case 'distinction': return '/images/new-certificates/Universal Basic Education - DISTINCTION.png'
-        }
+    if (!(['pass', 'credit', 'distinction'] as const).includes(certificateType as 'pass' | 'credit' | 'distinction')) {
+        throw new TypeError(
+            `Cannot generate certificate: unrecognised grade "${certificateType}". `
+            + 'Only pass, credit, and distinction certificates are supported.'
+        )
     }
+
+    const IMAGE_MAP: Record<string, string> = {
+        pass:        '/images/new-certificates/Universal Basic Education - PASS.png',
+        credit:      '/images/new-certificates/Universal Basic Education - CREDIT.png',
+        distinction: '/images/new-certificates/Universal Basic Education - DISTINCTION.png',
+    }
+
+    const imagePath = IMAGE_MAP[certificateType]
 
     // Select base configs based on certificate type
     const baseConfig = certificateType === 'pass'
@@ -806,6 +813,6 @@ export const generateUBEATCertificate = async (
             reject(new Error('Failed to load certificate image'))
         }
 
-        img.src = imagePath(certificateType)
+        img.src = imagePath
     })
 }

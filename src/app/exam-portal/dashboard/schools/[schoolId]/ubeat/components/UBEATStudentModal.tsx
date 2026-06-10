@@ -65,7 +65,10 @@ export default function UBEATStudentModal({ isOpen, onClose, student, schoolName
             }
         } catch (error) {
             console.error('Error generating certificate:', error)
-            toast.error('Failed to generate certificate. Please try again.')
+            const message = error instanceof TypeError
+                ? error.message
+                : 'Failed to generate certificate. The certificate image could not be loaded. Please try again or contact support.'
+            toast.error(message)
         } finally {
             setIsGenerating(false)
         }

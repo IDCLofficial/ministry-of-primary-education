@@ -100,12 +100,15 @@ export default function UBEATSchoolDetailsClient({ school, students, pagination,
             await generateUBEATCertificate({
                 student: ubeatStudent,
                 schoolName: school.schoolName
-            }, (ubeatStudent as UBEATStudent).grade.toLowerCase() as 'pass' | 'credit' | 'distinction')
+            }, ubeatStudent.grade?.toLowerCase() || 'pass')
 
             toast.success('Certificate downloaded successfully!')
         } catch (error) {
             console.error('Error generating certificate:', error)
-            toast.error('Failed to generate certificate. Please try again.')
+            const message = error instanceof TypeError
+                ? error.message
+                : 'Failed to generate certificate. The certificate image could not be loaded. Please try again or contact support.'
+            toast.error(message)
         }
     }
 
