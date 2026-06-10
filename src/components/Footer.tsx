@@ -238,6 +238,10 @@ export default function Footer() {
         >
           Imo Digital City
         </a>
+        <span className="mx-2">·</span>
+        <Link href="/privacy-policy" className="text-green-600 hover:underline">
+          Privacy Policy
+        </Link>
         </div>
       </footer>
     );

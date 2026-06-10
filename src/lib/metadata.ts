@@ -123,6 +123,16 @@ export const publicMetadata = {
         },
     } satisfies Metadata,
 
+    privacy: {
+        title:       'Privacy Policy',
+        description: 'How the Imo State Ministry of Primary & Secondary Education collects, uses, and protects your personal data.',
+        openGraph: {
+            title: 'Privacy Policy',
+            url:   `${SITE_URL}/privacy-policy`,
+        },
+        robots: { index: true, follow: true },
+    } satisfies Metadata,
+
 } as const
 
 
