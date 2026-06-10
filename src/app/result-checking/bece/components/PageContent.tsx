@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/utils/secureStorage'
-import { IoPersonCircle, IoLockClosed, IoTrashOutline, IoChevronForward, IoClose, IoChevronDown, IoChevronUp, IoCalendarOutline, IoSwapHorizontal } from 'react-icons/io5'
+import { IoPersonCircle, IoLockClosed, IoTrashOutline, IoChevronForward, IoClose, IoChevronDown, IoChevronUp, IoCalendarOutline, IoSwapHorizontal, IoDownloadOutline } from 'react-icons/io5'
 import toast from 'react-hot-toast'
 import Lottie from 'lottie-react'
 import animationData from '../../assets/students.json'
@@ -833,6 +833,20 @@ export default function StudentLoginPage() {
                                             Don&apos;t know your exam number? Click here
                                         </button>
                                     </div>
+
+                                    <div className="flex items-center gap-3 pt-1">
+                                        <div className="flex-1 h-px bg-gray-100" />
+                                        <span className="text-[10px] uppercase tracking-wider text-gray-400">or</span>
+                                        <div className="flex-1 h-px bg-gray-100" />
+                                    </div>
+
+                                    <Link
+                                        href="/result-checking/bece/bulk-downloads"
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:border-green-300 hover:bg-green-50 hover:text-green-700 transition-all duration-150 cursor-pointer"
+                                    >
+                                        <IoDownloadOutline className="w-4 h-4" />
+                                        Agent? Bulk-download a whole school cohort
+                                    </Link>
                                 </form>
                             )) : matchedStudents ? (
                                 /* ── Student Selection ── */
