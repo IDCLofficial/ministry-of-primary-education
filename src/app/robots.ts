@@ -29,10 +29,16 @@ export default function robots(): MetadataRoute.Robots {
                     '/result-checking/bece/dashboard',
                     '/result-checking/ubeat/dashboard',
                     '/result-checking/ubeat/payment',
+                    '/result-checking/bece/payment',
                     '/result-checking/payment-callback',
+                    '/result-checking/bece/bulk-downloads',
+                    '/result-checking/ubeat/bulk-downloads',
 
                     // Exam portal — admin only
                     '/exam-portal/',
+
+                    // IIRS portal — confidential
+                    '/portal/iirs/',
 
                     // AEE portal — all routes
                     '/portal/',
