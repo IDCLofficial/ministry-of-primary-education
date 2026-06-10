@@ -1,18 +1,17 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import { publicMetadata } from '@/lib/metadata'
 
 export const metadata: Metadata = publicMetadata.privacy
 
 export default function PrivacyPolicyPage() {
     return (
-        <main className="min-h-screen bg-gradient-to-b from-white to-green-50 pt-28 pb-20 px-4 sm:px-6">
+        <main className="min-h-screen bg-gradient-to-b from-white to-green-50 pt-36 pb-20 px-4 sm:px-6">
             <div className="mx-auto max-w-3xl">
                 {/* Header */}
                 <div className="mb-12 text-center">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-600 shadow-lg">
-                        <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                        </svg>
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center">
+                        <Image src="/images/IMSG-Logo.svg" alt="Imo State Logo" width={48} height={48} />
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                         Privacy Policy
