@@ -334,6 +334,7 @@ export default function StudentDashboardPage() {
 
     // Check payment status from the student result data
     const isPaid = !student.payment || student.payment.isPaid
+    const yearLoading = !(student as { examYear?: number })?.examYear
 
     // Show paywall if payment is not confirmed
     if (!isPaid && student.payment && !student.payment.isPaid) {
@@ -449,7 +450,7 @@ export default function StudentDashboardPage() {
                 {/* Content Grid */}
                 <div className="space-y-6 mb-6">
                     {/* Student Info */}
-                    <StudentInfoCard student={student} onDownload={handleDownload} isDownloading={isDownloadingCertificate} />
+                    <StudentInfoCard student={student} onDownload={handleDownload} isDownloading={isDownloadingCertificate} yearLoading={yearLoading} />
 
                     {/* Overall Performance Summary */}
                     <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden print:hidden">
