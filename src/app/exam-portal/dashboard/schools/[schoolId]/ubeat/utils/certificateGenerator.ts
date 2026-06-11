@@ -722,7 +722,7 @@ export const generateUBEATCertificate = async (
             const dateStr = new Date().toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: 'long',
-                year: '2-digit'
+                year: undefined
             })
             drawRotatedText(
                 ctx,
@@ -740,7 +740,7 @@ export const generateUBEATCertificate = async (
                 ctx.fillStyle = serialConfig.color || '#000000'
                 const serialText = certificateType === 'pass'
                     ? (serialDisplay ? `S/N: ${serialDisplay}` : '')
-                    : examYear.toString().slice(-2)
+                    : new Date().getFullYear().toString().slice(-2)
                 if (serialText) {
                     drawRotatedText(
                         ctx,

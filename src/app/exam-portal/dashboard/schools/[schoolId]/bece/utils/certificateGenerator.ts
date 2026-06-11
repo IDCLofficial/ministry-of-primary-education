@@ -589,7 +589,15 @@ export async function generateBECECertificate(
 
             // ── Issue date ──
             if (data.issueDate != null && data.issueDate !== '') {
-                const issueStr = typeof data.issueDate === 'string' ? data.issueDate : new Date().toISOString().slice(0, 10)
+                const raw = typeof data.issueDate === 'string' ? data.issueDate : new Date().toISOString().slice(0, 10)
+                const parsed = new Date(raw + 'T00:00:00')
+                const issueStr = isNaN(parsed.getTime())
+                    ? raw
+                    : parsed.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: '2-digit'
+                    })
                 setFont(ctx, issueDateConfig)
                 ctx.textAlign = (issueDateConfig.align ?? 'left') as CanvasTextAlign
                 ctx.fillStyle = issueDateConfig.color ?? '#000000'
