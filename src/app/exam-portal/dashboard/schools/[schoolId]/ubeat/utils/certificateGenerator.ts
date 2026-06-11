@@ -722,8 +722,8 @@ export const generateUBEATCertificate = async (
             const dateStr = new Date().toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: 'long',
-                year: undefined
-            }).replace(/\d{4}/, String(examYear))
+                year: '2-digit'
+            })
             drawRotatedText(
                 ctx,
                 applyTransform(dateStr, dateConfig.transform),
