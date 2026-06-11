@@ -33,7 +33,7 @@ import CustomDropdown from "@/app/portal/dashboard/components/CustomDropdown";
 import { usePathname, useSearchParams } from "next/navigation";
 import { removeSearchParam, updateSearchParam } from "@/lib";
 import { LgaEnum } from "@/app/portal/dashboard/[schoolCode]/types";
-import { CustomerSupport, useCustomerSupportMutation } from "../store/api/studentApi";
+import { CustomerSupport, useCustomerSupportMutation, useGetAvailableYearsQuery } from "../store/api/studentApi";
 import ClickCopy from "@/components/ClickCopy";
 
 /* ── Data ── */
@@ -68,8 +68,6 @@ interface FormState {
 }
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
-
-const EXAM_YEARS = ["2026", "2025", "2024", "2023", "2022", "2021"];
 
 /* ── Helpers ── */
 function genRef() {
@@ -192,6 +190,10 @@ function FormContent({
     reset,
     schoolNames,
     isLoadingSchools,
+    yearsLoading,
+    yearsData,
+    examTypeForYears,
+    openDropdownCount,
 }: {
     form: FormState;
     errors: FormErrors;
@@ -204,8 +206,16 @@ function FormContent({
     schoolNames?: SchoolName[];
     isLoadingSchools: boolean;
     reset: () => void;
+    yearsLoading: boolean;
+    yearsData?: { years: number[] };
+    examTypeForYears: string | null;
+    openDropdownCount: React.MutableRefObject<number>;
 }) {
     const isReasonOther = form.reason === "other";
+
+    const handleOpenChange = (open: boolean) => {
+        openDropdownCount.current = Math.max(0, openDropdownCount.current + (open ? 1 : -1));
+    };
 
     return (
         <AnimatePresence mode="wait">
@@ -258,7 +268,7 @@ function FormContent({
 
                                 <div className="space-y-1.5">
                                     <FieldLabel htmlFor="lga-trigger">LGA</FieldLabel>
-                                    <Select value={form.lga} onValueChange={set("lga")}>
+                                    <Select value={form.lga} onValueChange={set("lga")} onOpenChange={handleOpenChange}>
                                         <SelectTrigger
                                             id="lga-trigger"
                                             className={`h-10 w-full text-[13.5px] ${errors.lga ? "border-red-400 focus:ring-red-200" : "focus:ring-green-200 focus:border-green-500"} ${!form.lga ? "text-slate-400" : ""}`}
@@ -346,7 +356,7 @@ function FormContent({
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1.5">
                                         <FieldLabel htmlFor="year-trigger">Exam Year</FieldLabel>
-                                        <Select value={form.examYear} onValueChange={set("examYear")}>
+                                        <Select value={form.examYear} onValueChange={set("examYear")} onOpenChange={handleOpenChange}>
                                             <SelectTrigger
                                                 id="year-trigger"
                                                 className={`h-10 text-[13.5px] w-full ${errors.examYear ? "border-red-400" : "focus:ring-green-200 focus:border-green-500"} ${!form.examYear ? "text-slate-400" : ""}`}
@@ -354,9 +364,24 @@ function FormContent({
                                                 <SelectValue placeholder="Year" />
                                             </SelectTrigger>
                                             <SelectContent className="text-[13px] w-full">
-                                                {EXAM_YEARS.map((y) => (
-                                                    <SelectItem key={y} value={y}>{y}</SelectItem>
-                                                ))}
+                                                {yearsLoading ? (
+                                                    <div className="flex items-center justify-center gap-2 px-2 py-4 text-slate-400 text-[13px]">
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-400" />
+                                                        Loading…
+                                                    </div>
+                                                ) : !examTypeForYears ? (
+                                                    <div className="px-2 py-4 text-slate-400 text-[13px] text-center">
+                                                        Select an exam type first
+                                                    </div>
+                                                ) : (yearsData?.years ?? []).length === 0 ? (
+                                                    <div className="px-2 py-4 text-slate-400 text-[13px] text-center">
+                                                        No years available
+                                                    </div>
+                                                ) : (
+                                                    (yearsData?.years ?? []).map((y) => (
+                                                        <SelectItem key={y} value={String(y)}>{String(y)}</SelectItem>
+                                                    ))
+                                                )}
                                             </SelectContent>
                                         </Select>
                                         <AnimatePresence><FieldError message={errors.examYear} /></AnimatePresence>
@@ -364,7 +389,7 @@ function FormContent({
 
                                     <div className="space-y-1.5 col-span-2 sm:col-span-1">
                                         <FieldLabel htmlFor="type-trigger">Exam Type</FieldLabel>
-                                        <Select value={form.examType} onValueChange={set("examType")}>
+                                        <Select value={form.examType} onValueChange={set("examType")} onOpenChange={handleOpenChange}>
                                             <SelectTrigger
                                                 id="type-trigger"
                                                 className={`h-10 w-full text-[13.5px] ${errors.examType ? "border-red-400" : "focus:ring-green-200 focus:border-green-500"} ${!form.examType ? "text-slate-400" : ""}`}
@@ -415,6 +440,7 @@ function FormContent({
                                                 set("reasonOther")("");
                                             }
                                         }}
+                                        onOpenChange={handleOpenChange}
                                     >
                                         <SelectTrigger
                                             id="reason-trigger"
@@ -656,11 +682,13 @@ function BottomSheet({
     onClose,
     children,
     trapRef,
+    openDropdownCount,
 }: {
     open: boolean;
     onClose: () => void;
     children: React.ReactNode;
     trapRef: React.RefObject<HTMLDivElement | null>;
+    openDropdownCount: React.MutableRefObject<number>;
 }) {
     const y = useMotionValue(0);
     const overlayOpacity = useTransform(y, [0, SNAP_CLOSE_THRESHOLD * 2], [0.45, 0]);
@@ -685,7 +713,10 @@ function BottomSheet({
                         transition={{ duration: 0.22 }}
                         style={{ opacity: overlayOpacity }}
                         className="fixed inset-0 z-50 bg-black"
-                        onClick={onClose}
+                        onClick={(e) => {
+                            if (openDropdownCount.current > 0) return;
+                            onClose();
+                        }}
                         aria-hidden="true"
                     />
 
@@ -730,11 +761,13 @@ function DesktopPopover({
     onClose,
     children,
     trapRef,
+    openDropdownCount,
 }: {
     open: boolean;
     onClose: () => void;
     children: React.ReactNode;
     trapRef: React.RefObject<HTMLDivElement | null>;
+    openDropdownCount: React.MutableRefObject<number>;
 }) {
     return (
         <AnimatePresence>
@@ -747,7 +780,14 @@ function DesktopPopover({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[1px]"
-                        onClick={onClose}
+                        onClick={(e) => {
+                            if (openDropdownCount.current > 0) return;
+                            const target = e.target as Element;
+                            if (target.closest('[data-drop="custom"]')) return;
+                            if (target.closest('[data-drop-menu]')) return;
+                            if (target.closest('.custom-dropdown-menu')) return;
+                            onClose();
+                        }}
                         aria-hidden="true"
                     />
 
@@ -791,11 +831,9 @@ function FAB({ onClick, fabRef }: { onClick: () => void; fabRef: React.RefObject
             aria-expanded={false}
         >
             <div className="relative flex items-center gap-2.5 bg-[#1a8a3c] text-white rounded-full px-5 py-3.5 shadow-lg shadow-green-900/30 font-semibold text-[14.5px] tracking-tight cursor-pointer">
-                <motion.span
+                <span
                     className="absolute inset-0 rounded-full border-2 border-green-400/80"
-                    initial={{ scale: 1, opacity: 0.6 }}
-                    animate={{ scale: [1, 1.45], opacity: [0.6, 0] }}
-                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                    style={{ animation: 'pulse-ring 1.8s ease-in-out infinite' }}
                     aria-hidden="true"
                 />
                 <MessageCircle size={18} className="flex-shrink-0" />
@@ -826,6 +864,7 @@ function Widget() {
 
     const panelRef = useRef<HTMLDivElement>(null);
     const fabRef = useRef<HTMLButtonElement>(null);
+    const openDropdownCount = useRef(0);
 
     const [form, setForm] = useState<FormState>({
         fullName: "",
@@ -845,6 +884,12 @@ function Widget() {
     const { data: schoolNames, isLoading: isLoadingSchoolNames, isFetching } = useGetSchoolNamesQuery(
         { lga: form.lga },
         { skip: !form.lga },
+    );
+
+    const examTypeForYears = form.examType === ExamTypeEnum.BECE ? 'bece' : form.examType === ExamTypeEnum.UBEAT ? 'ubeat' : null;
+    const { data: yearsData, isFetching: yearsLoading } = useGetAvailableYearsQuery(
+        { examType: examTypeForYears! },
+        { skip: !examTypeForYears },
     );
 
     useEffect(() => {
@@ -878,6 +923,7 @@ function Widget() {
     useClickAway(panelRef, (e) => {
         if (!open || isMobile) return;
         if (fabRef.current?.contains(e.target as Node)) return;
+        if (openDropdownCount.current > 0) return;
 
         const target = e.target as Element;
 
@@ -981,6 +1027,10 @@ function Widget() {
                 schoolNames={schoolNames}
                 isLoadingSchools={isLoadingSchoolNames || isFetching}
                 reset={reset}
+                yearsLoading={yearsLoading}
+                yearsData={yearsData}
+                examTypeForYears={examTypeForYears}
+                openDropdownCount={openDropdownCount}
             />
         </>
     );
@@ -994,11 +1044,11 @@ function Widget() {
             )}
 
             {isMobile ? (
-                <BottomSheet open={open} onClose={close} trapRef={panelRef}>
+                <BottomSheet open={open} onClose={close} trapRef={panelRef} openDropdownCount={openDropdownCount}>
                     {panelContent}
                 </BottomSheet>
             ) : (
-                <DesktopPopover open={open} onClose={close} trapRef={panelRef}>
+                <DesktopPopover open={open} onClose={close} trapRef={panelRef} openDropdownCount={openDropdownCount}>
                     {panelContent}
                 </DesktopPopover>
             )}
