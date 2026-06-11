@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import GlobalLoader from '@/components/GlobalLoader'
@@ -23,6 +24,12 @@ export default function RootLayout({
         <GlobalLoader />
         <Navbar/>
         {children}
+
+        <Script
+          src="https://cloud.umami.is/script.js" 
+          data-website-id="be6769e0-eee0-4011-8215-7d7cc2907600"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
