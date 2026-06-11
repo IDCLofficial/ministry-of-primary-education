@@ -513,8 +513,9 @@ export const generateUBEATCertificate = async (
     data: CertificateData,
     certificateType = 'pass',
     customFields?: CertificateFieldsConfig,
-    customFonts?: CustomFont[]
-): Promise<void> => {
+    customFonts?: CustomFont[],
+    returnBlob?: boolean
+): Promise<void | Blob> => {
     const { student, schoolName } = data;
     
     // Load custom fonts if provided, otherwise load default Handlee font
@@ -799,18 +800,22 @@ export const generateUBEATCertificate = async (
                     return
                 }
 
-                const url  = URL.createObjectURL(blob)
-                const link = document.createElement('a')
-                const filename = `UBEAT_Certificate_${student.examNumber.replace(/\//g, '_')}.png`
+                if (returnBlob) {
+                    resolve(blob)
+                } else {
+                    const url  = URL.createObjectURL(blob)
+                    const link = document.createElement('a')
+                    const filename = `UBEAT_Certificate_${student.examNumber.replace(/\//g, '_')}.png`
 
-                link.href     = url
-                link.download = filename
-                document.body.appendChild(link)
-                link.click()
-                document.body.removeChild(link)
+                    link.href     = url
+                    link.download = filename
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
 
-                URL.revokeObjectURL(url)
-                resolve()
+                    URL.revokeObjectURL(url)
+                    resolve()
+                }
             }, 'image/png')
         }
 

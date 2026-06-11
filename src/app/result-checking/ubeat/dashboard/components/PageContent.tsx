@@ -25,13 +25,13 @@ const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{4}\/\d{1,4}$/
 const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{1,2}\/\d{1,4}\/\d{1,4}$/
 
 export default function UBEATDashboard() {
-    const isMobile = useMedia('(max-width: 1000px)')
+    const isMobile = useMedia('(max-width: 1000px)');
 
-    const router = useRouter()
-    const searchParams = useSearchParams()
-    const certificateRef = useRef<HTMLDivElement>(null)
-    const [isDownloading, setIsDownloading] = useState(false)
-    const [examId, setExamId] = useState<string | null>(null)
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const certificateRef = useRef<HTMLDivElement>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [examId, setExamId] = useState<string | null>(null);
 
     // Check for payment success from URL params
     useEffect(() => {
@@ -475,6 +475,22 @@ export default function UBEATDashboard() {
                                         </p>
                                     </div>
                                 )}
+                            </div>
+
+                            <div className="mt-6 pt-5 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={handleDownload}
+                                    disabled={isDownloading}
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 active:scale-[0.97] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isDownloading ? (
+                                        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <IoDownload className="w-4 h-4" />
+                                    )}
+                                    <span>{isDownloading ? 'Downloading your FSLC...' : 'Download Your FSLC'}</span>
+                                </button>
                             </div>
                         </div>
                     </div>

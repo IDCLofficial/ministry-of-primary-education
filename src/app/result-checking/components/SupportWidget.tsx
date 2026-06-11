@@ -985,9 +985,13 @@ function Widget() {
         </>
     );
 
+    const isBulkDownloads = pathName?.includes('bulk-downloads')
+
     return (
         <div className="font-sans">
-            <FAB onClick={() => updateSearchParam("contacting-support", "true")} fabRef={fabRef} />
+            {(!isBulkDownloads || !isMobile) && (
+                <FAB onClick={() => updateSearchParam("contacting-support", "true")} fabRef={fabRef} />
+            )}
 
             {isMobile ? (
                 <BottomSheet open={open} onClose={close} trapRef={panelRef}>
