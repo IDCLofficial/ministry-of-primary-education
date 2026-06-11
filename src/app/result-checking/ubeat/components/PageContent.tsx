@@ -216,7 +216,7 @@ export default function UBEATLogin() {
         { skip: !altFormData.lga },
     )
 
-    const { data: availableYearsData } = useGetAvailableYearsQuery({ examType: 'ubeat' })
+    const { data: availableYearsData, isFetching: yearsLoading } = useGetAvailableYearsQuery({ examType: 'ubeat' })
     const availableYearOptions = useMemo(() => {
         return (availableYearsData?.years ?? []).map(y => ({ value: String(y), label: String(y) }))
     }, [availableYearsData])
@@ -740,12 +740,25 @@ export default function UBEATLogin() {
                                         <label htmlFor="loginExamYear" className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-green-600 transition-colors duration-200">
                                             Exam Year <span className="text-red-500">*</span>
                                         </label>
-                                        <CustomDropdown
-                                            options={availableYearOptions}
-                                            value={year}
-                                            onChange={value => { setYear(value); setError('') }}
-                                            placeholder="Select exam year"
-                                        />
+                                        {yearsLoading ? (
+                                            <div className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-500">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400" />
+                                                    <span>Loading years…</span>
+                                                </div>
+                                            </div>
+                                        ) : availableYearOptions.length === 0 ? (
+                                            <div className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-500">
+                                                No years available for this exam yet
+                                            </div>
+                                        ) : (
+                                            <CustomDropdown
+                                                options={availableYearOptions}
+                                                value={year}
+                                                onChange={value => { setYear(value); setError('') }}
+                                                placeholder="Select exam year"
+                                            />
+                                        )}
                                     </div>
 
                                     {/* ── Exam Number Input ── */}
@@ -771,7 +784,7 @@ export default function UBEATLogin() {
                                                             ? 'border-green-300 bg-green-50'
                                                             : 'border-gray-300'
                                                     }`}
-                                                disabled={isLoading}
+                                                disabled={isLoading || !year}
                                             />
                                             {canProceed && !error && (
                                                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -787,6 +800,11 @@ export default function UBEATLogin() {
                                             <p className="mt-2 text-sm text-red-600 flex items-baseline gap-1 animate-fadeIn-y">
                                                 <svg className="w-4 h-4 flex-shrink-0 translate-y-0.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
                                                 <span>{error}, <Link className='inline text-blue-500' href={"?contacting-support=true"}>Get Help</Link></span>
+                                            </p>
+                                        ) : !year ? (
+                                            <p className="mt-2 text-sm text-gray-500 flex items-center gap-1 animate-fadeIn-y">
+                                                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                Select an exam year above first
                                             </p>
                                         ) : debouncedExamNo && !isValidExamNo(debouncedExamNo) && debouncedExamNo.length > 0 ? (
                                             <p className="mt-2 text-sm text-yellow-600 flex items-center gap-1 animate-fadeIn-y">
@@ -997,22 +1015,26 @@ export default function UBEATLogin() {
 
                                     {/* Exam Year */}
                                     <div className="group">
-                                        <label htmlFor="examYear" className="block text-sm font-medium text-gray-700 mb-2">Exam Year</label>
-                                        <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <IoCalendarOutline className="h-5 w-5 text-gray-400" />
+                                        <label htmlFor="altExamYear" className="block text-sm font-medium text-gray-700 mb-2">Exam Year</label>
+                                        {yearsLoading ? (
+                                            <div className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-500">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400" />
+                                                    <span>Loading years…</span>
+                                                </div>
                                             </div>
-                                            <input
-                                                type="text"
-                                                id="examYear"
+                                        ) : availableYearOptions.length === 0 ? (
+                                            <div className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-500">
+                                                No years available for this exam yet
+                                            </div>
+                                        ) : (
+                                            <CustomDropdown
+                                                options={availableYearOptions}
                                                 value={altFormData.examYear}
-                                                onChange={e => { setAltFormData({ ...altFormData, examYear: e.target.value }); if (error) setError('') }}
-                                                placeholder="e.g., 2025"
-                                                maxLength={4}
-                                                className="block w-full pl-10 pr-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-green-400 transition-all duration-200"
-                                                disabled={isProcessingPayment}
+                                                onChange={value => { setAltFormData({ ...altFormData, examYear: value }); if (error) setError('') }}
+                                                placeholder="Select exam year"
                                             />
-                                        </div>
+                                        )}
                                     </div>
 
                                     {/* Payment Info */}
