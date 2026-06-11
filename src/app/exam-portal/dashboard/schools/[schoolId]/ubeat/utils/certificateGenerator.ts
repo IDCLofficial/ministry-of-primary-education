@@ -532,9 +532,14 @@ export const generateUBEATCertificate = async (
         console.error('Font loading failed:', error)
     }
     
-    if (!(['pass', 'credit', 'distinction'] as const).includes(certificateType as 'pass' | 'credit' | 'distinction')) {
+    const cleanType = certificateType
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .trim()
+        .toLowerCase()
+
+    if (!(['pass', 'credit', 'distinction'] as const).includes(cleanType as 'pass' | 'credit' | 'distinction')) {
         throw new TypeError(
-            `Cannot generate certificate: unrecognised grade "${certificateType}". `
+            `Cannot generate certificate: unrecognised grade "${cleanType}". `
             + 'Only pass, credit, and distinction certificates are supported.'
         )
     }
@@ -545,18 +550,18 @@ export const generateUBEATCertificate = async (
         distinction: '/images/new-certificates/Universal Basic Education - DISTINCTION.png',
     }
 
-    const imagePath = IMAGE_MAP[certificateType]
+    const imagePath = IMAGE_MAP[cleanType]
 
     // Select base configs based on certificate type
-    const baseConfig = certificateType === 'pass'
+    const baseConfig = cleanType === 'pass'
         ? PASS_CONFIG
-        : certificateType === 'credit'
+        : cleanType === 'credit'
             ? CREDIT_CONFIG
             : DISTINCTION_CONFIG
 
-    const baseSignatures = certificateType === 'pass'
+    const baseSignatures = cleanType === 'pass'
         ? PASS_SIGNATURES
-        : certificateType === 'credit'
+        : cleanType === 'credit'
             ? CREDIT_SIGNATURES
             : DISTINCTION_SIGNATURES
 
