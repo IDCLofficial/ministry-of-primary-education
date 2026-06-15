@@ -181,7 +181,7 @@ export default function MetricsCards({role}: {role: "moe" | "iirs" | "idcl" | nu
         </div>
 
         {/* Total Amount Processed Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg border border-green-200 hover:shadow-xl transition-all duration-300 group">
+        {role !== 'iirs' && <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg border border-green-200 hover:shadow-xl transition-all duration-300 group">
           <div className="flex flex-col space-y-3">
             <div className="flex items-center justify-between">
               <div className="p-3 bg-green-500 rounded-lg shadow-md group-hover:scale-110 transition-transform duration-300">
@@ -195,7 +195,7 @@ export default function MetricsCards({role}: {role: "moe" | "iirs" | "idcl" | nu
               <p className="text-sm text-blue-600 flex items-center">Total Payout Today: <FaNairaSign className='text-sm' />{data?.totalLatestPayout?.toLocaleString() || 0}</p>
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* TSA Earnings Card */}
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-lg border border-purple-200 hover:shadow-xl transition-all duration-300 group">
