@@ -910,10 +910,22 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
                             Go to the standard {config.shortName} portal
                         </Link>
                     </p>
-                    <p className="text-xs text-gray-400">
-                        Stuck or lost your voucher? Reach out on the support chat and we&apos;ll
-                        help.
-                    </p>
+                   <p className="text-xs text-gray-400">
+  Stuck or lost your voucher? Call{" "}
+  <a href="tel:+2348080954826" className="font-medium underline">
+    +2348080954826
+  </a>{" "}
+  or{" "}
+  <a
+    href="https://wa.me/2348080954826"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="font-medium underline"
+  >
+    WhatsApp us
+  </a>{" "}
+  and we&apos;ll help.
+</p>
                 </footer>
             </main>
 
