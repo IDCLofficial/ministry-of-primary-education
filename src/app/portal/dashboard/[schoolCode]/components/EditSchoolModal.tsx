@@ -57,6 +57,8 @@ export default function EditSchoolModal({ isOpen, onClose, school }: EditSchoolM
 
     if (!formData.schoolCode.trim()) {
       newErrors.schoolCode = 'School code is required'
+    } else if (!/^[A-Z]{2}\/\d{3}$/.test(formData.schoolCode)) {
+      newErrors.schoolCode = 'Invalid format — must be 2 capital letters, a slash, then 3 digits (e.g. IN/087)'
     }
 
     setErrors(newErrors)
@@ -101,6 +103,18 @@ export default function EditSchoolModal({ isOpen, onClose, school }: EditSchoolM
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
   }
+
+  const handleSchoolCodeChange = (raw: string) => {
+    const upper = raw.toUpperCase()
+    const noSlash = upper.replace(/\//g, '')
+    const letters = noSlash.replace(/[^A-Z]/g, '').slice(0, 2)
+    const digits = noSlash.slice(letters.length).replace(/[^0-9]/g, '').slice(0, 3)
+    const formatted = letters.length === 2 && digits.length > 0 ? `${letters}/${digits}` : letters
+    handleInputChange('schoolCode', formatted)
+  }
+
+  const SCHOOL_CODE_REGEX = /^[A-Z]{2}\/\d{3}$/
+  const schoolCodeValid = SCHOOL_CODE_REGEX.test(formData.schoolCode)
 
   if (!isOpen) return null
 
@@ -158,15 +172,29 @@ export default function EditSchoolModal({ isOpen, onClose, school }: EditSchoolM
             <label className="block text-sm font-medium text-gray-700 mb-2">
               School Code
             </label>
-            <input
-              type="text"
-              value={formData.schoolCode}
-              onChange={(e) => handleInputChange('schoolCode', e.target.value)}
-              className={inputClass('schoolCode')}
-              placeholder="Enter school code"
-            />
-            {errors.schoolCode && (
+            <div className="relative">
+              <input
+                type="text"
+                value={formData.schoolCode}
+                onChange={(e) => handleSchoolCodeChange(e.target.value)}
+                className={`${inputClass('schoolCode')} pr-10`}
+                placeholder="e.g. IN/087"
+                maxLength={6}
+              />
+              {schoolCodeValid && (
+                <span className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
+              )}
+            </div>
+            {errors.schoolCode ? (
               <p className="mt-1 text-sm text-red-600">{errors.schoolCode}</p>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">
+                Format: <span className="font-mono font-medium">AB/123</span> — 2 capital letters, a slash, then 3 digits
+              </p>
             )}
           </div>
 
