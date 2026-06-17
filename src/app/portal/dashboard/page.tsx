@@ -6,13 +6,17 @@ import Header from './components/Header'
 import DashboardStats from './components/DashboardStats'
 import SchoolsList from './components/SchoolsList'
 import FlaggedSchoolsList from './components/FlaggedSchoolsList'
+import AddSchoolModal from './components/AddSchoolModal'
+import TransactionLogsModal from './components/TransactionLogsModal'
 import { useGetMyPaidSchoolsQuery, useGetSchoolNamesQuery, useGetFlaggedSchoolsQuery } from '../store/api/authApi'
 import Link from 'next/link'
-import { IoArrowForward } from 'react-icons/io5'
+import { IoArrowForward, IoAddOutline, IoReceiptOutline } from 'react-icons/io5'
 
 export default function DashboardPage() {
   const { school } = useAuth()
   const [lga, setLga] = useState('')
+  const [isAddSchoolOpen, setIsAddSchoolOpen] = useState(false)
+  const [isTransactionsOpen, setIsTransactionsOpen] = useState(false)
 
   useEffect(() => {
     if (school?.lga) {
@@ -53,6 +57,25 @@ export default function DashboardPage() {
               totalSchools={schools.length}
             />
           )}
+
+          <div className="mb-6 flex flex-wrap justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setIsTransactionsOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium cursor-pointer"
+            >
+              <IoReceiptOutline className="w-5 h-5" />
+              Transaction Logs
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAddSchoolOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium cursor-pointer"
+            >
+              <IoAddOutline className="w-5 h-5" />
+              Add School
+            </button>
+          </div>
 
           {flaggedSchools.length > 0 && (
             <div className="mb-6">
@@ -99,6 +122,9 @@ export default function DashboardPage() {
           <SchoolsList schools={schools} isLoading={isLoading} />
         </div>
       </div>
+
+      <AddSchoolModal isOpen={isAddSchoolOpen} onClose={() => setIsAddSchoolOpen(false)} />
+      <TransactionLogsModal isOpen={isTransactionsOpen} onClose={() => setIsTransactionsOpen(false)} />
     </div>
   )
 }
