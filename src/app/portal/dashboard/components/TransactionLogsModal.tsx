@@ -17,6 +17,13 @@ interface FlatRow {
   exam: ExamDataMain
 }
 
+const formatDate = (value?: string) => {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
 const statusBadge = (status?: string) => {
   const normalized = (status || '').toLowerCase().replace(' ', '-')
   const styles =
@@ -43,16 +50,18 @@ export default function TransactionLogsModal({ isOpen, onClose }: TransactionLog
     { skip: !isOpen }
   )
 
-  // Flatten schools → one row per school-exam pair
+  // Flatten schools → one row per school-exam pair, excluding unapplied exams
   const rows: FlatRow[] = useMemo(() => {
     if (!data?.data) return []
     return data.data.flatMap((school: PaidSchool) =>
-      (school.exams || []).map((exam) => ({
-        schoolId: school._id,
-        schoolName: school.schoolName,
-        schoolCode: school.schoolCode,
-        exam,
-      }))
+      (school.exams || [])
+        .filter((exam) => exam.status !== 'not applied')
+        .map((exam) => ({
+          schoolId: school._id,
+          schoolName: school.schoolName,
+          schoolCode: school.schoolCode,
+          exam,
+        }))
     )
   }, [data])
 
@@ -129,7 +138,8 @@ export default function TransactionLogsModal({ isOpen, onClose }: TransactionLog
                     <th className="py-3 pr-4 text-right">Total Points</th>
                     <th className="py-3 pr-4 text-right">Used Points</th>
                     <th className="py-3 pr-4 text-right">Available</th>
-                    <th className="py-3 text-right">Students</th>
+                    <th className="py-3 pr-4 text-right">Students</th>
+                    <th className="py-3 text-right">Last Payment</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -149,7 +159,8 @@ export default function TransactionLogsModal({ isOpen, onClose }: TransactionLog
                       <td className="py-3 pr-4 text-right text-gray-700">{row.exam.totalPoints ?? '-'}</td>
                       <td className="py-3 pr-4 text-right text-gray-700">{row.exam.usedPoints ?? '-'}</td>
                       <td className="py-3 pr-4 text-right text-gray-700">{row.exam.availablePoints ?? '-'}</td>
-                      <td className="py-3 text-right text-gray-700">{row.exam.numberOfStudents ?? '-'}</td>
+                      <td className="py-3 pr-4 text-right text-gray-700">{row.exam.numberOfStudents ?? '-'}</td>
+                      <td className="py-3 text-right text-gray-500 whitespace-nowrap">{formatDate(row.exam.lastPointsEarned)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -25,7 +25,7 @@ export default function DashboardPage() {
   }, [school])
 
   const { data: schools = [], isLoading } = useGetSchoolNamesQuery(
-    { lga },
+    { lga, withAuth: true },
     { skip: !lga }
   )
   

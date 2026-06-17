@@ -411,8 +411,17 @@ interface VerifyResetTokenResponse {
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get school names
-    getSchoolNames: builder.query<SchoolName[], { lga: string }>({
-      query: ({ lga }) => `${API_BASE_URL}${endpoints.GET_SCHOOL_NAMES}?lga=${lga.toLowerCase()}`,
+    getSchoolNames: builder.query<SchoolName[], { lga: string; withAuth?: boolean }>({
+      query: ({ lga, withAuth }) => withAuth
+        ? {
+            url: `${API_BASE_URL}${endpoints.GET_SCHOOL_NAMES}?lga=${lga.toLowerCase()}`,
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${getPortalToken() ?? ''}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        : `${API_BASE_URL}${endpoints.GET_SCHOOL_NAMES}?lga=${lga.toLowerCase()}`,
       transformResponse: (response: SchoolName[]) => {
         // Track which schools were kept and which were removed
         const schoolNameCounts = new Map<string, SchoolName[]>()
