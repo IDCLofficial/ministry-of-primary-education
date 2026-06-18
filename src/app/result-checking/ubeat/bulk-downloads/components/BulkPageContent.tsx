@@ -399,8 +399,8 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
             toast('Nothing to pay — your selection is already paid.', { icon: 'ℹ️' })
             return
         }
-        if (summary.payableCount < 20) {
-            toast.error(`Select at least 20 unpaid students to proceed (you have ${summary.payableCount}).`)
+        if (summary.payableCount < 10) {
+            toast.error(`Select at least 10 unpaid students to proceed (you have ${summary.payableCount}).`)
             return
         }
         if (!appliedFilters) {

@@ -25,7 +25,7 @@ export const endpoints = {
      *   pagination: { total, page, limit, totalPages, hasNextPage, hasPreviousPage }
      * }
      */
-    GET_BULK_STUDENTS_BY_SCHOOL: (examType: ExamTypeEnum) => `/${examType === "BECE"? "bece-student": examType}/students/by-school`,
+    GET_BULK_STUDENTS_BY_SCHOOL: (examType: ExamTypeEnum) => `/${examType === "BECE"? "bece-student": examType.toLowerCase()}/students/by-school`,
     CREATE_STUDENT_PAYMENT: '/student-payments/school',
     VERIFY_PAYMENT: '/student-payments/verify',
     /**
