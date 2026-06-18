@@ -16,9 +16,9 @@ import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/uti
 import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
-const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}\/\d{1,4}$/
-const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}$/
+const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,5}(\(\d\))?$/
+const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,5}\/\d{1,4}$/
+const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,5}\/\d{1,4}$/
 
 const MAX_RECENT_ACCOUNTS = 5
 
