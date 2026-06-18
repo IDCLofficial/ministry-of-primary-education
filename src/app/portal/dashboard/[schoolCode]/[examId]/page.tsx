@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { useSelector, useDispatch } from 'react-redux'
 import Image from 'next/image'
-import { useGetStudentsBySchoolQuery, useGetSchoolByCodeQuery } from '@/app/portal/store/api/authApi'
+import { useGetStudentsBySchoolQuery, useGetAllStudentsBySchoolQuery, useGetSchoolByCodeQuery } from '@/app/portal/store/api/authApi'
 import { setSelectedSchool } from '@/app/portal/store/slices/schoolSlice'
 import type { RootState } from '@/app/portal/store'
 import ExamHeader from '../../components/ExamHeader'
@@ -193,18 +193,12 @@ export default function ExamPage() {
     { skip: !school?._id || applicationStatus === 'not-applied' }
   )
 
-  // Query for all students (for PDF export)
-  const { data: allStudentsData, isLoading: isLoadingAllStudents } = useGetStudentsBySchoolQuery(
+  // Query for all students (for PDF export). Aggregates across pages so it
+  // never exceeds the backend's per-request `limit` cap of 100.
+  const { data: allStudentsData, isLoading: isLoadingAllStudents } = useGetAllStudentsBySchoolQuery(
     {
       schoolId: school?._id || '',
-      examType: examName as ExamTypeEnum,
-      page: 1,
-      limit: studentsData?.totalItems || 10000, // Use total count or large number
-      searchTerm: undefined,
-      class: undefined,
-      year: undefined,
-      gender: undefined,
-      sort: undefined
+      examType: examName as ExamTypeEnum
     },
     { skip: !school?._id || applicationStatus === 'not-applied' || !studentsData?.totalItems }
   )

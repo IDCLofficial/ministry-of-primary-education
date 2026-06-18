@@ -121,6 +121,61 @@ interface SchoolApplicationResponse {
   statusCode?: number
 }
 
+// Add school (AEE) interfaces
+interface AddSchoolRequest {
+  schoolName: string
+  address: string
+  schoolCode: string
+  principal: string
+  email: string
+  phone: string
+}
+
+interface AddSchoolResponse {
+  message: string
+  schoolId: string
+  schoolCode: string
+}
+
+// Paid school entry returned by GET /schools/get-my-paid-schools
+export interface PaidSchool {
+  _id: string
+  schoolName: string
+  schoolCode: string
+  exams: ExamDataMain[]
+}
+
+export interface PaidSchoolsPagination {
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  itemsPerPage: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
+export interface PaidSchoolsResponse {
+  data: PaidSchool[]
+  pagination: PaidSchoolsPagination
+}
+
+// Update school (AEE) interfaces
+interface UpdateSchoolRequest {
+  schoolName?: string
+  address?: string
+  schoolCode?: string
+  principal?: string
+  phone?: string
+}
+
+interface UpdateSchoolResponse {
+  message: string
+}
+
+interface HideSchoolResponse {
+  message: string
+}
+
 // Registration types
 export interface RegistrationRequest {
   fullName: string
@@ -356,8 +411,17 @@ interface VerifyResetTokenResponse {
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get school names
-    getSchoolNames: builder.query<SchoolName[], { lga: string }>({
-      query: ({ lga }) => `${API_BASE_URL}${endpoints.GET_SCHOOL_NAMES}?lga=${lga.toLowerCase()}`,
+    getSchoolNames: builder.query<SchoolName[], { lga: string; withAuth?: boolean }>({
+      query: ({ lga, withAuth }) => withAuth
+        ? {
+            url: `${API_BASE_URL}${endpoints.GET_SCHOOL_NAMES}?lga=${lga.toLowerCase()}`,
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${getPortalToken() ?? ''}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        : `${API_BASE_URL}${endpoints.GET_SCHOOL_NAMES}?lga=${lga.toLowerCase()}`,
       transformResponse: (response: SchoolName[]) => {
         // Track which schools were kept and which were removed
         const schoolNameCounts = new Map<string, SchoolName[]>()
@@ -521,6 +585,52 @@ export const authApi = apiSlice.injectEndpoints({
             'Content-Type': 'application/json',
           },
         };
+      },
+      providesTags: ['Students'],
+    }),
+
+    // Get ALL students by school ID (for export). The backend caps `limit` at
+    // 100, so we page through in chunks of 100 and aggregate, rather than
+    // requesting `limit=totalItems` (which 400s for schools with >100 students).
+    getAllStudentsBySchool: builder.query<StudentsResponse, { examType: ExamTypeEnum; schoolId: string }>({
+      async queryFn({ examType, schoolId }, _queryApi, _extraOptions, baseQuery) {
+        const PAGE_SIZE = 100
+        const headers = {
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
+          'Content-Type': 'application/json',
+        }
+        const buildUrl = (page: number) =>
+          `${API_BASE_URL}${endpoints.GET_STUDENTS_BY_SCHOOL(examType, schoolId)}/?page=${page}&limit=${PAGE_SIZE}`
+
+        // Fetch the first page to learn how many pages exist.
+        const firstResult = await baseQuery({ url: buildUrl(1), method: 'GET', headers })
+        if (firstResult.error) return { error: firstResult.error }
+
+        const firstPage = firstResult.data as StudentsResponse
+        const totalPages = firstPage.totalPages || 1
+        let students = [...(firstPage.data || [])]
+
+        // Fetch any remaining pages in parallel and concatenate.
+        if (totalPages > 1) {
+          const remaining = []
+          for (let page = 2; page <= totalPages; page++) {
+            remaining.push(baseQuery({ url: buildUrl(page), method: 'GET', headers }))
+          }
+          const results = await Promise.all(remaining)
+          for (const result of results) {
+            if (result.error) return { error: result.error }
+            students = students.concat((result.data as StudentsResponse).data || [])
+          }
+        }
+
+        return {
+          data: {
+            data: students,
+            currentPage: 1,
+            totalPages,
+            totalItems: firstPage.totalItems ?? students.length,
+          } as StudentsResponse,
+        }
       },
       providesTags: ['Students'],
     }),
@@ -692,10 +802,75 @@ export const authApi = apiSlice.injectEndpoints({
       }),
     }),
 
+    // Get all paid-school entries for the logged-in AEE
+    getMyPaidSchoolsTransactions: builder.query<PaidSchoolsResponse, void>({
+      query: () => ({
+        url: `${API_BASE_URL}${endpoints.GET_MY_PAID_SCHOOLS}`,
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      transformResponse: (response: unknown): PaidSchoolsResponse => {
+        const r = response as { data?: unknown; pagination?: unknown }
+        const defaultPagination: PaidSchoolsPagination = {
+          currentPage: 1, totalPages: 1, totalItems: 0,
+          itemsPerPage: 10, hasNextPage: false, hasPreviousPage: false,
+        }
+        return {
+          data: Array.isArray(r?.data) ? (r.data as PaidSchool[]) : [],
+          pagination: (r?.pagination as PaidSchoolsPagination) ?? defaultPagination,
+        }
+      },
+      providesTags: ['School'],
+    }),
+
     // Get flagged schools for AEE's LGA
     getFlaggedSchools: builder.query<FlaggedSchool[], { lga: string }>({
       query: ({ lga }) => `${API_BASE_URL}/schools/flaggedSchools?lga=${lga.toLowerCase()}`,
       providesTags: ['School'],
+    }),
+
+    // Add a school (AEE)
+    addSchool: builder.mutation<AddSchoolResponse, AddSchoolRequest>({
+      query: (schoolData) => ({
+        url: `${API_BASE_URL}${endpoints.ADD_SCHOOL}`,
+        method: 'POST',
+        body: schoolData,
+        headers: {
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['School'],
+    }),
+
+    // Update a school (AEE)
+    updateSchool: builder.mutation<UpdateSchoolResponse, { id: string; data: UpdateSchoolRequest }>({
+      query: ({ id, data }) => ({
+        url: `${API_BASE_URL}${endpoints.UPDATE_SCHOOL(id)}`,
+        method: 'PATCH',
+        body: data,
+        headers: {
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['School'],
+    }),
+
+    // Hide (disable) a school — backend will no longer return it
+    hideSchool: builder.mutation<HideSchoolResponse, { id: string }>({
+      query: ({ id }) => ({
+        url: `${API_BASE_URL}${endpoints.HIDE_SCHOOL(id)}`,
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['School'],
     }),
 
     // Reconcile balance payment for flagged school
@@ -725,6 +900,7 @@ export const {
   useCreatePasswordMutation,
   useGetProfileQuery,
   useGetStudentsBySchoolQuery,
+  useGetAllStudentsBySchoolQuery,
   useCreateStudentPaymentMutation,
   useVerifyPaymentQuery,
   useBulkOnboardStudentsMutation,
@@ -740,7 +916,11 @@ export const {
   useLoadExamsDataQuery,
   useGetMyPaidSchoolsQuery,
   useGetFlaggedSchoolsQuery,
-  useReconcileBalancePaymentMutation
+  useReconcileBalancePaymentMutation,
+  useAddSchoolMutation,
+  useUpdateSchoolMutation,
+  useHideSchoolMutation,
+  useGetMyPaidSchoolsTransactionsQuery
 } = authApi
 
 // Export types for use in components

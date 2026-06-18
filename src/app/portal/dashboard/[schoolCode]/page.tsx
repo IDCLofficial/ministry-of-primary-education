@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useEffect } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import { useDispatch } from 'react-redux'
@@ -8,6 +8,8 @@ import { useGetSchoolByCodeQuery, useLoadExamsDataQuery } from '@/app/portal/sto
 import { setSelectedSchool } from '@/app/portal/store/slices/schoolSlice'
 import ExamHeader from '../components/ExamHeader'
 import SchoolPageSkeleton from './components/SchoolPageSkeleton'
+import EditSchoolModal from './components/EditSchoolModal'
+import DisableSchoolModal from './components/DisableSchoolModal'
 import { EXAM_TYPES, formatCurrency } from './types'
 import Link from 'next/link'
 
@@ -21,6 +23,9 @@ export default function DashboardPage() {
   })
 
   const { data: examsData, isLoading: examsLoading, error: examsError } = useLoadExamsDataQuery();
+
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isDisableOpen, setIsDisableOpen] = useState(false)
 
   // Store school data in Redux when fetched
   useEffect(() => {
@@ -167,7 +172,69 @@ export default function DashboardPage() {
       {/* <pre>
         {JSON.stringify(examsData, null, 2)}
       </pre> */}
-      
+      <div className="mt-4 sm:mt-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white border border-gray-200 rounded-lg p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{school.schoolName}</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Code: {school.schoolCode}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-4 text-sm">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Principal</p>
+                    <p className="text-gray-900">{school.principal || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Phone</p>
+                    <p className="text-gray-900">{school.phone || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Email</p>
+                    <p className="text-gray-900 break-all">{school.email || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Address</p>
+                    <p className="text-gray-900">{school.address || '-'}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-shrink-0 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <span className="hidden sm:inline">Edit Details</span>
+                  <span className="sm:hidden">Edit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDisableOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 border border-red-200 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                  </svg>
+                  <span className="hidden sm:inline">Disable School</span>
+                  <span className="sm:hidden">Disable</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <EditSchoolModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} school={school} />
+      <DisableSchoolModal
+        isOpen={isDisableOpen}
+        onClose={() => setIsDisableOpen(false)}
+        schoolId={school._id}
+        schoolName={school.schoolName}
+      />
+
       <div className="flex-1 mt-4 sm:mt-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6 flex items-center justify-between">

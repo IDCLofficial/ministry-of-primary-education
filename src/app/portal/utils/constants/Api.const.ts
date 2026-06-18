@@ -7,6 +7,8 @@ export const endpoints = {
     REGISTER: '/schools/register',
     GET_SCHOOL_NAMES: '/schools/names',
     GET_SCHOOL_BY_CODE: (schoolCode: string) => `/schools/${schoolCode}`,
+    UPDATE_SCHOOL: (id: string) => `/schools/${id}`,
+    HIDE_SCHOOL: (id: string) => `/schools/${id}/hide`,
     GET_LGAS: '/lga/aee-registered-lga',
     SUBMIT_SCHOOL_APPLICATION: '/applications',
     LOGIN: '/auth/login',
@@ -84,4 +86,5 @@ export const endpoints = {
     VERIFY_RESET_TOKEN: "/auth/validate-reset-token",
     LOAD_EXAMS_DATA: "/exams",
     GET_MY_PAID_SCHOOLS: "/schools/get-my-paid-schools",
+    ADD_SCHOOL: "/schools/aee",
 } as const
