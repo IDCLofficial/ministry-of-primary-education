@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 import { useUpdateSchoolMutation } from '@/app/portal/store/api/authApi'
 import type { SchoolByCodeResponse } from '@/app/portal/store/api/authApi'
 
@@ -12,6 +13,7 @@ interface EditSchoolModalProps {
 }
 
 export default function EditSchoolModal({ isOpen, onClose, school }: EditSchoolModalProps) {
+  const router = useRouter()
   const [updateSchool, { isLoading: isSubmitting }] = useUpdateSchoolMutation()
   const [formData, setFormData] = useState({
     schoolName: '',
@@ -53,6 +55,8 @@ export default function EditSchoolModal({ isOpen, onClose, school }: EditSchoolM
 
     if (!formData.schoolName.trim()) {
       newErrors.schoolName = 'School name is required'
+    } else if (/[^a-zA-Z0-9\s]/.test(formData.schoolName)) {
+      newErrors.schoolName = 'School name cannot contain symbols'
     }
 
     if (!formData.schoolCode.trim()) {
@@ -91,6 +95,7 @@ export default function EditSchoolModal({ isOpen, onClose, school }: EditSchoolM
       const result = await updateSchool({ id: school._id, data }).unwrap()
       toast.success(result?.message || 'School updated successfully!')
       onClose()
+      router.push('/portal/dashboard')
     } catch (error: any) {
       const errorMessage = error?.data?.message || 'Failed to update school. Please try again.'
       toast.error(errorMessage)
@@ -102,6 +107,10 @@ export default function EditSchoolModal({ isOpen, onClose, school }: EditSchoolM
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
+  }
+
+  const handleSchoolNameChange = (value: string) => {
+    handleInputChange('schoolName', value.replace(/[^a-zA-Z0-9\s]/g, ''))
   }
 
   const handleSchoolCodeChange = (raw: string) => {
@@ -158,12 +167,14 @@ export default function EditSchoolModal({ isOpen, onClose, school }: EditSchoolM
             <input
               type="text"
               value={formData.schoolName}
-              onChange={(e) => handleInputChange('schoolName', e.target.value)}
+              onChange={(e) => handleSchoolNameChange(e.target.value)}
               className={inputClass('schoolName')}
               placeholder="Enter school name"
             />
-            {errors.schoolName && (
+            {errors.schoolName ? (
               <p className="mt-1 text-sm text-red-600">{errors.schoolName}</p>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">Symbols are not allowed (e.g. & . , /)</p>
             )}
           </div>
 
