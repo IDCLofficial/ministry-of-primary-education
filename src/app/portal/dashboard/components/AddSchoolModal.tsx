@@ -48,6 +48,8 @@ export default function AddSchoolModal({ isOpen, onClose }: AddSchoolModalProps)
 
     if (!formData.schoolName.trim()) {
       newErrors.schoolName = 'School name is required'
+    } else if (/[^a-zA-Z0-9\s]/.test(formData.schoolName)) {
+      newErrors.schoolName = 'School name cannot contain symbols'
     }
 
     if (!formData.address.trim()) {
@@ -108,6 +110,10 @@ export default function AddSchoolModal({ isOpen, onClose }: AddSchoolModalProps)
     }
   }
 
+  const handleSchoolNameChange = (value: string) => {
+    handleInputChange('schoolName', value.replace(/[^a-zA-Z0-9\s]/g, ''))
+  }
+
   const handleSchoolCodeChange = (raw: string) => {
     const upper = raw.toUpperCase()
     const noSlash = upper.replace(/\//g, '')
@@ -163,12 +169,14 @@ export default function AddSchoolModal({ isOpen, onClose }: AddSchoolModalProps)
             <input
               type="text"
               value={formData.schoolName}
-              onChange={(e) => handleInputChange('schoolName', e.target.value)}
+              onChange={(e) => handleSchoolNameChange(e.target.value)}
               className={inputClass('schoolName')}
               placeholder="Enter school name"
             />
-            {errors.schoolName && (
+            {errors.schoolName ? (
               <p className="mt-1 text-sm text-red-600">{errors.schoolName}</p>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">Symbols are not allowed (e.g. & . , /)</p>
             )}
           </div>
 
