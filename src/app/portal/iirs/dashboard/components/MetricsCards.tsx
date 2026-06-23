@@ -8,6 +8,7 @@ import { HiOutlineBuildingLibrary } from "react-icons/hi2";
 import { BsReceipt, BsCreditCard, BsCalendar } from "react-icons/bs";
 import { useDate } from '../../context/dateContext';
 import { FaNairaSign } from 'react-icons/fa6';
+import BreakDown from "./BreakDown";
 
 interface Payment {
   id: string;
@@ -32,11 +33,12 @@ interface PaymentSummary {
   totalLatestTsaPayout: number;
 }
 
-export default function MetricsCards({role}: {role: "moe" | "iirs" | "idcl" | null}) {
+export default function MetricsCards({ role }: { role: "moe" | "iirs" | "idcl" | null }) {
   const { token } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<PaymentSummary | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | '1week' | '1month' | '1year' | 'all'>('all');
+  const [showBreakDown, setShowBreakDown] = useState(false);
   const { selectedDate } = useDate()
 
   // Helper function to get period label
@@ -103,63 +105,15 @@ export default function MetricsCards({role}: {role: "moe" | "iirs" | "idcl" | nu
     <div className="w-full mb-8">
       {/* Header with Period Filter */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Overview</h2>
-        <div className='flex items-center gap-2'>
-          {/* <div className='relative'>
-            <button
-              className="flex items-center justify-center py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors px-4 cursor-pointer"
-              onClick={()=>setShowCalendar(s=>!s)}
-            >
-              <IoCalendarNumberOutline size={22} />
-            </button>
-            <div className={`absolute right-0 top-12 z-20 ${showCalendar ? 'opacity-100 pointer-events-auto transition-all ease-in duration-75':'opacity-0 pointer-events-none transition-all ease-out duration-75'}`}>
-              <CalendarComponent/>
-            </div>
-          </div> */}
-          {/* <div className="relative">
-            <button
-              onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors min-w-[120px]"
-            >
-              <span className="text-gray-700 font-medium">
-                {selectedPeriod === 'today' && 'Today'}
-                {selectedPeriod === '1week' && '1 Week'}
-                {selectedPeriod === '1month' && '1 Month'}
-                {selectedPeriod === '1year' && '1 Year'}
-                {selectedPeriod === 'all' && 'All Time'}
-              </span>
-              <FiChevronDown className={`text-gray-400 transition-transform ${showPeriodDropdown ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showPeriodDropdown && (
-              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg border border-gray-200 shadow-lg z-10">
-                <div className="p-2">
-                  {[
-                    { value: 'today' as const, label: 'Today' },
-                    { value: '1week' as const, label: '1 Week' },
-                    { value: '1month' as const, label: '1 Month' },
-                    { value: '1year' as const, label: '1 Year' },
-                    { value: 'all' as const, label: 'All Time' }
-                  ].map((period) => (
-                    <button
-                      key={period.value}
-                      onClick={() => {
-                        setSelectedPeriod(period.value);
-                        setShowPeriodDropdown(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${selectedPeriod === period.value
-                        ? 'bg-green-600 text-white font-medium'
-                        : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                    >
-                      {period.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div> */}
-        </div>
+        <h2 className="text-xl font-semibold text-gray-900">Overview</h2>
+        <button
+          onClick={() => setShowBreakDown(true)}
+          className='text-base py-2 px-3 bg-green-500 rounded-xl text-white font-normal
+          cursor-pointer shadow-lg shadow-green-200 hover:shadow-green-300
+          flex items-center gap-2 transition-all'
+        >
+          See Breakdown
+        </button>
       </div>
 
       {/* Metrics Cards Grid */}
@@ -248,6 +202,8 @@ export default function MetricsCards({role}: {role: "moe" | "iirs" | "idcl" | nu
         </div>}
 
       </div>
+
+      <BreakDown isOpen={showBreakDown} onClose={() => setShowBreakDown(false)} />
     </div>
   );
 }
