@@ -399,8 +399,8 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
             toast('Nothing to pay — your selection is already paid.', { icon: 'ℹ️' })
             return
         }
-        if (summary.payableCount < 20) {
-            toast.error(`Select at least 20 unpaid students to proceed (you have ${summary.payableCount}).`)
+        if (summary.payableCount < 10) {
+            toast.error(`Select at least 10 unpaid students to proceed (you have ${summary.payableCount}).`)
             return
         }
         if (!appliedFilters) {
@@ -773,31 +773,7 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
             />
 
             <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-32">
-
-                {/* Step 1: Voucher lookup — the primary entry point. Agent
-                    can paste a voucher ref and go straight to download,
-                    bypassing the LGA × School search entirely. Auto-
-                    fetches when `?voucher=…` is in the URL (i.e. after a
-                    successful payment verify pushes it there). The
-                    component has its own hero header. Hidden while the
-                    cohort search is open (mutual exclusion). */}
-                {!cohortExpanded && (
-                    <section className="mb-6">
-                        <VoucherLookup
-                            config={config}
-                            initialValue={urlVoucher}
-                            autoFetch
-                            onDownloadAll={handleVoucherDownloadAll}
-                            onActiveChange={setVoucherActive}
-                            onVoucherLoaded={handleVoucherLoaded}
-                            savedVoucher={savedVoucher}
-                            verifiedAt={verifiedAt}
-                            onClearSaved={handleClearSavedVoucher}
-                        />
-                    </section>
-                )}
-
-                {/* Step 2: Cohort search — collapsible expander. The agent
+ {/* Step 1: Cohort search — collapsible expander. The agent
                     only needs this when they haven't paid yet. Default
                     collapsed; auto-expands the first time a search is
                     submitted. Hidden entirely when a voucher is active
@@ -825,7 +801,9 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
                                     Don&apos;t have a voucher yet?
                                 </p>
                                 <p className="text-xs text-gray-500 mt-0.5">
-                                    Pay for your school&apos;s certificates first
+                                    Click here to select the exam year, school name, and name of the candidates.
+                                    Then pay for your school&apos;s certificates.
+                                    Note: you can only pay as many students as you want but no less than 10 students.
                                 </p>
                             </div>
                         </div>
@@ -898,6 +876,30 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
                     )}
                 </section>
                 )}
+                {/* Step 2: Voucher lookup — the primary entry point. Agent
+                    can paste a voucher ref and go straight to download,
+                    bypassing the LGA × School search entirely. Auto-
+                    fetches when `?voucher=…` is in the URL (i.e. after a
+                    successful payment verify pushes it there). The
+                    component has its own hero header. Hidden while the
+                    cohort search is open (mutual exclusion). */}
+                {!cohortExpanded && (
+                    <section className="mb-6">
+                        <VoucherLookup
+                            config={config}
+                            initialValue={urlVoucher}
+                            autoFetch
+                            onDownloadAll={handleVoucherDownloadAll}
+                            onActiveChange={setVoucherActive}
+                            onVoucherLoaded={handleVoucherLoaded}
+                            savedVoucher={savedVoucher}
+                            verifiedAt={verifiedAt}
+                            onClearSaved={handleClearSavedVoucher}
+                        />
+                    </section>
+                )}
+
+               
 
                 {/* Footer link */}
                 <footer className="mt-8 text-center space-y-2">
@@ -1009,7 +1011,7 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
                                 Payment confirmed!
                             </h2>
                             <p className="text-sm text-gray-600 leading-relaxed mb-6">
-                                Broski, this is your voucher reference. Click it to copy.
+                                Congratulations, this is your voucher reference. Click it to copy.
                             </p>
                             <button
                                 type="button"
