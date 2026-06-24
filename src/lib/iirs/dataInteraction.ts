@@ -175,6 +175,35 @@ export async function getResultPaymentStats(
     return response.json();
 }
 
+export interface PaymentBreakdownByExamType {
+    count: number;
+    totalAmount: number;
+    amountPerStudent: number;
+}
+
+export interface PaymentBreakdownStats {
+    totalAmount: number;
+    amountByExamType: Record<string, PaymentBreakdownByExamType>;
+}
+
+export async function getPaymentBreakdownStats(token: string): Promise<PaymentBreakdownStats> {
+    const endpoint = `${BASE_URL.split('/iirs-admin')[0]}/admin/result-payment-stats`;
+
+    const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch payment breakdown: ${response.statusText}`);
+    }
+
+    const json = await response.json();
+    return json.data as PaymentBreakdownStats;
+}
+
 export async function login(email: string, password: string) {
     try {
         const response = await fetch(`${BASE_URL}/login`, {
