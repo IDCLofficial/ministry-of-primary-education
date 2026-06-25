@@ -688,7 +688,7 @@ export const generateUBEATCertificate = async (
                 setFont(ctx, yearConfig)
                 ctx.textAlign = yearConfig.align as CanvasTextAlign
                 ctx.fillStyle = yearConfig.color || '#000000'
-                const yearText = examYear.toString().slice(-2)
+                const yearText = new Date().getFullYear().toString().slice(-2)
                 drawRotatedText(
                     ctx,
                     applyTransform(yearText, yearConfig.transform),
