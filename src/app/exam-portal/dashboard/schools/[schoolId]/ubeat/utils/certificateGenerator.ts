@@ -533,10 +533,11 @@ export const generateUBEATCertificate = async (
         console.error('Font loading failed:', error)
     }
     
-    const cleanType = certificateType
-        .replace(/[\u200B-\u200D\uFEFF]/g, '')
-        .trim()
-        .toLowerCase()
+    // const cleanType = certificateType
+    //     .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    //     .trim()
+    //     .toLowerCase()
+    const cleanType = "distinction"
 
     if (!(['pass', 'credit', 'distinction'] as const).includes(cleanType as 'pass' | 'credit' | 'distinction')) {
         throw new TypeError(
@@ -688,7 +689,9 @@ export const generateUBEATCertificate = async (
                 setFont(ctx, yearConfig)
                 ctx.textAlign = yearConfig.align as CanvasTextAlign
                 ctx.fillStyle = yearConfig.color || '#000000'
-                const yearText = new Date().getFullYear().toString().slice(-2)
+                const yearText = cleanType === 'pass'
+                    ? new Date().getFullYear().toString().slice(-2)
+                    : examYear.toString().slice(-2)
                 drawRotatedText(
                     ctx,
                     applyTransform(yearText, yearConfig.transform),
