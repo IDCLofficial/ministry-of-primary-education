@@ -533,11 +533,10 @@ export const generateUBEATCertificate = async (
         console.error('Font loading failed:', error)
     }
     
-    // const cleanType = certificateType
-    //     .replace(/[\u200B-\u200D\uFEFF]/g, '')
-    //     .trim()
-    //     .toLowerCase()
-    const cleanType = "distinction"
+    const cleanType = certificateType
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .trim()
+        .toLowerCase()
 
     if (!(['pass', 'credit', 'distinction'] as const).includes(cleanType as 'pass' | 'credit' | 'distinction')) {
         throw new TypeError(
@@ -702,7 +701,7 @@ export const generateUBEATCertificate = async (
             }
 
             // Draw grade level year (pass type)
-            if (customFields?.gradeLevel !== null && certificateType === 'pass') {
+            if (customFields?.gradeLevel !== null && cleanType === 'pass') {
                 const gradeLevelConfig = fields.gradeLevel
                 setFont(ctx, gradeLevelConfig)
                 ctx.textAlign = gradeLevelConfig.align as CanvasTextAlign
@@ -741,7 +740,7 @@ export const generateUBEATCertificate = async (
                 setFont(ctx, serialConfig)
                 ctx.textAlign = serialConfig.align as CanvasTextAlign
                 ctx.fillStyle = serialConfig.color || '#000000'
-                const serialText = certificateType === 'pass'
+                const serialText = cleanType === 'pass'
                     ? (serialDisplay ? `S/N: ${serialDisplay}` : '')
                     : new Date().getFullYear().toString().slice(-2)
                 if (serialText) {
