@@ -928,6 +928,19 @@ export const authApi = apiSlice.injectEndpoints({
       providesTags: ['School'],
     }),
 
+    // Verify/resolve a pending transaction via payment gateway
+    verifyTransaction: builder.mutation<{ success: boolean; message: string; data?: unknown }, string>({
+      query: (reference) => ({
+        url: `${API_BASE_URL}${endpoints.VERIFY_TRANSACTION(reference)}`,
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${getPortalToken() ?? ''}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      invalidatesTags: ['School'],
+    }),
+
     // Add a school (AEE)
     addSchool: builder.mutation<AddSchoolResponse, AddSchoolRequest>({
       query: (schoolData) => ({
@@ -1017,7 +1030,8 @@ export const {
   useUpdateSchoolMutation,
   useHideSchoolMutation,
   useGetMyPaidSchoolsTransactionsQuery,
-  useGetAeeTransactionsQuery
+  useGetAeeTransactionsQuery,
+  useVerifyTransactionMutation,
 } = authApi
 
 // Export types for use in components
