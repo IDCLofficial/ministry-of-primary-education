@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Header from '../components/Header'
 import DashboardShell from '../components/DashboardShell'
 import Pagination from '../components/Pagination'
-import { useGetAeeTransactionsQuery, ExamTypeEnum } from '../../store/api/authApi'
+import { useGetAeeTransactionsQuery, useVerifyTransactionMutation, ExamTypeEnum } from '../../store/api/authApi'
 import { generateTransactionsPDF } from '../../utils/pdfGenerator'
 
 const formatNaira = (n: number) =>
@@ -44,6 +44,20 @@ export default function TransactionHistoryPage() {
     },
     { refetchOnMountOrArgChange: true },
   )
+
+  const [verifyTransaction, { isLoading: isVerifying }] = useVerifyTransactionMutation()
+  const [resolvingRef, setResolvingRef] = useState<string | null>(null)
+
+  const handleResolve = async (reference: string) => {
+    setResolvingRef(reference)
+    try {
+      await verifyTransaction(reference).unwrap()
+    } catch {
+      // error handled by RTK Query state
+    } finally {
+      setResolvingRef(null)
+    }
+  }
 
   const transactions = data?.data ?? []
   const summary = data?.summary
@@ -180,7 +194,18 @@ export default function TransactionHistoryPage() {
                           </td>
                           <td className="py-3 pr-4 text-right text-gray-700">{tx.numberOfStudents}</td>
                           <td className="py-3 pr-4 text-right text-gray-700">{formatNaira(tx.totalAmount)}</td>
-                          <td className="py-3 pr-4">{statusBadge(tx.paymentStatus)}</td>
+                          <td className="py-3 pr-4">
+                            {statusBadge(tx.paymentStatus)}
+                            {tx.paymentStatus === 'pending' && (
+                              <button
+                                onClick={() => handleResolve(tx.reference)}
+                                disabled={isVerifying && resolvingRef === tx.reference}
+                                className="block mt-1.5 px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-medium cursor-pointer hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                              >
+                                {isVerifying && resolvingRef === tx.reference ? 'Verifying...' : 'Resolve'}
+                              </button>
+                            )}
+                          </td>
                           <td className="py-3 pr-4 text-gray-500 whitespace-nowrap">{tx.reference}</td>
                         </tr>
                       ))}

@@ -88,4 +88,5 @@ export const endpoints = {
     GET_MY_PAID_SCHOOLS: "/schools/get-my-paid-schools",
     ADD_SCHOOL: "/schools/aee",
     GET_AEE_TRANSACTIONS: "/student-payments/aee/my-transactions",
+    VERIFY_TRANSACTION: (reference: string) => `/student-payments/verify/${reference}`,
 } as const
