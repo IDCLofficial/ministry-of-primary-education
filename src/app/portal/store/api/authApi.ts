@@ -159,6 +159,64 @@ export interface PaidSchoolsResponse {
   pagination: PaidSchoolsPagination
 }
 
+// AEE transactions — GET /student-payments/aee/my-transactions
+export interface AeeTransaction {
+  _id: string
+  purpose?: string
+  school: {
+    _id: string
+    schoolName: string
+    lga?: string
+    schoolCode: string
+    email?: string
+  } | null
+  examType: string
+  numberOfStudents: number
+  amountPerStudent: number
+  totalAmount: number
+  pointsAwarded?: number
+  paymentStatus: 'successful' | 'failed' | 'pending' | 'cancelled'
+  reference: string
+  paidAt?: string
+  paymentMethod?: string
+  paymentNotes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AeeTransactionsSummary {
+  totalRevenue: number
+  totalTransactions: number
+  successful: number
+  pending: number
+  failed: number
+  cancelled: number
+}
+
+export interface AeeTransactionsPagination {
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPrevPage: boolean
+}
+
+export interface AeeTransactionsResponse {
+  data: AeeTransaction[]
+  summary: AeeTransactionsSummary
+  pagination: AeeTransactionsPagination
+}
+
+export interface AeeTransactionsQueryArgs {
+  page?: number
+  limit?: number
+  status?: 'successful' | 'failed' | 'pending' | 'cancelled'
+  examType?: ExamTypeEnum | string
+  from?: string
+  to?: string
+}
+
 // Update school (AEE) interfaces
 interface UpdateSchoolRequest {
   schoolName?: string
@@ -832,6 +890,44 @@ export const authApi = apiSlice.injectEndpoints({
       providesTags: ['School'],
     }),
 
+    // Get paginated transactions for the logged-in AEE's schools
+    getAeeTransactions: builder.query<AeeTransactionsResponse, AeeTransactionsQueryArgs>({
+      query: ({ page = 1, limit = 10, status, examType, from, to } = {}) => {
+        const params = new URLSearchParams()
+        params.set('page', String(page))
+        params.set('limit', String(limit))
+        if (status) params.set('status', status)
+        if (examType) params.set('examType', String(examType))
+        if (from) params.set('from', from)
+        if (to) params.set('to', to)
+        return {
+          url: `${API_BASE_URL}${endpoints.GET_AEE_TRANSACTIONS}?${params.toString()}`,
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${getPortalToken() ?? ''}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      },
+      transformResponse: (response: unknown): AeeTransactionsResponse => {
+        const outer = response as { data?: { transactions?: AeeTransaction[]; summary?: AeeTransactionsSummary; pagination?: AeeTransactionsPagination } }
+        const inner = outer?.data
+        const defaultPagination: AeeTransactionsPagination = {
+          total: 0, page: 1, limit: 20, totalPages: 1, hasNextPage: false, hasPrevPage: false,
+        }
+        const defaultSummary: AeeTransactionsSummary = {
+          totalRevenue: 0, totalTransactions: 0,
+          successful: 0, pending: 0, failed: 0, cancelled: 0,
+        }
+        return {
+          data: Array.isArray(inner?.transactions) ? inner!.transactions! : [],
+          summary: inner?.summary ?? defaultSummary,
+          pagination: inner?.pagination ?? defaultPagination,
+        }
+      },
+      providesTags: ['School'],
+    }),
+
     // Add a school (AEE)
     addSchool: builder.mutation<AddSchoolResponse, AddSchoolRequest>({
       query: (schoolData) => ({
@@ -920,7 +1016,8 @@ export const {
   useAddSchoolMutation,
   useUpdateSchoolMutation,
   useHideSchoolMutation,
-  useGetMyPaidSchoolsTransactionsQuery
+  useGetMyPaidSchoolsTransactionsQuery,
+  useGetAeeTransactionsQuery
 } = authApi
 
 // Export types for use in components
