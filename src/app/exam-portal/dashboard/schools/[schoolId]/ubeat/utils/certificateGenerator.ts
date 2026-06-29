@@ -688,7 +688,9 @@ export const generateUBEATCertificate = async (
                 setFont(ctx, yearConfig)
                 ctx.textAlign = yearConfig.align as CanvasTextAlign
                 ctx.fillStyle = yearConfig.color || '#000000'
-                const yearText = new Date().getFullYear().toString().slice(-2)
+                const yearText = cleanType === 'pass'
+                    ? new Date().getFullYear().toString().slice(-2)
+                    : examYear.toString().slice(-2)
                 drawRotatedText(
                     ctx,
                     applyTransform(yearText, yearConfig.transform),
@@ -699,7 +701,7 @@ export const generateUBEATCertificate = async (
             }
 
             // Draw grade level year (pass type)
-            if (customFields?.gradeLevel !== null && certificateType === 'pass') {
+            if (customFields?.gradeLevel !== null && cleanType === 'pass') {
                 const gradeLevelConfig = fields.gradeLevel
                 setFont(ctx, gradeLevelConfig)
                 ctx.textAlign = gradeLevelConfig.align as CanvasTextAlign
@@ -738,7 +740,7 @@ export const generateUBEATCertificate = async (
                 setFont(ctx, serialConfig)
                 ctx.textAlign = serialConfig.align as CanvasTextAlign
                 ctx.fillStyle = serialConfig.color || '#000000'
-                const serialText = certificateType === 'pass'
+                const serialText = cleanType === 'pass'
                     ? (serialDisplay ? `S/N: ${serialDisplay}` : '')
                     : new Date().getFullYear().toString().slice(-2)
                 if (serialText) {
