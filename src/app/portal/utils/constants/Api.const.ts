@@ -87,4 +87,5 @@ export const endpoints = {
     LOAD_EXAMS_DATA: "/exams",
     GET_MY_PAID_SCHOOLS: "/schools/get-my-paid-schools",
     ADD_SCHOOL: "/schools/aee",
+    GET_AEE_TRANSACTIONS: "/student-payments/aee/my-transactions",
 } as const

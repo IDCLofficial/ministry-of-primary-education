@@ -338,3 +338,149 @@ export const generateStudentListPDF = (students: Student[], examType: string, sc
     const fileName = `${examType}-Student-List-${new Date().toISOString().split('T')[0]}.pdf`
     doc.save(fileName)
 }
+
+interface TransactionRecord {
+    _id: string
+    school: { schoolName: string; schoolCode: string } | null
+    examType: string
+    numberOfStudents: number
+    totalAmount: number
+    paymentStatus: string
+    reference: string
+    paidAt?: string
+    createdAt: string
+}
+
+interface TransactionSummary {
+    totalRevenue: number
+    totalTransactions: number
+    successful: number
+    pending: number
+    failed: number
+    cancelled: number
+}
+
+export const generateTransactionsPDF = (
+    transactions: TransactionRecord[],
+    summary?: TransactionSummary,
+    filters?: { status?: string; examType?: string; from?: string; to?: string }
+) => {
+    const doc = new jsPDF({ orientation: 'landscape' })
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 20
+
+    doc.addFileToVFS("Roboto-Regular.ttf", font)
+    doc.addFont("Roboto-Regular.ttf", "Roboto", "normal")
+
+    // Header
+    doc.setFontSize(18)
+    doc.setFont('Roboto', 'bold')
+    doc.setTextColor(0, 0, 0)
+    doc.text('Transaction History', margin, 20)
+
+    doc.setFontSize(10)
+    doc.setFont('Roboto', 'normal')
+    doc.setTextColor(100, 100, 100)
+    doc.text('Imo State Ministry of Primary and Secondary Education', margin, 27)
+
+    // Summary section
+    let yPos = 36
+    if (summary) {
+        doc.setFontSize(10)
+        doc.setFont('Roboto', 'bold')
+        doc.setTextColor(60, 60, 60)
+        doc.text('Summary', margin, yPos)
+        yPos += 6
+
+        doc.setFont('Roboto', 'normal')
+        doc.setFontSize(9)
+        const summaryLines = [
+            `Total Amount: NGN ${new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(summary.totalRevenue || 0)}`,
+            `Total Transactions: ${summary.totalTransactions}`,
+            `Successful: ${summary.successful}   |   Pending: ${summary.pending}   |   Failed: ${summary.failed}   |   Cancelled: ${summary.cancelled}`,
+        ]
+        summaryLines.forEach(line => {
+            doc.text(line, margin, yPos)
+            yPos += 5
+        })
+        yPos += 4
+    }
+
+    // Active filters
+    if (filters) {
+        const activeFilters: string[] = []
+        if (filters.status) activeFilters.push(`Status: ${filters.status}`)
+        if (filters.examType) activeFilters.push(`Exam: ${filters.examType}`)
+        if (filters.from) activeFilters.push(`From: ${filters.from}`)
+        if (filters.to) activeFilters.push(`To: ${filters.to}`)
+        if (activeFilters.length > 0) {
+            doc.setFontSize(8)
+            doc.setTextColor(120, 120, 120)
+            doc.text(`Filters: ${activeFilters.join('  |  ')}`, margin, yPos)
+            yPos += 5
+        }
+    }
+
+    // Table data
+    const fmtDate = (val?: string) => {
+        if (!val) return '-'
+        const d = new Date(val)
+        return Number.isNaN(d.getTime()) ? val : d.toLocaleDateString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' })
+    }
+    const fmtNaira = (n: number) =>
+        `NGN ${new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(n || 0)}`
+
+    const tableData = transactions.map((tx, i) => [
+        (i + 1).toString(),
+        tx.school?.schoolName ?? '-',
+        fmtDate(tx.paidAt ?? tx.createdAt),
+        tx.examType,
+        tx.numberOfStudents.toString(),
+        fmtNaira(tx.totalAmount),
+        tx.paymentStatus,
+        tx.reference,
+    ])
+
+    autoTable(doc, {
+        head: [['#', 'School', 'Date', 'Exam', 'Students', 'Amount', 'Status', 'Reference']],
+        body: tableData,
+        startY: yPos + 2,
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 8, cellPadding: 2.5 },
+        headStyles: {
+            fillColor: [34, 197, 94],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            halign: 'left',
+        },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 12 },
+            1: { halign: 'left', cellWidth: 55 },
+            2: { halign: 'left', cellWidth: 35 },
+            3: { halign: 'left', cellWidth: 30 },
+            4: { halign: 'right', cellWidth: 25 },
+            5: { halign: 'right', cellWidth: 35 },
+            6: { halign: 'left', cellWidth: 25 },
+            7: { halign: 'left', cellWidth: 45 },
+        },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        didDrawPage: (data: { pageNumber: number }) => {
+            const pageCount = doc.internal.pages.length - 1
+            const currentPage = data.pageNumber
+            doc.setFontSize(8)
+            doc.setTextColor(150, 150, 150)
+            const generatedText = `Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
+            doc.text(generatedText, margin, pageHeight - 10)
+            const pageText = `Page ${currentPage} of ${pageCount}`
+            const textWidth = doc.getStringUnitWidth(pageText) * 8 / doc.internal.scaleFactor
+            doc.text(pageText, (pageWidth - textWidth) / 2, pageHeight - 10)
+            const copyrightText = `© ${new Date().getFullYear()} MOPSE`
+            const copyrightWidth = doc.getStringUnitWidth(copyrightText) * 8 / doc.internal.scaleFactor
+            doc.text(copyrightText, pageWidth - margin - copyrightWidth, pageHeight - 10)
+        },
+    })
+
+    const fileName = `Transaction-History-${new Date().toISOString().split('T')[0]}.pdf`
+    doc.save(fileName)
+}
