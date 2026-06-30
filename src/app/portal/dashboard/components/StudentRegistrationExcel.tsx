@@ -1213,7 +1213,7 @@ export default function StudentRegistrationExcel({
                         {bulkRows.map(row => (
                           <tr key={row.id}>
                             <td className="px-4 py-2 text-sm text-gray-500">{row.rowNumber}</td>
-                            <td className="px-4 py-2">
+                            <td className="px-4 py-2 min-w-[180px] sm:min-w-0">
                               <input
                                 type="text"
                                 value={row.fullName}

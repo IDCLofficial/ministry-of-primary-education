@@ -8,6 +8,7 @@ import SchoolsList from './components/SchoolsList'
 import FlaggedSchoolsList from './components/FlaggedSchoolsList'
 import AddSchoolModal from './components/AddSchoolModal'
 import TransactionLogsModal from './components/TransactionLogsModal'
+import DashboardShell from './components/DashboardShell'
 import { useGetMyPaidSchoolsQuery, useGetSchoolNamesQuery, useGetFlaggedSchoolsQuery } from '../store/api/authApi'
 import Link from 'next/link'
 import { IoArrowForward, IoAddOutline, IoReceiptOutline } from 'react-icons/io5'
@@ -42,6 +43,7 @@ export default function DashboardPage() {
       
       <div className="flex-1 mt-4 sm:mt-6">
         <div className="max-w-7xl mx-auto">
+          <DashboardShell active="schools">
           <div className="mb-6">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
               Welcome back
@@ -120,6 +122,7 @@ export default function DashboardPage() {
           </pre> */}
           {/* <SchoolsList schools={Paidschools} isLoading={isPaidLoading} /> */}
           <SchoolsList schools={schools} isLoading={isLoading} />
+          </DashboardShell>
         </div>
       </div>
 

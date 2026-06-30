@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useGetMyPaidSchoolsTransactionsQuery } from '../../store/api/authApi'
 import type { PaidSchool } from '../../store/api/authApi'
 import type { ExamDataMain } from '../../store/api/authApi'
+import Pagination from './Pagination'
 
 interface TransactionLogsModalProps {
   isOpen: boolean
@@ -66,6 +67,21 @@ export default function TransactionLogsModal({ isOpen, onClose }: TransactionLog
   }, [data])
 
   const totalSchools = data?.pagination?.totalItems ?? 0
+
+  // Client-side pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+
+  const totalPages = Math.ceil(rows.length / itemsPerPage)
+  const paginatedRows = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    return rows.slice(start, start + itemsPerPage)
+  }, [rows, currentPage, itemsPerPage])
+
+  // Reset to page 1 when modal reopens or data changes
+  useEffect(() => {
+    if (isOpen) setCurrentPage(1)
+  }, [isOpen])
 
   // ESC key listener
   useEffect(() => {
@@ -143,7 +159,7 @@ export default function TransactionLogsModal({ isOpen, onClose }: TransactionLog
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row, index) => (
+                  {paginatedRows.map((row, index) => (
                     <tr
                       key={`${row.schoolId}-${row.exam.name}-${index}`}
                       className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors"
@@ -165,6 +181,19 @@ export default function TransactionLogsModal({ isOpen, onClose }: TransactionLog
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="mt-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                itemsPerPage={itemsPerPage}
+                totalItems={rows.length}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1) }}
+              />
             </div>
           )}
         </div>
