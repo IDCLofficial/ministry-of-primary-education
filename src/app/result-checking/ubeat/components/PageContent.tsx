@@ -547,7 +547,23 @@ export default function UBEATLogin() {
                     </div>
                 </header>
             )}
-
+<div className="flex items-center justify-center p-4 relative z-20">
+                <Link
+                    href="/result-checking/ubeat/bulk-downloads"
+                    className="w-full max-w-md bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-green-300 transition-all group cursor-pointer block"
+                >
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-green-200 transition-colors">
+                            <IoDownloadOutline className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900 leading-relaxed">
+                                <span className="font-semibold text-green-700">School administrator?</span> Download results for multiple students at once. <span className="text-green-700 font-semibold underline decoration-green-300 underline-offset-2">Click Here</span> to start.
+                            </p>
+                        </div>
+                    </div>
+                </Link>
+            </div>
             <div className="flex-1 flex items-center justify-center p-4">
                 <div className="w-full max-w-md relative z-10">
                     {isMaintenanceMode ? (

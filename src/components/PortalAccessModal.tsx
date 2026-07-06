@@ -52,17 +52,7 @@ export default function PortalAccessModal() {
                 <div className="px-8 py-6">
                     <div className="grid gap-4 mb-6">
                         {/* Feature 1 */}
-                        <div className="flex items-start gap-4 p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
-                            <div className="bg-green-600 text-white p-3 rounded-lg flex-shrink-0">
-                                <FaFileAlt className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-gray-900 mb-1">Register for Exams</h3>
-                                <p className="text-sm text-gray-600">
-                                    Complete exam registration and track your status online
-                                </p>
-                            </div>
-                        </div>
+                        
 
                         {/* Feature 2 */}
                         <Link href={"/result-checking"} className="flex items-start gap-4 p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
@@ -70,31 +60,21 @@ export default function PortalAccessModal() {
                                 <FaCheckCircle className="w-5 h-5" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-gray-900 mb-1">Check Results</h3>
+                                <h3 className="font-semibold text-gray-900 mb-1">Check Results and Generate Certificates</h3>
                                 <p className="text-sm text-gray-600">
-                                    Access your examination results instantly
+                                    Access your examination results instantly. Download and print your certificates online
                                 </p>
+                                 
                             </div>
                         </Link>
 
-                        {/* Feature 3 */}
-                        <div className="flex items-start gap-4 p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
-                            <div className="bg-green-600 text-white p-3 rounded-lg flex-shrink-0">
-                                <FaAward className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-gray-900 mb-1">Generate Certificates</h3>
-                                <p className="text-sm text-gray-600">
-                                    Download and print your certificates online
-                                </p>
-                            </div>
-                        </div>
+                      
                     </div>
 
                     {/* CTA Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3">
                         <Link
-                            href="/registration-portal"
+                            href="/result-checking"
                             className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg font-semibold text-center transition-colors shadow-lg hover:shadow-xl"
                             onClick={closeModal}
                         >

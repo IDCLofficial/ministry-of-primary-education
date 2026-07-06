@@ -70,13 +70,18 @@ export default function StudentResultsRow({
                     </p>
                 </td>
                 <td className="px-4 py-3 align-middle">
+                    <span className="text-sm text-gray-600 tabular-nums">
+                        {student.examYear ?? '—'}
+                    </span>
+                </td>
+                <td className="px-4 py-3 align-middle">
                     <PaymentStatusBadge status={student.paymentStatus} />
                 </td>
             </tr>
 
             {/* ── Mobile card ─────────────────────────────────────────── */}
             <tr className="md:hidden">
-                <td colSpan={4} className="px-3 py-2">
+                <td colSpan={5} className="px-3 py-2">
                     <div
                         className={[
                             'flex items-start gap-3 p-3 rounded-xl border transition-colors',
@@ -99,7 +104,7 @@ export default function StudentResultsRow({
                                 <PaymentStatusBadge status={student.paymentStatus} size="sm" />
                             </div>
                             <p className="text-[11px] text-gray-500 mt-0.5">
-                                #{serial}
+                                #{serial}{student.examYear ? ` · ${student.examYear}` : ''}
                             </p>
                         </div>
                     </div>

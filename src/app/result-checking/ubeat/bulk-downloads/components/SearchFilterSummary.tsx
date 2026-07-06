@@ -25,7 +25,7 @@ export default function SearchFilterSummary({
         <div className="bg-white rounded-2xl border border-gray-200 px-4 py-3 sm:px-6 sm:py-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-                    <Pill icon={<IoCalendarOutline className="w-4 h-4" />} label="Year" value={filters.examYear} />
+                    <Pill icon={<IoCalendarOutline className="w-4 h-4" />} label="Year" value={filters.examYear === 'all' ? 'All Years' : filters.examYear} />
                     <Pill icon={<IoLocationOutline className="w-4 h-4" />} label="LGA" value={filters.lga} />
                     <Pill icon={<IoBusinessOutline className="w-4 h-4" />} label="School" value={filters.school.name} truncate />
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 text-green-700 text-xs font-semibold border border-green-100">

@@ -85,7 +85,7 @@ export interface BECEStudentResult {
  * before responding).
  */
 export interface BulkStudentsBySchoolRequest {
-    year: number
+    year?: number
     lga: string
     schoolId: string
     /** 1-indexed page number. Defaults to 1 server-side. */
@@ -136,6 +136,7 @@ export interface BulkStudentListItem {
     _id: string
     name: string
     isPaid: boolean
+    examYear?: number
 }
 
 // ── Bulk Payments (agent) ──────────────────────────────────────────────────
@@ -151,7 +152,7 @@ export interface BulkStudentListItem {
  */
 export interface CreateBatchPaymentRequest {
     examType: 'UBEAT' | 'BECE'
-    examYear: number
+    examYear?: number
     studentIds: string[]
 }
 
@@ -591,7 +592,7 @@ export const studentApi = apiSlice.injectEndpoints({
                     url: url.toString(),
                     method: 'POST',
                     body: {
-                        year,
+                        ...(year !== undefined ? { year } : {}),
                         lga,
                         schoolId,
                         page,
