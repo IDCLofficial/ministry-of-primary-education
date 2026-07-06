@@ -1,11 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { IoClose } from "react-icons/io5";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { IoClose, IoChevronBack, IoChevronDown, IoChevronForward } from "react-icons/io5";
 import { FiUsers } from "react-icons/fi";
 import { BsReceipt } from "react-icons/bs";
 import { useAuth } from "@/app/portal/iirs/providers/AuthProvider";
-import { getPaymentBreakdownStats, PaymentBreakdownByExamType } from "@/lib/iirs/dataInteraction";
+import { getPaymentBreakdownStats, getExamTypeLgaBreakdown, PaymentBreakdownByExamType } from "@/lib/iirs/dataInteraction";
+import { ExamTypeLgaBreakdownResponse } from "@/lib/iirs/examTypeLgaBreakdown.types";
 import { ExamTypeEnum } from "@/app/portal/store/api/authApi";
 
 const examTypeColors: Record<string, { bg: string; border: string; icon: string; text: string; badge: string }> = {
@@ -32,6 +33,14 @@ export default function BreakDown({ isOpen, onClose }: BreakDownProps) {
     const [totalAmount, setTotalAmount] = useState(0);
     const [breakdown, setBreakdown] = useState<Record<string, PaymentBreakdownByExamType>>({});
 
+    // LGA drill-down state
+    const [selectedExamType, setSelectedExamType] = useState<string | null>(null);
+    const [selectedExamTypeStudentCount, setSelectedExamTypeStudentCount] = useState(0);
+    const [drillLoading, setDrillLoading] = useState(false);
+    const [drillError, setDrillError] = useState<string | null>(null);
+    const [drillData, setDrillData] = useState<ExamTypeLgaBreakdownResponse | null>(null);
+    const [expandedLga, setExpandedLga] = useState<string | null>(null);
+
     // Drag state
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
@@ -39,9 +48,16 @@ export default function BreakDown({ isOpen, onClose }: BreakDownProps) {
     // Track whether the pointer actually moved so backdrop clicks still close
     const didMoveRef = useRef(false);
 
-    // Reset position every time the modal opens
+    // Reset position and drill-down state every time the modal opens
     useEffect(() => {
-        if (isOpen) setPosition({ x: 0, y: 0 });
+        if (isOpen) {
+            setPosition({ x: 0, y: 0 });
+            setSelectedExamType(null);
+            setSelectedExamTypeStudentCount(0);
+            setDrillData(null);
+            setDrillError(null);
+            setExpandedLga(null);
+        }
     }, [isOpen]);
 
     // Data fetch
@@ -63,6 +79,28 @@ export default function BreakDown({ isOpen, onClose }: BreakDownProps) {
 
         fetchBreakdown();
     }, [isOpen, token]);
+
+    // LGA drill-down fetch
+    useEffect(() => {
+        if (!isOpen || !token || !selectedExamType) return;
+
+        async function fetchDrillDown(tokenKey: string, examType: string) {
+            try {
+                setDrillLoading(true);
+                setDrillError(null);
+                setExpandedLga(null);
+                const result = await getExamTypeLgaBreakdown(tokenKey, examType);
+                setDrillData(result);
+            } catch (e) {
+                setDrillError(e instanceof Error ? e.message : 'Failed to load LGA breakdown');
+                setDrillData(null);
+            } finally {
+                setDrillLoading(false);
+            }
+        }
+
+        fetchDrillDown(token, selectedExamType);
+    }, [isOpen, token, selectedExamType]);
 
     const handleDragStart = useCallback(
         (e: React.MouseEvent) => {
@@ -111,6 +149,13 @@ export default function BreakDown({ isOpen, onClose }: BreakDownProps) {
 
     const allExamTypes = Object.values(ExamTypeEnum);
 
+    const schoolsForLga = (lga: string) => {
+        if (!drillData) return [];
+        return drillData.schools
+            .filter((s) => s.lga === lga)
+            .sort((a, b) => b.totalStudents - a.totalStudents);
+    };
+
     return (
         <div className="fixed inset-0 z-50">
             {/* Backdrop */}
@@ -147,8 +192,26 @@ export default function BreakDown({ isOpen, onClose }: BreakDownProps) {
                             <IoClose size={20} className="text-white" />
                         </button>
 
-                        <h2 className="text-xl font-bold text-white">Payment Breakdown</h2>
-                        <p className="text-sm text-white/75 mt-0.5">Summary of all payments received, grouped by exam type</p>
+                        {selectedExamType ? (
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setSelectedExamType(null)}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    className="p-1.5 cursor-pointer hover:bg-white/20 rounded-full transition-colors flex-shrink-0"
+                                >
+                                    <IoChevronBack size={20} className="text-white" />
+                                </button>
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">{selectedExamType} — LGA Breakdown</h2>
+                                    <p className="text-sm text-white/75 mt-0.5">Registrations by LGA for this exam type</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <h2 className="text-xl font-bold text-white">Payment Breakdown</h2>
+                                <p className="text-sm text-white/75 mt-0.5">Summary of all payments received, grouped by exam type</p>
+                            </>
+                        )}
 
                         {/* Subtle drag hint dots */}
                         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 opacity-40">
@@ -158,90 +221,202 @@ export default function BreakDown({ isOpen, onClose }: BreakDownProps) {
                         </div>
                     </div>
 
-                    {/* Total amount banner */}
-                    <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex-shrink-0">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Amount Processed</p>
-                        {isLoading ? (
-                            <div className="h-9 bg-gray-200 rounded-lg w-52 mt-1.5 animate-pulse" />
-                        ) : (
-                            <p className="text-3xl font-bold text-gray-900 mt-1">
-                                ₦{totalAmount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                        )}
-                    </div>
+                    {/* Total amount banner — only on the overview */}
+                    {!selectedExamType && (
+                        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex-shrink-0">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Amount Processed</p>
+                            {isLoading ? (
+                                <div className="h-9 bg-gray-200 rounded-lg w-52 mt-1.5 animate-pulse" />
+                            ) : (
+                                <p className="text-3xl font-bold text-gray-900 mt-1">
+                                    ₦{totalAmount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                            )}
+                        </div>
+                    )}
 
-                    {/* Per-exam cards */}
-                    <div className="flex-1 overflow-y-auto p-6">
-                        {isLoading ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {[...Array(8)].map((_, i) => (
-                                    <div key={i} className="rounded-xl p-5 border border-gray-200 bg-gray-50 animate-pulse">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="h-5 bg-gray-300 rounded-full w-24" />
-                                            <div className="h-8 w-8 bg-gray-300 rounded-lg" />
-                                        </div>
-                                        <div className="h-4 bg-gray-300 rounded w-28 mb-2" />
-                                        <div className="h-7 bg-gray-300 rounded w-20 mb-3" />
-                                        <div className="h-4 bg-gray-300 rounded w-28 mb-2" />
-                                        <div className="h-6 bg-gray-300 rounded w-32" />
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {allExamTypes.map((examType) => {
-                                    const data = breakdown[examType];
-                                    const colors = examTypeColors[examType] ?? fallbackColor;
-                                    const studentCount = data?.count ?? 0;
-                                    const amountPerStudent = data?.amountPerStudent;
-
-                                    return (
-                                        <div
-                                            key={examType}
-                                            className={`bg-gradient-to-br ${colors.bg} rounded-xl p-5 border ${colors.border} shadow-sm hover:shadow-md transition-shadow duration-200 space-y-4`}
-                                        >
-                                            <div className="flex items-center justify-between mb-4">
-                                                <span className={`text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ${colors.badge}`}>
-                                                    {examType}
-                                                </span>
-                                                <div className={`p-2 ${colors.icon} rounded-lg shadow-sm`}>
-                                                    <BsReceipt className="text-white text-sm" />
-                                                </div>
+                    {!selectedExamType ? (
+                        /* Per-exam cards */
+                        <div className="flex-1 overflow-y-auto p-6">
+                            {isLoading ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {[...Array(8)].map((_, i) => (
+                                        <div key={i} className="rounded-xl p-5 border border-gray-200 bg-gray-50 animate-pulse">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="h-5 bg-gray-300 rounded-full w-24" />
+                                                <div className="h-8 w-8 bg-gray-300 rounded-lg" />
                                             </div>
+                                            <div className="h-4 bg-gray-300 rounded w-28 mb-2" />
+                                            <div className="h-7 bg-gray-300 rounded w-20 mb-3" />
+                                            <div className="h-4 bg-gray-300 rounded w-28 mb-2" />
+                                            <div className="h-6 bg-gray-300 rounded w-32" />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {allExamTypes.map((examType) => {
+                                        const data = breakdown[examType];
+                                        const colors = examTypeColors[examType] ?? fallbackColor;
+                                        const studentCount = data?.count ?? 0;
+                                        const amountPerStudent = data?.amountPerStudent;
 
-                                            <div>
-                                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Students Paid For</p>
-                                                <div className="flex items-center gap-1.5 mt-1">
-                                                    <FiUsers className={`text-base ${colors.text}`} />
-                                                    <p className={`text-2xl font-bold ${colors.text}`}>
-                                                        {studentCount.toLocaleString()}
+                                        return (
+                                            <button
+                                                key={examType}
+                                                onClick={() => {
+                                                    setSelectedExamType(examType);
+                                                    setSelectedExamTypeStudentCount(studentCount);
+                                                }}
+                                                className={`text-left w-full bg-gradient-to-br ${colors.bg} rounded-xl p-5 border ${colors.border} shadow-sm hover:shadow-md hover:brightness-[0.98] transition-all duration-200 space-y-4 cursor-pointer`}
+                                            >
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <span className={`text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ${colors.badge}`}>
+                                                        {examType}
+                                                    </span>
+                                                    <div className={`p-2 ${colors.icon} rounded-lg shadow-sm`}>
+                                                        <BsReceipt className="text-white text-sm" />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Students Paid For</p>
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        <FiUsers className={`text-base ${colors.text}`} />
+                                                        <p className={`text-2xl font-bold ${colors.text}`}>
+                                                            {studentCount.toLocaleString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Amount Per Student</p>
+                                                    <p className={`text-xl font-bold ${colors.text} mt-1`}>
+                                                        ₦{amountPerStudent ?? 0}
                                                     </p>
                                                 </div>
-                                            </div>
 
-                                            <div>
-                                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Amount Per Student</p>
-                                                <p className={`text-xl font-bold ${colors.text} mt-1`}>
-                                                    ₦{amountPerStudent ?? 0}
-                                                </p>
-                                            </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Amount</p>
+                                                    <p className={`text-xl font-bold ${colors.text} mt-1`}>
+                                                        ₦{data?.totalAmount?.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}
+                                                    </p>
+                                                </div>
 
-                                            <div>
-                                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Amount</p>
-                                                <p className={`text-xl font-bold ${colors.text} mt-1`}>
-                                                    ₦{data?.totalAmount?.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}
-                                                </p>
-                                            </div>
+                                                {!data && (
+                                                    <p className="text-xs text-gray-400 mt-3 italic">No payments recorded yet</p>
+                                                )}
 
-                                            {!data && (
-                                                <p className="text-xs text-gray-400 mt-3 italic">No payments recorded yet</p>
-                                            )}
+                                                <p className={`text-xs font-medium ${colors.text} opacity-70`}>View LGA breakdown →</p>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        /* LGA drill-down */
+                        <div className="flex-1 overflow-y-auto p-6">
+                            {drillLoading ? (
+                                <div className="flex items-center justify-center py-16">
+                                    <div className="text-center">
+                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto mb-3"></div>
+                                        <p className="text-gray-600 text-sm">Loading LGA breakdown...</p>
+                                    </div>
+                                </div>
+                            ) : drillError ? (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                                    <p className="text-red-700 font-medium text-sm">{drillError}</p>
+                                </div>
+                            ) : drillData && drillData.schools.length === 0 ? (
+                                <div className="text-center py-16">
+                                    <FiUsers className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500 font-medium">No payments recorded yet for {selectedExamType}</p>
+                                </div>
+                            ) : drillData ? (
+                                <>
+                                    <div className="mb-4">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Students Paid For</p>
+                                        <p className="text-2xl font-bold text-gray-900 mt-1">
+                                            {selectedExamTypeStudentCount.toLocaleString()}
+                                        </p>
+                                    </div>
+
+                                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="bg-gray-50 border-b border-gray-200">
+                                                    <th className="text-left py-3 px-4 font-medium text-gray-600 text-sm">LGA</th>
+                                                    <th className="text-right py-3 px-4 font-medium text-gray-600 text-sm">Students</th>
+                                                    <th className="text-right py-3 px-4 font-medium text-gray-600 text-sm">Schools</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {drillData.lgaSummary.map((row) => {
+                                                    const isExpanded = expandedLga === row.lga;
+                                                    return (
+                                                        <React.Fragment key={row.lga}>
+                                                            <tr
+                                                                onClick={() => setExpandedLga(isExpanded ? null : row.lga)}
+                                                                className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                                                            >
+                                                                <td className="py-3 px-4 font-medium text-gray-900 flex items-center gap-2">
+                                                                    {isExpanded ? (
+                                                                        <IoChevronDown size={14} className="text-gray-400 flex-shrink-0" />
+                                                                    ) : (
+                                                                        <IoChevronForward size={14} className="text-gray-400 flex-shrink-0" />
+                                                                    )}
+                                                                    {row.lga}
+                                                                </td>
+                                                                <td className="py-3 px-4 text-right font-semibold text-gray-900">
+                                                                    {row.totalStudents.toLocaleString()}
+                                                                </td>
+                                                                <td className="py-3 px-4 text-right text-gray-600">
+                                                                    {row.schoolCount.toLocaleString()}
+                                                                </td>
+                                                            </tr>
+                                                            {isExpanded && (
+                                                                <tr>
+                                                                    <td colSpan={3} className="bg-gray-50/60 px-4 py-3">
+                                                                        <div className="space-y-1.5 pl-6">
+                                                                            {schoolsForLga(row.lga).map((school) => (
+                                                                                <div
+                                                                                    key={school.schoolId}
+                                                                                    className="flex items-center justify-between text-sm py-1"
+                                                                                >
+                                                                                    <span className="text-gray-700">{school.schoolName}</span>
+                                                                                    <span className="font-semibold text-gray-900">
+                                                                                        {school.totalStudents.toLocaleString()}
+                                                                                    </span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                        </React.Fragment>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {drillData.unattributable.totalStudents > 0 && (
+                                        <div className="mt-4 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                                            <p className="text-sm text-amber-800">
+                                                {drillData.unattributable.totalStudents.toLocaleString()} student
+                                                {drillData.unattributable.totalStudents === 1 ? '' : 's'} belong to a school no longer in the system
+                                                {drillData.unattributable.schoolCount > 0 && (
+                                                    <> (across {drillData.unattributable.schoolCount.toLocaleString()} school
+                                                        {drillData.unattributable.schoolCount === 1 ? '' : 's'})</>
+                                                )}
+                                            </p>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
+                                    )}
+                                </>
+                            ) : null}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

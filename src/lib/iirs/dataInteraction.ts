@@ -1,5 +1,6 @@
 import { UserProfile } from "@/app/portal/iirs/providers/AuthProvider";
 import { StringDecoder } from "string_decoder";
+import { ExamTypeLgaBreakdownResponse } from "./examTypeLgaBreakdown.types";
 
 export const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin`;
 
@@ -202,6 +203,30 @@ export async function getPaymentBreakdownStats(token: string): Promise<PaymentBr
 
     const json = await response.json();
     return json.data as PaymentBreakdownStats;
+}
+
+export async function getExamTypeLgaBreakdown(
+    token: string,
+    examType: string
+): Promise<ExamTypeLgaBreakdownResponse> {
+    const params = new URLSearchParams({ examType });
+
+    const endpoint = `${BASE_URL.split('/iirs-admin')[0]}/admin/result-payment-stats/lga-breakdown?${params.toString()}`;
+
+    const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.message || `Failed to fetch LGA breakdown: ${response.statusText}`);
+    }
+
+    const json = await response.json();
+    return (json?.data ?? json) as ExamTypeLgaBreakdownResponse;
 }
 
 export async function login(email: string, password: string) {
