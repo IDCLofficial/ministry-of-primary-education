@@ -401,7 +401,7 @@ export default function BreakDown({ isOpen, onClose }: BreakDownProps) {
                                         </table>
                                     </div>
 
-                                    {drillData.unattributable.totalStudents > 0 && (
+                                    {/* {drillData.unattributable.totalStudents > 0 && (
                                         <div className="mt-4 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
                                             <p className="text-sm text-amber-800">
                                                 {drillData.unattributable.totalStudents.toLocaleString()} student
@@ -412,7 +412,7 @@ export default function BreakDown({ isOpen, onClose }: BreakDownProps) {
                                                 )}
                                             </p>
                                         </div>
-                                    )}
+                                    )} */}
                                 </>
                             ) : null}
                         </div>
