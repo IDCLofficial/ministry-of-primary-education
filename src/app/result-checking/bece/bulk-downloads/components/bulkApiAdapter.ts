@@ -27,7 +27,8 @@ export function mapBulkStudentListItem(
     ctx: MapContext,
 ): BulkStudent {
     const isPaid = Boolean(item.isPaid)
-    const yearNum = typeof ctx.examYear === 'string' ? Number(ctx.examYear) : ctx.examYear
+    const ctxYearNum = typeof ctx.examYear === 'string' ? Number(ctx.examYear) : ctx.examYear
+    const yearNum = item.examYear ?? (Number.isFinite(ctxYearNum) ? ctxYearNum : undefined)
 
     return {
         _id: item._id,
@@ -37,6 +38,6 @@ export function mapBulkStudentListItem(
         schoolId: ctx.schoolId,
         schoolName: ctx.schoolName,
         lga: ctx.lga,
-        examYear: Number.isFinite(yearNum) ? yearNum : undefined,
+        examYear: yearNum,
     }
 }

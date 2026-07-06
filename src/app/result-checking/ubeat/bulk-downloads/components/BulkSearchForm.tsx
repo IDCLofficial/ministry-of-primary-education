@@ -41,7 +41,10 @@ export default function BulkSearchForm({
     })
 
     const yearOptions = useMemo(
-        () => (yearsData?.years ?? []).map(y => ({ value: String(y), label: String(y) })),
+        () => [
+            { value: 'all', label: 'All Years' },
+            ...(yearsData?.years ?? []).map(y => ({ value: String(y), label: String(y) })),
+        ],
         [yearsData],
     )
 
@@ -66,7 +69,7 @@ export default function BulkSearchForm({
     )
 
     const isFormValid =
-        value.examYear.trim().length === 4 &&
+        (value.examYear === 'all' || value.examYear.trim().length === 4) &&
         value.lga.trim().length >= 2 &&
         value.school.id.trim().length > 0
 

@@ -60,14 +60,11 @@ export default function PortalAccessModal() {
                                 <FaCheckCircle className="w-5 h-5" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-gray-900 mb-1">Check Results</h3>
+                                <h3 className="font-semibold text-gray-900 mb-1">Check Results and Generate Certificates</h3>
                                 <p className="text-sm text-gray-600">
-                                    Access your examination results instantly
+                                    Access your examination results instantly. Download and print your certificates online
                                 </p>
-                                 <h3 className="font-semibold text-gray-900 mb-1">Generate Certificates</h3>
-                                <p className="text-sm text-gray-600">
-                                    Download and print your certificates online
-                                </p>
+                                 
                             </div>
                         </Link>
 
@@ -77,7 +74,7 @@ export default function PortalAccessModal() {
                     {/* CTA Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3">
                         <Link
-                            href="/registration-portal"
+                            href="/result-checking"
                             className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg font-semibold text-center transition-colors shadow-lg hover:shadow-xl"
                             onClick={closeModal}
                         >

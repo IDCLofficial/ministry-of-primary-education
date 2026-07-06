@@ -159,6 +159,7 @@ export default function StudentResultsTable({
                                     </th>
                                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide w-12">#</th>
                                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Student</th>
+                                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Exam Year</th>
                                     <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                                 </tr>
                             </thead>
@@ -166,7 +167,7 @@ export default function StudentResultsTable({
                             {/* ── Mobile header spacer ─────────────────────── */}
                             <thead className="md:hidden">
                                 <tr>
-                                        <th colSpan={4} className="px-3 py-2 bg-gray-50 border-b border-gray-100 text-[11px] text-gray-500">
+                                        <th colSpan={5} className="px-3 py-2 bg-gray-50 border-b border-gray-100 text-[11px] text-gray-500">
                                             Tick rows to select · {selectedIds.size} selected
                                         </th>
                                     </tr>

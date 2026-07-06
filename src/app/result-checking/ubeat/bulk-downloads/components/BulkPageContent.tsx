@@ -147,7 +147,7 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
      * paid yet. Auto-expands the first time the user submits a search so
      * they can see their cohort without an extra click.
      */
-    const [cohortExpanded, setCohortExpanded] = useState(false)
+    const [cohortExpanded, setCohortExpanded] = useState(true)
     const [voucherActive, setVoucherActive] = useState(false)
 
     const handleClearSavedVoucher = useCallback(() => {
@@ -184,20 +184,21 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
     }, [appliedFilters])
 
     // ── Live cohort query ────────────────────────────────────────────────
-    // Server-side pagination + status filter. The response is a single page
-    // (currentPage) of the (status-filtered) cohort. Free-text search is
-    // still applied client-side on the current page (see `matchingCohort`).
+    // Fetch ALL students for the cohort in a single request (high limit).
+    // Search + pagination are then applied client-side so the search filter
+    // works across every student, not just the current page.
     const yearNum = appliedFilters ? Number(appliedFilters.examYear) : NaN
-    const queryArgs = appliedFilters && Number.isFinite(yearNum) && appliedFilters.school.id
+    const isAllYears = appliedFilters?.examYear === 'all'
+    const queryArgs = appliedFilters && (isAllYears || (Number.isFinite(yearNum) && appliedFilters.school.id))
         ? {
             examType: config.examType === 'bece'
                 ? ExamTypeEnum.BECE
                 : ExamTypeEnum.UBEAT,
-            year: yearNum,
+            ...(isAllYears ? {} : { year: yearNum }),
             lga: appliedFilters.lga,
             schoolId: appliedFilters.school.id,
-            page: currentPage,
-            limit: itemsPerPage,
+            page: 1,
+            limit: 999999,
             paymentStatus: statusFilter === 'all' ? undefined : statusFilter,
         }
         : undefined
@@ -211,8 +212,8 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
         skip: !queryArgs,
     })
 
-    // Map the current page's items to the wider BulkStudent shape.
-    const currentPageStudents: BulkStudent[] = useMemo(() => {
+    // Map all students from the API response to the wider BulkStudent shape.
+    const allStudents: BulkStudent[] = useMemo(() => {
         if (!apiResponse || !appliedFilters) return []
         return apiResponse.data.map(item =>
             mapBulkStudentListItem(item, {
@@ -224,23 +225,26 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
         )
     }, [apiResponse, appliedFilters])
 
-    // Client-side search filter — narrows the *current page* to the rows
-    // whose name matches. The toolbar's "matchingCount" reflects this
-    // per-page number, so "Select all N" selects every matching row on
-    // the visible page. The user flips pages to accumulate selections.
+    // Client-side search filter — narrows the entire cohort to rows whose
+    // name matches the search query. This works across all pages, not just
+    // the current page.
     const matchingCohort: BulkStudent[] = useMemo(() => {
         const needle = normalizeForSearch(searchQuery)
-        if (!needle) return currentPageStudents
-        return currentPageStudents.filter(s =>
+        if (!needle) return allStudents
+        return allStudents.filter(s =>
             normalizeForSearch(s.studentName).includes(needle),
         )
-    }, [currentPageStudents, searchQuery])
+    }, [allStudents, searchQuery])
 
-    const students: BulkStudent[] = matchingCohort
+    // Client-side pagination — slice the filtered cohort for the current page.
+    const students: BulkStudent[] = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage
+        return matchingCohort.slice(start, start + itemsPerPage)
+    }, [matchingCohort, currentPage, itemsPerPage])
 
-    // Server-reported totals for the currently status-filtered cohort.
-    const serverTotalItems = apiResponse?.pagination?.total ?? 0
-    const serverTotalPages = apiResponse?.pagination?.totalPages ?? 1
+    // Totals derived from the filtered cohort (client-side).
+    const serverTotalItems = matchingCohort.length
+    const serverTotalPages = Math.max(1, Math.ceil(matchingCohort.length / itemsPerPage))
 
     // Surface API errors as toasts.
     useEffect(() => {
@@ -441,10 +445,11 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
                     ? `${window.location.origin}${config.bulkRoute}`
                     : config.bulkRoute
 
+            const isAllYears = appliedFilters.examYear === 'all'
             const yearNum = Number(appliedFilters.examYear)
             const response = await createBatchPayment({
                 examType: config.examType === 'bece' ? ExamTypeEnum.BECE : ExamTypeEnum.UBEAT,
-                examYear: yearNum,
+                ...(isAllYears ? {} : { examYear: yearNum }),
                 studentIds,
                 callbackUrl,
             }).unwrap()
@@ -776,10 +781,8 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
  {/* Step 1: Cohort search — collapsible expander. The agent
                     only needs this when they haven't paid yet. Default
                     collapsed; auto-expands the first time a search is
-                    submitted. Hidden entirely when a voucher is active
-                    (mutual exclusion). */}
-                {!voucherActive && (
-                    <section className="mb-6">
+                    submitted. */}
+                <section className="mb-6">
                     <button
                         type="button"
                         onClick={() => setCohortExpanded(v => !v)}
@@ -833,7 +836,7 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
                                 <>
                                     <SearchFilterSummary
                                         filters={appliedFilters}
-                                        totalItems={serverTotalItems}
+                                        totalItems={allStudents.length}
                                         onEdit={handleChangeFilters}
                                     />
 
@@ -845,9 +848,9 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
                                         isLoading={isTableLoading}
                                         currentPage={currentPage}
                                         totalPages={serverTotalPages}
-                                        totalItems={serverTotalItems}
-                                        statusFilteredCount={serverTotalItems}
-                                        matchingCount={students.length}
+                                        totalItems={allStudents.length}
+                                        statusFilteredCount={allStudents.length}
+                                        matchingCount={matchingCohort.length}
                                         itemsPerPage={itemsPerPage}
                                         onPageChange={handlePageChange}
                                         onItemsPerPageChange={handleItemsPerPageChange}
@@ -875,16 +878,13 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
                         </div>
                     )}
                 </section>
-                )}
                 {/* Step 2: Voucher lookup — the primary entry point. Agent
                     can paste a voucher ref and go straight to download,
                     bypassing the LGA × School search entirely. Auto-
                     fetches when `?voucher=…` is in the URL (i.e. after a
                     successful payment verify pushes it there). The
-                    component has its own hero header. Hidden while the
-                    cohort search is open (mutual exclusion). */}
-                {!cohortExpanded && (
-                    <section className="mb-6">
+                    component has its own hero header. */}
+                <section className="mb-6">
                         <VoucherLookup
                             config={config}
                             initialValue={urlVoucher}
@@ -897,7 +897,6 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
                             onClearSaved={handleClearSavedVoucher}
                         />
                     </section>
-                )}
 
                
 
@@ -939,6 +938,7 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
                 onClearSelection={clearSelection}
                 isProcessing={isPaying || downloadStage === 'preparing'}
                 processingLabel={isPaying ? 'Starting payment…' : 'Preparing ZIP…'}
+                selectedStudents={allStudents.filter(s => selectedIds.has(s._id))}
             />
 
             {/* Bulk payment modal */}
@@ -948,6 +948,7 @@ export default function BulkPageContent({ config }: BulkPageContentProps) {
                 config={config}
                 summary={summary}
                 schoolName={appliedFilters?.school.name ?? ''}
+                selectedStudents={allStudents.filter(s => selectedIds.has(s._id))}
                 onConfirm={handleConfirmPayment}
             />
 

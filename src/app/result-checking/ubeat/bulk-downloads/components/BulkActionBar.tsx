@@ -1,10 +1,10 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { IoCardOutline, IoClose, IoSparkles } from 'react-icons/io5'
+import { IoCardOutline, IoClose, IoListOutline, IoSparkles } from 'react-icons/io5'
 import { formatNaira, type BulkExamConfig } from './examConfig'
-import type { BulkSelectionSummary } from './types'
+import type { BulkSelectionSummary, BulkStudent } from './types'
 
 interface BulkActionBarProps {
     config: BulkExamConfig
@@ -15,6 +15,8 @@ interface BulkActionBarProps {
     isProcessing?: boolean
     /** Optional label shown while processing. */
     processingLabel?: string
+    /** Selected students to show in the "see selected" dropdown. */
+    selectedStudents?: BulkStudent[]
 }
 
 /**
@@ -29,9 +31,23 @@ export default function BulkActionBar({
     onClearSelection,
     isProcessing = false,
     processingLabel = 'Processing…',
+    selectedStudents = [],
 }: BulkActionBarProps) {
     const { selectedCount, payableCount, downloadableCount, totalAmount } = summary
     const visible = selectedCount > 0
+    const [showSelected, setShowSelected] = useState(false)
+    const dropdownRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!showSelected) return
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setShowSelected(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [showSelected])
 
     return (
         <AnimatePresence>
@@ -76,6 +92,62 @@ export default function BulkActionBar({
                             </div>
 
                             {/* Total amount */}
+
+                            {/* See selected students dropdown */}
+                            <div ref={dropdownRef} className="relative flex-shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSelected(v => !v)}
+                                    disabled={isProcessing}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-white bg-green-600 hover:bg-green-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <IoListOutline className="w-4 h-4" />
+                                    <span>Click here to See selected Students</span>
+                                </button>
+                                <AnimatePresence>
+                                    {showSelected && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 8 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-72 max-h-80 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg z-50"
+                                        >
+                                            <div className="sticky top-0 bg-white border-b border-gray-100 px-3 py-2 flex items-center justify-between">
+                                                <span className="text-xs font-semibold text-gray-700">
+                                                    {selectedCount} selected
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowSelected(false)}
+                                                    className="text-gray-400 hover:text-gray-600"
+                                                >
+                                                    <IoClose className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                            <ul className="divide-y divide-gray-50">
+                                                {selectedStudents.length === 0 ? (
+                                                    <li className="px-3 py-4 text-center text-xs text-gray-400">
+                                                        No students selected
+                                                    </li>
+                                                ) : (
+                                                    selectedStudents.map((s, i) => (
+                                                        <li key={s._id} className="px-3 py-2 flex items-center justify-between gap-2">
+                                                            <span className="text-xs text-gray-700 truncate">
+                                                                {i + 1}. {s.studentName}
+                                                            </span>
+                                                            <span className="text-[11px] text-gray-400 tabular-nums flex-shrink-0">
+                                                                {s.examYear ?? '—'}
+                                                            </span>
+                                                        </li>
+                                                    ))
+                                                )}
+                                            </ul>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
                             <div className="hidden md:flex items-center gap-2 flex-shrink-0 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200">
                                 <span className="text-[11px] uppercase tracking-wide text-gray-500">Total due</span>
                                 <span className="text-sm font-bold text-gray-900 tabular-nums">

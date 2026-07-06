@@ -12,12 +12,13 @@ import {
 import {
     IoCardOutline,
     IoLockClosedOutline,
+    IoLogoWhatsapp,
     IoMail,
     IoShieldCheckmarkOutline,
 } from 'react-icons/io5'
 import { isValidEmail } from '@/lib/utils'
 import { formatNaira, type BulkExamConfig } from './examConfig'
-import type { BulkSelectionSummary } from './types'
+import type { BulkSelectionSummary, BulkStudent } from './types'
 import {
     useSetBecePaymentEmailMutation,
     useSetUbeatPaymentEmailMutation,
@@ -29,6 +30,8 @@ interface BulkPaymentModalProps {
     config: BulkExamConfig
     summary: BulkSelectionSummary
     schoolName: string
+    /** Selected students to display for review before payment. */
+    selectedStudents?: BulkStudent[]
     /**
      * Called when the agent confirms payment.
      * The parent POSTs to `/result-payment/create-batch`, sets
@@ -67,12 +70,22 @@ export default function BulkPaymentModal({
     config,
     summary,
     schoolName,
+    selectedStudents = [],
     onConfirm,
 }: BulkPaymentModalProps) {
     const [email, setEmail] = useState('')
     const [error, setError] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null)
+
+    const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '2348123456789'
+
+    const buildWhatsappUrl = (student: BulkStudent) => {
+        const text = encodeURIComponent(
+            `Hello, I noticed an issue with a student's details on the bulk result-checking portal.\n\nName: ${student.studentName}\nSchool: ${schoolName}\nExam Year: ${student.examYear ?? '—'}\nExam Type: ${config.shortName}`
+        )
+        return `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${text}`
+    }
 
     const [setBecePaymentEmail] = useSetBecePaymentEmailMutation()
     const [setUbeatPaymentEmail] = useSetUbeatPaymentEmailMutation()
@@ -165,10 +178,10 @@ export default function BulkPaymentModal({
 
     return (
         <Dialog open={open} onOpenChange={isSubmitting ? undefined : onOpenChange}>
-            <DialogContent className="sm:max-w-md rounded-2xl p-0 overflow-hidden gap-0">
+            <DialogContent className="sm:max-w-lg rounded-2xl p-0 overflow-hidden gap-0">
                 <div className="h-1.5 w-full bg-gradient-to-r from-green-500 to-green-600" />
 
-                <div className="p-6">
+                <div className="p-6 max-h-[calc(100vh-4rem)] overflow-y-auto">
                     <DialogHeader className="mb-5">
                         <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-50 border border-green-100 mb-4 mx-auto">
                             <IoCardOutline className="w-6 h-6 text-green-600" aria-hidden="true" />
@@ -194,6 +207,55 @@ export default function BulkPaymentModal({
                             emphasised
                         />
                     </div>
+
+                    {/* Selected students review list */}
+                    {selectedStudents.length > 0 && (
+                        <div className="mb-5">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-medium text-gray-700">
+                                    Review selected students
+                                </p>
+                                <span className="text-[11px] text-gray-400">
+                                    {selectedStudents.length} student{selectedStudents.length === 1 ? '' : 's'}
+                                </span>
+                            </div>
+                            <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl divide-y divide-gray-50">
+                                {selectedStudents.map((student, i) => (
+                                    <div
+                                        key={student._id}
+                                        className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span className="text-[11px] text-gray-400 tabular-nums flex-shrink-0">
+                                                {i + 1}.
+                                            </span>
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-medium text-gray-900 truncate capitalize">
+                                                    {student.studentName.toLowerCase()}
+                                                </p>
+                                                <p className="text-[10px] text-gray-400">
+                                                    {schoolName} · {student.examYear ?? '—'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <a
+                                            href={buildWhatsappUrl(student)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-green-700 bg-green-50 hover:bg-green-100 transition-colors"
+                                            title="Report wrong details for this student"
+                                        >
+                                            <IoLogoWhatsapp className="w-3 h-3" />
+                                            <span className="hidden sm:inline">Report</span>
+                                        </a>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-[11px] text-gray-500 mt-1.5">
+                                If any student&apos;s details are wrong, tap <span className="text-green-700 font-medium">Report</span> to reach us on WhatsApp.
+                            </p>
+                        </div>
+                    )}
 
                     <div className="mb-5">
                         <label
