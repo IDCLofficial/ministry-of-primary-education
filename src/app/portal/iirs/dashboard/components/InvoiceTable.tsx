@@ -1,9 +1,8 @@
 "use client"
 
 import { FaMagnifyingGlass } from "react-icons/fa6";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
-import { FiChevronDown } from "react-icons/fi";
 import InvoiceDetails from "./InvoiceDetails";
 import { getPaymentsData, Payment } from "@/lib/iirs/dataInteraction";
 import { useAuth } from '@/app/portal/iirs/providers/AuthProvider';
@@ -23,62 +22,62 @@ const formatAmount = (amount: number) => {
 };
 
 
+const ITEMS_PER_PAGE = 10;
+
 export default function InvoiceTable() {
   const {token} = useAuth();
   const [transactions, setTransactions] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [invoiceData, setInvoiceData] = useState<Payment | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState<'1day' | '1week' | '1month' | '1year' | 'all'>('all');
-  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const [selectedPeriod] = useState<'1day' | '1week' | '1month' | '1year' | 'all'>('all');
   const {selectedDate} = useDate()
-  const itemsPerPage = 10;
+
+  // Snap back to the first page whenever the date/period filter changes, before the fetch below
+  // runs — otherwise a filter change while on page 3 would request page 3 of a different result set.
+  const filterKey = `${selectedDate?.toISOString() ?? ''}|${selectedPeriod}`;
+  const [activeFilterKey, setActiveFilterKey] = useState(filterKey);
+  if (activeFilterKey !== filterKey) {
+    setActiveFilterKey(filterKey);
+    setCurrentPage(1);
+  }
 
   useEffect(() => {
     if(!token) return;
-    async function fetchData(tokenKey: string, date?: string, period: '1day' | '1week' | '1month' | '1year' | 'all' = 'all') {
+
+    let cancelled = false;
+
+    async function fetchData(tokenKey: string, page: number, date?: string, period: '1day' | '1week' | '1month' | '1year' | 'all' = 'all') {
       try {
         setLoading(true);
-        const result = await getPaymentsData(tokenKey, 1, undefined, date, period);
-        console.log(result.payments.length);
-        setTransactions(result.payments);
-        setLoading(false);
+        // `limit` must be sent explicitly: the API caps a page at 20 records when it is omitted.
+        const result = await getPaymentsData(tokenKey, page, ITEMS_PER_PAGE, date, period);
+        if (cancelled) return;
+
+        setTransactions(result.payments || []);
+        setTotalRecords(result.pagination?.total ?? 0);
+        setTotalPages(result.pagination?.pages ?? 0);
       } catch (e) {
         console.error(e)
-        setLoading(false);
+        if (cancelled) return;
+
+        setTransactions([]);
+        setTotalRecords(0);
+        setTotalPages(0);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
-    fetchData(token, selectedDate?.toISOString(), selectedPeriod);
+    fetchData(token, currentPage, selectedDate?.toISOString(), selectedPeriod);
 
-  }, [token, selectedDate, selectedPeriod]);
-  
-  // const router = useRouter();
-  // const id = useSearchParams().get('transactionId');
+    return () => { cancelled = true; };
+  }, [token, selectedDate, selectedPeriod, currentPage]);
 
-  // Filter transactions based on search term
-  const filteredTransactions = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return transactions;
-    }
-
-    const searchLower = searchTerm.toLowerCase();
-    return transactions.filter((transaction: Payment) => {
-      return (
-        transaction.schoolName?.toLowerCase().includes(searchLower) ||
-        transaction.reference?.toLowerCase().includes(searchLower) ||
-        transaction.numberOfStudents?.toString().includes(searchLower) ||
-        transaction.amount?.toString().includes(searchLower) ||
-        formatDate(transaction.paidAt)?.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [transactions, searchTerm]); 
-
-  // Calculate pagination based on filtered results
-  const totalPages = Math.ceil((filteredTransactions || []).length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentTransactions = filteredTransactions?.slice(startIndex, endIndex);
+  // The server returns exactly the rows for this page, so there is nothing to slice.
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentTransactions = transactions;
 
   // Generate page numbers for pagination
   const getPageNumbers = () => {
@@ -119,7 +118,9 @@ export default function InvoiceTable() {
     setInvoiceData(null);
   }
 
-  if (loading) {
+  // Full skeleton on first load only; paging keeps the current rows visible until the next page
+  // arrives, instead of collapsing the whole widget on every click.
+  if (loading && transactions.length === 0) {
     return (
       <div className="bg-white rounded-lg p-6 shadow-sm border h-full overflow-y-auto border-gray-100">
         {/* Header Skeleton */}
@@ -203,7 +204,7 @@ export default function InvoiceTable() {
         <InvoiceDetails transaction={invoiceData} onClose={() => closeInvoiceDetails()} />
       )}
 
-      <div className="overflow-x-auto -mx-4 sm:mx-0">
+      <div className={`overflow-x-auto -mx-4 sm:mx-0 transition-opacity ${loading ? 'opacity-50' : ''}`}>
         <table className="w-full min-w-[640px]">
           <thead>
             <tr className="border-b border-gray-200">
@@ -236,18 +237,8 @@ export default function InvoiceTable() {
                     <FaMagnifyingGlass className="w-12 h-12 text-gray-300" />
                     <div>
                       <p className="text-gray-500 font-medium">No transactions found</p>
-                      <p className="text-gray-400 text-sm mt-1">
-                        {searchTerm ? `No results match "${searchTerm}"` : 'No transactions available'}
-                      </p>
+                      <p className="text-gray-400 text-sm mt-1">No transactions available</p>
                     </div>
-                    {searchTerm && (
-                      <button
-                        onClick={() => setSearchTerm('')}
-                        className="text-green-600 hover:text-green-700 text-sm font-medium"
-                      >
-                        Clear search
-                      </button>
-                    )}
                   </div>
                 </td>
               </tr>
@@ -260,12 +251,7 @@ export default function InvoiceTable() {
       {totalPages >= 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 px-0 sm:px-4">
           <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
-            Showing {startIndex + 1} to {Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} results
-            {searchTerm && (
-              <span className="text-green-600 ml-1 block sm:inline mt-1 sm:mt-0">
-                (filtered from {transactions.length} total)
-              </span>
-            )}
+            Showing {totalRecords === 0 ? 0 : startIndex + 1} to {startIndex + transactions.length} of {totalRecords} results
           </div>
 
           <div className="flex items-center space-x-1 sm:space-x-2">

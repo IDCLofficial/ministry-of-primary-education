@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { FaChevronLeft, FaChevronRight, FaCalendarAlt, FaDownload, FaFilter, FaTimes } from 'react-icons/fa';
 import { IoEyeOutline, IoClose } from 'react-icons/io5';
 import { useAuth } from '../../providers/AuthProvider';
@@ -58,38 +59,145 @@ interface PayoutsResponse {
     };
 }
 
-export default function PayoutsPage() {
+// An account the current admin is allowed to filter payouts by.
+// The backend already scopes the list to the caller's role, so the UI just renders what it gets.
+interface PayoutAccount {
+    id: string;
+    name: string;
+    type: string;
+    roles: string[];
+    description: string;
+}
+
+const DEFAULT_PER_PAGE = 20;
+
+function PayoutsPageContent() {
     const { token, user } = useAuth();
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     // State management
     const [payouts, setPayouts] = useState<Payout[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [perPage, setPerPage] = useState(20);
     const [totalRecords, setTotalRecords] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [showFilter, setShowFilter] = useState(false);
 
-    // Filter states
-    const [fromDate, setFromDate] = useState('');
-    const [toDate, setToDate] = useState('');
-    const [appliedFilters, setAppliedFilters] = useState({
-        from: '',
-        to: '',
-        perPage: 20
-    });
+    // Account filter options. If this fetch fails we hide the dropdown and fall back to the
+    // unfiltered view rather than blocking the page.
+    const [accounts, setAccounts] = useState<PayoutAccount[]>([]);
+    const [accountsStatus, setAccountsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+
+    // The URL query string is the source of truth for every filter, so the view is shareable
+    // and survives a refresh.
+    const appliedFilters = useMemo(() => ({
+        from: searchParams.get('from') || '',
+        to: searchParams.get('to') || '',
+        subaccount: searchParams.get('subaccount') || '',
+        perPage: Number(searchParams.get('perPage')) || DEFAULT_PER_PAGE,
+    }), [searchParams]);
+    const currentPage = Number(searchParams.get('page')) || 1;
+
+    // Draft values for the inputs that only take effect on "Apply".
+    const [fromDate, setFromDate] = useState(appliedFilters.from);
+    const [toDate, setToDate] = useState(appliedFilters.to);
+    const [perPage, setPerPage] = useState(appliedFilters.perPage);
+
+    // Keep the draft inputs aligned with the URL (back/forward navigation, shared links).
+    useEffect(() => {
+        setFromDate(appliedFilters.from);
+        setToDate(appliedFilters.to);
+        setPerPage(appliedFilters.perPage);
+    }, [appliedFilters]);
+
+    // Ignore any subaccount in the URL if we could not load the list of accounts the admin may
+    // filter by — without the dropdown there would be no way to clear it.
+    const activeSubaccount = accountsStatus === 'error' ? '' : appliedFilters.subaccount;
+    const activeAccount = accounts.find(account => account.id === activeSubaccount);
 
     // Modal states
     const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null);
     const [modalPayments, setModalPayments] = useState<Payment[]>([]);
     const [loadingPayments, setLoadingPayments] = useState(false);
 
+    // Write filter changes back to the URL
+    const updateQuery = useCallback((updates: Record<string, string | number | null>) => {
+        const params = new URLSearchParams(searchParams.toString());
+
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === null || value === '') {
+                params.delete(key);
+            } else {
+                params.set(key, String(value));
+            }
+        });
+
+        const queryString = params.toString();
+        router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+    }, [router, pathname, searchParams]);
+
+    // Fetch the accounts this admin is allowed to filter by
+    useEffect(() => {
+        if (!token) return;
+
+        let cancelled = false;
+
+        const fetchAccounts = async () => {
+            try {
+                const params = new URLSearchParams();
+                if (user?.adminType) {
+                    params.append('role', user.adminType);
+                }
+
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin/payouts/accounts?${params.toString()}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch payout accounts: ${response.statusText}`);
+                }
+
+                const body = await response.json();
+                if (cancelled) return;
+
+                setAccounts(Array.isArray(body.data) ? body.data : []);
+                setAccountsStatus('ready');
+            } catch (err) {
+                console.error('Error fetching payout accounts:', err);
+                if (cancelled) return;
+
+                setAccounts([]);
+                setAccountsStatus('error');
+            }
+        };
+
+        fetchAccounts();
+
+        return () => { cancelled = true; };
+    }, [token, user?.adminType]);
+
     // Fetch payouts function
     const fetchPayouts = useCallback(async () => {
         if (!token) {
             setError('Authentication required');
             setLoading(false);
+            return;
+        }
+
+        // Wait for the accounts list before the first payouts request, so a filtered link does not
+        // briefly render org-wide figures. Hold the skeleton in the meantime.
+        if (accountsStatus === 'loading') {
+            setError(null);
+            setLoading(true);
             return;
         }
 
@@ -112,6 +220,9 @@ export default function PayoutsPage() {
             if (appliedFilters.to) {
                 params.append('to', appliedFilters.to);
             }
+            if (activeSubaccount) {
+                params.append('subaccount', activeSubaccount);
+            }
 
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin/payouts?${params.toString()}`,
@@ -128,7 +239,19 @@ export default function PayoutsPage() {
                 if (response.status === 401) {
                     throw new Error('Unauthorized access. Please log in again.');
                 }
-                throw new Error(`Failed to fetch payouts: ${response.statusText}`);
+
+                // A hand-edited ?subaccount= yields 400 (unknown account) or 403 (not permitted for
+                // this role); prefer the API's own message over the status text.
+                let message = `Failed to fetch payouts: ${response.statusText}`;
+                try {
+                    const body = await response.json();
+                    if (body?.message) {
+                        message = body.message;
+                    }
+                } catch {
+                    // Non-JSON error body — keep the status text.
+                }
+                throw new Error(message);
             }
 
             const data: PayoutsResponse = await response.json();
@@ -136,7 +259,6 @@ export default function PayoutsPage() {
             setPayouts(data.data || []);
             setTotalRecords(data.meta?.total || 0);
             setTotalPages(data.meta?.totalPages || 0);
-            setCurrentPage(data.meta?.page || 1);
 
         } catch (err) {
             console.error('Error fetching payouts:', err);
@@ -146,7 +268,7 @@ export default function PayoutsPage() {
         } finally {
             setLoading(false);
         }
-    }, [token, currentPage, appliedFilters]);
+    }, [token, user?.adminType, currentPage, appliedFilters, activeSubaccount, accountsStatus]);
 
     // Fetch payouts on mount and when dependencies change
     useEffect(() => {
@@ -155,42 +277,48 @@ export default function PayoutsPage() {
 
     // Apply filters
     const handleApplyFilters = () => {
-        setAppliedFilters({
+        updateQuery({
             from: fromDate,
             to: toDate,
-            perPage: perPage
+            perPage: perPage === DEFAULT_PER_PAGE ? null : perPage,
+            page: null, // Reset to first page when filters change
         });
-        setCurrentPage(1); // Reset to first page when filters change
     };
 
     // Clear filters
     const handleClearFilters = () => {
-        setFromDate('');
-        setToDate('');
-        setPerPage(20);
-        setAppliedFilters({
-            from: '',
-            to: '',
-            perPage: 20
+        updateQuery({
+            from: null,
+            to: null,
+            perPage: null,
+            subaccount: null,
+            page: null,
         });
-        setCurrentPage(1);
+    };
+
+    // Account filter applies immediately, composing with any active date range
+    const handleAccountChange = (subaccount: string) => {
+        updateQuery({
+            subaccount: subaccount || null,
+            page: null, // Reset to first page when the account changes
+        });
     };
 
     // Pagination handlers
     const handlePreviousPage = () => {
         if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
+            updateQuery({ page: currentPage - 1 });
         }
     };
 
     const handleNextPage = () => {
         if (currentPage < totalPages) {
-            setCurrentPage(currentPage + 1);
+            updateQuery({ page: currentPage + 1 });
         }
     };
 
     const handlePageClick = (page: number) => {
-        setCurrentPage(page);
+        updateQuery({ page: page === 1 ? null : page });
     };
 
     // Get page numbers for pagination
@@ -382,14 +510,22 @@ export default function PayoutsPage() {
             doc.text(`Total Records: ${totalRecords}`, 14, 27);
 
             // Add filter info if applied
+            const filterLines: string[] = [];
             if (appliedFilters.from || appliedFilters.to) {
-                const filterText = appliedFilters.from && appliedFilters.to
+                filterLines.push(appliedFilters.from && appliedFilters.to
                     ? `Period: ${appliedFilters.from} to ${appliedFilters.to}`
                     : appliedFilters.from
                         ? `From: ${appliedFilters.from}`
-                        : `To: ${appliedFilters.to}`;
-                doc.text(filterText, 14, 32);
+                        : `To: ${appliedFilters.to}`);
             }
+            // Make the scope explicit so the figures are not read as org-wide totals.
+            filterLines.push(activeSubaccount
+                ? `Account: ${activeAccount?.name || activeSubaccount} (filtered)`
+                : 'Account: All accounts');
+
+            filterLines.forEach((line, index) => {
+                doc.text(line, 14, 32 + index * 5);
+            });
 
             // Prepare table data
             const tableData = payouts.map(payout => [
@@ -411,7 +547,7 @@ export default function PayoutsPage() {
             autoTable(doc, {
                 head: [['ID', 'Subaccount', 'Total Amount', 'Effective Amount', 'Total Processed', 'Status', 'Settlement Date', 'Bank']],
                 body: tableData,
-                startY: appliedFilters.from || appliedFilters.to ? 37 : 32,
+                startY: 32 + filterLines.length * 5,
                 theme: 'grid',
                 headStyles: {
                     fillColor: [22, 163, 74], // green-600
@@ -637,6 +773,32 @@ export default function PayoutsPage() {
                     </div> */}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Account — hidden entirely when the accounts list could not be loaded */}
+                        {accountsStatus === 'ready' && accounts.length > 0 && (
+                            <div>
+                                <label htmlFor="subaccount" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Account
+                                </label>
+                                <select
+                                    id="subaccount"
+                                    value={activeSubaccount}
+                                    onChange={(e) => handleAccountChange(e.target.value)}
+                                    title={activeAccount?.description || 'Payouts merged across every account you can view'}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                >
+                                    <option value="">All accounts</option>
+                                    {accounts.map(account => (
+                                        <option key={account.id} value={account.id} title={account.description}>
+                                            {account.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {activeAccount?.description || 'Payouts merged across every account you can view'}
+                                </p>
+                            </div>
+                        )}
+
                         {/* From Date */}
                         <div>
                             <label htmlFor="fromDate" className="block text-sm font-medium text-gray-700 mb-1">
@@ -715,8 +877,25 @@ export default function PayoutsPage() {
                             <div>
                                 <h2 className="text-lg font-semibold text-gray-900">Payout Records</h2>
                                 <p className="text-sm text-gray-600 mt-1">
-                                    {totalRecords} total record{totalRecords !== 1 ? 's' : ''}
+                                    {totalRecords} record{totalRecords !== 1 ? 's' : ''}
+                                    {activeSubaccount ? ' for this account' : ' across all accounts'}
                                 </p>
+                                {/* Make a filtered view unmistakable, so the figures below are not
+                                    read as org-wide totals. */}
+                                {activeSubaccount && (
+                                    <span className="inline-flex items-center gap-2 mt-2 pl-3 pr-2 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-medium">
+                                        <FaFilter className="text-[10px]" />
+                                        Filtered to {activeAccount?.name || activeSubaccount}
+                                        <button
+                                            onClick={() => handleAccountChange('')}
+                                            className="p-1 rounded-full hover:bg-amber-200 transition-colors cursor-pointer"
+                                            aria-label="Clear account filter"
+                                            title="Show all accounts"
+                                        >
+                                            <IoClose className="w-3 h-3" />
+                                        </button>
+                                    </span>
+                                )}
                             </div>
                             <div className="flex gap-2">
                                 <button
@@ -779,7 +958,7 @@ export default function PayoutsPage() {
                             </div>
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Payouts Found</h3>
                             <p className="text-gray-600">
-                                {appliedFilters.from || appliedFilters.to
+                                {appliedFilters.from || appliedFilters.to || activeSubaccount
                                     ? 'Try adjusting your filters to see more results.'
                                     : 'There are no payout records to display.'}
                             </p>
@@ -1092,5 +1271,26 @@ export default function PayoutsPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function PayoutsPage() {
+    // useSearchParams() needs a Suspense boundary above it.
+    return (
+        <Suspense
+            fallback={
+                <div className="h-full w-full overflow-y-auto px-4 sm:px-6 lg:px-8">
+                    <div className="w-full mt-6 sm:mt-8 lg:mt-10 pb-6">
+                        <div className="animate-pulse space-y-4">
+                            {[...Array(5)].map((_, index) => (
+                                <div key={index} className="h-12 bg-gray-200 rounded"></div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            }
+        >
+            <PayoutsPageContent />
+        </Suspense>
     );
 }

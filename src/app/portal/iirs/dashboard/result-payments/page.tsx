@@ -10,7 +10,7 @@ import {
   ResultPaymentStatsResponse,
 } from "@/lib/iirs/dataInteraction";
 import { generateResultPaymentsReportPDF } from "@/lib/iirs/pdfGenerator";
-import { FaChevronLeft, FaChevronRight, FaDownload, FaFilter, FaPrint, FaTimes } from "react-icons/fa";
+import { FaChevronDown, FaChevronLeft, FaChevronRight, FaDownload, FaFilter, FaPrint, FaTimes } from "react-icons/fa";
 
 const DEFAULT_LIMIT = 20;
 
@@ -20,6 +20,15 @@ const formatCurrency = (amount: number) => {
     maximumFractionDigits: 2,
   })}`;
 };
+
+const SEARCH_MODE_LABELS: Record<string, string> = {
+  default: "Single Search (Standard)",
+  multiForm: "Exam Number Lookup (Multi-Form)",
+  batch: "School Batch Upload",
+};
+
+// Unknown modes still read sensibly rather than showing a raw key.
+const formatSearchMode = (mode: string) => SEARCH_MODE_LABELS[mode] ?? toTitleCase(mode);
 
 const toTitleCase = (value: string) => {
   return value
@@ -92,10 +101,14 @@ export default function ResultPaymentsPage() {
     total: 0,
     totalAmount: 0,
     amountByExamType: {},
+    breakdownBySearchMode: {},
     page: 1,
     limit: DEFAULT_LIMIT,
     totalPages: 0,
   });
+
+  // Which exam-type card has its search-mode breakdown expanded.
+  const [expandedExamType, setExpandedExamType] = useState<string | null>(null);
 
   const tableColumns = useMemo(() => {
     if (!stats.data.length) {
@@ -409,6 +422,7 @@ export default function ResultPaymentsPage() {
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm mb-6 overflow-hidden">
           <div className="px-4 sm:px-5 py-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-semibold text-gray-800">Amount by Exam Type</h2>
+            <p className="text-sm text-gray-500 mt-1">Expand a card to see how each exam type splits across search modes.</p>
           </div>
 
           <div className="p-4 sm:p-5">
@@ -416,13 +430,77 @@ export default function ResultPaymentsPage() {
               <p className="text-sm text-gray-500">No exam-type breakdown found for current filters.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {Object.entries(stats.amountByExamType).map(([examType, breakdown]) => (
-                  <div key={examType} className="rounded-lg border border-gray-200 p-3">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">{examType}</p>
-                    <p className="text-lg font-semibold text-gray-900 mt-1">{formatCurrency(breakdown.totalAmount)}</p>
-                    <p className="text-sm text-gray-500 mt-1">{breakdown.count.toLocaleString()} payments</p>
-                  </div>
-                ))}
+                {Object.entries(stats.amountByExamType).map(([examType, breakdown]) => {
+                  const searchModes = Object.entries(stats.breakdownBySearchMode?.[examType] ?? {});
+                  const isExpanded = expandedExamType === examType;
+
+                  // Same figures as the expanded panel, for a hover summary without a click.
+                  const tooltip = searchModes
+                    .map(([mode, modeStats]) =>
+                      `${formatSearchMode(mode)}: ${formatCurrency(modeStats.totalAmount)} (${modeStats.count.toLocaleString()} payments)`,
+                    )
+                    .join("\n");
+
+                  return (
+                    <div key={examType} className="rounded-lg border border-gray-200 p-3">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">{examType}</p>
+                      <p className="text-lg font-semibold text-gray-900 mt-1">{formatCurrency(breakdown.totalAmount)}</p>
+                      <p className="text-sm text-gray-500 mt-1">{breakdown.count.toLocaleString()} payments</p>
+
+                      {searchModes.length > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedExamType(isExpanded ? null : examType)}
+                            aria-expanded={isExpanded}
+                            title={tooltip}
+                            className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-green-700 hover:text-green-800"
+                          >
+                            <FaChevronDown
+                              size={10}
+                              className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            />
+                            <span>{isExpanded ? "Hide" : "Show"} search modes ({searchModes.length})</span>
+                          </button>
+
+                          {isExpanded && (
+                            <ul className="mt-3 space-y-2.5 border-t border-gray-100 pt-3">
+                              {searchModes.map(([mode, modeStats]) => {
+                                const share =
+                                  breakdown.totalAmount > 0
+                                    ? (modeStats.totalAmount / breakdown.totalAmount) * 100
+                                    : 0;
+
+                                return (
+                                  <li key={mode}>
+                                    <div className="flex items-baseline justify-between gap-2">
+                                      <span className="text-xs font-medium text-gray-700">{formatSearchMode(mode)}</span>
+                                      <span className="text-xs font-semibold text-gray-900 whitespace-nowrap">
+                                        {formatCurrency(modeStats.totalAmount)}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 mt-1.5">
+                                      <div className="h-1.5 flex-1 rounded-full bg-gray-100 overflow-hidden">
+                                        <div
+                                          className="h-full rounded-full bg-green-500"
+                                          style={{ width: `${share}%` }}
+                                        />
+                                      </div>
+                                      <span className="text-[11px] text-gray-500 whitespace-nowrap">
+                                        {modeStats.count.toLocaleString()} payments
+                                      </span>
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

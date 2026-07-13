@@ -117,6 +117,8 @@ export interface ResultPaymentStatsResponse {
     total: number;
     totalAmount: number;
     amountByExamType: Record<string, ResultPaymentExamTypeStats>;
+    /** Exam type -> search mode (`default` | `multiForm` | `batch`) -> totals. */
+    breakdownBySearchMode: Record<string, Record<string, ResultPaymentExamTypeStats>>;
     page: number;
     limit: number;
     totalPages: number;
@@ -142,6 +144,49 @@ export async function getPaymentsData(
         }
     });
     return response.json();
+}
+
+const ALL_PAYMENTS_PAGE_SIZE = 500;
+
+/**
+ * Every payment for the given filters, not just the first page.
+ *
+ * `/payments` caps a page at a server-side default (20) when no `limit` is sent, so callers that
+ * aggregate across the whole set — charts, totals — must page through to the end rather than
+ * trusting a single response.
+ */
+export async function getAllPaymentsData(
+    token: string,
+    date?: string,
+    period: '1day' | '1week' | '1month' | '1year' | 'all' = 'all'
+): Promise<PaymentsData> {
+    const firstPage = await getPaymentsData(token, 1, ALL_PAYMENTS_PAGE_SIZE, date, period);
+
+    const totalPages = firstPage.pagination?.pages ?? 1;
+    if (totalPages <= 1) {
+        return firstPage;
+    }
+
+    const remainingPages = await Promise.all(
+        Array.from({ length: totalPages - 1 }, (_, index) =>
+            getPaymentsData(token, index + 2, ALL_PAYMENTS_PAGE_SIZE, date, period)
+        )
+    );
+
+    const payments = [
+        ...(firstPage.payments || []),
+        ...remainingPages.flatMap(page => page.payments || []),
+    ];
+
+    return {
+        payments,
+        pagination: {
+            page: 1,
+            limit: payments.length,
+            total: firstPage.pagination?.total ?? payments.length,
+            pages: 1,
+        },
+    };
 }
 
 export async function getResultPaymentStats(
