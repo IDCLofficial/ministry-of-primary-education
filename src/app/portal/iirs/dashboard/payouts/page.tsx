@@ -51,11 +51,27 @@ interface Payout {
 
 interface PayoutsResponse {
     data: Payout[];
-    meta: {
-        page: number;
-        perPage: number;
-        total: number;
-        totalPages: number;
+    meta?: {
+        page?: number;
+        currentPage?: number;
+        perPage?: number;
+        limit?: number;
+        total?: number;
+        totalItems?: number;
+        totalPages?: number;
+        pages?: number;
+        lastPage?: number;
+    };
+    pagination?: {
+        page?: number;
+        currentPage?: number;
+        perPage?: number;
+        limit?: number;
+        total?: number;
+        totalItems?: number;
+        totalPages?: number;
+        pages?: number;
+        lastPage?: number;
     };
 }
 
@@ -255,10 +271,32 @@ function PayoutsPageContent() {
             }
 
             const data: PayoutsResponse = await response.json();
+            const meta = data.meta;
+            const pagination = data.pagination;
+            const responsePerPage = Number(
+                meta?.perPage ?? meta?.limit ?? pagination?.perPage ?? pagination?.limit ?? appliedFilters.perPage
+            ) || appliedFilters.perPage;
+            const resolvedTotalRecords = Number(
+                meta?.total ?? meta?.totalItems ?? pagination?.total ?? pagination?.totalItems ?? 0
+            ) || 0;
+            const resolvedTotalPages = Number(
+                meta?.totalPages
+                ?? meta?.pages
+                ?? meta?.lastPage
+                ?? pagination?.totalPages
+                ?? pagination?.pages
+                ?? pagination?.lastPage
+                ?? (resolvedTotalRecords > 0 ? Math.ceil(resolvedTotalRecords / responsePerPage) : 0)
+            ) || 0;
 
             setPayouts(data.data || []);
-            setTotalRecords(data.meta?.total || 0);
-            setTotalPages(data.meta?.totalPages || 0);
+            setTotalRecords(resolvedTotalRecords);
+            setTotalPages(resolvedTotalPages);
+
+            // If filters reduce result pages (e.g., from page 5 to page 1), snap to a valid page.
+            if (resolvedTotalPages > 0 && currentPage > resolvedTotalPages) {
+                updateQuery({ page: resolvedTotalPages === 1 ? null : resolvedTotalPages });
+            }
 
         } catch (err) {
             console.error('Error fetching payouts:', err);
@@ -268,7 +306,7 @@ function PayoutsPageContent() {
         } finally {
             setLoading(false);
         }
-    }, [token, user?.adminType, currentPage, appliedFilters, activeSubaccount, accountsStatus]);
+    }, [token, user?.adminType, currentPage, appliedFilters, activeSubaccount, accountsStatus, updateQuery]);
 
     // Fetch payouts on mount and when dependencies change
     useEffect(() => {
@@ -312,7 +350,8 @@ function PayoutsPageContent() {
     };
 
     const handleNextPage = () => {
-        if (currentPage < totalPages) {
+        const canAdvanceWhenUnknownTotal = totalPages === 0 && payouts.length >= appliedFilters.perPage;
+        if (currentPage < totalPages || canAdvanceWhenUnknownTotal) {
             updateQuery({ page: currentPage + 1 });
         }
     };
@@ -1085,7 +1124,7 @@ function PayoutsPageContent() {
                                         {/* Next Button */}
                                         <button
                                             onClick={handleNextPage}
-                                            disabled={currentPage === totalPages}
+                                            disabled={totalPages > 0 ? currentPage >= totalPages : payouts.length < appliedFilters.perPage}
                                             className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                             aria-label="Next page"
                                         >
