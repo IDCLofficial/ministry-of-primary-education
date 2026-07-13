@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/app/portal/iirs/providers/AuthProvider';
-import { getPaymentsData } from '@/lib/iirs/dataInteraction';
+import { getAllPaymentsData } from '@/lib/iirs/dataInteraction';
 import { useEffect, useState, useMemo } from 'react';
 import { FiChevronDown } from 'react-icons/fi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
@@ -128,8 +128,10 @@ export default function MonthlyChart() {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await getPaymentsData(tokenKey);
-        
+        // The chart buckets payments by month client-side, so it needs the full set — a single
+        // page would silently aggregate only the first 20 records.
+        const response = await getAllPaymentsData(tokenKey);
+
         if (!response) {
           throw new Error('Failed to fetch data');
         }
