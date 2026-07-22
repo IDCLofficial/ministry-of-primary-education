@@ -16,9 +16,14 @@ import { SessionStore, useSecureSessionStorage } from '@/app/result-checking/uti
 import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const EXAM_NO_REGEX = /^([a-zA-Z]{2}\/)?\d{1,5}\/\d{1,5}(\(\d\))?$/
-const EXAM_NO_REGEX_02 = /^[a-zA-Z]{2}\/\d{1,5}\/\d{1,5}\/\d{1,5}$/
-const EXAM_NO_REGEX_03 = /^[a-zA-Z]{2}\/[a-zA-Z]{2}\/\d{1,5}\/\d{1,5}$/
+// 1. Modded middle/end to accommodate optional 1-2 letters before numbers
+const EXAM_NO_REGEX = /^([a-zA-Z]{0,2}\/)?([a-zA-Z]{0,2}\d{1,5}\/)?([a-zA-Z]{0,2}\d{1,5})(\(\d\))?$/
+
+// 2. Modded middle sections to accept 0, 1, or 2 letters before the numbers
+const EXAM_NO_REGEX_02 = /^[a-zA-Z]{0,2}\/([a-zA-Z]{0,2}\d{1,5}\/){2}[a-zA-Z]{0,2}\d{1,5}$/
+
+// 3. Modded second section to accept 0, 1, or 2 letters
+const EXAM_NO_REGEX_03 = /^[a-zA-Z]{0,2}\/[a-zA-Z]{0,2}\/\d{1,5}\/\d{1,5}$/
 
 const MAX_RECENT_ACCOUNTS = 5
 
