@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/genai": "^2.13.0",
     "@reduxjs/toolkit": "^2.9.2",
     "@useverse/useshortcuts": "^4.0.0",
     "chart.js": "^4.5.0",
