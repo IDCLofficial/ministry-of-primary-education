@@ -231,7 +231,7 @@ export default function UBEATLogin() {
     const lgaOptions = useMemo(() => IMO_STATE_LGAS.map(lga => ({ value: lga, label: lga })), [])
 
     const debouncedExamNo = useDebounce(examNo, 500)
-    const canProceed = debouncedExamNo.length >= 6 && isValidExamNo(debouncedExamNo) && year.trim().length === 4
+    const canProceed = isValidExamNo(debouncedExamNo) && year.trim().length === 4
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
     const isMaintenanceMode = !API_BASE_URL
