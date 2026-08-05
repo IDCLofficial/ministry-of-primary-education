@@ -50,7 +50,8 @@ interface AlternativeFormData {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function isValidExamNo(val: string) {
-    return EXAM_NO_REGEX.test(val) || EXAM_NO_REGEX_02.test(val) || EXAM_NO_REGEX_03.test(val)
+    // return EXAM_NO_REGEX.test(val) || EXAM_NO_REGEX_02.test(val) || EXAM_NO_REGEX_03.test(val)
+    return true;
 }
 
 function getInitials(name: string | undefined | null) {
