@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { FaChevronLeft, FaChevronRight, FaCalendarAlt, FaDownload, FaFilter, FaTimes } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaChevronDown, FaChevronUp, FaCalendarAlt, FaDownload, FaFilter, FaTimes } from 'react-icons/fa';
 import { IoEyeOutline, IoClose } from 'react-icons/io5';
 import { useAuth } from '../../providers/AuthProvider';
 import toast from 'react-hot-toast';
 import { getPaymentsData, Payment } from '@/lib/iirs/dataInteraction';
-import { Filter } from 'lucide-react';
+
 import { FiFilter } from 'react-icons/fi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -85,6 +85,22 @@ interface PayoutAccount {
     description: string;
 }
 
+interface PayoutAccountTotal {
+    id: string;
+    name: string;
+    total: number;
+    subtotals?: {
+        id: string;
+        name: string;
+        total: number;
+    }[];
+}
+
+interface PayoutTotalsData {
+    grandTotal: number;
+    accounts: PayoutAccountTotal[];
+}
+
 const DEFAULT_PER_PAGE = 20;
 
 function PayoutsPageContent() {
@@ -100,6 +116,7 @@ function PayoutsPageContent() {
     const [totalRecords, setTotalRecords] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [showFilter, setShowFilter] = useState(false);
+    const [exporting, setExporting] = useState<'csv' | 'pdf' | null>(null);
 
     // Account filter options. If this fetch fails we hide the dropdown and fall back to the
     // unfiltered view rather than blocking the page.
@@ -132,6 +149,11 @@ function PayoutsPageContent() {
     // filter by — without the dropdown there would be no way to clear it.
     const activeSubaccount = accountsStatus === 'error' ? '' : appliedFilters.subaccount;
     const activeAccount = accounts.find(account => account.id === activeSubaccount);
+
+    // Payout totals
+    const [totals, setTotals] = useState<PayoutTotalsData | null>(null);
+    const [totalsLoading, setTotalsLoading] = useState(true);
+    const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
 
     // Modal states
     const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null);
@@ -200,6 +222,67 @@ function PayoutsPageContent() {
 
         return () => { cancelled = true; };
     }, [token, user?.adminType]);
+
+    // Fetch payout totals (idcl_admin only)
+    useEffect(() => {
+        if (!token || user?.adminType !== 'idcl_admin') {
+            setTotals(null);
+            setTotalsLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+
+        const fetchTotals = async () => {
+            try {
+                setTotalsLoading(true);
+                const params = new URLSearchParams();
+                if (appliedFilters.from) params.append('from', appliedFilters.from);
+                if (appliedFilters.to) params.append('to', appliedFilters.to);
+
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin/payouts/totals?${params.toString()}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                );
+
+                if (response.status === 403) {
+                    if (!cancelled) setTotals(null);
+                    return;
+                }
+                if (!response.ok) throw new Error('Failed to fetch payout totals');
+
+                const body = await response.json();
+                if (cancelled) return;
+
+                setTotals(body.data);
+            } catch (err) {
+                console.error('Error fetching payout totals:', err);
+                if (cancelled) return;
+                setTotals(null);
+            } finally {
+                if (!cancelled) setTotalsLoading(false);
+            }
+        };
+
+        fetchTotals();
+
+        return () => { cancelled = true; };
+    }, [token, user?.adminType, appliedFilters.from, appliedFilters.to]);
+
+    const toggleAccountExpand = (id: string) => {
+        setExpandedAccounts(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
 
     // Fetch payouts function
     const fetchPayouts = useCallback(async () => {
@@ -401,6 +484,10 @@ function PayoutsPageContent() {
         return `${symbol}${(amount / 100).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
+    const formatNaira = (amount: number) => {
+        return `₦${amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
     // Format date
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -477,158 +564,50 @@ function PayoutsPageContent() {
         setModalPayments([]);
     };
 
-    // Export to CSV (optional feature)
-    const handleExportCSV = () => {
-        if (payouts.length === 0) {
-            toast.error('No data to export');
-            return;
-        }
-
-        const headers = ['ID', 'Subaccount Code', 'Business Name', 'Total Amount', 'Effective Amount', 'Total Processed', 'Status', 'Settlement Date', 'Settlement Bank', 'Account Number'];
-        const rows = payouts.map(payout => [
-            payout.id.toString(),
-            payout.subaccount?.subaccount_code || 'N/A',
-            payout.subaccount?.business_name || 'IDCL Revenue Account',
-            (payout.total_amount / 100).toString(),
-            (payout.effective_amount / 100).toString(),
-            (payout.total_processed / 100).toString(),
-            payout.status,
-            payout.settlement_date,
-            payout.subaccount?.settlement_bank || 'Fidelity Bank',
-            payout.subaccount?.account_number || 'N/A'
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `payouts_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        toast.success('CSV exported successfully');
-    };
-
-    // Export to PDF - Main Payouts Table
-    const handleExportPDF = () => {
-        if (payouts.length === 0) {
-            toast.error('No data to export');
-            return;
-        }
+    const handleExport = async (format: 'csv' | 'pdf') => {
+        if (!token) return;
+        setExporting(format);
 
         try {
-            const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+            const params = new URLSearchParams();
+            if (user?.adminType) params.append('role', user.adminType);
+            if (appliedFilters.from) params.append('from', appliedFilters.from);
+            if (appliedFilters.to) params.append('to', appliedFilters.to);
+            if (activeSubaccount) params.append('subaccount', activeSubaccount);
 
-            // Set font for better number presentation
-            doc.setFont('serif', 'normal');
-
-            // Add title
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(40);
-            doc.text('Payouts History Report', 14, 15);
-
-            // Add metadata
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(100);
-            const dateStr = new Date().toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            doc.text(`Generated on: ${dateStr}`, 14, 22);
-            doc.text(`Total Records: ${totalRecords}`, 14, 27);
-
-            // Add filter info if applied
-            const filterLines: string[] = [];
-            if (appliedFilters.from || appliedFilters.to) {
-                filterLines.push(appliedFilters.from && appliedFilters.to
-                    ? `Period: ${appliedFilters.from} to ${appliedFilters.to}`
-                    : appliedFilters.from
-                        ? `From: ${appliedFilters.from}`
-                        : `To: ${appliedFilters.to}`);
-            }
-            // Make the scope explicit so the figures are not read as org-wide totals.
-            filterLines.push(activeSubaccount
-                ? `Account: ${activeAccount?.name || activeSubaccount} (filtered)`
-                : 'Account: All accounts');
-
-            filterLines.forEach((line, index) => {
-                doc.text(line, 14, 32 + index * 5);
-            });
-
-            // Prepare table data
-            const tableData = payouts.map(payout => [
-                `#${payout.id}`,
-                payout.subaccount?.business_name || 'IDCL Revenue Account',
-                formatCurrency(payout.total_amount, payout.currency),
-                formatCurrency(payout.effective_amount, payout.currency),
-                formatCurrency(payout.total_processed, payout.currency),
-                payout.status,
-                new Date(payout.settlement_date).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                }),
-                payout.subaccount?.settlement_bank || 'Fidelity Bank'
-            ]);
-
-            // Add table
-            autoTable(doc, {
-                head: [['ID', 'Subaccount', 'Total Amount', 'Effective Amount', 'Total Processed', 'Status', 'Settlement Date', 'Bank']],
-                body: tableData,
-                startY: 32 + filterLines.length * 5,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [22, 163, 74], // green-600
-                    textColor: 255,
-                    fontStyle: 'bold',
-                    fontSize: 8,
-                    font: 'helvetica'
-                },
-                styles: {
-                    fontSize: 7,
-                    cellPadding: 2,
-                    font: 'helvetica',
-                    fontStyle: 'normal'
-                },
-                bodyStyles: {
-                    font: 'sans-serif',
-                    fontStyle: 'normal'
-                },
-                columnStyles: {
-                    0: { cellWidth: 12, font: 'helvetica' },
-                    1: { cellWidth: 42, font: 'helvetica' },
-                    2: { cellWidth: 36, halign: 'right', font: 'courier' },  // Monospace
-                    3: { cellWidth: 36, halign: 'right', font: 'courier' },  // Monospace
-                    4: { cellWidth: 36, halign: 'right', font: 'courier' },  // Monospace
-                    5: { cellWidth: 18, halign: 'center', font: 'helvetica' },
-                    6: { cellWidth: 32, font: 'courier' },  // If this is numeric
-                    7: { cellWidth: 36, font: 'courier' }   // If this is numeric
-                },
-                alternateRowStyles: {
-                    fillColor: [249, 250, 251]
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/iirs-admin/payouts/export/${format}?${params.toString()}`,
+                {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` },
                 }
-            });
+            );
 
-            // Save the PDF
-            const filename = `payouts_report_${new Date().toISOString().split('T')[0]}.pdf`;
-            doc.save(filename);
-            toast.success('PDF downloaded successfully');
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            toast.error('Failed to generate PDF');
+            if (!response.ok) {
+                const body = await response.json().catch(() => null);
+                throw new Error(body?.message || `Export failed: ${response.statusText}`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `payouts_${new Date().toISOString().split('T')[0]}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            toast.success(`${format.toUpperCase()} exported successfully`);
+        } catch (err) {
+            console.error(`Error exporting ${format}:`, err);
+            toast.error(err instanceof Error ? err.message : `Failed to export ${format.toUpperCase()}`);
+        } finally {
+            setExporting(null);
         }
     };
+
+    const handleExportCSV = () => handleExport('csv');
+    const handleExportPDF = () => handleExport('pdf');
 
     // Export Payout Details to PDF (for modal)
     const handleExportPayoutDetailsPDF = () => {
@@ -908,6 +887,67 @@ function PayoutsPageContent() {
                         </div>
                     </div>
                 </div>}
+                {/* Payout Totals Cards — idcl_admin only */}
+                {user?.adminType === 'idcl_admin' && <div className="mb-6">
+                    {totalsLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 animate-pulse">
+                                    <div className="h-4 bg-gray-200 rounded w-24 mb-3"></div>
+                                    <div className="h-6 bg-gray-200 rounded w-32"></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : totals ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* Grand Total */}
+                            <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-lg p-4 shadow-sm text-white sm:col-span-2 lg:col-span-1">
+                                <p className="text-sm font-medium text-green-100">Total Payouts</p>
+                                <p className="text-xl sm:text-2xl font-bold mt-1">{formatNaira(totals.grandTotal)}</p>
+                                {(appliedFilters.from || appliedFilters.to) && (
+                                    <p className="text-xs text-green-200 mt-2">
+                                        {appliedFilters.from && appliedFilters.to
+                                            ? `${appliedFilters.from} – ${appliedFilters.to}`
+                                            : appliedFilters.from
+                                                ? `From ${appliedFilters.from}`
+                                                : `Up to ${appliedFilters.to}`}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Per-account cards */}
+                            {totals.accounts.map((account) => (
+                                <div key={account.id} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                    <p className="text-sm font-medium text-gray-500 truncate" title={account.name}>{account.name}</p>
+                                    <p className="text-xl font-bold text-gray-900 mt-1">{formatNaira(account.total)}</p>
+
+                                    {account.subtotals && account.subtotals.length > 0 && (
+                                        <div className="mt-3">
+                                            <button
+                                                onClick={() => toggleAccountExpand(account.id)}
+                                                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                            >
+                                                {expandedAccounts.has(account.id) ? <FaChevronUp className="text-[10px]" /> : <FaChevronDown className="text-[10px]" />}
+                                                {account.subtotals.length} sub-account{account.subtotals.length !== 1 ? 's' : ''}
+                                            </button>
+                                            {expandedAccounts.has(account.id) && (
+                                                <div className="mt-2 space-y-1.5 border-t border-gray-100 pt-2">
+                                                    {account.subtotals.map((sub) => (
+                                                        <div key={sub.id} className="flex items-center justify-between text-xs">
+                                                            <span className="text-gray-500 truncate mr-2" title={sub.name}>{sub.name}</span>
+                                                            <span className="font-medium text-gray-700 whitespace-nowrap">{formatNaira(sub.total)}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : null}
+                </div>}
+
                 {/* Main Content */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-100">
                     {/* Table Header with Export */}
@@ -939,19 +979,19 @@ function PayoutsPageContent() {
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleExportPDF}
-                                    disabled={payouts.length === 0}
+                                    disabled={payouts.length === 0 || exporting !== null}
                                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <FaDownload className="text-sm" />
-                                    Export PDF
+                                    {exporting === 'pdf' ? 'Exporting…' : 'Export PDF'}
                                 </button>
                                 <button
                                     onClick={handleExportCSV}
-                                    disabled={payouts.length === 0}
+                                    disabled={payouts.length === 0 || exporting !== null}
                                     className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <FaDownload className="text-sm" />
-                                    Export CSV
+                                    {exporting === 'csv' ? 'Exporting…' : 'Export CSV'}
                                 </button>
                             </div>
                         </div>
