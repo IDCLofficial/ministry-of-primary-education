@@ -230,6 +230,7 @@ export default function SupportChatContent({ prefillExamType }: { prefillExamTyp
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const recognitionRef = useRef<any>(null);
     const transcriptRef = useRef("");
+    const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -252,6 +253,7 @@ export default function SupportChatContent({ prefillExamType }: { prefillExamTyp
         // transcript was captured even though this is a hard cancel (mute
         // toggle, chat reset), not the user finishing their sentence.
         transcriptRef.current = "";
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         recognitionRef.current?.stop();
         audioRef.current?.pause();
         setListening(false);
@@ -320,6 +322,14 @@ export default function SupportChatContent({ prefillExamType }: { prefillExamTyp
                 else interimText += result[0].transcript;
             }
             setInput((transcriptRef.current + interimText).trim());
+
+            // Chrome's own end-of-speech detection in continuous mode can sit
+            // idle for several seconds before firing onend, which reads as
+            // "broken." Instead, restart a short pause-timer on every result
+            // and force a stop once speech has actually paused — this is what
+            // makes it feel responsive.
+            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = setTimeout(() => recognitionRef.current?.stop(), 900);
         };
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         recognition.onerror = (event: any) => {
@@ -329,6 +339,7 @@ export default function SupportChatContent({ prefillExamType }: { prefillExamTyp
         };
         recognition.onend = () => {
             setListening(false);
+            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
             const finalTranscript = transcriptRef.current.trim();
             if (finalTranscript) handleSend(finalTranscript);
         };
@@ -502,6 +513,14 @@ export default function SupportChatContent({ prefillExamType }: { prefillExamTyp
                                 onSubmit={(e) => { e.preventDefault(); handleSend(); }}
                                 className="flex items-center gap-2"
                             >
+                                <button
+                                    type="button"
+                                    onClick={() => setVoiceEnabled((v) => { if (v) stopVoice(); return !v; })}
+                                    aria-label={voiceEnabled ? "Mute voice replies" : "Enable voice replies"}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+                                >
+                                    {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                                </button>
                                 {speechSupported && (
                                     <button
                                         type="button"
@@ -522,14 +541,6 @@ export default function SupportChatContent({ prefillExamType }: { prefillExamTyp
                                     maxLength={2000}
                                     className="flex-1 h-10 rounded-full border border-slate-200 px-4 text-[13.5px] outline-none focus:border-[#1a8a3c] focus:ring-2 focus:ring-green-100 disabled:opacity-60"
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => setVoiceEnabled((v) => { if (v) stopVoice(); return !v; })}
-                                    aria-label={voiceEnabled ? "Mute voice replies" : "Enable voice replies"}
-                                    className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
-                                >
-                                    {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-                                </button>
                                 <button
                                     type="submit"
                                     disabled={sending || listening || !input.trim()}

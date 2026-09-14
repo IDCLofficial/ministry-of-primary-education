@@ -48,7 +48,8 @@ interface AlternativeFormData {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function isValidExamNo(val: string) {
-    return EXAM_NO_REGEX.test(val) || EXAM_NO_REGEX_02.test(val) || EXAM_NO_REGEX_03.test(val)
+    // return EXAM_NO_REGEX.test(val) || EXAM_NO_REGEX_02.test(val) || EXAM_NO_REGEX_03.test(val)
+    return true;
 }
 
 function getInitials(name: string | undefined | null) {
@@ -226,7 +227,7 @@ export default function StudentLoginPage() {
     const lgaOptions = useMemo(() => IMO_STATE_LGAS.map(lga => ({ value: lga, label: lga })), [])
 
     const debouncedExamNo = useDebounce(examNo, 500)
-    const canProceed = debouncedExamNo.length >= 6 && isValidExamNo(debouncedExamNo) && year.trim().length === 4
+    const canProceed = isValidExamNo(debouncedExamNo) && year.trim().length === 4
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
     const isMaintenanceMode = !API_BASE_URL
