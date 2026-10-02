@@ -24,7 +24,7 @@ export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
-  if (pathname.startsWith('/portal') || pathname.startsWith('/exam-portal') || pathname.startsWith('/admin') || pathname.startsWith('/result-checking')) {
+  if (pathname.startsWith('/portal') || pathname.startsWith('/exam-portal') || pathname.startsWith('/admin') || pathname.startsWith('/result-checking') || pathname.startsWith('/verify-teacher')) {
     return null;
   }
 

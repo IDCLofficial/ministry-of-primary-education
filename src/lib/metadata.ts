@@ -133,6 +133,16 @@ export const publicMetadata = {
         robots: { index: true, follow: true },
     } satisfies Metadata,
 
+    teacherVerification: {
+        title:       'Teacher Verification',
+        description: 'Verify a teacher’s identity and registration status with the Imo State Ministry of Primary & Secondary Education.',
+        openGraph: {
+            title: 'Teacher Verification',
+            url:   `${SITE_URL}/verify-teacher`,
+        },
+        robots: { index: false, follow: false },
+    } satisfies Metadata,
+
 } as const
 
 
