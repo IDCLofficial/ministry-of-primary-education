@@ -231,6 +231,41 @@ export const studentPortalMetadata = {
         robots: { index: false, follow: false },
     } satisfies Metadata,
 
+    // ── JS(B/T)CE ────────────────────────────────────────────────────────────
+
+    jscbeLogin: {
+        title:       'JS(B/T)CE Login',
+        description: 'Enter your JS(B/T)CE exam number to view your Junior School (Business/Technical) Certificate Examination results.',
+        openGraph: {
+            title:       'JS(B/T)CE Results Login | Imo State Student Portal',
+            description: 'View your Junior School (Business/Technical) Certificate Examination results.',
+            url:         `${STUDENT_PORTAL_BASE}/jscbe`,
+            images: [{
+                url:    `${SITE_URL}/images/og/jscbe.png`,
+                width:  2940,
+                height: 1840,
+                alt:    'Imo State Student Portal',
+            }],
+        },
+        robots: { index: false, follow: false }, // login pages should not be indexed
+    } satisfies Metadata,
+
+    jscbeDashboard: {
+        title:       'My JS(B/T)CE Results',
+        description: 'Your Junior School (Business/Technical) Certificate Examination results — Imo State Student Portal.',
+        openGraph: {
+            title: 'My JS(B/T)CE Results',
+            url:   `${STUDENT_PORTAL_BASE}/jscbe/dashboard`,
+            images: [{
+                url:    `${SITE_URL}/images/og/jscbe.png`,
+                width:  2940,
+                height: 1840,
+                alt:    'Imo State Student Portal',
+            }],
+        },
+        robots: { index: false, follow: false },
+    } satisfies Metadata,
+
     // ── Bulk Downloads (Agent) ────────────────────────────────────────────────
 
     bulkDownloadsBECE: {

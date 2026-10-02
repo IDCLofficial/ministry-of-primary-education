@@ -56,10 +56,10 @@ const EXAM_TYPES: ExamType[] = [
   },
   {
     key: 'jscbe',
-    name: 'Junior School Certificate Basic Education',
-    shortName: 'JSCBE',
+    name: 'Junior School (Business/Technical) Certificate Examination',
+    shortName: 'JS(B/T)CE',
     iconPath: '/images/ministry-logo.png',
-    isAvailable: false
+    isAvailable: true
   },
   {
     key: 'waec',

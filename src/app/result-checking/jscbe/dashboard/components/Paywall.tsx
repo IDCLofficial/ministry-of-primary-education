@@ -6,7 +6,7 @@ import { createPayment } from '@/app/result-checking/utils/api'
 import { ExamTypeEnum } from '@/app/portal/store/api/authApi'
 import { SessionStore } from '@/app/result-checking/utils/secureStorage'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useSetBecePaymentEmailMutation } from '@/app/result-checking/store/api/studentApi'
+import { useSetJscbePaymentEmailMutation } from '@/app/result-checking/store/api/studentApi'
 import { isValidEmail } from '@/lib/utils'
 import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
 
@@ -32,7 +32,7 @@ function EmailDialog({
     const [isSubmitting, setIsSubmitting] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null)
 
-    const [setUbeatPaymentEmail] = useSetBecePaymentEmailMutation();
+    const [setJscbePaymentEmail] = useSetJscbePaymentEmailMutation();
 
     useEffect(() => {
         if (open) {
@@ -68,7 +68,7 @@ function EmailDialog({
                 return;
             }
 
-            const request = await setUbeatPaymentEmail({
+            const request = await setJscbePaymentEmail({
                 email: trimmed,
                 paymentReference: reference
             }).unwrap();
@@ -214,9 +214,9 @@ export default function Paywall({ examNo, examYear, studentName, school }: Paywa
 
         try {
             // Store return URL for redirect after payment (encrypted)
-            await SessionStore.set('student-payment-return-url', '/result-checking/bece/dashboard')
+            await SessionStore.set('student-payment-return-url', '/result-checking/jscbe/dashboard')
 
-            const response = await createPayment(examNo, examYear, ExamTypeEnum.BECE);
+            const response = await createPayment(examNo, examYear, ExamTypeEnum.JSCBE);
 
             if (response.authorizationUrl) {
                 toast.success('Redirecting to payment gateway...')
@@ -259,7 +259,7 @@ export default function Paywall({ examNo, examYear, studentName, school }: Paywa
         SessionStore.remove('student_exam_year')
         SessionStore.remove('student_exam_id')
         SessionStore.remove('selected_exam_type')
-        window.location.href = '/result-checking/bece'
+        window.location.href = '/result-checking/jscbe'
     }
 
     return (
@@ -278,7 +278,7 @@ export default function Paywall({ examNo, examYear, studentName, school }: Paywa
                                 Results Access Required
                             </h1>
                             <p className="text-sm text-gray-500">
-                                Complete payment to access your BECE results for <span className="font-bold">5 checks</span>
+                                Complete payment to access your JSCBE results for <span className="font-bold">5 checks</span>
                             </p>
                         </div>
 
@@ -331,7 +331,7 @@ export default function Paywall({ examNo, examYear, studentName, school }: Paywa
                                 </p>
                                 <div className="space-y-2.5">
                                     {[
-                                        'Complete BECE results',
+                                        'Complete JSCBE results',
                                         'Official certificate download',
                                         'Print-ready format',
                                         '5 checks per payment'

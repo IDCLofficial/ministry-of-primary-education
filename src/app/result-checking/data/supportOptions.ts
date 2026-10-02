@@ -6,7 +6,7 @@ export const IMO_STATE_LGAS = Object.values(LgaEnum).sort();
 export const EXAM_TYPES = [
     { value: ExamTypeEnum.BECE, label: "BECE — Basic Education Certificate Examination" },
     { value: ExamTypeEnum.UBEAT, label: "UBEAT — Universal Basic Education Assessment Test" },
-    { value: ExamTypeEnum.COMMON_ENTRANCE, label: "Common Entrance Examination" },
+    { value: ExamTypeEnum.JSCBE, label: "JS(B/T)CE — Junior School (Business/Technical) Certificate Examination" },
 ];
 
 export const SUPPORT_REASONS = [

@@ -56,9 +56,9 @@ const EXAM_TYPES: ExamType[] = [
   },
   {
     key: 'jscbe',
-    name: 'Junior School Certificate Basic Education',
-    shortName: 'JSCBE',
-    description: 'Upload student results for JSCBE examination',
+    name: 'Junior School (Business/Technical) Certificate Examination',
+    shortName: 'JS(B/T)CE',
+    description: 'Upload student results for JS(B/T)CE examination',
     iconPath: '/images/ministry-logo.png',
     color: 'teal'
   },

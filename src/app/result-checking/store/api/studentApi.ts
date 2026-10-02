@@ -74,6 +74,33 @@ export interface BECEStudentResult {
     updatedAt: string
 }
 
+// JS(B/T)CE Student Result — Junior School (Business/Technical) Certificate Examination.
+// Mirrors BECEStudentResult; the backend endpoints this hits (`/jscbe-student/*`)
+// don't exist yet as of this writing — see the PR/commit notes.
+export interface JSCBEStudentResult {
+    _id: string
+    name: string
+    examNo: string
+    examYear: number
+    age: number
+    sex: string
+    school: string
+    schoolName: string
+    lga: string
+    subjects: Array<{
+        name: string
+        exam: number
+        ca: number
+        total: number
+        grade: string
+    }>
+    overallGrade: string
+    totalCredits: number
+    payment?: Payment
+    createdAt: string
+    updatedAt: string
+}
+
 // ── Bulk Downloads (agent) ────────────────────────────────────────────────
 
 /**
@@ -151,7 +178,7 @@ export interface BulkStudentListItem {
  * in the URL, which triggers the verify effect.
  */
 export interface CreateBatchPaymentRequest {
-    examType: 'UBEAT' | 'BECE'
+    examType: 'UBEAT' | 'BECE' | 'JSCBE'
     examYear?: number
     studentIds: string[]
 }
@@ -528,10 +555,44 @@ export const studentApi = apiSlice.injectEndpoints({
             },
         }),
 
+        // Find JS(B/T)CE result by student details
+        findJSCBEResult: builder.mutation<FindResultMatch, FindResultRequest>({
+            query: (data) => ({
+                url: `${API_BASE_URL}/jscbe-student/find-exam-number`,
+                method: 'POST',
+                body: data,
+            }),
+            transformResponse: async (response: unknown) => {
+                const raw = response as { statusCode?: number; data?: unknown; message?: string }
+                if (typeof raw?.data === 'string') {
+                    if (!(await isApiResponseDecryptConfigured())) return response as FindResultMatch
+                    try {
+                        return await decryptApiResponseFrom<FindResultMatch>(raw as { data: string }, 'data')
+                    } catch (e) {
+                        console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                        return response as FindResultMatch
+                    }
+                }
+                if (Array.isArray(raw?.data)) {
+                    return { statusCode: raw?.statusCode ?? 200, data: raw.data } as FindResultMatch
+                }
+                return response as FindResultMatch
+            },
+        }),
+
         // Create BECE payment after student selection
         createBECEPayment: builder.mutation<{ paymentUrl: string; paymentReference: string }, { id: string }>({
             query: (data) => ({
                 url: `${API_BASE_URL}/bece-student/create-payment`,
+                method: 'POST',
+                body: data,
+            }),
+        }),
+
+        // Create JS(B/T)CE payment after student selection
+        createJSCBEPayment: builder.mutation<{ paymentUrl: string; paymentReference: string }, { id: string }>({
+            query: (data) => ({
+                url: `${API_BASE_URL}/jscbe-student/create-payment`,
                 method: 'POST',
                 body: data,
             }),
@@ -570,8 +631,16 @@ export const studentApi = apiSlice.injectEndpoints({
             }),
         }),
 
+        setJscbePaymentEmail: builder.mutation<{ status: number, message: string }, { paymentReference: string, email: string }>({
+            query: (data) => ({
+                url: `${API_BASE_URL}/jscbe-student/update-payment-email`,
+                method: 'PATCH',
+                body: data,
+            }),
+        }),
+
         // Get available exam years
-        getAvailableYears: builder.query<{ years: number[] }, { examType: 'ubeat' | 'bece' }>({
+        getAvailableYears: builder.query<{ years: number[] }, { examType: 'ubeat' | 'bece' | 'jscbe' }>({
             query: ({ examType }) => ({
                 url: `${API_BASE_URL}/students/available-years?examType=${examType.toUpperCase()}`,
                 method: 'GET',
@@ -730,6 +799,30 @@ export const studentApi = apiSlice.injectEndpoints({
             ],
         }),
 
+        // Get JS(B/T)CE student result by exam number or _id
+        getJSCBEResult: builder.query<JSCBEStudentResult, { _id?: string; examNo?: string; year?: string }>({
+            query: ({ _id, examNo, year }) => ({
+                url: _id
+                    ? `${API_BASE_URL}/jscbe-student/check-result/${_id}`
+                    : `${API_BASE_URL}/jscbe-student/check-result/${encodeURIComponent((examNo || '').replace(/\s/g, '').replace(/\//g, '-'))}?year=${encodeURIComponent(year || '')}`,
+                method: 'GET',
+            }),
+            transformResponse: async (response: unknown) => {
+                const raw = response as { data?: unknown }
+                if (typeof raw?.data !== 'string') return response as JSCBEStudentResult
+                if (!(await isApiResponseDecryptConfigured())) return response as JSCBEStudentResult
+                try {
+                    return await decryptApiResponseFrom<JSCBEStudentResult>(raw as { data: string }, 'data')
+                } catch (e) {
+                    console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                    return response as JSCBEStudentResult
+                }
+            },
+            providesTags: (result, error, { _id, examNo }) => [
+                { type: 'Students', id: `JSCBE-${_id || examNo}` }
+            ],
+        }),
+
         // Find multiple matches for UBEAT exam number
         findMultipleMatches: builder.mutation<MultiMatchResult[], { examNumber: string; year: number }>({
             query: (data) => ({
@@ -757,6 +850,28 @@ export const studentApi = apiSlice.injectEndpoints({
         findBECEMultipleMatches: builder.mutation<MultiMatchResult[], { examNumber: string; year: number }>({
             query: (data) => ({
                 url: `${API_BASE_URL}/bece-student/result/find-multiple-matches`,
+                method: 'POST',
+                body: data,
+            }),
+            transformResponse: async (response: unknown) => {
+                const raw = response as { data?: unknown }
+                if (typeof raw?.data === 'string') {
+                    if (!(await isApiResponseDecryptConfigured())) return response as MultiMatchResult[]
+                    try {
+                        return await decryptApiResponseFrom<MultiMatchResult[]>(raw as { data: string }, 'data')
+                    } catch (e) {
+                        console.warn('apiResponseFunnel: decrypt failed, using raw response. Check API_RESPONSE_DECRYPT_SECRET and backend key/salt match.', e)
+                        return response as MultiMatchResult[]
+                    }
+                }
+                return response as MultiMatchResult[]
+            },
+        }),
+
+        // Find multiple matches for JS(B/T)CE exam number
+        findJSCBEMultipleMatches: builder.mutation<MultiMatchResult[], { examNumber: string; year: number }>({
+            query: (data) => ({
+                url: `${API_BASE_URL}/jscbe-student/result/find-multiple-matches`,
                 method: 'POST',
                 body: data,
             }),
@@ -818,20 +933,26 @@ export const studentApi = apiSlice.injectEndpoints({
 export const {
     useGetUBEATResultQuery,
     useGetBECEResultQuery,
+    useGetJSCBEResultQuery,
     useGetAvailableYearsQuery,
     useGetBulkStudentsBySchoolQuery,
     useLazyGetUBEATResultQuery,
     useLazyGetBECEResultQuery,
+    useLazyGetJSCBEResultQuery,
     useLazyGetBulkStudentsBySchoolQuery,
     useFindUBEATResultMutation,
     useFindBECEResultMutation,
+    useFindJSCBEResultMutation,
     useCreateBECEPaymentMutation,
     useCreateUBEATPaymentMutation,
+    useCreateJSCBEPaymentMutation,
     useCustomerSupportMutation,
     useSetBecePaymentEmailMutation,
     useSetUbeatPaymentEmailMutation,
+    useSetJscbePaymentEmailMutation,
     useFindMultipleMatchesMutation,
     useFindBECEMultipleMatchesMutation,
+    useFindJSCBEMultipleMatchesMutation,
     useCreateBatchPaymentMutation,
     useVerifyBatchPaymentQuery,
     useLazyVerifyBatchPaymentQuery,

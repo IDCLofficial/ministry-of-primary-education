@@ -49,6 +49,26 @@ interface BeceResultUploadResponse {
   uploadedCount: number
 }
 
+// JS(B/T)CE Interfaces — mirrors BECE's (generic Student[] shape, since the
+// subject list for Junior School Business/Technical isn't fixed the way
+// UBEAT's is).
+export interface JscbeResultUpload {
+  schoolName: string
+  lga: string
+  examYear: number
+  students: Student[]
+}
+
+interface JscbeResultUploadRequest {
+  result: JscbeResultUpload[]
+  file: { fileName: string, fileSize: number, students: number }[]
+}
+
+interface JscbeResultUploadResponse {
+  message: string
+  uploadedCount: number
+}
+
 // UBEAT Interfaces
 export interface UBEATResultUpload {
   lga: string
@@ -309,6 +329,105 @@ export const authApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Admin', { type: 'Admin', id: 'UPLOAD_LOGS' }, { type: 'Admin', id: 'SUMMARY' }],
     }),
 
+    // Upload JS(B/T)CE Results
+    uploadJscbeExamResults: builder.mutation<JscbeResultUploadResponse, JscbeResultUploadRequest>({
+      query: (data) => ({
+        url: '/jscbe-result/upload',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Admin', { type: 'Admin', id: 'UPLOAD_LOGS' }, { type: 'Admin', id: 'SUMMARY' }],
+    }),
+
+    // Get JS(B/T)CE Results by school
+    getJscbeResults: builder.query<ResultsResponse, {
+      schoolId: string;
+      page?: number;
+      limit?: number;
+      search?: string;
+      examYear?: number;
+    }>({
+      query: (params) => {
+        const queryParams = new URLSearchParams()
+        if (params.page) queryParams.append('page', params.page.toString())
+        if (params.limit) queryParams.append('limit', params.limit.toString())
+        if (params.search) queryParams.append('search', params.search)
+        if (params.examYear) queryParams.append('year', params.examYear.toString())
+        const queryString = queryParams.toString()
+        return `/jscbe-result/results/${params.schoolId.replace(/\//g, "-")}${queryString ? `?${queryString}` : ''}`
+      },
+      providesTags: (_result, _error, params) => [
+        { type: 'Admin', id: 'JSCBE_LIST' },
+        { type: 'Admin', id: `JSCBE_${params.schoolId}` }
+      ],
+    }),
+
+    // Update JS(B/T)CE Student Score
+    updateJscbeStudentScore: builder.mutation<UpdateScoreResponse, UpdateScoreRequest>({
+      query: (data) => ({
+        url: '/jscbe-result/update-score',
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: (result) => [
+        { type: 'Admin', id: 'JSCBE_LIST' },
+        ...(result?.student?.school ? [{ type: 'Admin' as const, id: result.student.school }] : [])
+      ],
+    }),
+
+    // Delete a JS(B/T)CE student record.
+    // NOTE: unlike the other endpoints on this page, there's no existing
+    // BECE/UBEAT delete UI to mirror this against — this path is a naming
+    // convention guess (`-result/delete-student`, matching how every other
+    // jscbe-result route is shaped), not yet confirmed against the backend.
+    // Verify before relying on it.
+    deleteJscbeStudent: builder.mutation<{ message: string }, { id: string }>({
+      query: ({ id }) => ({
+        url: `/jscbe-result/delete-student/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: [{ type: 'Admin', id: 'JSCBE_LIST' }, { type: 'Admin', id: 'JSCBE_SUMMARY' }],
+    }),
+
+    // Get JS(B/T)CE Upload Logs
+    getJscbeUploadLogs: builder.query<UploadLogsResponse, UploadLogsParams | void>({
+      query: (params) => {
+        const queryParams = new URLSearchParams()
+        if (params && params.page) queryParams.append('page', params.page.toString())
+        if (params && params.limit) queryParams.append('limit', params.limit.toString())
+        if (params && params.search) queryParams.append('search', params.search)
+        if (params && params.status) queryParams.append('status', params.status)
+        if (params && params.type) queryParams.append('type', params.type)
+
+        const queryString = queryParams.toString()
+        return `/jscbe-result/upload-logs${queryString ? `?${queryString}` : ''}`
+      },
+      providesTags: [{ type: 'Admin', id: 'JSCBE_UPLOAD_LOGS' }],
+    }),
+
+    // Get JS(B/T)CE Dashboard Summary
+    getJscbeDashboardSummary: builder.query<DashboardSummary, void>({
+      query: () => '/jscbe-result/summary',
+      providesTags: [{ type: 'Admin', id: 'JSCBE_SUMMARY' }],
+    }),
+
+    // Get JS(B/T)CE Skipped Results (School Not Found Errors)
+    getJscbeSkippedResults: builder.query<SkippedResultsResponse, SkippedResultsParams | void>({
+      query: (params) => {
+        const queryParams = new URLSearchParams()
+        if (params && params.page) queryParams.append('page', params.page.toString())
+        if (params && params.limit) queryParams.append('limit', params.limit.toString())
+        if (params && params.uploadBatch) queryParams.append('uploadBatch', params.uploadBatch)
+        if (params && params.lga) queryParams.append('lga', params.lga)
+        if (params && params.schoolName) queryParams.append('schoolName', params.schoolName)
+        if (params && params.status) queryParams.append('status', params.status)
+
+        const queryString = queryParams.toString()
+        return `/jscbe-result/skipped-results${queryString ? `?${queryString}` : ''}`
+      },
+      providesTags: [{ type: 'Admin', id: 'JSCBE_SKIPPED_RESULTS' }],
+    }),
+
     // Fetch Results 
     getResults: builder.query<ResultsResponse, {
       schoolId: string;
@@ -440,12 +559,19 @@ export const {
   useUploadBeceResultsMutation,
   useUploadBeceExamResultsMutation,
   useUploadUBEATResultsMutation,
+  useUploadJscbeExamResultsMutation,
   useGetResultsQuery,
   useGetUBEATResultsQuery,
+  useGetJscbeResultsQuery,
   useGetSchoolsQuery,
   useUpdateStudentScoreMutation,
+  useUpdateJscbeStudentScoreMutation,
+  useDeleteJscbeStudentMutation,
   useGetUploadLogsQuery,
+  useGetJscbeUploadLogsQuery,
   useGetDashboardSummaryQuery,
+  useGetJscbeDashboardSummaryQuery,
   useGetSchoolByIdQuery,
   useGetSkippedResultsQuery,
+  useGetJscbeSkippedResultsQuery,
 } = authApi

@@ -15,6 +15,7 @@ export default function StudentPaymentCallbackPage() {
     trxref: string
     studentName?: string
     school?: string
+    amount?: number
   } | null>(null)
   const [countdown, setCountdown] = useState<number | null>(null)
 
@@ -46,11 +47,16 @@ export default function StudentPaymentCallbackPage() {
         
         if (response.paymentStatus === 'successful') {
           setVerificationStatus('success')
+          // This screen is shared by both the ₦500 exam-number-retrieval
+          // payment and the result-viewing fee — read the actual amount
+          // Paystack charged rather than assuming which one just happened.
+          const koboAmount = response.paystackResponse?.amount
           setPaymentDetails({
             reference,
             trxref: trxref || '',
             studentName: response.studentName,
-            school: response.school
+            school: response.school,
+            amount: typeof koboAmount === 'number' ? koboAmount / 100 : undefined
           })
         } else {
           setVerificationStatus('failed')
@@ -173,7 +179,7 @@ export default function StudentPaymentCallbackPage() {
               <div className="flex justify-between">
                 <span className="text-green-700">Amount:</span>
                 <span className="font-medium text-green-900">
-                  ₦1,000
+                  {paymentDetails?.amount != null ? `₦${paymentDetails.amount.toLocaleString()}` : 'Confirmed'}
                 </span>
               </div>
               <div className="flex justify-between">

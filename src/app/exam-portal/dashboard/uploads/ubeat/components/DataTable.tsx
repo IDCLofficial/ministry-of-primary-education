@@ -405,6 +405,48 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
         }
     }
 
+    // Runs the same auto-clean (strip invalid characters from name/exam
+    // number) across every errored record in one pass, regardless of which
+    // of the 4 error-type buckets it's in — the per-type "Clean All" inside
+    // each ErrorTypeModal only ever touches its own bucket, which means
+    // fixing several error types means opening several modals. This is the
+    // one-click version across all of them at once. Errors that genuinely
+    // need data supplied (missing fields, incomplete scores) can't be
+    // auto-cleaned this way and are left for manual review, same as the
+    // existing per-record "Fix" button.
+    const handleFixAllErrors = () => {
+        const updatesByKey = new Map<string, UBEATStudentRecord>()
+        errorRecords.forEach(record => {
+            const key = recordKey(record)
+            const updated = {
+                ...record,
+                studentName: record.studentName?.replace(/[^a-zA-Z\s\-'."‘’ʼ]/g, '').trim() || '',
+                examNumber: record.examNumber?.replace(/[^A-Za-z0-9\/\\\-]/g, '').trim() || '',
+            }
+            if (validateStudentRecord(updated).length === 0) {
+                updatesByKey.set(key, updated)
+            }
+        })
+
+        if (updatesByKey.size === 0) {
+            toast('None of the current errors can be auto-fixed — they need data filled in manually', { icon: 'ℹ️' })
+            return
+        }
+
+        onDataChange(data.map(r => updatesByKey.get(recordKey(r)) ?? r))
+        setExcludedErrorKeys(prev => {
+            const next = new Set(prev)
+            updatesByKey.forEach((_, key) => next.delete(key))
+            return next
+        })
+
+        const remaining = errorRecords.length - updatesByKey.size
+        toast.success(
+            `Fixed ${updatesByKey.size} record${updatesByKey.size !== 1 ? 's' : ''}${remaining > 0 ? ` — ${remaining} still need manual review` : ''}`,
+            { icon: '🔧' }
+        )
+    }
+
     const getErrorStyles = (errors: ValidationError[]): { bgClass: string; borderClass: string; label: string } | null => {
         if (!errors || errors.length === 0) return null
 
@@ -907,6 +949,15 @@ export default function DataTable({ data, onDataChange, onOpenOverrideModal, cla
                                         <button onClick={() => setActiveErrorModal('incomplete_scores')} className={`px-2 py-0.5 rounded text-xs font-medium ${errorCounts.incomplete_scores > 0 ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-gray-100 text-gray-400'}`}>
                                             {errorCounts.incomplete_scores > 0 ? `⚠️ Scores: ${errorCounts.incomplete_scores}` : 'Scores: 0'}
                                         </button>
+                                        {errorRecords.length > 0 && (
+                                            <button
+                                                onClick={handleFixAllErrors}
+                                                title="Auto-fix every errored record across all error types in one click"
+                                                className="px-2 py-0.5 rounded text-xs font-medium bg-green-600 text-white hover:bg-green-700"
+                                            >
+                                                🔧 Fix All ({errorRecords.length})
+                                            </button>
+                                        )}
                                     </span>
                                 )}
                             </p>

@@ -34,7 +34,7 @@ export interface DisplayStudent {
     createdAt: string
     updatedAt: string
     __v: number
-    examType?: 'bece' | 'ubeat'
+    examType?: 'bece' | 'ubeat' | 'jscbe'
     originalData?: UBEATStudent // Store original UBEAT data for modal
 }
 

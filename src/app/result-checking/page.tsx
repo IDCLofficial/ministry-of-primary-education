@@ -38,36 +38,12 @@ export default function StudentPortalLanding() {
             route: '/result-checking/ubeat'
         },
         {
-            id: 'common-entrance',
-            name: 'Common Entrance',
-            fullName: 'Common Entrance Examination',
-            description: 'View your Common Entrance results for secondary school admission',
-            available: false,
-            route: '/result-checking/common-entrance'
-        },
-        {
-            id: 'neco',
-            name: 'NECO',
-            fullName: 'National Examinations Council',
-            description: 'Access your NECO SSCE results and download your statement of results',
-            available: false,
-            route: '/result-checking/neco'
-        },
-        {
-            id: 'nabteb',
-            name: 'NABTEB',
-            fullName: 'National Business and Technical Examinations',
-            description: 'Check your NABTEB results for technical and vocational subjects',
-            available: false,
-            route: '/result-checking/nabteb'
-        },
-        {
-            id: 'jamb',
-            name: 'JAMB',
-            fullName: 'Joint Admissions and Matriculation Board',
-            description: 'View your UTME scores and check university admission status',
-            available: false,
-            route: '/result-checking/jamb'
+            id: 'jscbe',
+            name: 'JS(B/T)CE',
+            fullName: 'Junior School (Business/Technical) Certificate Examination',
+            description: 'Check your Junior School Business and Technical Certificate Examination results',
+            available: true,
+            route: '/result-checking/jscbe'
         }
     ]
 
