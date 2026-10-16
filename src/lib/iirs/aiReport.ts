@@ -33,7 +33,7 @@ export interface Change {
 
 export interface AiReport {
   metrics: {
-    period: { from: string | null; to: string; tillDate: boolean; label: string; days: number | null };
+    period: { from: string | null; to: string; tillDate: boolean; label: string; days: number | null; partial: boolean; todayExcluded: boolean };
     totals: {
       resultChecks: number;
       resultCheckTransactions: number;
@@ -73,6 +73,7 @@ export interface AiReportRequest {
   from?: string; // YYYY-MM-DD
   to?: string; // YYYY-MM-DD
   tillDate?: boolean;
+  includeToday?: boolean;
 }
 
 export async function generateAiReport(token: string, payload: AiReportRequest): Promise<AiReport> {
@@ -132,7 +133,12 @@ export function generateAiReportPDF(report: AiReport) {
   doc.text(`Period: ${metrics.period.label}`, M, 24);
   doc.setFont('CustomFont', 'normal');
   doc.setFontSize(10);
-  doc.text(`Generated ${new Date(report.generatedAt).toLocaleString()}`, M, 30);
+  doc.text(
+    `Generated ${new Date(report.generatedAt).toLocaleString()}` +
+      (metrics.period.partial ? '  |  PARTIAL: today is still in progress' : ''),
+    M,
+    30,
+  );
 
   let y = 46;
   const ensure = (h: number) => {
@@ -360,6 +366,9 @@ export function generateAiReportPDF(report: AiReport) {
       'Revenue is the face value paid for the service and excludes the gateway processing fee added at checkout. ' +
       'Payment completion is the share of payments started in the period that were completed. ' +
       (comparison ? `Changes compare with the previous period of equal length (${comparison.previousLabel}). ` : '') +
+      (metrics.period.partial
+        ? 'This report includes today, which is still in progress, so the latest figures are partial and will change. '
+        : 'Reports cover complete days only (Africa/Lagos time); today is excluded because it is still in progress. ') +
       'First School Leaving Certificate figures are recorded under the UBEAT exam type.',
     8.5,
   );

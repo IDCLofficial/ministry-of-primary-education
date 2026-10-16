@@ -18,24 +18,25 @@ import {
 
 type Step = "pick" | "loading" | "done" | "error";
 
-const iso = (d: Date) => {
-  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
-};
-const daysAgo = (n: number) => {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return iso(d);
-};
+// Reports follow Nigerian (Lagos) calendar days, matching the backend.
+const lagosToday = () => new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" });
+const shift = (isoDate: string, days: number) =>
+  new Date(Date.parse(`${isoDate}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 
-const PRESETS: { label: string; get: () => { from: string; to: string; tillDate: boolean } }[] = [
-  { label: "Last 7 days", get: () => ({ from: daysAgo(6), to: iso(new Date()), tillDate: false }) },
-  { label: "Last 30 days", get: () => ({ from: daysAgo(29), to: iso(new Date()), tillDate: false }) },
+/** The last day a report can cover: yesterday, or today when partial days are allowed. */
+const lastDay = (includeToday: boolean) => (includeToday ? lagosToday() : shift(lagosToday(), -1));
+
+const PRESETS: {
+  label: string;
+  get: (includeToday: boolean) => { from: string; to: string; tillDate: boolean };
+}[] = [
+  { label: "Last 7 days", get: (t) => ({ from: shift(lastDay(t), -6), to: lastDay(t), tillDate: false }) },
+  { label: "Last 30 days", get: (t) => ({ from: shift(lastDay(t), -29), to: lastDay(t), tillDate: false }) },
   {
     label: "This month",
-    get: () => {
-      const n = new Date();
-      return { from: iso(new Date(n.getFullYear(), n.getMonth(), 1)), to: iso(n), tillDate: false };
+    get: (t) => {
+      const end = lastDay(t);
+      return { from: `${end.slice(0, 8)}01`, to: end, tillDate: false };
     },
   },
   { label: "All time", get: () => ({ from: "", to: "", tillDate: true }) },
@@ -96,6 +97,11 @@ function ReportView({ report }: { report: AiReport }) {
   return (
     <div className="space-y-4 w-full">
       <p className="leading-relaxed">{narrative.summary}</p>
+      {metrics.period.partial && (
+        <p className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+          Partial report: today is still in progress, so the latest figures will keep changing.
+        </p>
+      )}
 
       <div className="grid grid-cols-3 gap-2">
         {[
@@ -243,7 +249,8 @@ export default function AiReportChat() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("pick");
   const [from, setFrom] = useState("");
-  const [to, setTo] = useState(iso(new Date()));
+  const [includeToday, setIncludeToday] = useState(false);
+  const [to, setTo] = useState(lastDay(false));
   const [tillDate, setTillDate] = useState(false);
   const [asked, setAsked] = useState("");
   const [report, setReport] = useState<AiReport | null>(null);
@@ -254,12 +261,13 @@ export default function AiReportChat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [step, report, open]);
 
-  const today = iso(new Date());
+  const maxDate = lastDay(includeToday);
   const rangeInvalid = !tillDate && !!from && !!to && from > to;
   const canSubmit = !rangeInvalid && (tillDate || !!to);
 
   const describe = (f: string, t: string, till: boolean) =>
-    !f && till ? "All time, till date" : till ? `From ${f} till date` : `${f || "Beginning"} to ${t}`;
+    (!f && till ? "All time" : till ? `From ${f} till ${maxDate}` : `${f || "Beginning"} to ${t}`) +
+    (includeToday ? " (including today)" : "");
 
   const run = async (f: string, t: string, till: boolean) => {
     if (!token) return;
@@ -271,6 +279,7 @@ export default function AiReportChat() {
         from: f || undefined,
         to: till ? undefined : t,
         tillDate: till,
+        includeToday,
       });
       setReport(result);
       setStep("done");
@@ -337,7 +346,7 @@ export default function AiReportChat() {
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               <Bubble from="ai">
                 Hi! I can put together a payments report for you. Pick the period you want
-                covered — a date range, or from a date till today.
+                covered — a date range, or from a date till now. Days still in progress are left out unless you include today.
               </Bubble>
 
               {step === "pick" ? (
@@ -351,9 +360,9 @@ export default function AiReportChat() {
                         <button
                           key={p.label}
                           onClick={() => {
-                            const v = p.get();
+                            const v = p.get(includeToday);
                             setFrom(v.from);
-                            setTo(v.to || today);
+                            setTo(v.to || maxDate);
                             setTillDate(v.tillDate);
                           }}
                           className="rounded-full border border-gray-300 bg-white px-2.5 py-1 text-xs hover:border-green-500 hover:text-green-700 cursor-pointer"
@@ -367,7 +376,7 @@ export default function AiReportChat() {
                       <input
                         type="date"
                         value={from}
-                        max={today}
+                        max={maxDate}
                         onChange={(e) => setFrom(e.target.value)}
                         className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
                       />
@@ -379,7 +388,28 @@ export default function AiReportChat() {
                         onChange={(e) => setTillDate(e.target.checked)}
                         className="accent-green-600"
                       />
-                      Till date (up to today)
+                      {includeToday ? "Till date (up to now)" : "Till date (up to yesterday)"}
+                    </label>
+                    <label className="flex items-start gap-2 text-xs text-gray-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeToday}
+                        onChange={(e) => {
+                          setIncludeToday(e.target.checked);
+                          if (!e.target.checked) {
+                            const cap = lastDay(false);
+                            if (to > cap) setTo(cap);
+                            if (from > cap) setFrom(cap);
+                          }
+                        }}
+                        className="mt-0.5 accent-green-600"
+                      />
+                      <span>
+                        Include today
+                        <span className="block text-[11px] text-gray-500">
+                          Today is still in progress, so its figures are partial and will change.
+                        </span>
+                      </span>
                     </label>
                     {!tillDate && (
                       <label className="block text-xs text-gray-600">
@@ -387,7 +417,7 @@ export default function AiReportChat() {
                         <input
                           type="date"
                           value={to}
-                          max={today}
+                          max={maxDate}
                           onChange={(e) => setTo(e.target.value)}
                           className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
                         />
