@@ -8,6 +8,8 @@ import { FaTrophy } from "react-icons/fa6";
 import { useAuth } from "../../providers/AuthProvider";
 import {
   AiReport,
+  Change,
+  changeText,
   generateAiReport,
   generateAiReportPDF,
   naira,
@@ -60,78 +62,175 @@ function Bubble({ from, children }: { from: "ai" | "user"; children: React.React
   );
 }
 
+function Delta({ c }: { c?: Change }) {
+  const t = changeText(c);
+  if (!t) return null;
+  const down = (c?.changePct ?? 0) < 0;
+  return (
+    <span className={`text-[11px] font-medium ${down ? "text-red-600" : "text-green-600"}`}>
+      {t}
+    </span>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="font-semibold text-gray-900 mb-1.5">{title}</p>
+      {children}
+    </div>
+  );
+}
+
 function ReportView({ report }: { report: AiReport }) {
   const { metrics, narrative } = report;
+  const { totals, comparison, trend, revenueBySource } = metrics;
   const topType = metrics.topExam?.examType;
+  const maxDay = Math.max(...trend.daily.map((d) => d.traffic), 1);
+  const mix = [
+    ["Single checks", revenueBySource.singleCheck, "bg-green-600"],
+    ["Batch checks", revenueBySource.batchCheck, "bg-emerald-400"],
+    ["Exam no. finds", revenueBySource.examNumberFind, "bg-teal-300"],
+  ] as const;
+
   return (
     <div className="space-y-4 w-full">
       <p className="leading-relaxed">{narrative.summary}</p>
 
       <div className="grid grid-cols-3 gap-2">
         {[
-          ["Paid to check result", metrics.totals.resultChecks.toLocaleString()],
-          ["Paid to find exam no.", metrics.totals.examNumberFinds.toLocaleString()],
-          ["Revenue", naira(metrics.totals.revenue)],
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-xl bg-white border border-gray-200 p-2.5">
-            <p className="text-[11px] text-gray-500 leading-tight">{label}</p>
-            <p className="mt-1 font-semibold text-gray-900 text-sm break-words">{value}</p>
+          ["Paid to check result", totals.resultChecks.toLocaleString(), comparison?.resultChecks],
+          ["Paid to find exam no.", totals.examNumberFinds.toLocaleString(), comparison?.examNumberFinds],
+          ["Revenue", naira(totals.revenue), comparison?.revenue],
+        ].map(([label, value, change]) => (
+          <div key={label as string} className="rounded-xl bg-white border border-gray-200 p-2.5">
+            <p className="text-[11px] text-gray-500 leading-tight">{label as string}</p>
+            <p className="mt-1 font-semibold text-gray-900 text-sm break-words">{value as string}</p>
+            <Delta c={change as Change | undefined} />
           </div>
         ))}
       </div>
+      {comparison && (
+        <p className="text-[11px] text-gray-400 -mt-2">Change vs {comparison.previousLabel}</p>
+      )}
+      <p className="text-xs text-gray-600">
+        {totals.resultCheckTransactions.toLocaleString()} payments covered the {totals.resultChecks.toLocaleString()} result
+        checks; {totals.examNumberFindTransactions.toLocaleString()} payments were made by{" "}
+        {totals.examNumberFinds.toLocaleString()} students to find an exam number.
+      </p>
 
-      <div className="space-y-2">
-        {metrics.exams.map((e) => {
-          const top = e.examType === topType;
-          return (
-            <div
-              key={e.examType}
-              className={`rounded-xl border p-3 ${
-                top ? "border-green-500 bg-green-50" : "border-gray-200 bg-white"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-semibold text-gray-900 text-[13px]">{e.label}</p>
-                {top && (
-                  <span className="flex items-center gap-1 text-[11px] font-medium text-green-700 bg-green-100 rounded-full px-2 py-0.5 shrink-0">
-                    <FaTrophy /> Most traffic
+      {totals.revenue > 0 && (
+        <Section title="Revenue by source">
+          <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+            {mix.map(([l, v, c]) => (
+              <div key={l} className={c} style={{ width: `${(v / totals.revenue) * 100}%` }} />
+            ))}
+          </div>
+          <div className="mt-2 space-y-1">
+            {mix.map(([l, v, c]) => (
+              <div key={l} className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5 text-gray-600">
+                  <span className={`h-2 w-2 rounded-full ${c}`} /> {l}
+                </span>
+                <span className="font-medium text-gray-900">
+                  {naira(v)} · {Math.round((v / totals.revenue) * 100)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      <Section title="By exam">
+        <div className="space-y-2">
+          {metrics.exams.map((e) => {
+            const top = e.examType === topType;
+            return (
+              <div
+                key={e.examType}
+                className={`rounded-xl border p-3 ${top ? "border-green-500 bg-green-50" : "border-gray-200 bg-white"}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-gray-900 text-[13px]">{e.label}</p>
+                  {top && (
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-green-700 bg-green-100 rounded-full px-2 py-0.5 shrink-0">
+                      <FaTrophy /> Most traffic
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-gray-600">
+                  <span>
+                    <b className="block text-gray-900 text-sm">{e.resultChecks.toLocaleString()}</b>
+                    result checks
                   </span>
-                )}
+                  <span>
+                    <b className="block text-gray-900 text-sm">{e.examNumberFinds.toLocaleString()}</b>
+                    exam no. finds
+                  </span>
+                  <span>
+                    <b className="block text-gray-900 text-sm">{naira(e.revenue)}</b>
+                    revenue
+                  </span>
+                </div>
+                <p className="mt-2 text-[11px] text-gray-500">
+                  {e.shareOfTraffic}% of traffic · {e.shareOfRevenue}% of revenue
+                  {e.conversionRate !== null && ` · ${e.conversionRate}% of payments completed`}
+                </p>
               </div>
-              <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-gray-600">
-                <span>
-                  <b className="block text-gray-900 text-sm">{e.resultChecks.toLocaleString()}</b>
-                  result checks
-                </span>
-                <span>
-                  <b className="block text-gray-900 text-sm">{e.examNumberFinds.toLocaleString()}</b>
-                  exam no. finds
-                </span>
-                <span>
-                  <b className="block text-gray-900 text-sm">{naira(e.revenue)}</b>
-                  revenue
+            );
+          })}
+        </div>
+      </Section>
+
+      {trend.daily.length > 1 && (
+        <Section title="Daily activity">
+          <div className="flex h-16 items-end gap-0.5">
+            {trend.daily.map((d) => (
+              <div
+                key={d.date}
+                title={`${d.date}: ${d.traffic} activities · ${naira(d.revenue)}`}
+                className={`flex-1 rounded-t-sm ${d.date === trend.peakDay?.date ? "bg-green-700" : "bg-green-300"}`}
+                style={{ height: `${Math.max((d.traffic / maxDay) * 100, 3)}%` }}
+              />
+            ))}
+          </div>
+          {trend.peakDay && (
+            <p className="mt-1 text-[11px] text-gray-500">
+              Busiest day {trend.peakDay.date}: {trend.peakDay.traffic.toLocaleString()} activities,{" "}
+              {naira(trend.peakDay.revenue)}
+            </p>
+          )}
+        </Section>
+      )}
+
+      {metrics.topLgas.length > 0 && (
+        <Section title="Top LGAs">
+          <div className="space-y-1">
+            {metrics.topLgas.map((l) => (
+              <div key={l.lga} className="flex justify-between text-xs">
+                <span className="text-gray-600">{l.lga}</span>
+                <span className="font-medium text-gray-900">
+                  {l.traffic.toLocaleString()} · {naira(l.revenue)}
                 </span>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            ))}
+          </div>
+        </Section>
+      )}
 
       {narrative.highlights.length > 0 && (
-        <div>
-          <p className="font-semibold text-gray-900 mb-1">Key insights</p>
+        <Section title="Key insights">
           <ul className="list-disc pl-5 space-y-1">
             {narrative.highlights.map((h, i) => <li key={i}>{h}</li>)}
           </ul>
-        </div>
+        </Section>
       )}
       {narrative.recommendations.length > 0 && (
-        <div>
-          <p className="font-semibold text-gray-900 mb-1">Recommendations</p>
+        <Section title="Recommendations">
           <ul className="list-disc pl-5 space-y-1">
             {narrative.recommendations.map((h, i) => <li key={i}>{h}</li>)}
           </ul>
-        </div>
+        </Section>
       )}
 
       <p className="text-[11px] text-gray-400">Written by {providerLabel(report.provider)}</p>
