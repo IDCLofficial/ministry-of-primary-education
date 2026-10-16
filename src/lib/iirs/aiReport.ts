@@ -61,16 +61,23 @@ export function generateAiReportPDF(report: AiReport) {
 
   doc.addFileToVFS('CustomFont.ttf', customFont);
   doc.addFont('CustomFont.ttf', 'CustomFont', 'normal');
-  doc.setFont('CustomFont');
+  // Same file for bold: without it jsPDF falls back to Times Bold, which breaks digit spacing.
+  doc.addFont('CustomFont.ttf', 'CustomFont', 'bold');
+  doc.setFont('CustomFont', 'normal');
+  // The embedded font has no ₦ glyph, so the PDF uses NGN.
+  const money = (n: number) => `NGN ${(n ?? 0).toLocaleString('en-US')}`;
 
   // Header band
   doc.setFillColor(22, 163, 74);
   doc.rect(0, 0, pageWidth, 34, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
-  doc.text('IIRS Payments Report', 14, 16);
+  doc.text('Result Checking Report', 14, 16);
+  doc.setFontSize(11);
+  doc.setFont('CustomFont', 'bold');
+  doc.text(`Period: ${metrics.period.label}`, 14, 24);
+  doc.setFont('CustomFont', 'normal');
   doc.setFontSize(10);
-  doc.text(metrics.period.label, 14, 24);
   doc.text(`Generated ${new Date(report.generatedAt).toLocaleString()}`, 14, 30);
 
   // Summary narrative
@@ -94,12 +101,12 @@ export function generateAiReportPDF(report: AiReport) {
     body: [
       ['Students who paid to check their result', metrics.totals.resultChecks.toLocaleString()],
       ['Students who paid to find their exam number', metrics.totals.examNumberFinds.toLocaleString()],
-      ['Total revenue generated', naira(metrics.totals.revenue)],
+      ['Total revenue generated', money(metrics.totals.revenue)],
     ],
     theme: 'grid',
     headStyles: { fillColor: [22, 163, 74], font: 'CustomFont' },
     styles: { fontSize: 10, cellPadding: 3, font: 'CustomFont' },
-    columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
+    columnStyles: { 1: { halign: 'right', fontStyle: 'bold', font: 'CustomFont' } },
   });
   y = (doc as any).lastAutoTable.finalY + 10;
 
@@ -115,7 +122,7 @@ export function generateAiReportPDF(report: AiReport) {
       e.examType === topType ? `${e.label}  (most traffic)` : e.label,
       e.resultChecks.toLocaleString(),
       e.examNumberFinds.toLocaleString(),
-      naira(e.revenue),
+      money(e.revenue),
       e.traffic.toLocaleString(),
     ]),
     theme: 'striped',
