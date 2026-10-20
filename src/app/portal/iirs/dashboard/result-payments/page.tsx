@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useAuth } from "../../providers/AuthProvider";
+import AiReportChat from "../components/AiReportChat";
 import {
   getResultPaymentStats,
   ResultPaymentRecord,
@@ -572,6 +573,7 @@ export default function ResultPaymentsPage() {
           </div>
         </div>
       </div>
+      <AiReportChat />
     </div>
   );
 }
