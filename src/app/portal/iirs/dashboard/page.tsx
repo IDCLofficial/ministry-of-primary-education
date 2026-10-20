@@ -3,7 +3,6 @@
 import InvoiceTable from './components/InvoiceTable';
 import MetricsCards from './components/MetricsCards';
 import DownloadReportButton from './components/DownloadReportButton';
-import AiReportChat from './components/AiReportChat';
 import { useAuth } from '../providers/AuthProvider';
 
 export default function Dashboard() {
@@ -53,7 +52,6 @@ export default function Dashboard() {
 
                 <p className="text-center text-gray-500 text-sm mt-4">Powered by Imo Digital City Limited</p>
             </div>
-            <AiReportChat />
         </div>
     );
 }
