@@ -13,6 +13,7 @@ import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBan
 
 interface PaywallProps {
     examNo: string
+    studentId?: string
     examYear: number
     studentName: string
     school: string
@@ -206,7 +207,7 @@ function EmailDialog({
     )
 }
 
-export default function Paywall({ examNo, examYear, studentName, school }: PaywallProps) {
+export default function Paywall({ examNo, studentId, examYear, studentName, school }: PaywallProps) {
     const [isProcessing, setIsProcessing] = useState(false);
     const topLoader = useTopLoader()
 
@@ -288,7 +289,7 @@ export default function Paywall({ examNo, examYear, studentName, school }: Paywa
                         {/* Content */}
                         <div className="px-8 py-6">
 
-                            <DetailsCheckBanner context="paywall" examNo={examNo} studentName={studentName} school={school} />
+                            <DetailsCheckBanner context="paywall" examNo={examNo} studentId={studentId} studentName={studentName} school={school} examType={ExamTypeEnum.UBEAT} />
 
                             {/* Student Info - Cleaner */}
                             <div className="mb-6 space-y-2.5">

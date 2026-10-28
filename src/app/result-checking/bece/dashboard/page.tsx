@@ -17,6 +17,7 @@ import { useMedia } from 'react-use'
 import PortalHeader from '../../components/Portalheader'
 import { SessionStore } from '@/app/result-checking/utils/secureStorage'
 import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
+import { ExamTypeEnum } from '@/app/portal/store/api/authApi'
 
 // Regex pattern for exam number validation (e.g., XX/000/000)
 const EXAM_NO_REGEX = /^[a-zA-Z]{2}\/\d{1,4}\/\d{1,4}(\(\d\))?$/
@@ -341,6 +342,7 @@ export default function StudentDashboardPage() {
         return (
             <Paywall
                 examNo={student.examNo}
+                studentId={student._id}
                 studentName={student.name}
                 examYear={student.examYear}
                 school={student.schoolName || student.school}
@@ -445,7 +447,7 @@ export default function StudentDashboardPage() {
                     </p>
                 </div>
 
-                <DetailsCheckBanner context="dashboard" examNo={student.examNo} studentName={student.name} school={student.schoolName || student.school} />
+                <DetailsCheckBanner context="dashboard" examNo={student.examNo} studentId={student._id} studentName={student.name} school={student.schoolName || student.school} examType={ExamTypeEnum.BECE} />
 
                 {/* Content Grid */}
                 <div className="space-y-6 mb-6">

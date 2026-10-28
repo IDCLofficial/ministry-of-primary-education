@@ -10,7 +10,35 @@ import { ExamTypeEnum } from "@/app/portal/store/api/authApi";
 import { LgaEnum } from "@/app/portal/dashboard/[schoolCode]/types";
 import { SUPPORTED_EXAM_TYPE_VALUES, SUPPORT_REASON_VALUES, LGA_VALUES } from "../data/supportChatPrompt";
 import { EXAM_TYPES, SUPPORT_REASONS } from "../data/supportOptions";
+import { ADAURE_CHAT_PREFILL_KEY, AdaureChatPrefill } from "../data/adaureChatPrefill";
+import { SessionStore } from "../utils/secureStorage";
 import ClickCopy from "@/components/ClickCopy";
+
+/** One-tap shortcuts shown above the input before the user's first message. */
+const SUGGESTED_QUESTIONS = [
+    "How do I change my name?",
+    "What is the procedure to get certificates?",
+    "Is the certificate approved?",
+];
+
+function examLabelFor(examType: ExamTypeEnum): string {
+    if (examType === ExamTypeEnum.BECE) return "BECE";
+    if (examType === ExamTypeEnum.UBEAT) return "UBEAT";
+    return "JS(B/T)CE";
+}
+
+/** Turns a "Check Your Details" / bulk-downloads "Report" handoff into Adaure's opening message, so the user doesn't have to retype what's already on screen. If there's no exam number yet (e.g. a bulk-list row before its detail record was fetched), she just asks for it like she normally would. */
+function buildPrefillMessage(p: AdaureChatPrefill): string {
+    const lines = [
+        `Hi, I was reviewing my ${examLabelFor(p.examType)} details and something might be wrong.`,
+        p.examNo ? `Exam number: ${p.examNo}` : `I don't have my exam number handy right now.`,
+        p.examYear ? `Year: ${p.examYear}` : null,
+        p.school ? `School shown to me: ${p.school}` : null,
+        p.studentName ? `Name shown to me: ${p.studentName}` : null,
+        p.issue ? `What I think is wrong: ${p.issue}` : `I'm not sure exactly what's wrong yet — please help me check.`,
+    ].filter((l): l is string => Boolean(l));
+    return lines.join("\n");
+}
 
 interface ChatMessage {
     id: string;
@@ -212,6 +240,11 @@ export default function SupportChatContent({ prefillExamType }: { prefillExamTyp
     const [input, setInput] = useState("");
     const [sending, setSending] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
+    // Transient "Looking up the record…" / "Applying the correction…" label
+    // while a server-side tool call is in flight — these round trips can
+    // take several seconds (sometimes 15-20+, especially the first request
+    // after a cold start), and a bare typing indicator the whole time reads
+    // as broken rather than working.
     const [submitted, setSubmitted] = useState(false);
     const [ticketRef, setTicketRef] = useState("");
     const [submittedTicket, setSubmittedTicket] = useState<CustomerSupport | null>(null);
@@ -231,10 +264,26 @@ export default function SupportChatContent({ prefillExamType }: { prefillExamTyp
     const recognitionRef = useRef<any>(null);
     const transcriptRef = useRef("");
     const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const prefillHandledRef = useRef(false);
 
     useEffect(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }, [messages, sending]);
+
+    // One-shot: if another part of the site (e.g. the "Check Your Details"
+    // dialog) handed off context before opening this widget, kick the
+    // conversation off with it instead of making the user retype everything.
+    useEffect(() => {
+        if (prefillHandledRef.current) return;
+        prefillHandledRef.current = true;
+        (async () => {
+            const prefill = await SessionStore.getJSON<AdaureChatPrefill>(ADAURE_CHAT_PREFILL_KEY);
+            if (!prefill?.examType) return;
+            SessionStore.remove(ADAURE_CHAT_PREFILL_KEY);
+            await handleSend(buildPrefillMessage(prefill));
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         audioRef.current = new Audio();
@@ -507,6 +556,21 @@ export default function SupportChatContent({ prefillExamType }: { prefillExamTyp
                                 )}
                             </AnimatePresence>
                         </div>
+
+                        {messages.length === 1 && !sending && (
+                            <div className="flex-shrink-0 px-3.5 pb-2 flex gap-2 overflow-x-auto">
+                                {SUGGESTED_QUESTIONS.map((q) => (
+                                    <button
+                                        key={q}
+                                        type="button"
+                                        onClick={() => handleSend(q)}
+                                        className="flex-shrink-0 whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors cursor-pointer"
+                                    >
+                                        {q}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
 
                         <div className="flex-shrink-0 border-t border-slate-100 px-3.5 py-3">
                             <form

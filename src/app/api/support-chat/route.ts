@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { FunctionDeclaration, GoogleGenAI, Type } from '@google/genai'
+import { ApiError, Content, FunctionDeclaration, GoogleGenAI, Type } from '@google/genai'
 import {
     SUPPORT_CHAT_SYSTEM_PROMPT,
     SUPPORTED_EXAM_TYPE_VALUES,
@@ -57,6 +57,26 @@ interface ChatMessage {
 const MAX_MESSAGES = 40
 const MAX_MESSAGE_LENGTH = 2000
 
+// Gemini occasionally returns 503 "This model is currently experiencing
+// high demand... try again later" — a transient overload on Google's end,
+// not a real failure. Retrying a couple of times with backoff resolves
+// most of these transparently instead of surfacing a dead-end error.
+async function generateContentStreamWithRetry(
+    ai: GoogleGenAI,
+    params: Parameters<GoogleGenAI['models']['generateContentStream']>[0],
+    maxRetries = 2,
+) {
+    for (let attempt = 0; ; attempt++) {
+        try {
+            return await ai.models.generateContentStream(params)
+        } catch (e) {
+            const isOverloaded = e instanceof ApiError && e.status === 503
+            if (!isOverloaded || attempt >= maxRetries) throw e
+            await new Promise((r) => setTimeout(r, 800 * (attempt + 1)))
+        }
+    }
+}
+
 export async function POST(request: NextRequest) {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
@@ -85,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     const ai = new GoogleGenAI({ apiKey })
 
-    const contents = messages.map((m) => ({
+    const contents: Content[] = messages.map((m) => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.text }],
     }))
@@ -97,7 +117,7 @@ export async function POST(request: NextRequest) {
             const send = (line: object) => controller.enqueue(encoder.encode(JSON.stringify(line) + '\n'))
 
             try {
-                const responseStream = await ai.models.generateContentStream({
+                const responseStream = await generateContentStreamWithRetry(ai, {
                     model: MODEL,
                     contents,
                     config: {
@@ -111,10 +131,10 @@ export async function POST(request: NextRequest) {
                     if (chunk.text) {
                         send({ type: 'text', value: chunk.text })
                     }
-                    const calls = chunk.functionCalls
-                    if (calls?.length) {
-                        for (const call of calls) {
-                            send({ type: 'function_call', value: { name: call.name, args: call.args } })
+                    const parts = chunk.candidates?.[0]?.content?.parts ?? []
+                    for (const part of parts) {
+                        if (part.functionCall?.name === 'submit_ticket') {
+                            send({ type: 'function_call', value: { name: part.functionCall.name, args: part.functionCall.args ?? {} } })
                         }
                     }
                 }

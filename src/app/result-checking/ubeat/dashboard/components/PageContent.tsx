@@ -16,6 +16,7 @@ import celebrationData from "../components/CelebrationLolo.json"
 import { useMedia } from 'react-use'
 import PortalHeader from '../../../components/Portalheader'
 import DetailsCheckBanner from '@/app/result-checking/components/DetailsCheckBanner'
+import { ExamTypeEnum } from '@/app/portal/store/api/authApi'
 
 // 1. Modded middle/end to accommodate optional 1-2 letters before numbers
 const EXAM_NO_REGEX = /^([a-zA-Z]{0,2}\/)?([a-zA-Z]{0,2}\d{1,5}\/)?([a-zA-Z]{0,2}\d{1,5})(\(\d\))?$/
@@ -292,6 +293,7 @@ export default function UBEATDashboard() {
         return (
             <Paywall
                 examNo={student.examNumber}
+                studentId={student._id}
                 examYear={student.examYear}
                 studentName={student.studentName}
                 school={student?.schoolName || ''}
@@ -440,7 +442,7 @@ export default function UBEATDashboard() {
                     </p>
                 </div>
 
-                <DetailsCheckBanner context="dashboard" examNo={student.examNumber} studentName={student.studentName} school={student.schoolName || student.school} />
+                <DetailsCheckBanner context="dashboard" examNo={student.examNumber} studentId={student._id} studentName={student.studentName} school={student.schoolName || student.school} examType={ExamTypeEnum.UBEAT} />
 
                 {/* Content Grid */}
                 <div className="space-y-4 mb-6">

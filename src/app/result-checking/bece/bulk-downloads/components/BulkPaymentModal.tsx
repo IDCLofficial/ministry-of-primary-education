@@ -12,10 +12,10 @@ import {
 import {
     IoCardOutline,
     IoLockClosedOutline,
-    IoLogoWhatsapp,
     IoMail,
     IoShieldCheckmarkOutline,
 } from 'react-icons/io5'
+import { MessageCircle, Pencil } from 'lucide-react'
 import { isValidEmail } from '@/lib/utils'
 import { formatNaira, type BulkExamConfig } from './examConfig'
 import type { BulkSelectionSummary, BulkStudent } from './types'
@@ -23,6 +23,9 @@ import {
     useSetBecePaymentEmailMutation,
     useSetUbeatPaymentEmailMutation,
 } from '@/app/result-checking/store/api/studentApi'
+import { ExamTypeEnum } from '@/app/portal/store/api/authApi'
+import { openAdaureChat } from '@/app/result-checking/data/adaureChatPrefill'
+import NameCorrectionDialog from '@/app/result-checking/components/NameCorrectionDialog'
 
 interface BulkPaymentModalProps {
     open: boolean
@@ -77,14 +80,18 @@ export default function BulkPaymentModal({
     const [error, setError] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null)
+    const [fixNameStudent, setFixNameStudent] = useState<BulkStudent | null>(null)
 
-    const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '2348123456789'
+    const examTypeEnum = config.examType === 'bece' ? ExamTypeEnum.BECE : ExamTypeEnum.UBEAT
 
-    const buildWhatsappUrl = (student: BulkStudent) => {
-        const text = encodeURIComponent(
-            `Hello, I noticed an issue with a student's details on the bulk result-checking portal.\n\nName: ${student.studentName}\nSchool: ${schoolName}\nExam Year: ${student.examYear ?? '—'}\nExam Type: ${config.shortName}`
-        )
-        return `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${text}`
+    const handleReportStudent = (student: BulkStudent) => {
+        openAdaureChat({
+            examType: config.examType === 'bece' ? ExamTypeEnum.BECE : ExamTypeEnum.UBEAT,
+            examNo: student.examNo,
+            studentName: student.studentName,
+            school: schoolName,
+            examYear: student.examYear != null ? String(student.examYear) : undefined,
+        })
     }
 
     const [setBecePaymentEmail] = useSetBecePaymentEmailMutation()
@@ -177,6 +184,7 @@ export default function BulkPaymentModal({
     }
 
     return (
+        <>
         <Dialog open={open} onOpenChange={isSubmitting ? undefined : onOpenChange}>
             <DialogContent className="sm:max-w-lg rounded-2xl p-0 overflow-hidden gap-0">
                 <div className="h-1.5 w-full bg-gradient-to-r from-green-500 to-green-600" />
@@ -238,21 +246,31 @@ export default function BulkPaymentModal({
                                                 </p>
                                             </div>
                                         </div>
-                                        <a
-                                            href={buildWhatsappUrl(student)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-green-700 bg-green-50 hover:bg-green-100 transition-colors"
-                                            title="Report wrong details for this student"
-                                        >
-                                            <IoLogoWhatsapp className="w-3 h-3" />
-                                            <span className="hidden sm:inline">Report</span>
-                                        </a>
+                                        <div className="flex-shrink-0 flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFixNameStudent(student)}
+                                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer"
+                                                title="Fix this student's name"
+                                            >
+                                                <Pencil className="w-3 h-3" />
+                                                <span className="hidden sm:inline">Fix Name</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleReportStudent(student)}
+                                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-green-700 bg-green-50 hover:bg-green-100 transition-colors cursor-pointer"
+                                                title="Report wrong details for this student"
+                                            >
+                                                <MessageCircle className="w-3 h-3" />
+                                                <span className="hidden sm:inline">Report</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                             <p className="text-[11px] text-gray-500 mt-1.5">
-                                If any student&apos;s details are wrong, tap <span className="text-green-700 font-medium">Report</span> to reach us on WhatsApp.
+                                Tap <span className="text-gray-700 font-medium">Fix Name</span> to correct a typo or reordered name instantly, or <span className="text-green-700 font-medium">Report</span> for anything else.
                             </p>
                         </div>
                     )}
@@ -330,6 +348,17 @@ export default function BulkPaymentModal({
                 </div>
             </DialogContent>
         </Dialog>
+        {fixNameStudent && (
+            <NameCorrectionDialog
+                open={!!fixNameStudent}
+                onOpenChange={(v) => { if (!v) setFixNameStudent(null) }}
+                studentId={fixNameStudent._id}
+                examType={examTypeEnum}
+                examNo={fixNameStudent.examNo}
+                currentName={fixNameStudent.studentName}
+            />
+        )}
+        </>
     )
 }
 

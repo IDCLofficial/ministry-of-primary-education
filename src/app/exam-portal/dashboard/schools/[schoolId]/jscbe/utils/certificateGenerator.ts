@@ -1,86 +1,60 @@
-import { capitalize, capitalizeWords } from '@/lib'
-import { Student, Subject } from '../../../types/student.types'
-import { toWordBracket, toYearPhrase, toYearWord } from '@/lib/numberToWords'
+import { Student } from '../../../types/student.types'
 import {
     generateCertificateQR,
     loadImageFromDataUrl,
     embedSteganographicId,
 } from './certificateSecurity'
-import { COMMISSIONERS_SIGNATURES, DIRECTORS_SIGNATURES, SignatureImageConfig } from '../../../constants'
+import { COMMISSIONERS_SIGNATURES, DIRECTORS_SIGNATURES } from '../../../constants'
+
+// The JS(B/T)CE certificate (unlike BECE's) carries no per-subject grade
+// table — it's a single "passed with {Pass|Credit|Distinction}" cert, same
+// shape as UBEAT's. The grade word, color scheme, and "ED (IS) 1A/1B/1C"
+// reference are baked into three separate background images (see
+// public/images/JSBTCE/) rather than drawn — we only pick which background.
+export type JSCBECertificateType = 'pass' | 'credit' | 'distinction'
 
 export interface JSCBECertificateData {
     /** Student name (displayed after "This is to certify that") */
     name: string
-    /** School name (used with LGA in the combined LGA line) */
+    /** School name (displayed after "of") */
     schoolName: string
-    /** LGA (Local Government Area); displayed with school name on cert */
-    lga?: string
     /** Exam year (e.g. 2025) */
     year?: number | string
-    /** Number of subjects (e.g. "9") - displayed in "following _____ subjects" */
-    subjectCount: number
-    /** Courses to show in the two vertical tables: [{ subject, grade }, ...] */
-    courses: Array<{ subject: string; grade: string }>
-    /** Exam number (e.g. IMS/JSC/...) */
+    /** Exam number (printed near "P No./C No./D No.") */
     examNumber?: string
     /** Certificate / serial number (fallback to examNumber when missing) */
     serialNumber?: string
-    /** Issue date (e.g. ISO "2025-03-12" or formatted); included in integrity check */
+    /** Issue date (ISO "2025-03-12" or similar); included in the QR integrity check */
     issueDate?: string
+    /** Free-text overall grade from the student record (e.g. "Distinction", "Credit", "Pass", or a letter grade) */
+    overallGrade?: string
 }
 
-/** Normalize grade for display (never show undefined). */
-function normalizeGrade(grade: unknown): string {
-    if (grade == null || grade === '') return '—'
-    const s = String(grade).trim()
-    return s || '—'
-}
-
-/** JSCBE grade from numeric score (same scale as student portal). */
-function gradeFromScore(score: number): string {
-    if (score >= 80) return 'A1'
-    if (score >= 70) return 'B2'
-    if (score >= 65) return 'B3'
-    if (score >= 60) return 'C4'
-    if (score >= 55) return 'C5'
-    if (score >= 50) return 'C6'
-    if (score >= 45) return 'D7'
-    if (score >= 40) return 'E8'
-    return 'F9'
-}
-
-/** Build certificate data from a JSCBE Student. */
+/** Build certificate data from a JS(B/T)CE Student. */
 export function studentToJSCBECertificateData(student: Student): JSCBECertificateData {
-    const courses = student.subjects.map((s: Subject) => {
-        const rawGrade = (s as { grade?: unknown }).grade
-        const grade = normalizeGrade(rawGrade)
-        const useGrade = grade !== '—' ? grade : gradeFromScore(typeof s.exam === 'number' ? s.exam : 0)
-        return {
-            subject: (s.name != null && String(s.name).trim() !== '') ? String(s.name).trim() : '—',
-            grade: useGrade
-        }
-    })
-    const raw = student as { lga?: string | { name?: string }; serialNumber?: string }
-    const lgaVal = raw.lga != null
-        ? (typeof raw.lga === 'string' ? raw.lga : raw.lga?.name ?? '')
-        : undefined
+    const raw = student as { serialNumber?: string }
     const year = (student as { examYear?: number }).examYear ?? new Date().getFullYear()
     const serial =
         raw.serialNumber != null && String(raw.serialNumber).trim() !== ''
             ? String(raw.serialNumber).trim()
             : (student.examNo ? `${year}-${student.examNo.replace(/\//g, '-')}` : undefined)
-    const issueDate = new Date().toISOString().slice(0, 10)
     return {
         name: student.name,
         schoolName: student.schoolName ?? student.school ?? '',
-        lga: lgaVal || undefined,
         year,
-        subjectCount: student.subjects.length,
-        courses,
         examNumber: student.examNo,
         serialNumber: serial,
-        issueDate,
+        issueDate: new Date().toISOString().slice(0, 10),
+        overallGrade: student.overallGrade,
     }
+}
+
+/** Normalize a free-text overall grade into one of the 3 certificate tiers. */
+export function normalizeJSCBEGradeTier(overallGrade: string | undefined): JSCBECertificateType {
+    const g = (overallGrade ?? '').trim().toLowerCase()
+    if (g.includes('distinction') || g === 'a' || g === 'a1') return 'distinction'
+    if (g.includes('credit') || /^[ab]/.test(g)) return 'credit'
+    return 'pass'
 }
 
 // ─── Field config ───────────────────────────────────────────────────────────
@@ -107,177 +81,76 @@ export interface SignatureConfig {
     opacity?: number
 }
 
-/** Configuration for the two subject/grade tables (position and sizing). */
-export interface TablesConfig {
-    /** Left table: top-left X (0–1 = fraction of width) */
-    leftX: number
-    /** Right table: top-left X (0–1). If tableGapFraction is set, rightX is computed as leftX + tableWidthFraction + tableGapFraction. */
-    rightX: number
-    /** Gap between the two tables as fraction of canvas width (0–1). When set, right table starts at leftX + tableWidthFraction + tableGapFraction. */
-    tableGapFraction?: number
-    /** Top Y for both tables (0–1) */
-    topY: number
-    /** Width of each table as fraction of canvas width (0–1) */
-    tableWidthFraction: number
-    /** Row height (0–1 fraction of canvas height) */
-    rowHeight: number
-    /** Column widths: subject and grade as fraction of table width (sum = 1, or with SN column all three sum = 1) */
-    subjectColFraction: number
-    gradeColFraction: number
-    /** Rotation of the entire table in degrees (applied to both left and right tables). */
-    rotation?: number
-    /** Show SN (serial number) column as first column (1, 2, 3, …). */
-    showSn?: boolean
-    /** Width of SN column as fraction of table width when showSn is true (subjectColFraction + gradeColFraction + snColFraction should sum to 1). */
-    snColFraction?: number
-    /** Font size for table header */
-    headerFontSize: number
-    /** Font size for table cells */
-    cellFontSize: number
-    /** Max number of rows per table (extra courses truncated) */
-    maxRowsPerTable?: number
-}
-
 export interface JSCBECertificateFieldsConfig {
     studentName?: Partial<FieldConfig>
-    year?: Partial<FieldConfig>
-    lga?: Partial<FieldConfig>
-    subjectCount?: Partial<FieldConfig>
+    schoolName?: Partial<FieldConfig>
     examNumber?: Partial<FieldConfig>
-    serialNumber?: Partial<FieldConfig>
+    year?: Partial<FieldConfig>
     issueDate?: Partial<FieldConfig>
+    issueDateYear?: Partial<FieldConfig>
     signature1?: Partial<SignatureConfig>
     signature2?: Partial<SignatureConfig>
-    tables?: Partial<TablesConfig>
 }
 
-// ─── Default field positions (percentages 0–1; fonts ×3) ───
+// ─── Default field positions ─────────────────────────────────────────────
+// All three grade tiers (Pass/Credit/Distinction) share the exact same
+// layout — only the color and baked-in grade word differ between the three
+// background images — so one config works for all of them, unlike UBEAT
+// which needed a separate config per tier.
+//
+// These were measured by eye against the supplied artwork
+// (public/images/JSBTCE/*.png, 2482×3508). Close, but worth a visual check
+// against a real generated sample before trusting it for production certs.
 
-const DEFAULT_STUDENT_NAME: FieldConfig = {
-    x: 0.5,
-    y: 0.415,
-    fontSize: 65,
-    fontWeight: 'bold',
-    fontStyle: 'normal',
-    fontFamily: 'Times New Roman',
-    align: 'center',
-    color: '#000000',
-    transform: 'none',
-    rotation: 0
+const STUDENT_NAME: FieldConfig = {
+    x: 0.5, y: 0.44, fontSize: 60,
+    fontWeight: 'bold', fontStyle: 'normal', fontFamily: 'Times New Roman',
+    align: 'center', color: '#000000', transform: 'capitalize', rotation: 0,
 }
 
-/** Year field: uses same config as the old schoolName position (school name is now welded with LGA). */
-const DEFAULT_YEAR: FieldConfig = {
-    x: 0.64,
-    y: 0.498,
-    fontSize: 55,
-    fontWeight: 'normal',
-    fontStyle: 'normal',
-    fontFamily: 'Times New Roman',
-    align: 'center',
-    color: '#000000',
-    transform: 'none',
-    rotation: 0
+const SCHOOL_NAME: FieldConfig = {
+    x: 0.5, y: 0.497, fontSize: 48,
+    fontWeight: 'bold', fontStyle: 'normal', fontFamily: 'Times New Roman',
+    align: 'center', color: '#000000', transform: 'uppercase', rotation: 0,
 }
 
-const DEFAULT_LGA: FieldConfig = {
-    x: 0.5,
-    y: 0.455,
-    fontSize: 55,
-    fontWeight: 'normal',
-    fontStyle: 'normal',
-    fontFamily: 'Times New Roman',
-    align: 'center',
-    color: '#000000',
-    transform: 'none',
-    rotation: 0
+/** Exam number, printed next to the "P No./C No./D No." label top-right. */
+const EXAM_NUMBER: FieldConfig = {
+    x: 0.80, y: 0.126, fontSize: 46,
+    fontWeight: 'bold', fontStyle: 'normal', fontFamily: 'Times New Roman',
+    align: 'left', color: '#000000', transform: 'none', rotation: 0,
 }
 
-const DEFAULT_SUBJECT_COUNT: FieldConfig = {
-    x: 0.65,
-    y: 0.536,
-    fontSize: 55,
-    fontWeight: 'normal',
-    fontStyle: 'normal',
-    fontFamily: 'Times New Roman',
-    align: 'center',
-    color: '#000000',
-    transform: 'none',
-    rotation: 0
+/** 2-digit exam year, filling the "20........ WITH" blank. */
+const YEAR: FieldConfig = {
+    x: 0.50, y: 0.584, fontSize: 56,
+    fontWeight: 'bold', fontStyle: 'normal', fontFamily: 'Times New Roman',
+    align: 'center', color: '#000000', transform: 'none', rotation: 0,
 }
 
-const DEFAULT_EXAM_NUMBER: FieldConfig = {
-    x: 0.715,
-    y: 0.178,
-    fontSize: 54,
-    fontWeight: 'bold',
-    fontStyle: 'normal',
-    fontFamily: 'Times New Roman',
-    align: 'left',
-    color: '#000000',
-    transform: 'none',
-    rotation: 0
+/** Day+month, filling the "Date:........" blank at the bottom. */
+const ISSUE_DATE: FieldConfig = {
+    x: 0.18, y: 0.896, fontSize: 40,
+    fontWeight: 'normal', fontStyle: 'normal', fontFamily: 'Times New Roman',
+    align: 'left', color: '#000000', transform: 'none', rotation: 0,
 }
 
-const DEFAULT_SERIAL_NUMBER: FieldConfig = {
-    x: 0.885,
-    y: 0.219,
-    fontSize: 48,
-    fontWeight: 'normal',
-    fontStyle: 'normal',
-    fontFamily: 'Times New Roman',
-    align: 'right',
-    color: '#000000',
-    transform: 'none',
-    rotation: 0
+/** 2-digit issue year, filling the second "20......." blank at the bottom. */
+const ISSUE_DATE_YEAR: FieldConfig = {
+    x: 0.895, y: 0.896, fontSize: 40,
+    fontWeight: 'normal', fontStyle: 'normal', fontFamily: 'Times New Roman',
+    align: 'center', color: '#000000', transform: 'none', rotation: 0,
 }
 
-const DEFAULT_ISSUE_DATE: FieldConfig = {
-    x: 0.45,
-    y: 0.99,
-    fontSize: 42,
-    fontWeight: 'normal',
-    fontStyle: 'normal',
-    fontFamily: 'Times New Roman',
-    align: 'left',
-    color: '#000000',
-    transform: 'none',
-    rotation: 0
+const SIGNATURES = {
+    signature1: { x: 0.235, y: 0.745, width: 0.15, height: 0.055, rotation: 0, opacity: 1 } as SignatureConfig,
+    signature2: { x: 0.775, y: 0.745, width: 0.15, height: 0.055, rotation: 0, opacity: 1 } as SignatureConfig,
 }
 
-const DEFAULT_SIGNATURES = {
-    signature1: {
-        x: 0.28,
-        y: 0.8325,
-        width: 0.14,
-        height: 0.055,
-        rotation: 0,
-        opacity: 1
-    } as SignatureConfig,
-    signature2: {
-        x: 0.74,
-        y: 0.8325,
-        width: 0.14,
-        height: 0.055,
-        rotation: 0,
-        opacity: 1
-    } as SignatureConfig
-}
-
-const DEFAULT_TABLES: TablesConfig = {
-    leftX: 0.12,
-    rightX: 0.518,
-    tableGapFraction: 0.11,
-    topY: 0.6,
-    tableWidthFraction: 0.36,
-    rowHeight: 0.032,
-    subjectColFraction: 0.63,
-    gradeColFraction: 0.27,
-    showSn: false,
-    snColFraction: 0.06,
-    headerFontSize: 42,
-    cellFontSize: 42,
-    maxRowsPerTable: 10
+const IMAGE_MAP: Record<JSCBECertificateType, string> = {
+    pass: '/images/JSBTCE/Junior School Certificate - PASS.png',
+    credit: '/images/JSBTCE/Junior School Certificate - CREDIT.png',
+    distinction: '/images/JSBTCE/Junior School Certificate - DISTINCTION.png',
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -288,7 +161,7 @@ const applyTransform = (text: string, t?: string): string => {
     switch (t) {
         case 'uppercase': return text.toUpperCase()
         case 'lowercase': return text.toLowerCase()
-        case 'capitalize': return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()
+        case 'capitalize': return text.replace(/\w\S*/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase())
         default: return text
     }
 }
@@ -301,23 +174,20 @@ const deg2rad = (deg: number) => deg * (Math.PI / 180)
 const setFont = (ctx: CanvasRenderingContext2D, config: FieldConfig): void => {
     const w = config.fontWeight ?? 'normal'
     const s = config.fontStyle ?? 'normal'
-    const size = config.fontSize
-    const family = config.fontFamily ?? 'Times New Roman'
-    ctx.font = `${s} ${w} ${size}px "${family}", serif`
+    ctx.font = `${s} ${w} ${config.fontSize}px "${config.fontFamily ?? 'Times New Roman'}", serif`
     ctx.textBaseline = 'alphabetic'
 }
 
-const drawRotatedText = (
-    ctx: CanvasRenderingContext2D,
-    text: string,
-    x: number,
-    y: number,
-    rotation: number = 0
-): void => {
+const drawField = (ctx: CanvasRenderingContext2D, text: string, config: FieldConfig, cw: number, ch: number): void => {
+    setFont(ctx, config)
+    ctx.textAlign = (config.align ?? 'center') as CanvasTextAlign
+    ctx.fillStyle = config.color ?? '#000000'
+    const x = toPx(config.x, cw)
+    const y = toPx(config.y, ch)
     ctx.save()
     ctx.translate(x, y)
-    if (rotation !== 0) ctx.rotate(deg2rad(rotation))
-    ctx.fillText(text, 0, 0)
+    if (config.rotation) ctx.rotate(deg2rad(config.rotation))
+    ctx.fillText(applyTransform(text, config.transform), 0, 0)
     ctx.restore()
 }
 
@@ -330,161 +200,60 @@ const loadImage = (url: string): Promise<HTMLImageElement> =>
         img.src = url
     })
 
-const drawSignature = (
-    ctx: CanvasRenderingContext2D,
-    img: HTMLImageElement,
-    config: SignatureConfig,
-    cw: number,
-    ch: number
-): void => {
+const drawSignature = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, config: SignatureConfig, cw: number, ch: number): void => {
     const x = toPx(config.x, cw)
     const y = toPx(config.y, ch)
     const w = toPx(config.width, cw)
     const h = toPx(config.height, ch)
-    const rot = config.rotation ?? 0
-    const opacity = config.opacity ?? 1
     ctx.save()
-    ctx.globalAlpha = opacity
+    ctx.globalAlpha = config.opacity ?? 1
     ctx.translate(x, y)
-    ctx.rotate(deg2rad(rot))
+    if (config.rotation) ctx.rotate(deg2rad(config.rotation))
     ctx.drawImage(img, -w / 2, -h / 2, w, h)
-    ctx.restore()
-}
-
-/** Split courses into left and right columns for the two vertical tables. */
-function splitCourses(
-    courses: Array<{ subject: string; grade: string }>,
-    maxPerTable: number
-): { left: Array<{ subject: string; grade: string }>; right: Array<{ subject: string; grade: string }> } {
-    const n = Math.min(courses.length, maxPerTable * 2)
-    const half = Math.ceil(n / 2)
-    return {
-        left: courses.slice(0, half),
-        right: courses.slice(half, n)
-    }
-}
-
-const drawTable = (
-    ctx: CanvasRenderingContext2D,
-    rows: Array<{ subject: string; grade: string }>,
-    config: TablesConfig,
-    useLeft: boolean,
-    startSnIndex: number,
-    cw: number,
-    ch: number
-): void => {
-    const cellFont = `${config.cellFontSize}px "Times New Roman", serif`
-    const rowPx = toPx(config.rowHeight, ch)
-    const tableWidthPx = cw * (config.tableWidthFraction ?? 0.36)
-    const showSn = config.showSn === true
-    const snFrac = config.snColFraction ?? 0.1
-    const snW = showSn ? tableWidthPx * snFrac : 0
-    const subW = tableWidthPx * config.subjectColFraction
-    const gradeW = tableWidthPx * config.gradeColFraction
-
-    const leftStart = toPx(config.leftX, cw)
-    const rightStart = config.tableGapFraction != null
-        ? toPx(config.leftX + config.tableWidthFraction + config.tableGapFraction, cw)
-        : toPx(config.rightX, cw)
-    const startX = useLeft ? leftStart : rightStart
-    const startY = toPx(config.topY, ch)
-    const rot = config.rotation ?? 0
-
-    ctx.save()
-    ctx.fillStyle = '#000000'
-    ctx.strokeStyle = '#000000'
-    ctx.lineWidth = 0.5
-    ctx.font = cellFont
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'alphabetic'
-
-    if (rot !== 0) {
-        ctx.translate(startX, startY)
-        ctx.rotate(deg2rad(rot))
-        ctx.translate(-startX, -startY)
-    }
-
-    let y = startY
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i]
-        const subjectText = row.subject != null && String(row.subject).trim() !== '' ? String(row.subject).trim() : '—'
-        const gradeText = row.grade != null && String(row.grade).trim() !== '' ? String(row.grade).trim() : '—'
-        const lineY = y + config.cellFontSize * 0.8
-        if (showSn) {
-            ctx.fillText(String(startSnIndex + i), startX, lineY)
-            ctx.fillText(subjectText, startX + snW, lineY)
-            ctx.fillText(gradeText, startX + snW + subW, lineY)
-        } else {
-            ctx.fillText(subjectText, startX, lineY)
-            ctx.fillText(gradeText, startX + subW, lineY)
-        }
-        y += rowPx
-    }
-
     ctx.restore()
 }
 
 // ─── Main generator ─────────────────────────────────────────────────────────
 
-// NOTE: unlike BECE/UBEAT, this file has no matching artwork yet — nothing
-// exists at this path (see public/images/new-certificates/ for the other
-// exam types' backgrounds, all supplied by the Ministry). Downloads will
-// fail gracefully (caught by the try/catch in dashboard/page.tsx, which
-// shows a toast) until a real "Junior School (Business/Technical)
-// Certificate Examination.png" background is added at this exact path.
-// The field/table coordinates below were copied verbatim from BECE's
-// layout and WILL need recalibrating against the real artwork's actual
-// title length, seal position, and signature placement once it exists.
-const DEFAULT_BG_IMAGE = '/images/new-certificates/Junior School (Business-Technical) Certificate Examination.png'
-
 export async function generateJSCBECertificate(
     data: JSCBECertificateData,
     options?: {
-        /** Background certificate image URL. Defaults to DEFAULT_BG_IMAGE above. */
-        backgroundImageUrl?: string
-        /** Override field/signature/table positions */
+        /** 'pass' | 'credit' | 'distinction' — defaults to deriving it from data.overallGrade */
+        certificateType?: JSCBECertificateType
+        /** Override field/signature positions */
         customFields?: JSCBECertificateFieldsConfig
-        /** Optional filename for download (default includes name) */
+        /** Optional filename for download */
         filename?: string
+        /** Return the PNG as a Blob instead of triggering a download (e.g. for previews/testing) */
+        returnBlob?: boolean
     }
-): Promise<void> {
-    const bgUrl = options?.backgroundImageUrl ?? DEFAULT_BG_IMAGE
+): Promise<void | Blob> {
+    const certificateType = options?.certificateType ?? normalizeJSCBEGradeTier(data.overallGrade)
+    const bgUrl = IMAGE_MAP[certificateType]
     const custom = options?.customFields ?? {}
-    const subjectCountText = String(data.subjectCount)
 
-    const studentName = mergeField(DEFAULT_STUDENT_NAME, custom.studentName)
-    const year = mergeField(DEFAULT_YEAR, custom.year)
-    const lga = mergeField(DEFAULT_LGA, custom.lga)
-    const subjectCount = mergeField(DEFAULT_SUBJECT_COUNT, custom.subjectCount)
-    const examNumber = mergeField(DEFAULT_EXAM_NUMBER, custom.examNumber)
-    const serialNumber = mergeField(DEFAULT_SERIAL_NUMBER, custom.serialNumber)
-    const issueDateConfig = mergeField(DEFAULT_ISSUE_DATE, custom.issueDate)
-    const tables = mergeField(DEFAULT_TABLES, custom.tables)
-    // SN column is only on the certificate table (always show for JSCBE cert)
-    const tablesWithSn = { ...tables, showSn: true } as typeof tables
-    const maxPerTable = tablesWithSn.maxRowsPerTable ?? 10
-    const { left: leftRows, right: rightRows } = splitCourses(data.courses, maxPerTable)
+    const studentName = mergeField(STUDENT_NAME, custom.studentName)
+    const schoolName = mergeField(SCHOOL_NAME, custom.schoolName)
+    const examNumber = mergeField(EXAM_NUMBER, custom.examNumber)
+    const year = mergeField(YEAR, custom.year)
+    const issueDate = mergeField(ISSUE_DATE, custom.issueDate)
+    const issueDateYear = mergeField(ISSUE_DATE_YEAR, custom.issueDateYear)
+    const sig1 = mergeField(SIGNATURES.signature1, custom.signature1)
+    const sig2 = mergeField(SIGNATURES.signature2, custom.signature2)
 
-    const sig1 = mergeField(DEFAULT_SIGNATURES.signature1, custom.signature1)
-    const sig2 = mergeField(DEFAULT_SIGNATURES.signature2, custom.signature2)
+    const examYear = Number(data.year) || new Date().getFullYear()
 
     let sig1Img: HTMLImageElement | null = null
     let sig2Img: HTMLImageElement | null = null
-
     try {
-        const sigConfig = DIRECTORS_SIGNATURES[Number(data.year)]
-        if (sigConfig?.path) {
-            sig1Img = await loadImage(sigConfig.path)
-        }
+        const cfg = DIRECTORS_SIGNATURES[examYear]
+        if (cfg?.path) sig1Img = await loadImage(cfg.path)
     } catch (error) {
         console.warn('Could not load signature 1:', error)
     }
-    
     try {
-        const sigConfig = COMMISSIONERS_SIGNATURES[Number(data.year)]
-        if (sigConfig?.path) {
-            sig2Img = await loadImage(sigConfig.path)
-        }
+        const cfg = COMMISSIONERS_SIGNATURES[examYear]
+        if (cfg?.path) sig2Img = await loadImage(cfg.path)
     } catch (error) {
         console.warn('Could not load signature 2:', error)
     }
@@ -510,156 +279,58 @@ export async function generateJSCBECertificate(
             try {
                 const qrDataUrl = await generateCertificateQR(data, { size: 280, margin: 4 })
                 qrImg = await loadImageFromDataUrl(qrDataUrl)
-            } catch {
-                throw new Error('Failed to generate Certificate.');
+            } catch (error) {
+                console.warn('Could not generate certificate QR:', error)
             }
 
-            // ── Name ──
-            setFont(ctx, studentName)
-            ctx.textAlign = (studentName.align ?? 'center') as CanvasTextAlign
-            ctx.fillStyle = studentName.color ?? '#000000'
-            drawRotatedText(
-                ctx,
-                applyTransform(data.name, studentName.transform),
-                toPx(studentName.x, cw),
-                toPx(studentName.y, ch),
-                studentName.rotation ?? 0
-            )
+            drawField(ctx, data.name, studentName, cw, ch)
+            if (data.schoolName) drawField(ctx, data.schoolName, schoolName, cw, ch)
+            if (data.examNumber) drawField(ctx, data.examNumber, examNumber, cw, ch)
+            drawField(ctx, String(examYear).slice(-2), year, cw, ch)
 
-            // ── Year (schoolName config applied to year; school name is welded with LGA below) ──
-            if (data.year != null && data.year !== '') {
-                const yearText = toYearPhrase(Number(data.year ?? 0), "in the year")
-                setFont(ctx, year)
-                ctx.textAlign = (year.align ?? 'center') as CanvasTextAlign
-                ctx.fillStyle = year.color ?? '#000000'
-                drawRotatedText(
-                    ctx,
-                    applyTransform(yearText, year.transform),
-                    toPx(year.x, cw),
-                    toPx(year.y, ch),
-                    year.rotation ?? 0
-                )
+            const issueRaw = typeof data.issueDate === 'string' ? data.issueDate : new Date().toISOString().slice(0, 10)
+            const parsed = new Date(issueRaw + 'T00:00:00')
+            if (!isNaN(parsed.getTime())) {
+                const dayMonth = parsed.toLocaleDateString('en-GB', { day: '2-digit', month: 'long' })
+                drawField(ctx, dayMonth, issueDate, cw, ch)
+                drawField(ctx, String(parsed.getFullYear()).slice(-2), issueDateYear, cw, ch)
             }
 
-            // ── LGA (school name + LGA combined) ──
-            if (data.lga != null && data.lga !== '') {
-                setFont(ctx, lga)
-                ctx.textAlign = (lga.align ?? 'center') as CanvasTextAlign
-                ctx.fillStyle = lga.color ?? '#000000'
-                drawRotatedText(
-                    ctx,
-                    applyTransform(`${capitalizeWords(data.schoolName ?? '')}, ${capitalizeWords(data.lga ?? '')}`, lga.transform),
-                    toPx(lga.x, cw),
-                    toPx(lga.y, ch),
-                    lga.rotation ?? 0
-                )
-            }
-
-            // ── Subject count (e.g. in "following _____ subjects") ──
-            setFont(ctx, subjectCount)
-            ctx.textAlign = (subjectCount.align ?? 'center') as CanvasTextAlign
-            ctx.fillStyle = subjectCount.color ?? '#000000'
-            drawRotatedText(
-                ctx,
-                applyTransform(capitalize(toWordBracket(Number(subjectCountText))), subjectCount.transform),
-                toPx(subjectCount.x, cw),
-                toPx(subjectCount.y, ch),
-                subjectCount.rotation ?? 0
-            )
-
-            // ── Exam number ──
-            if (data.examNumber != null && data.examNumber !== '') {
-                setFont(ctx, examNumber)
-                ctx.textAlign = (examNumber.align ?? 'left') as CanvasTextAlign
-                ctx.fillStyle = examNumber.color ?? '#000000'
-                drawRotatedText(
-                    ctx,
-                    applyTransform(data.examNumber, examNumber.transform),
-                    toPx(examNumber.x, cw),
-                    toPx(examNumber.y, ch),
-                    examNumber.rotation ?? 0
-                )
-            }
-
-            // ── Cert / serial number (fallback to exam number when serial missing) ──
-            const serialDisplay = (data.serialNumber ?? data.examNumber ?? '').trim()
-            if (serialDisplay) {
-                setFont(ctx, serialNumber)
-                ctx.textAlign = (serialNumber.align ?? 'right') as CanvasTextAlign
-                ctx.fillStyle = serialNumber.color ?? '#000000'
-                drawRotatedText(
-                    ctx,
-                    applyTransform(serialDisplay, serialNumber.transform),
-                    toPx(serialNumber.x, cw),
-                    toPx(serialNumber.y, ch),
-                    serialNumber.rotation ?? 0
-                )
-            }
-
-            // ── Issue date ──
-            if (data.issueDate != null && data.issueDate !== '') {
-                const raw = typeof data.issueDate === 'string' ? data.issueDate : new Date().toISOString().slice(0, 10)
-                const parsed = new Date(raw + 'T00:00:00')
-                const issueStr = isNaN(parsed.getTime())
-                    ? raw
-                    : parsed.toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: 'long',
-                        year: '2-digit'
-                    })
-                setFont(ctx, issueDateConfig)
-                ctx.textAlign = (issueDateConfig.align ?? 'left') as CanvasTextAlign
-                ctx.fillStyle = issueDateConfig.color ?? '#000000'
-                drawRotatedText(
-                    ctx,
-                    applyTransform(issueStr, issueDateConfig.transform),
-                    toPx(issueDateConfig.x, cw),
-                    toPx(issueDateConfig.y, ch),
-                    issueDateConfig.rotation ?? 0
-                )
-            }
-
-            // ── Two vertical tables (SN column only on certificate) ──
-            drawTable(ctx, leftRows, tablesWithSn, true, 1, cw, ch)
-            drawTable(ctx, rightRows, tablesWithSn, false, leftRows.length + 1, cw, ch)
-
-            // ── Signatures ──
             if (sig1Img) {
-                const sigConfig = DIRECTORS_SIGNATURES[Number(data.year)]
-                const scale = sigConfig?.scale ?? 0.15
-                const aspectRatio = sig1Img.width / sig1Img.height
-                const targetWidth = cw * scale
-                const sig1FinalConfig = { ...sig1, width: targetWidth, height: targetWidth / aspectRatio }
-                drawSignature(ctx, sig1Img, sig1FinalConfig, cw, ch)
+                const scale = DIRECTORS_SIGNATURES[examYear]?.scale ?? 0.15
+                const aspect = sig1Img.width / sig1Img.height
+                const w = cw * scale
+                drawSignature(ctx, sig1Img, { ...sig1, width: w, height: w / aspect }, cw, ch)
             }
             if (sig2Img) {
-                const sigConfig = COMMISSIONERS_SIGNATURES[Number(data.year)]
-                const scale = sigConfig?.scale ?? 0.15
-                const aspectRatio = sig2Img.width / sig2Img.height
-                const targetWidth = cw * scale
-                const sig2FinalConfig = { ...sig2, width: targetWidth, height: targetWidth / aspectRatio }
-                drawSignature(ctx, sig2Img, sig2FinalConfig, cw, ch)
+                const scale = COMMISSIONERS_SIGNATURES[examYear]?.scale ?? 0.15
+                const aspect = sig2Img.width / sig2Img.height
+                const w = cw * scale
+                drawSignature(ctx, sig2Img, { ...sig2, width: w, height: w / aspect }, cw, ch)
             }
 
-            // ── QR code (perfect square, verify URL + HMAC-signed payload for document integrity) ──
+            // ── QR code (verify URL + HMAC-signed payload) ──
             if (qrImg) {
-                const qrFraction = 0.14
+                const qrFraction = 0.10
                 const qrSizePx = Math.min(toPx(qrFraction, cw), toPx(qrFraction, ch))
-                const qrX = toPx(0.853, cw)
-                const qrY = toPx(0.87, ch)
+                const qrX = toPx(0.80, cw)
+                const qrY = toPx(0.675, ch)
                 ctx.imageSmoothingEnabled = true
                 ctx.imageSmoothingQuality = 'high'
                 ctx.drawImage(qrImg, qrX, qrY, qrSizePx, qrSizePx)
             }
 
-            // ── Invisible steganographic watermark (survives screenshots) ──
+            // ── Invisible steganographic watermark ──
             const stegoId = (data.serialNumber ?? data.examNumber ?? data.name ?? '').slice(0, 32)
             if (stegoId) embedSteganographicId(ctx, stegoId, cw, ch)
 
-            // ── Export ──
             canvas.toBlob((blob) => {
                 if (!blob) {
                     reject(new Error('Failed to create blob'))
+                    return
+                }
+                if (options?.returnBlob) {
+                    resolve(blob)
                     return
                 }
                 const url = URL.createObjectURL(blob)

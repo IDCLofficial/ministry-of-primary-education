@@ -13,6 +13,7 @@ export const SUPPORT_REASONS = [
     { value: "result_not_found", label: "Result Not Found" },
     { value: "wrong_result", label: "Wrong Result Displayed" },
     { value: "name_mismatch", label: "Name / Details Mismatch" },
+    { value: "name_correction_major", label: "Name Correction (substantial change)" },
     { value: "missing_subjects", label: "Missing Subjects or Scores" },
     { value: "portal_access", label: "Unable to Access Portal" },
     { value: "other", label: "Other (please specify)" },

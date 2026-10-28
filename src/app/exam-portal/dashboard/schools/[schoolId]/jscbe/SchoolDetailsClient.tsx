@@ -99,9 +99,8 @@ export default function SchoolDetailsClient({ school, students, pagination, isSe
     const handleGenerateCertificate = async (student: Student) => {
         try {
             const data = studentToJSCBECertificateData(student)
-            const lgaVal = typeof school.lga === 'string' ? school.lga : (school.lga as { name?: string })?.name ?? ''
             await generateJSCBECertificate(
-                { ...data, schoolName: school.schoolName, lga: lgaVal || data.lga },
+                { ...data, schoolName: school.schoolName },
                 { filename: `JSCBE_Certificate_${(student.examNo || student.name).replace(/[/\\?*]/g, '_')}.png` }
             )
             toast.success('Certificate downloaded')
