@@ -20,6 +20,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={cn("font-sans", geist.variable)}>
+      <head>
+        <script
+          src="https://pulse-track.onrender.com/tracker.min.js"
+          data-key="pk_live_ace0994b812ee316a5649585"
+          defer
+        />
+      </head>
       <body>
         <GlobalLoader />
         <Navbar/>
