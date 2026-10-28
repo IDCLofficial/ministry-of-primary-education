@@ -4,16 +4,20 @@ import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HiSparkles } from "react-icons/hi2";
 import { FiDownload, FiX, FiRefreshCw, FiCalendar } from "react-icons/fi";
+import { FaWhatsapp } from "react-icons/fa6";
 import { FaTrophy } from "react-icons/fa6";
+import toast from "react-hot-toast";
 import { useAuth } from "../../providers/AuthProvider";
 import {
   AiReport,
+  buildWhatsAppMessage,
   Change,
   changeText,
   generateAiReport,
   generateAiReportPDF,
   naira,
   providerLabel,
+  whatsappLink,
 } from "@/lib/iirs/aiReport";
 
 type Step = "pick" | "loading" | "done" | "error";
@@ -289,6 +293,21 @@ export default function AiReportChat() {
     }
   };
 
+  // WhatsApp links can't carry attachments: download the PDF, then open the chat with the
+  // message prefilled so the PDF can be attached from the device.
+  const sendViaWhatsApp = () => {
+    if (!report) return;
+    const { url, hasNumber } = whatsappLink(buildWhatsAppMessage(report));
+    window.open(url, "_blank", "noopener,noreferrer");
+    generateAiReportPDF(report);
+    toast.success(
+      hasNumber
+        ? "Report PDF downloaded. Attach it in the WhatsApp chat."
+        : "Commissioner's number isn't configured, so choose the contact in WhatsApp. Attach the downloaded PDF.",
+      { duration: 6000 },
+    );
+  };
+
   const reset = () => {
     setStep("pick");
     setReport(null);
@@ -465,6 +484,15 @@ export default function AiReportChat() {
                   <Bubble from="ai">
                     <ReportView report={report} />
                   </Bubble>
+                  <button
+                    onClick={sendViaWhatsApp}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] py-2 text-sm font-semibold text-white hover:bg-[#1ebe5b] cursor-pointer"
+                  >
+                    <FaWhatsapp className="text-lg" /> Send via WhatsApp
+                  </button>
+                  <p className="-mt-1 text-[11px] text-gray-500">
+                    Downloads the PDF and opens WhatsApp with the message ready. Attach the PDF in the chat before sending.
+                  </p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => generateAiReportPDF(report)}

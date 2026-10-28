@@ -99,6 +99,50 @@ const PROVIDER_LABELS: Record<string, string> = {
 };
 export const providerLabel = (p: string) => PROVIDER_LABELS[p] ?? p;
 
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "9 Oct – 16 Oct 2026" (years shown only when they differ). */
+export function shortPeriod(period: AiReport['metrics']['period']): string {
+  if (!period.from) return period.tillDate ? 'All time' : `Up to ${period.to}`;
+  const part = (iso: string, year: boolean) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return `${d} ${SHORT_MONTHS[m - 1]}${year ? ` ${y}` : ''}`;
+  };
+  const sameYear = period.from.slice(0, 4) === period.to.slice(0, 4);
+  return `${part(period.from, !sameYear)} – ${part(period.to, true)}`;
+}
+
+/** The plain-text WhatsApp message for the Commissioner. */
+export function buildWhatsAppMessage(report: AiReport): string {
+  const { metrics } = report;
+  const n = (v: number) => v.toLocaleString('en-US');
+  const exam: string[] = [];
+  for (const e of metrics.exams) {
+    if (e.resultChecks > 0) exam.push(`${n(e.resultChecks)} students paid for ${e.label}`);
+    if (e.examNumberFinds > 0) exam.push(`${n(e.examNumberFinds)} students paid to find their ${e.examType === 'UBEAT' ? e.examType : e.label} exam number`);
+  }
+  return [
+    'Good morning Sir',
+    'Please Sir below is a comprehensive report for result checking',
+    '',
+    shortPeriod(metrics.period) + (metrics.period.partial ? ' (today still in progress)' : ''),
+    `${n(metrics.totals.resultChecks)} students have checked their results`,
+    `${n(metrics.totals.examNumberFinds)} students paid to find their exam number`,
+    '',
+    `A total revenue of ${n(metrics.totals.revenue)} naira was generated`,
+    ...(exam.length ? ['', ...exam] : []),
+    '',
+    'Thank you Sir',
+  ].join('\n');
+}
+
+/** wa.me link with the message prefilled. The number comes from NEXT_PUBLIC_COMMISSIONER_WHATSAPP_NUMBER. */
+export function whatsappLink(message: string): { url: string; hasNumber: boolean } {
+  let digits = (process.env.NEXT_PUBLIC_COMMISSIONER_WHATSAPP_NUMBER || '').replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('0')) digits = `234${digits.slice(1)}`;
+  return { url: `https://wa.me/${digits}?text=${encodeURIComponent(message)}`, hasNumber: !!digits };
+}
+
 export const changeText = (c: Change | undefined) =>
   !c || c.changePct === null ? null : `${c.changePct >= 0 ? '▲' : '▼'} ${Math.abs(c.changePct)}%`;
 
