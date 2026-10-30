@@ -12,8 +12,10 @@ import Link from 'next/link'
 import { useLazyGetBECEResultQuery, useFindBECEResultMutation, useCreateBECEPaymentMutation, useGetAvailableYearsQuery, useFindBECEMultipleMatchesMutation, type FindResultMatch, type MultiMatchResult } from '../../store/api/studentApi'
 import { AnimatePresence, motion, Variants } from 'framer-motion'
 import CustomDropdown from '@/app/portal/dashboard/components/CustomDropdown'
-import { useGetSchoolNamesQuery } from '@/app/portal/store/api/authApi'
+import { useGetSchoolNamesQuery, ExamTypeEnum } from '@/app/portal/store/api/authApi'
 import { LgaEnum } from '@/app/portal/dashboard/[schoolCode]/types'
+import { Pencil } from 'lucide-react'
+import NameCorrectionDialog from '@/app/result-checking/components/NameCorrectionDialog'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 // XX/000/000
@@ -176,6 +178,7 @@ export default function StudentLoginPage() {
 
     const [matchedStudents, setMatchedStudents] = useState<{ studentName: string; id: string }[] | null>(null)
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+    const [fixNameStudent, setFixNameStudent] = useState<{ id: string; studentName: string } | null>(null)
 
     const [multiMatchResults, setMultiMatchResults] = useState<MultiMatchResult[] | null>(null)
     const [isFindingMatches, setIsFindingMatches] = useState(false)
@@ -507,6 +510,7 @@ export default function StudentLoginPage() {
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
+        <>
         <div className="min-h-screen bg-[#F3F3F3] flex flex-col relative overflow-hidden">
             <div className="absolute h-full w-full inset-0 z-[0]">
                 <Image
@@ -887,42 +891,56 @@ export default function StudentLoginPage() {
                                             const isSelected = selectedStudentId === student.id
                                             const isOther = isCreatingPayment && !isSelected
                                             return (
-                                                <motion.button
-                                                    key={student.id}
-                                                    variants={itemVariants}
-                                                    type="button"
-                                                    disabled={isCreatingPayment}
-                                                    onClick={() => handleStudentSelected({ name: student.studentName, _id: student.id })}
-                                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 text-left disabled:cursor-not-allowed ${
-                                                        isSelected
-                                                            ? 'border-green-400 bg-green-50 ring-2 ring-green-200'
-                                                            : isOther
-                                                                ? 'border-gray-200 bg-gray-50 opacity-40 cursor-not-allowed'
-                                                                : 'border-gray-200 bg-gray-50 hover:bg-green-50 hover:border-green-300 cursor-pointer'
-                                                    }`}
-                                                >
-                                                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                                                <motion.div key={student.id} variants={itemVariants} className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        disabled={isCreatingPayment}
+                                                        onClick={() => handleStudentSelected({ name: student.studentName, _id: student.id })}
+                                                        className={`flex-1 min-w-0 flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 text-left disabled:cursor-not-allowed ${
+                                                            isSelected
+                                                                ? 'border-green-400 bg-green-50 ring-2 ring-green-200'
+                                                                : isOther
+                                                                    ? 'border-gray-200 bg-gray-50 opacity-40 cursor-not-allowed'
+                                                                    : 'border-gray-200 bg-gray-50 hover:bg-green-50 hover:border-green-300 cursor-pointer'
+                                                        }`}
+                                                    >
+                                                        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                                                            {isSelected
+                                                                ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
+                                                                : getInitials(student.studentName)
+                                                            }
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className={`text-sm font-semibold truncate capitalize ${isSelected ? 'text-green-700' : 'text-gray-900'}`}>
+                                                                {student.studentName.toLowerCase()}
+                                                            </p>
+                                                            {isSelected && (
+                                                                <p className="text-xs text-green-600 mt-0.5">Setting up payment…</p>
+                                                            )}
+                                                        </div>
                                                         {isSelected
-                                                            ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
-                                                            : getInitials(student.studentName)
+                                                            ? <span className="w-4 h-4 border-2 border-green-400/40 border-t-green-500 rounded-full animate-spin flex-shrink-0 block" />
+                                                            : <IoChevronForward className={`w-4 h-4 flex-shrink-0 ${isOther ? 'text-gray-300' : 'text-gray-400'}`} />
                                                         }
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className={`text-sm font-semibold truncate capitalize ${isSelected ? 'text-green-700' : 'text-gray-900'}`}>
-                                                            {student.studentName.toLowerCase()}
-                                                        </p>
-                                                        {isSelected && (
-                                                            <p className="text-xs text-green-600 mt-0.5">Setting up payment…</p>
-                                                        )}
-                                                    </div>
-                                                    {isSelected
-                                                        ? <span className="w-4 h-4 border-2 border-green-400/40 border-t-green-500 rounded-full animate-spin flex-shrink-0 block" />
-                                                        : <IoChevronForward className={`w-4 h-4 flex-shrink-0 ${isOther ? 'text-gray-300' : 'text-gray-400'}`} />
-                                                    }
-                                                </motion.button>
+                                                    </button>
+                                                    {!isCreatingPayment && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFixNameStudent({ id: student.id, studentName: student.studentName })}
+                                                            className="flex-shrink-0 p-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                                            title="Fix this student's name"
+                                                        >
+                                                            <Pencil className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </motion.div>
                                             )
                                         })}
                                     </motion.div>
+
+                                    <p className="text-xs text-gray-500 text-center">
+                                        Tap <Pencil className="w-3 h-3 inline -mt-0.5" /> next to a name to fix a typo or reordered name before continuing.
+                                    </p>
 
                                     <div className="flex items-center gap-3 pt-1">
                                         <div className="flex-1 h-px bg-gray-100" />
@@ -1114,5 +1132,15 @@ export default function StudentLoginPage() {
                 </div>
             </div>
         </div>
+        {fixNameStudent && (
+            <NameCorrectionDialog
+                open={!!fixNameStudent}
+                onOpenChange={(v) => { if (!v) setFixNameStudent(null) }}
+                studentId={fixNameStudent.id}
+                examType={ExamTypeEnum.BECE}
+                currentName={fixNameStudent.studentName}
+            />
+        )}
+        </>
     )
 }
