@@ -1,6 +1,6 @@
 import { capitalize, capitalizeWords } from '@/lib'
 import { Student, Subject } from '../../../types/student.types'
-import { toWordBracket, toYearPhrase, toYearWord } from '@/lib/numberToWords'
+import { toWordBracket } from '@/lib/numberToWords'
 import {
     generateCertificateQR,
     loadImageFromDataUrl,
@@ -519,7 +519,7 @@ export async function generateBECECertificate(
 
             // ── Year (schoolName config applied to year; school name is welded with LGA below) ──
             if (data.year != null && data.year !== '') {
-                const yearText = toYearPhrase(Number(data.year ?? 0), "in the year")
+                const yearText = `in the year ${Number(data.year ?? 0)}`
                 setFont(ctx, year)
                 ctx.textAlign = (year.align ?? 'center') as CanvasTextAlign
                 ctx.fillStyle = year.color ?? '#000000'
